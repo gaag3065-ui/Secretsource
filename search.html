@@ -1,0 +1,934 @@
+
+<!DOCTYPE html>
+<html lang="th">
+
+
+<head>
+ <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+ <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
+</head>
+
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบริหารจัดการพนักงานและบันทึกข้อมูลการเข้ารักษา</title>
+    <style>
+        /* 🏥 ปรับโครงสร้างหลักแบบ Flexbox ให้ขยายความสูงกล่องเท่ากันอัตโนมัติ */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f4f7f6; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: stretch; /* 🎯 สั่งให้กล่องซ้ายและขวามีความสูงเท่ากันเสมอ */
+            justify-content: flex-start;
+            gap: 20px;
+        }
+
+        /* 📦 รูปแบบกล่องดีไซน์มาตรฐานแพลตฟอร์มให้มีมิติพิมพ์เดียวกัน */
+        .card-container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06); 
+            box-sizing: border-box; 
+            border-top: 6px solid #20c997; /* คาดหัวเตียงสีเขียวโรงพยาบาลเท่ากันทั้งสองฝั่ง */
+        }
+
+        .flex-row-container {
+            display: flex !important;
+            flex-direction: row !important; /* ✨ บังคับจัดแถวแนวนอนขนานกัน */
+            align-items: stretch !important;
+            justify-content: flex-start !important;
+            gap: 20px !important;
+            width: 100% !important;
+            max-width: 1170px; /* ล็อกขนาดความกว้างรวมของคู่บนให้พอดีกรอบ */
+            box-sizing: border-box;
+        }
+
+
+        /* 👈 ปรับสัดส่วนพื้นที่กล่องฝั่งซ้าย (ค้นหา) */
+        .left-box {
+            width: 45%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 👉 ปรับสัดส่วนพื้นที่กล่องฝั่งขวา (การเคลม) */
+        .right-box {
+            width: 55%;
+            max-width: 650px;
+        }
+
+        h2 { 
+            margin-top: 0; 
+            color: #198754; 
+            text-align: left; 
+            border-bottom: 2px solid #e9ecef; 
+            padding-bottom: 12px; 
+            margin-bottom: 20px; 
+        }
+        
+        .form-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        
+        input[type="text"], select, textarea { 
+            width: 100%; 
+            padding: 11px 12px; 
+            border: 1px solid #ced4da; 
+            border-radius: 6px; 
+            font-size: 15px; 
+            box-sizing: border-box; 
+            background-color: #f8f9fa; 
+        }
+        
+        input[type="text"]:focus, select:focus, textarea:focus { 
+            border-color: #86b7fe; 
+            outline: 0; 
+            background-color: #ffffff; 
+        }
+        
+        input[readonly] { 
+            background-color: #e9ecef; 
+            color: #495057; 
+            cursor: not-allowed; 
+        }
+        
+        /* ล็อกขนาดความสูงขั้นต่ำของช่องกรอกใหญ่ทั้งอาการป่วยและหมายเหตุ */
+        textarea { 
+            resize: vertical; 
+            min-height: 95px; 
+        }
+
+        /* 📊 ตารางการ์ดผลลัพธ์ข้อมูลพนักงานฝั่งซ้าย (ลบกล่องซ้ำซ้อนออกถาวร) */
+        .result-item { 
+            background: #ffffff; 
+            border: 1px solid #e0e0e0; 
+            padding: 20px; 
+            margin-top: 15px; 
+            border-radius: 6px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+            flex: 1; /* ขยายการ์ดให้ทอดยาวพอดีสัดส่วนกล่องด้านนอก */
+        }
+        
+        .info-row { 
+            display: flex; 
+            margin: 11px 0; 
+            font-size: 15px; 
+            border-bottom: 1px dashed #f0f0f0; 
+            padding-bottom: 6px; 
+        }
+        
+        .label-text { 
+            font-weight: bold; 
+            color: #333333; 
+            width: 150px; 
+            flex-shrink: 0; 
+        }
+        
+        .value-text { 
+            color: #555555; 
+            flex: 1; 
+        }
+
+        /* 📋 การจัดระเบียบฟอร์มแถวกรอกฝั่งขวา */
+        .claim-row { 
+            display: flex; 
+            margin-bottom: 15px; 
+            align-items: center; 
+        }
+        
+        .claim-row.align-top { 
+            align-items: flex-start; 
+        }
+        
+        .claim-label { 
+            font-weight: bold; 
+            color: #343a40; 
+            width: 180px; 
+            flex-shrink: 0; 
+            font-size: 15px; 
+        }
+        
+        .required { color: #dc3545; margin-left: 4px; }
+
+        /* 🔘 ปุ่มกดแยกเฉดสีการแพทย์ชัดเจน */
+        .btn-search { padding: 12px 24px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        .btn-search:hover { background: #218838; }
+        
+        .btn-submit { width: 100%; padding: 14px; background-color: #198754; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        .btn-submit:hover { background-color: #157347; }
+
+        .map-section { margin-top: 25px; border-top: 2px solid #e9ecef; padding-top: 20px; }
+        .map-title { font-size: 15px; font-weight: bold; color: #0d6efd; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .map-box { width: 100%; height: 220px; background-color: #eaeaea; border-radius: 8px; border: 1px solid #ced4da; overflow: hidden; }
+        .map-box iframe { width: 100%; height: 100%; border: 0; }
+
+        #message, #claimStatus { font-weight: bold; margin-top: 10px; text-align: center; }
+    
+    
+
+
+/* คลาสสำหรับบังคับกล่องตารางใหญ่ให้กางเต็ม 100% ของหน้าจอ */
+.bottom-full-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    margin-top: 20px;
+    clear: both;
+}
+
+/* คลาสสำคัญ: บังคับให้เกิดแถบสไลด์บาร์เลื่อนแนวนอนหากตารางยาวเกินหน้าจอ */
+.responsive-table-wrapper {
+    width: 100% !important;
+    overflow-x: auto !important; /* เปิดบาร์เลื่อนสไลด์แนวขนาน */
+    margin-top: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: #ffffff;
+}
+
+/* 🎯 ปรับแต่งแท็ก table ภายใต้ wrapper ให้ขยายตามความยาวข้อความจริง */
+.responsive-table-wrapper table {
+    width: max-content !important; /* ✅ ใช้ตัวนี้ตัวเดียวเพื่อกางตารางตามเนื้อหาจริง ห้ามใช้ width: 100% */
+    border-collapse: collapse !important;
+    font-size: 13px;
+    background-color: #ffffff;
+}
+
+/* 🎯 จัดการให้กล่องหดพอดีข้อความและเว้นช่องไฟสวยงาม */
+.responsive-table-wrapper th, 
+.responsive-table-wrapper td {
+    white-space: nowrap !important; /* ✅ ห้ามข้อความตัดขึ้นบรรทัดใหม่เด็ดขาด จะยาวออกข้างอย่างเดียว */
+    border: 1px solid #dee2e6 !important;
+    padding: 10px 16px !important;  /* ✅ เว้นระยะบน-ล่าง 10px และ ซ้าย-ขวา 16px เพื่อความสวยงาม */
+    vertical-align: middle;
+}
+
+.responsive-table-wrapper th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* 🎯 ไฮไลต์แถวเมื่อเอาเมาส์ชี้ (Hover Effect) ช่วยให้กวาดสายตาง่ายขึ้น */
+.responsive-table-wrapper tbody tr:hover {
+    background-color: #f1f3f5 !important;
+}
+
+/* 🎯 คลาสสำหรับระบุตำแหน่งข้อความในตาราง */
+.text-center { text-align: center !important; }
+.text-right { text-align: right !important; }
+.text-left { text-align: left !important; }
+.font-bold { font-weight: bold !important; }
+
+/* 🍏 แต่งสีหัวตารางกลุ่ม 7 ประกัน PP */
+.th-group-pp, .th-sub-pp { 
+    background-color: #e2f0d9 !important; 
+    color: #385723 !important; 
+}
+
+/* 🍋 แต่งสีหัวตารางกลุ่ม 8 ประกัน SLK */
+.th-group-slk, .th-sub-slk { 
+    background-color: #fff2cc !important; 
+    color: #7f6000 !important; 
+}
+
+</style>
+</head>
+<body>
+
+
+
+<!-- =============================================================================================================================== -->
+<!-- =================================== 📦 [ส่วนท้าย: สิ้นสุดระบบรวมโครงสร้างหลักหน้าจอ] =============================================== -->
+<!-- =============================================================================================================================== -->
+
+
+
+
+
+
+
+
+
+
+<div class="flex-row-container">
+<!-- =============================================================================================================================== -->
+<!-- =================================== 🔐 [ส่วนท้าย: เริมการระบุบริบทของหน้า Login] ============================================= -->
+<!-- =============================================================================================================================== -->
+<div class="card-container left-box">
+    <h2>🔎 ค้นหาข้อมูลพนักงาน</h2>
+    <div class="form-group">
+        <input type="text" id="keywordInput" placeholder="พิมพ์ชื่อเล่น ชื่อจริง หรือรหัสพนักงาน...">
+        <button id="searchBtn" class="btn-search">ค้นหา</button>
+    </div>
+    <div id="message"></div>
+    <div id="resultsList"></div>
+</div>
+<!-- =============================================================================================================================== -->
+<!-- =================================== 🔐 [ส่วนท้าย: สิ้นสุดการระบุบริบทของหน้า Login] ============================================= -->
+<!-- =============================================================================================================================== -->
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- =============================================================================================================================== -->
+<!-- =================================== 📋 [ส่วนหัวเรื่อง: เริ่มต้นโครงสร้างกล่องฝั่งขวา - ระบบการเคลม (บันทึกเข้ารักษา)] ======================= -->
+<!-- =============================================================================================================================== -->
+<div class="card-container right-box">
+    <!-- 🔴 ส่วนหัวเรื่อง: จัดการแยกกล่องหัวข้อหลักและเวลาปัจจุบันสีแดงเป็น 2 บรรทัดตามดีไซน์อย่างถูกต้อง -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 20px;">
+        <!-- ฝั่งซ้าย: หัวข้อหลัก -->
+        <h2 style="margin: 0; border: none; padding: 0;">📋 บันทึกข้อมูลการเข้ารักษา (กล่องที่ 3)</h2>
+        
+        <!-- ฝั่งขวา: วันเวลาระบบแฝดคนละฝั่ง (ย่อขนาดและแบ่งเป็น 2 บรรทัด) -->
+        <div id="headerDateTimeContainer" style="text-align: right; line-height: 1.3; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+            <span style="font-size: 11px; font-weight: bold; color: #666; display: block; margin-bottom: 2px;">วันเวลาในระบบปัจจุบัน (24 ชม.)</span>
+            <span id="headerDateTimeValue" style="color: #dc3545; font-size: 12.5px; font-weight: bold; display: block;"></span>
+        </div>
+    </div>
+
+    <!-- 📥 เริ่มต้นฟอร์มหลัก -->
+    <form id="claimForm">
+        <!-- 🔐 แท็กซ่อนสำหรับฝากข้อมูลพนักงานที่ค้นหาเจอชั่วคราว วางอยู่ต้นฟอร์มถูกต้อง 100% -->
+        <input type="hidden" id="hiddenEmpName">
+        <input type="hidden" id="hiddenCompany">
+        <input type="hidden" id="hiddenSize">
+        <input type="hidden" id="hiddenWorkLocation">
+        <input type="hidden" id="hiddenInsuranceId">
+        
+        <!-- ช่องระบุวันที่เข้ารับการรักษา -->
+        <div class="claim-row">
+            <span class="claim-label">ระบุวันที่เข้ารับการรักษา :</span>
+            <div class="value-text">
+                <input type="text" id="manualDate" placeholder="📅 คลิกเลือกวันที่เข้ารักษา..." disabled style="background-color: #e9ecef; cursor: not-allowed;">
+            </div>
+        </div>
+
+        <!-- ช่องระบุเวลาที่เข้ารับการรักษา -->
+        <div class="claim-row">
+            <span class="claim-label">ระบุเวลาที่เข้ารับการรักษา :</span>
+            <div class="value-text">
+                <input type="text" id="manualTime" placeholder="⏰ คลิกเลือกเวลาที่เข้ารักษา..." disabled style="background-color: #e9ecef; cursor: not-allowed;">
+            </div>
+        </div>
+
+        <!-- ช่องที่ 3: เคส ID -->
+        <div class="claim-row">
+            <span class="claim-label">เคส ID :</span>
+            <div class="value-text">
+                <input type="text" id="caseId" readonly placeholder="กำลังคำนวณเลขเคสถัดไป...">
+            </div>
+        </div>
+
+        <!-- ช่องที่ 4: คลินิกหรือสถานพยาบาล -->
+        <div class="claim-row">
+            <span class="claim-label">คลินิกหรือสถานพยาบาล :<span class="required">*</span></span>
+            <div class="value-text">
+                <select id="hospitalSelect" required disabled style="background-color: #e9ecef; cursor: not-allowed;">
+                    <option value="" disabled selected>-- กรุณาเลือกสถานพยาบาล --</option>
+                    <option value="รอยัล อังกอร์">รอยัล อังกอร์</option>
+                    <option value="จัสมิน คลินิก">จัสมิน คลินิก</option>
+                    <option value="เทวิน ข้างฮุยเกียร์">เทวิน ข้างฮุยเกียร์</option>
+                    <option value="คลินิกโซน 3">คลินิกโซน 3</option>
+                    <option value="คลินิก สุวิสา">คลินิก สุวิสา</option>
+                    <option value="คลินิกไทยช่าง (ท้ายคลัง)">คลินิกไทยช่าง (ท้ายคลัง)</option>
+                    <option value="คลินิกวงเทพ">คลินิกวงเทพ</option>
+                    <option value="คลินิกโอเคทินนา">คลินิกโอเคทินนา</option>
+                    <option value="คลินิกอิลิแก้นต์">คลินิกอิลิแก้นต์</option>
+                    <option value="คลินิกกาแล็คซี่">คลินิกกาแล็คซี่</option>
+                    <option value="Durdans hospital">Durdans hospital</option>
+                    <option value="Clinic Dr. Menghong">Clinic Dr. Menghong</option>
+                    <option value="Akea Thmey Clinic">Akea Thmey Clinic </option>
+                    <option value="Dermall Dental Clinic">Dermall Dental Clinic</option>
+                    <option value="king hospital">king hospital</option>
+                    <option value="Nawaloka Hospital">Nawaloka Hospital</option>
+                    <option value="TPR DENTAL CARE">TPR DENTAL CARE </option>
+                    <option value="คลินิกทำฟันอื่นๆ PP">คลินิกทำฟันอื่นๆ PP</option>
+                    <option value="อื่นๆ กรุงเทพและปริมณฑล">อื่นๆ กรุงเทพและปริมณฑล</option>
+                    <option value="อื่นๆ ต่างจังหวัด">อื่นๆ ต่างจังหวัด</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ช่องที่ 5: ระยะทาง -->
+        <div class="claim-row">
+            <span class="claim-label">ระยะทางอ้างอิง :</span>
+            <div class="value-text">
+                <input type="text" id="distanceInput" readonly placeholder="ระยะทาง google map">
+            </div>
+        </div>
+
+        <!-- ช่องที่ 6: อาการป่วย -->
+        <div class="claim-row align-top">
+            <span class="claim-label">อาการป่วย :<span class="required">*</span></span>
+            <div class="value-text">
+                <textarea id="symptomsInput" required placeholder="กรอกรายละเอียดอาการป่วยอย่างละเอียด..." disabled style="background-color: #e9ecef; cursor: not-allowed;"></textarea>
+            </div>
+        </div>
+
+        <!-- ช่องที่ 7: หมายเหตุ -->
+        <div class="claim-row align-top">
+            <span class="claim-label">หมายเหตุเพิ่มเติม :</span>
+            <div class="value-text">
+                <textarea id="notesInput" placeholder="ระบุข้อมูลเพิ่มเติมอื่นๆ (ถ้ามี)..." disabled style="background-color: #e9ecef; cursor: not-allowed;"></textarea>
+            </div>
+        </div>
+
+        <!-- ปุ่มสำหรับกดส่งข้อมูล บันทึกข้อมูลและปิดฟอร์มอย่างเป็นระบบ -->
+        <button type="submit" id="submitBtn" class="btn-submit" disabled style="background-color: #6c757d; cursor: not-allowed;">➕ บันทึกข้อมูลเข้าสู่ระบบ</button>
+    </form>
+
+    <div id="claimStatus"></div>
+
+    <!-- 📍 ส่วนโครงสร้างแผนที่ด้านล่างนอกตัวฟอร์ม -->
+    <div class="map-section">
+        <div class="map-title">📍 แผนที่นำทางและพิกัดสถานพยาบาลคู่สัญญา</div>
+        <div class="map-box">
+            <iframe id="hospitalMapFrame" src="https://google.comุงเทพ&t=&z=15&ie=UTF8&iwloc=&output=embed"></iframe>
+        </div>
+    </div>
+</div>
+<!-- =============================================================================================================================== -->
+<!-- =================================== 📋 [ส่วนท้ายเรื่อง: เริ่มต้นโครงสร้างกล่องฝั่งขวา - ระบบการเคลม (บันทึกเข้ารักษา)] ======================= -->
+<!-- =============================================================================================================================== -->
+
+
+</div>
+
+
+
+
+ 
+<!-- =============================================================================================================================== -->
+<!-- =================================== 📋 [ส่วนหัวเรื่อง: เริ่มต้นโครงสร้างกล่องฝั่งล่าง - หน้ากรองประวัติการรักษา] =============================== -->
+<!-- =============================================================================================================================== -->
+
+<!-- 📦 กล่องรวมขนาดใหญ่ด้านล่าง (Full Width Container) -->
+<div class="card-container bottom-full-box">
+    <h2>📊 รายละเอียดและการคำนวณสิทธิ์การรักษาอย่างละเอียด</h2>
+    
+    <div class="responsive-table-wrapper">
+       <table class="custom-claim-table">
+            <thead>
+                <!-- แถวที่ 1: หัวข้อปกติจะควบลงล่าง (rowspan) ส่วนกลุ่มประกันจะควบออกข้าง (colspan) -->
+                <tr>
+                    <th rowspan="2">เลขเคส ID</th>
+                    <th rowspan="2">เวลาและวันที่เข้ารักษา</th>
+                    <th rowspan="2">เวลาและวันที่บันทึกข้อมูล</th>
+                    <th rowspan="2">แอดมินที่บันทึกข้อมูล</th>                    
+                    <th rowspan="2">ขั้นตอนการรักษา</th>
+                    <th rowspan="2">อาการป่วย</th>
+                    <th rowspan="2">สถานที่รักษา</th>
+                    
+                    <!-- ส่วนหัวควบกลุ่มประกัน -->
+                    <th colspan="3" class="th-group-pp">ยอดวงเงินค่ารักษาประกัน PP</th>
+                    <th colspan="8" class="th-group-slk">ยอดวงเงินค่ารักษาประกัน SLK</th>
+                    
+                    <th rowspan="2">ผลการรักษา</th>
+                    <th rowspan="2">เอกสารที่ต้องแนบ</th>
+                    <th rowspan="2">หมายเหตุ</th>
+                </tr>
+                <!-- แถวที่ 2: จะเหลือเฉพาะช่องหัวข้อย่อยของประกัน PP และ SLK เท่านั้น ไม่เบี้ยวแน่นอน -->
+                <tr>
+                    <!-- ภายใต้กลุ่มประกัน PP (3 ช่อง) -->
+                    <th class="th-sub-pp">ทำฟัน หักวงเงิน OPD</th>
+                    <th class="th-sub-pp">PP OPD</th>
+                    <th class="th-sub-pp">PP IPD</th>
+                    
+                    <!-- ภายใต้กลุ่มประกัน SLK (8 ช่อง) -->
+                    <th class="th-sub-slk">SL OPD (THB)</th>
+                    <th class="th-sub-slk">SL IPD (THB)</th>
+                    <th class="th-sub-slk">SL OPD (LKR)</th>
+                    <th class="th-sub-slk">SL IPD (LKR)</th>
+                    <th class="th-sub-slk">ส่วนเกินวงเงินค่ารักษา (THB)</th>
+                    <th class="th-sub-slk">ส่วนเกินวงเงินค่ารักษา (LKR)</th>
+                    <th class="th-sub-slk">เรทค่าเงินที่ประกันคิดให้ (THB)</th>
+                    <th class="th-sub-slk">เรทค่าเงินที่ประกันคิดให้ (LKR)</th>
+                </tr>
+            </thead>
+            <tbody id="tableBodyResult">
+                <!-- ตัวอย่างแถวแสดงผลข้อมูล (มีทั้งหมด 17 คอลัมน์ รองรับ 17 แท็ก td ตรงล็อกเป๊ะๆ) -->
+                <tr>
+                    <td class="text-center font-bold">-</td>
+                    <td class="text-center">-</td>
+                    <td class="text-center">-</td>
+                    <td class="text-left">-</td>
+                    <td class="text-left">-</td>
+                    <td class="text-left">-</td>
+                    <td class="text-left">-</td>
+                    <!-- ฝั่ง PP (3 ช่อง) -->
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <!-- ฝั่ง SLK (8 ช่อง) -->
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-center">-</td>
+                    <td class="text-center">-</td>
+                    <!-- ส่วนท้าย (3 ช่อง) -->
+                    <td class="text-center">-</td>
+                    <td class="text-center">-</td>
+                    <td class="text-center">-</td>
+                    
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<!-- =============================================================================================================================== -->
+<!-- =================================== 📋 [ส่วนท้ายเรื่อง: เริ่มต้นโครงสร้างกล่องฝั่งล่าง - หน้ากรองประวัติการรักษา] =============================== -->
+<!-- =============================================================================================================================== -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ------ ------------------------------------------------------------------------------------------------------------------ -->
+<!-- ------ 🎛️ [คำสั่งควบคุมส่วนที่ 1: ระบบออโต้ตั้งเวลาและโหลดเลข เคส ID ล่วงหน้าจากกล่องที่ 3]         ---- -->
+<!-- ------------------------------------------------------------------------------------------------------------------------ -->
+
+<script>
+const API_BASE_URL = 'http://localhost:3000';
+
+function setThaiDateTime() {
+    const now = new Date();
+    
+    const day = now.getDate();
+    const monthShort = now.toLocaleDateString('th-TH', { month: 'short' });
+    const thaiYear = now.getFullYear() + 543; 
+    
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    
+    const formattedDateTimeStr = `${day} ${monthShort} ${thaiYear} ${hours}:${minutes} น.`;
+
+    // 🎯 หยอดค่าลงช่องอินพุตเดิมสำหรับส่งไปหลังบ้าน
+    const autoInput = document.getElementById('headerDateTimeValue');
+    if (autoInput) autoInput.value = formattedDateTimeStr;
+
+    // 🎯 หยอดเฉพาะตัวเลขข้อความวันเวลาลงในกล่องใหม่ฝั่งขวาของหัวข้อ (แยก 2 บรรทัดอัตโนมัติ)
+    const headerValueSpan = document.getElementById('headerDateTimeValue');
+    if (headerValueSpan) headerValueSpan.innerText = formattedDateTimeStr;
+}
+
+            // 1. 🎯 สร้างคลังข้อมูลรายชื่อคลินิกและระยะทางอ้างอิงจับคู่กันไว้
+                const hospitalDistanceMap = {
+                    "รอยัล อังกอร์": "1.7 กม.",               
+                    "จัสมิน คลินิก": "1.4 กม.",
+                    "เทวิน ข้างฮุยเกียร์": "1 กม.",
+                    "คลินิกโซน 3": "4.2 กม.",
+                    "คลินิก สุวิสา": "1  กม.",
+                    "คลินิกไทยช่าง (ท้ายคลัง)": "3.2 กม.",
+                    "คลินิกวงเทพ": "2.5 กม.",
+                    "คลินิกโอเคทินนา": "2.6 กม.",
+                    "คลินิกอิลิแก้นต์": "2.3 กม.",
+                    "คลินิกกาแล็คซี่": "2.7 กม.",
+                    "Durdans hospital": "300 ม.",
+                    "Clinic Dr. Menghong": "1.5 กม.",
+                    "Akea Thmey Clinic": "3.3 กม.",
+                    "Dermall Dental Clinic": "1.4 กม.",
+                    "king hospital": "4.9 กม.",
+                    "Nawaloka Hospital": "2.9 กม.",
+                    "TPR DENTAL CARE": "1.7 กม.",
+                    "คลินิกทำฟันอื่นๆ PP": "2.0 กม.",
+                    "อื่นๆ กรุงเทพและปริมณฑล": "ภาคกลาง",
+                    "อื่นๆ ต่างจังหวัด": "ตามภูมิลำเนา"
+                };
+
+
+
+            // 2. 🎯 ดักจับคำสั่งควบคุมเมื่อผู้ใช้งานเลือกหรือเปลี่ยนรายชื่อสถานพยาบาล
+                document.getElementById('hospitalSelect').addEventListener('change', (e) => {
+                    const hospitalName = e.target.value;
+                    const distanceInput = document.getElementById('distanceInput');
+                    const mapFrame = document.getElementById('hospitalMapFrame');
+
+                // ตรวจสอบว่าผู้ใช้เลือกชื่อโรงพยาบาลจริง (ไม่ใช่ข้อความเลือกเริ่มต้น)
+            if (hospitalName && hospitalDistanceMap[hospitalName]) {
+
+                // 🚀 แสดงระยะทางอ้างอิงลงในช่องอินพุตอัตโนมัติ
+                distanceInput.value = hospitalDistanceMap[hospitalName];
+
+            // เติมฟังก์ชันแผนที่เดิมของคุณให้ขนานไปด้วยกัน
+            if (mapFrame) {
+                    mapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(hospitalName)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                }
+
+                } else {
+                // ถ้าย้อนกลับไปเลือกค่าว่าง หรือไม่พบข้อมูลในระบบ ให้ล้างช่องเป็นค่าว่างเปล่า
+                distanceInput.value = "-";
+    }
+    });
+
+
+
+    async function fetchNextCaseId() {
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/next-caseid`);
+                    const data = await res.json();
+                    if (data.success) {
+                        document.getElementById('caseId').value = data.nextId;
+
+                } else {
+                    // 🎯 ถ้าหลังบ้านตอบกลับมาว่าไม่สำเร็จให้โชว์ข้อความเตือน
+                    document.getElementById('caseId').value = "ข้อผิดพลาดจากเซิร์ฟเวอร์";
+                }
+                } catch (e) {
+                    // 🎯 ถ้าเซิร์ฟเวอร์ล่มหรือติดต่อไม่ได้เลย ให้โชว์ข้อความนี้
+                    console.error("ดูสาเหตุบั๊กในความจำเบราว์เซอร์:", e);
+                    document.getElementById('caseId').value = "เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว";
+            }
+    }
+
+                fetchNextCaseId(); 
+    
+    // ------------------------------------------------------------------------------------------------------------------------- //
+    // 🎛️ [คำสั่งควบคุมส่วนที่ 2: คำสั่งรับข้อความและเคาะไปดึงค่าพนักงานจากกล่องที่ 2]                                                       //
+    // ------------------------------------------------------------------------------------------------------------------------- //
+    document.getElementById('searchBtn').addEventListener('click', performSearch);
+    document.getElementById('keywordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
+
+    async function performSearch() {
+        const keyword = document.getElementById('keywordInput').value;
+        const messageDiv = document.getElementById('message');
+        const resultsList = document.getElementById('resultsList');
+        const tableBody = document.getElementById('tableBodyResult');
+        
+        resultsList.innerHTML = '';
+        if (tableBody) tableBody.innerHTML = '';
+
+        if (!keyword.trim()) { 
+            messageDiv.innerText = 'กรุณากรอกคำที่ต้องการค้นหา'; 
+            messageDiv.style.color = 'red'; 
+            return; 
+        }
+        
+        messageDiv.innerText = 'กำลังค้นหาข้อมูล...'; 
+        messageDiv.style.color = 'black';
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/search`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword })
+            });
+
+            const data = await response.json();
+
+            // 🎯 ปรับตรรกะเช็ควัตถุก้อนพนักงานตามแบบแผนใหม่
+            if (response.ok && data.success && data.employee) {
+                messageDiv.innerText = `พบข้อมูลพนักงานเรียบร้อยแล้ว`; 
+                messageDiv.style.color = 'green';
+
+                const inputsToEnable = ['manualDate', 'manualTime', 'hospitalSelect', 'symptomsInput', 'notesInput', 'submitBtn'];
+                inputsToEnable.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.disabled = false;
+                        if (id === 'submitBtn') el.style.backgroundColor = '#198754';
+                        else el.style.backgroundColor = '#ffffff';
+                        el.style.cursor = 'pointer';
+                    }
+                });
+
+                // หยอดค่าพนักงานเข้า Hidden Inputs ฝากไปใช้งานต่อตอนกดบันทึก
+                const emp = data.employee;
+                document.getElementById('hiddenEmpName').value = emp.colG || '-';
+                document.getElementById('hiddenCompany').value = emp.colB || '-';
+                document.getElementById('hiddenSize').value = emp.colD || '-';
+                document.getElementById('hiddenWorkLocation').value = emp.colJ || '-';
+                document.getElementById('hiddenInsuranceId').value = emp.colC || '-'; 
+
+                // สร้างการ์ดข้อมูลพนักงานฝั่งซ้ายมือ
+                const card = document.createElement('div');
+                card.className = 'result-item';
+                card.innerHTML = `
+                    <p style="color: #28a745; font-weight: bold; font-size: 15px; margin: 0 0 10px 0;">📢 ผลลัพธ์:เจอ! (แถวที่ ${emp.foundRow})</p>
+                    <div class="info-row"><span class="label-text">ชื่อ :</span><span class="value-text">${emp.colG}</span></div>
+                    <div class="info-row"><span class="label-text">บริษัท :</span><span class="value-text">${emp.colB}</span></div>
+                    <div class="info-row"><span class="label-text">SIZE :</span><span class="value-text">${emp.colD}</span></div>
+                    <div class="info-row"><span class="label-text">InsuranceId :</span><span class="value-text">${emp.colC}</span></div>                                    
+                    <div class="info-row"><span class="label-text">สถานที่ทำงาน :</span><span class="value-text">${emp.colJ}</span></div>
+                    <div class="info-row"><span class="label-text">วงเงิน OPD :</span><span class="value-text">${emp.colAO || '-'}</span></div>
+                    <div class="info-row"><span class="label-text">วงเงิน IPD :</span><span class="value-text">${emp.colAP || '-'}</span></div>
+                    <div class="info-row"><span class="label-text">วงเงิน OPD คงเหลือ :</span><span class="value-text">${emp.colAT || '-'}</span></div>
+                    <div class="info-row"><span class="label-text">วงเงิน IPD คงเหลือ :</span><span class="value-text">${emp.colAU || '-'}</span></div>
+                `;
+                resultsList.appendChild(card);
+
+                // 📊 🔁 ดึงประวัติจริงทุกแถวมาสยายเรียงจากซ้ายไปขวาลงตารางด้านล่างสุดตามเงื่อนไข
+                if (tableBody) {
+                    if (data.history && data.history.length > 0) {
+                        data.history.forEach(historyItem => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td class="text-center font-bold">${historyItem.caseId}</td>
+                                <td class="text-center">${historyItem.treatmentDateTime}</td>
+                                <td class="text-center">${historyItem.autoDateTime}</td>
+                                <td class="text-center">${historyItem.adminName}</td>
+                                <td class="text-center">${historyItem.statusText}</td>
+                                <td class="text-left">${historyItem.symptoms}</td>
+                                <td class="text-left">${historyItem.hospital}</td>
+                                <td class="text-left">${historyItem.DentalOPD}</td>
+                                <td class="text-left">${historyItem.PPUsageOPD}</td>
+                                <td class="text-left">${historyItem.PPUsageIPD}</td>
+                                <td class="text-left">${historyItem.SLKUsageOpdThB}</td>
+                                <td class="text-left">${historyItem.SLKUsageIpdThB}</td>
+                                <td class="text-left">${historyItem.SLKUsageOpdLkr}</td>
+                                <td class="text-left">${historyItem.SLKUsageIpdLkr}</td>
+                                <td class="text-left">${historyItem.OverLimitCreditInsThB}</td>
+                                <td class="text-left">${historyItem.OverLimitCreditInsLkr}</td>
+                                <td class="text-left">${historyItem.ExchangeRatesIns}</td>
+                                <td class="text-left">${historyItem.ExchangeRatesInt}</td>
+                                <td class="text-left">${historyItem.ClinicianReportedOutcomes}</td>
+                                <td class="text-left">${historyItem.DocumentsAttached}</td>
+                                <td class="text-left">${historyItem.notes}</td>
+                            `;
+                            tableBody.appendChild(tr);
+                        });
+                    } else {
+                        tableBody.innerHTML = `<tr><td colspan="17" class="text-center" style="color: #666; padding: 25px; font-weight: bold;">ℹ️ พนักงานคนนี้ยังไม่มีประวัติการเข้ารับการรักษาในระบบ</td></tr>`;
+                    }
+                }
+
+            } else {
+                messageDiv.innerText = data.message || 'ไม่พบข้อมูลในระบบ'; 
+                messageDiv.style.color = 'red';
+            }
+        } catch (error) { 
+            console.error(error);
+            messageDiv.innerText = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์'; 
+            messageDiv.style.color = 'red'; 
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------------------------------------- //
+    // 🎛️ ระบบดักจับการบันทึกฟอร์มข้อมูลเคลมเข้ารักษา                                                                               //
+    // ------------------------------------------------------------------------------------------------------------------------- //
+    document.getElementById('claimForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const symptoms = document.getElementById('symptomsInput').value;
+        const claimStatus = document.getElementById('claimStatus');
+
+        if (!symptoms.trim()) {
+            alert("⚠️ กรุณากรอกรายละเอียดอาการป่วยก่อนบันทึกข้อมูลครับ");
+            document.getElementById('symptomsInput').focus();
+            return;
+        }
+
+        claimStatus.innerText = 'กำลังบันทึกข้อมูลลงฐานข้อมูล...';
+        claimStatus.style.color = 'blue';
+
+        const manualDate = document.getElementById('manualDate').value;
+        const manualTime = document.getElementById('manualTime').value;
+        const treatmentDateTime = `${manualDate} ${manualTime}`.trim() || '-';
+        const currentEmployeeName = sessionStorage.getItem('loggedInEmployeeName') || '';
+        console.log("ชื่อแอดมินที่เบราว์เซอร์จำได้ในหน้านี้:", currentEmployeeName);
+
+        const payload = {
+            caseId: parseInt(document.getElementById('caseId').value, 10) || 0,
+            autoDateTime: document.getElementById('headerDateTimeValue').innerText, // 🎯 แก้ไข: ดึงเวลาจาก span ผ่าน innerText ให้ถูกต้อง
+            adminName: currentEmployeeName, // (ส่งไปทั้งสองคอลัมน์หากพนักงานคีย์ข้อมูลเอง)
+            treatmentDateTime: treatmentDateTime,
+            company: document.getElementById('hiddenCompany').value,
+            workLocation: document.getElementById('hiddenWorkLocation').value,
+            hospital: document.getElementById('hospitalSelect').value,
+            symptoms: symptoms,
+            insuranceId: document.getElementById('hiddenInsuranceId').value,
+            size: document.getElementById('hiddenSize').value,
+            employeeName: document.getElementById('hiddenEmpName').value,
+            statusText: "แจ้งประกัน กำลังเข้ารับการรักษา",
+            notes: document.getElementById('notesInput').value
+        };
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/save-treatment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (response.ok && result.success) {
+                claimStatus.innerText = `✅ ${result.message}`;
+                claimStatus.style.color = 'green';
+                alert('🎉 บันทึกข้อมูลสำเร็จเรียบร้อยแล้วครับ!');
+                
+            document.getElementById('claimForm').reset();
+            setThaiDateTime(); 
+            fetchNextCaseId(); 
+
+            document.getElementById('keywordInput').value = '';
+            document.getElementById('message').innerText = '';
+            document.getElementById('resultsList').innerHTML = '';
+
+            // 🧼 ล้างข้อมูลตารางประวัติด้านล่างหลังเคลมสำเร็จเพื่อความสะอาด
+            const tableBody = document.getElementById('tableBodyResult');
+            if (tableBody) tableBody.innerHTML = '';
+
+            // 🔒 สั่งล็อกช่องกรอกข้อมูลฝั่งขวากลับมาเป็นสีเทาทึบและกดไม่ได้เหมือนเดิม
+            const inputsToDisable = ['manualDate', 'manualTime', 'hospitalSelect', 'symptomsInput', 'notesInput', 'submitBtn'];
+            inputsToDisable.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.disabled = true; // ล็อกไม่ให้กรอก
+                    if (id === 'submitBtn') {
+                        el.style.backgroundColor = '#6c757d'; // เปลี่ยนปุ่มกลับเป็นสีเทา
+                    } else {
+                        el.style.backgroundColor = '#e9ecef'; // เปลี่ยนช่องกรอกเป็นสีเทาทึบ
+                    }
+                    el.style.cursor = 'not-allowed'; // เปลี่ยนสัญลักษณ์เมาส์เป็นรูปห้ามกด
+                }
+            });
+
+        } else {
+            claimStatus.innerText = `❌ ${result.message || 'บันทึกไม่สำเร็จ'}`;
+            claimStatus.style.color = 'red';
+        }
+    } catch (error) {
+        console.error(error);
+        claimStatus.innerText = '❌ เกิดข้อผิดพลาดร้ายแรงในการเชื่อมต่อเซิร์ฟเวอร์';
+        claimStatus.style.color = 'red';
+    }
+
+
+
+
+
+
+
+
+    // ------------------------------------------------------------------------------------------------------------------------- //
+    // ตั้งค่าให้ออกจากระบบเมื่อถึงเวลาที่ต้องการ                                                                             //
+    // ------------------------------------------------------------------------------------------------------------------------- //
+// 🎯 ตั้งค่าเวลาที่ต้องการให้ระบบรอ (หน่วยเป็นมิลลิวินาที: 1 วินาที = 1000)
+const INACTIVITY_LIMIT = 5 * 60 * 1000; // ⏳ ตัวอย่างนี้ตั้งไว้ที่ 5 นาที (ปรับตัวเลขได้ตามใจชอบ)
+
+let timeoutId;
+
+// 🚪 ฟังก์ชันสั่งออกจากระบบอัตโนมัติ
+function logoutUser() {
+    alert("🔒 คุณไม่มีการเคลื่อนไหวนานเกินไป ระบบจะทำการออกจากระบบเพื่อความปลอดภัยครับ");
+    
+    // 1. เคลียร์ชื่อพนักงานออกจากความจำเครื่องเบราว์เซอร์
+    sessionStorage.removeItem('loggedInEmployeeName');
+    
+    // 2. เด้งหน้าจอกลับไปยังหน้า index.html (หน้า Login)
+    window.location.href = 'index.html';
+}
+
+// 🔁 ฟังก์ชันรีเซ็ตเวลานับถอยหลังใหม่ทุกครั้งที่มีการขยับ
+function resetTimer() {
+    clearTimeout(timeoutId); // ล้างเวลานับถอยหลังเดิมทิ้ง
+    timeoutId = setTimeout(logoutUser, INACTIVITY_LIMIT); // เริ่มนับถอยหลังใหม่
+}
+
+// 👁️ ดักจับพฤติกรรมการขยับทุกรูปแบบบนหน้าเว็บ
+function setupInactivityTimer() {
+    window.onload = resetTimer;
+    window.onmousemove = resetTimer; // ขยับเมาส์
+    window.onmousedown = resetTimer; // คลิกเมาส์
+    window.ontouchstart = resetTimer;// แตะหน้าจอ (กรณีใช้มือถือ/แท็บเล็ต)
+    window.onclick = resetTimer;      // คลิกปุ่มต่างๆ
+    window.onkeypress = resetTimer;   // พิมพ์คีย์บอร์ด
+    window.addEventListener('scroll', resetTimer, true); // เลื่อนหน้าจอซ้ายขวาบนล่าง
+}
+
+// 🚀 เริ่มเปิดใช้งานระบบนับถอยหลังดักจับค่าว่าง
+setupInactivityTimer();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+});
+
+
+
+
+</script>
+
+
+
+ <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            setThaiDateTime();
+
+            // สั่งรันปฏิทิน
+            flatpickr("#manualDate", {
+                dateFormat: "d/m/Y",
+                allowInput: false,
+                noCalendar: false
+            });
+
+            // สั่งรันนาฬิกา
+            flatpickr("#manualTime", {
+                enableTime: true,
+                noCalendar: true,
+                dateFormat: "H:i",
+                time_24hr: true
+            });
+        });
+    </script>
+
+
+
+</body>
+</html>
+
