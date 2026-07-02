@@ -36,32 +36,44 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.06); 
             box-sizing: border-box; 
             border-top: 6px solid #20c997; /* คาดหัวเตียงสีเขียวโรงพยาบาลเท่ากันทั้งสองฝั่ง */
+            display: flex;
+            flex-direction: column; 
+            justify-content: flex-start;
+
         }
 
         .flex-row-container {
             display: flex !important;
             flex-direction: row !important; /* ✨ บังคับจัดแถวแนวนอนขนานกัน */
-            align-items: stretch !important;
-            justify-content: flex-start !important;
-            gap: 20px !important;
+            align-items: stretch !important; /* 🎯 บังคับให้ทุกกล่องมีความสูงยืดเท่ากับกล่องที่สูงที่สุดอัตโนมัติ */
+            justify-content: space-between !important; ; /* 🎯 กระจายระยะห่างระหว่างกล่องให้เท่ากันและชิดขอบซ้าย-ขวา */
+            gap: 20px !important; /* 🎯 กำหนดระยะห่างคงที่ระหว่างกล่องอย่างเท่าเทียม (20 พิกเซล) */
             width: 100% !important;
-            max-width: 1170px; /* ล็อกขนาดความกว้างรวมของคู่บนให้พอดีกรอบ */
+            max-width: 100%; /* ล็อกขนาดความกว้างรวมของคู่บนให้พอดีกรอบ */
             box-sizing: border-box;
+            padding: 0 10px; /* เพิ่มระยะขอบเล็กน้อยไม่ให้ชิดขอบจอเกินไป */
         }
 
 
         /* 👈 ปรับสัดส่วนพื้นที่กล่องฝั่งซ้าย (ค้นหา) */
         .left-box {
-            width: 45%;
-            max-width: 500px;
-            display: flex;
-            flex-direction: column;
+            flex: 1 !important; /* 🎯 สั่งให้แชร์พื้นที่เท่ากัน 1 ส่วน */
+            width: auto !important; /* ยกเลิกการล็อกขนาดตายตัว */
+            max-width: none !important; /* ปลดล็อกข้อจำกัดเพื่อให้กล่องขยายเท่ากัน */
+        }
+
+        /* 👉 ปรับสัดส่วนพื้นที่กล่องฝั่งขวา (การเคลม) */
+        .middle-box {
+            flex: 1 !important; /* 🎯 สั่งให้แชร์พื้นที่เท่ากัน 1 ส่วน */
+            width: auto !important;
+            max-width: none !important;
         }
 
         /* 👉 ปรับสัดส่วนพื้นที่กล่องฝั่งขวา (การเคลม) */
         .right-box {
-            width: 55%;
-            max-width: 650px;
+            flex: 1 !important; /* 🎯 สั่งให้แชร์พื้นที่เท่ากัน 1 ส่วน */
+            width: auto !important;
+            max-width: none !important;
         }
 
         h2 { 
@@ -287,11 +299,11 @@
 <!-- =============================================================================================================================== -->
 <!-- =================================== 📋 [ส่วนหัวเรื่อง: เริ่มต้นโครงสร้างกล่องฝั่งขวา - ระบบการเคลม (บันทึกเข้ารักษา)] ======================= -->
 <!-- =============================================================================================================================== -->
-<div class="card-container right-box">
+<div class="card-container middle-box">
     <!-- 🔴 ส่วนหัวเรื่อง: จัดการแยกกล่องหัวข้อหลักและเวลาปัจจุบันสีแดงเป็น 2 บรรทัดตามดีไซน์อย่างถูกต้อง -->
     <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 20px;">
         <!-- ฝั่งซ้าย: หัวข้อหลัก -->
-        <h2 style="margin: 0; border: none; padding: 0;">📋 บันทึกข้อมูลการเข้ารักษา (กล่องที่ 3)</h2>
+        <h2 style="margin: 0; border: none; padding: 0;">📋 บันทึกข้อมูลการเข้ารักษา</h2>
         
         <!-- ฝั่งขวา: วันเวลาระบบแฝดคนละฝั่ง (ย่อขนาดและแบ่งเป็น 2 บรรทัด) -->
         <div id="headerDateTimeContainer" style="text-align: right; line-height: 1.3; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
@@ -406,7 +418,18 @@
 <!-- =============================================================================================================================== -->
 
 
+
+    <!-- ปิดกันวงเล็บเพื่อแยกส่วนบนและล่าง -->
 </div>
+
+
+
+
+
+
+
+
+
 
 
 
@@ -528,7 +551,7 @@
 
 
 <!-- ------ ------------------------------------------------------------------------------------------------------------------ -->
-<!-- ------ 🎛️ [คำสั่งควบคุมส่วนที่ 1: ระบบออโต้ตั้งเวลาและโหลดเลข เคส ID ล่วงหน้าจากกล่องที่ 3]         ---- -->
+<!-- ------ 🎛️ [คำสั่งควบคุมส่วนที่ 1: ระบบออโต้ตั้งเวลาและโหลดเลข เคส ID ล่วงหน้าจากกล่องที่ 2]         ---- -->
 <!-- ------------------------------------------------------------------------------------------------------------------------ -->
 
 <script>
@@ -711,7 +734,7 @@ function setThaiDateTime() {
                         data.history.forEach(historyItem => {
                             const tr = document.createElement('tr');
                             tr.innerHTML = `
-                                <td class="text-center font-bold">${historyItem.caseId}</td>
+                                <td class="text-center font-bold">${historyItem.CaseIdNew}</td>
                                 <td class="text-center">${historyItem.treatmentDateTime}</td>
                                 <td class="text-center">${historyItem.autoDateTime}</td>
                                 <td class="text-center">${historyItem.adminName}</td>
