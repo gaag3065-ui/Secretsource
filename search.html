@@ -992,14 +992,51 @@ function renderHistoryTable(historyData) {
 
 
 
+// =========================================================================================
+// 🎯 [พัฒนาต่อ] ฟังก์ชันสั่งลบข้อมูลแถวประวัติพนักงานบน Google Sheets 
+// =========================================================================================
+async function executeDeleteRow(targetRowNumber, caseId) {
+    // 1. ตรวจสอบความปลอดภัย ป้องกันการกดพลาดด้วยการดักกล่องยืนยันถึง 2 ชั้น
+    if (!targetRowNumber || isNaN(parseInt(targetRowNumber)) || parseInt(targetRowNumber) < 2) {
+        alert("❌ ไม่สามารถดำเนินการได้: พิกัดตำแหน่งแถวบนแผ่นงานไม่ถูกต้อง");
+        return;
+    }
 
-// 🎯 ฟังก์ชันเสริมสำหรับรองรับการคลิกปุ่มลบ (เรียกใช้งานหน้าบ้านประสานงานหลังบ้าน)
-function executeDeleteRow(rowNumber, caseId) {
-    if (confirm(`⚠️ คุณต้องการลบข้อมูลประวัติแถวนี้ของ เคส ID: ${caseId} ใช่หรือไม่?\n(การลบจะไม่มีการกู้คืนข้อมูลบน Google Sheets)`)) {
-        alert(`ระบบกำลังพัฒนาพิกัดคำสั่งยิงไปลบบรรทัดที่ ${rowNumber} บนชีตจริง`);
-        // คุณสามารถเขียนเพิ่มฟังก์ชัน fetch ยิงหาเซิร์ฟเวอร์หลังบ้านเพื่อทำคำสั่ง delete แถวชีตในอนาคตได้เลยตรงนี้ครับ
+    const firstConfirm = confirm(`⚠️ คุณแน่ใจใช่หรือไม่ว่าต้องการลบข้อมูลประวัติของ เคส ID: ${caseId}?`);
+    if (!firstConfirm) return;
+
+    const secondConfirm = confirm(`🚨 แจ้งเตือนขั้นเด็ดขาด!\nการลบข้อมูลนี้จะลบแถวที่ ${targetRowNumber} ออกจาก Google Sheets ทันทีและไม่สามารถกู้คืนได้\n\nยืนยันกด "ตกลง (OK)" เพื่อลบข้อมูลถาวร...`);
+    if (!secondConfirm) return;
+
+    // 2. เริ่มส่งสัญญาณข้ามท่อ API ไปบอกฝั่งหลังบ้านให้สั่งตัดลบแถวออกจากชีต
+    try {
+        const payload = {
+            sheetRowIndex: parseInt(targetRowNumber),
+            CaseIdNew: caseId,
+            adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
+            autoDateTime: document.getElementById('headerDateTimeValue')?.innerText || new Date().toLocaleString('th-TH')
+        };
+
+        const response = await fetch(`${API_BASE_URL}/api/delete-treatment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert(`🎉 ลบข้อมูลแถวที่ ${targetRowNumber} (เคส ID: ${caseId}) สำเร็จและส่งประวัติลงฐานข้อมูล Sheets เรียบร้อย!`);
+            location.reload(); // รีเฟรชหน้าเว็บทันทีเพื่ออัปเดตตารางสรุปใหม่
+        } else {
+            alert('❌ เกิดข้อผิดพลาดจากเซิร์ฟเวอร์หลังบ้าน: ' + result.message);
+        }
+    } catch (err) {
+        console.error("Delete Click Error:", err);
+        alert('❌ ขัดข้องทางเทคนิคในการเชื่อมต่อ API ลบข้อมูลหลังบ้าน');
     }
 }
+
 
 
 
