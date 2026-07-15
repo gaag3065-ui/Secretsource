@@ -182,7 +182,7 @@
         #message, #claimStatus { font-weight: bold; margin-top: 10px; text-align: center; }
     
     
-
+/*------------------------------------ กล่องที่ 3 -------------------------------------------*/
 
 /* คลาสสำหรับบังคับกล่องตารางใหญ่ให้กางเต็ม 100% ของหน้าจอ */
 .bottom-full-box {
@@ -249,26 +249,148 @@
     color: #7f6000 !important; 
 }
 
+
+
+
+/*------------------------------------ กล่องที่ 3 เพิ่มเติมช่องที่ซ่อนกันอยู่ -------------------------------------------*/
+
+
+/* จัดการตำแหน่งเลขเคสและลูกศรมินิมอลขวามือ */
+.case-cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+}
+.toggle-arrow {
+    font-size: 10px;
+    color: #000000 !important; /* บังคับลูกศรสีดำ */
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+.parent-row.is-open .toggle-arrow {
+    transform: rotate(180deg); /* หมุนลูกศรกลับหัวเมื่อเปิดออก */
+}
+
+/* ปุ่มแก้ไขดีไซน์บาง ๆ เนียนตา */
+.btn-edit-minimal {
+    padding: 2px 8px;
+    background: transparent;
+    border: 1px solid #ced4da;
+    color: #6c757d;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-edit-minimal:hover {
+    background: #e9ecef;
+    color: #212529;
+    border-color: #adb5bd;
+}
+
+/* สไตล์ตารางย่อยภายในกล่อง Timeline */
+.sub-timeline-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 12.5px;
+}
+.sub-timeline-table th {
+    background-color: #f1f3f5 !important;
+    color: #495057 !important;
+    padding: 6px 10px !important;
+    font-weight: 600;
+}
+.sub-timeline-table td {
+    padding: 8px 10px !important;
+    border: 1px solid #dee2e6 !important;
+    background: #ffffff;
+}
+
+
+
+
+
+
+
+
+
+
+
+/* ========================================================================================= */
+/* 🎯 [เพิ่มใหม่] สไตล์จัดระเบียบหน้าต่างแบบฟอร์มป๊อปอัปให้อยู่กึ่งกลางหน้าจอเป๊ะๆ 100% */
+/* ========================================================================================= */
+#editCaseModal {
+    display: none; 
+    position: fixed !important; 
+    z-index: 99999 !important; /* บังคับให้ลอยอยู่เหนือตารางและทุกสิ่งบนหน้าจอ */
+    left: 0; 
+    top: 0; 
+    width: 100vw !important; 
+    height: 100vh !important; 
+    background-color: rgba(0, 0, 0, 0.5) !important; /* ทำพื้นหลังมืดจางๆ ด้านหลังแบบโรงภาพยนตร์ */
+    align-items: center !important; 
+    justify-content: center !important;
+}
+
+/* ตกแต่งไส้ในกล่องฟอร์มป๊อปอัปสีเหลืองทอง */
+#editCaseModal > div {
+    background-color: #ffffff !important; 
+    padding: 30px !important; 
+    border-radius: 12px !important; 
+    width: 90% !important; 
+    max-width: 650px !important; 
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25) !important; 
+    max-height: 85vh !important; 
+    overflow-y: auto !important; /* เปิดบาร์เลื่อนขึ้นลงแนวดิ่งอัตโนมัติหากหน้าจอเล็ก */
+    border-top: 6px solid #ffc107 !important; /* คาดแถบหัวกล่องสีเหลืองทองสำหรับโหมดแก้ไขข้อมูล */
+    animation: popupFadeIn 0.25s ease-out; /* ใส่เอฟเฟกต์เด้งฟึ่บขึ้นมาเบาๆ ให้ดูโมเดิร์น */
+}
+
+/* ฟิลด์อินพุตตัวเลขและตัวอักษรภายในกล่องป๊อปอัป */
+#editCaseModal input, #editCaseModal select, #editCaseModal textarea {
+    background-color: #ffffff !important;
+    border: 1px solid #ced4da !important;
+}
+#editCaseModal input:focus, #editCaseModal select:focus, #editCaseModal textarea:focus {
+    border-color: #ffc107 !important;
+    box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25) !important;
+}
+
+@keyframes popupFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+/* ========================================================================================= */
+/* 🎯 [เพิ่มใหม่] สไตล์จัดระเบียบหน้าต่างแบบฟอร์มป๊อปอัปให้อยู่กึ่งกลางหน้าจอเป๊ะๆ 100% */
+/* ========================================================================================= */
+
+
+
+
+
 </style>
 </head>
 <body>
-
-
-
 <!-- =============================================================================================================================== -->
 <!-- =================================== 📦 [ส่วนท้าย: สิ้นสุดระบบรวมโครงสร้างหลักหน้าจอ] =============================================== -->
 <!-- =============================================================================================================================== -->
-
-
-
-
-
-
-
-
-
-
 <div class="flex-row-container">
+
+
+
+
+
+
+
+
+
+
+
+
+
 <!-- =============================================================================================================================== -->
 <!-- =================================== 🔐 [ส่วนท้าย: เริมการระบุบริบทของหน้า Login] ============================================= -->
 <!-- =============================================================================================================================== -->
@@ -296,6 +418,8 @@
 
 
 
+
+
 <!-- =============================================================================================================================== -->
 <!-- =================================== 📋 [ส่วนหัวเรื่อง: เริ่มต้นโครงสร้างกล่องฝั่งขวา - ระบบการเคลม (บันทึกเข้ารักษา)] ======================= -->
 <!-- =============================================================================================================================== -->
@@ -303,7 +427,7 @@
     <!-- 🔴 ส่วนหัวเรื่อง: จัดการแยกกล่องหัวข้อหลักและเวลาปัจจุบันสีแดงเป็น 2 บรรทัดตามดีไซน์อย่างถูกต้อง -->
     <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 20px;">
         <!-- ฝั่งซ้าย: หัวข้อหลัก -->
-        <h2 style="margin: 0; border: none; padding: 0;">📋 บันทึกข้อมูลการเข้ารักษา</h2>
+        <h2 style="margin: 0; border: none; padding: 0;">📋 บันทึกข้อมูลการเข้ารักษา(เปิดเคส)</h2>
         
         <!-- ฝั่งขวา: วันเวลาระบบแฝดคนละฝั่ง (ย่อขนาดและแบ่งเป็น 2 บรรทัด) -->
         <div id="headerDateTimeContainer" style="text-align: right; line-height: 1.3; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
@@ -313,13 +437,17 @@
     </div>
 
     <!-- 📥 เริ่มต้นฟอร์มหลัก -->
-    <form id="claimForm">
-        <!-- 🔐 แท็กซ่อนสำหรับฝากข้อมูลพนักงานที่ค้นหาเจอชั่วคราว วางอยู่ต้นฟอร์มถูกต้อง 100% -->
+     <form id="claimForm">
+        <!-- 🎯 แก้ไขเพิ่มช่องซ่อนให้ครบทุกตัวสะกด เพื่อให้คำสั่งหน้าบ้านมีช่องหยอดค่าชื่อพนักงานและรหัสประกันได้ 100% -->
         <input type="hidden" id="hiddenEmpName">
+        <input type="hidden" id="employeeName"> <!-- เพิ่มเผื่อตัวสะกดนี้ -->
+        
+        <input type="hidden" id="hiddenInsuranceId">
+        <input type="hidden" id="insuranceId"> <!-- เพิ่มเผื่อตัวสะกดนี้ -->
+        
         <input type="hidden" id="hiddenCompany">
         <input type="hidden" id="hiddenSize">
         <input type="hidden" id="hiddenWorkLocation">
-        <input type="hidden" id="hiddenInsuranceId">
         
         <!-- ช่องระบุวันที่เข้ารับการรักษา -->
         <div class="claim-row">
@@ -391,6 +519,8 @@
             </div>
         </div>
 
+        
+
         <!-- ช่องที่ 7: หมายเหตุ -->
         <div class="claim-row align-top">
             <span class="claim-label">หมายเหตุเพิ่มเติม :</span>
@@ -417,8 +547,6 @@
 <!-- =================================== 📋 [ส่วนท้ายเรื่อง: เริ่มต้นโครงสร้างกล่องฝั่งขวา - ระบบการเคลม (บันทึกเข้ารักษา)] ======================= -->
 <!-- =============================================================================================================================== -->
 
-
-
     <!-- ปิดกันวงเล็บเพื่อแยกส่วนบนและล่าง -->
 </div>
 
@@ -434,52 +562,63 @@
 
 
 
- 
+
+
 <!-- =============================================================================================================================== -->
 <!-- =================================== 📋 [ส่วนหัวเรื่อง: เริ่มต้นโครงสร้างกล่องฝั่งล่าง - หน้ากรองประวัติการรักษา] =============================== -->
 <!-- =============================================================================================================================== -->
-
 <!-- 📦 กล่องรวมขนาดใหญ่ด้านล่าง (Full Width Container) -->
 <div class="card-container bottom-full-box">
-    <h2>📊 รายละเอียดและการคำนวณสิทธิ์การรักษาอย่างละเอียด</h2>
+    <h2>📊 ประวัติการรักษา รายละเอียดและการคำนวณสิทธิ์การรักษาอย่างละเอียด</h2>
     
     <div class="responsive-table-wrapper">
        <table class="custom-claim-table">
             <thead>
+
                 <!-- แถวที่ 1: หัวข้อปกติจะควบลงล่าง (rowspan) ส่วนกลุ่มประกันจะควบออกข้าง (colspan) -->
                 <tr>
                     <th rowspan="2">เลขเคส ID</th>
                     <th rowspan="2">เวลาและวันที่เข้ารักษา</th>
-                    <th rowspan="2">เวลาและวันที่บันทึกข้อมูล</th>
-                    <th rowspan="2">แอดมินที่บันทึกข้อมูล</th>                    
                     <th rowspan="2">ขั้นตอนการรักษา</th>
                     <th rowspan="2">อาการป่วย</th>
                     <th rowspan="2">สถานที่รักษา</th>
                     
                     <!-- ส่วนหัวควบกลุ่มประกัน -->
                     <th colspan="3" class="th-group-pp">ยอดวงเงินค่ารักษาประกัน PP</th>
-                    <th colspan="8" class="th-group-slk">ยอดวงเงินค่ารักษาประกัน SLK</th>
-                    
+                    <th colspan="8" class="th-group-slk slk-column">ยอดวงเงินค่ารักษาประกัน SLK</th>
+        
                     <th rowspan="2">ผลการรักษา</th>
                     <th rowspan="2">เอกสารที่ต้องแนบ</th>
                     <th rowspan="2">หมายเหตุ</th>
+                    <th rowspan="2">เวลาและวันที่บันทึกข้อมูล</th>
+                    <th rowspan="2">แอดมินที่บันทึกข้อมูล</th>     
+                    <!-- ✅ เพิ่มคอลัมน์ใหม่ขวาสุด -->
+                    <th rowspan="2" style="background-color: #f1f3f5; color: #333;">แก้ไขข้อมูล</th>     
                 </tr>
-                <!-- แถวที่ 2: จะเหลือเฉพาะช่องหัวข้อย่อยของประกัน PP และ SLK เท่านั้น ไม่เบี้ยวแน่นอน -->
+
+
+
+
+
+                <!-- แถวที่ 2: จะเหลือเฉพาะช่องหัวข้อย่อยของประกัน PP และ SLK เท่านั้น ไม่เบี้ยวแน่นอน -->      
                 <tr>
                     <!-- ภายใต้กลุ่มประกัน PP (3 ช่อง) -->
                     <th class="th-sub-pp">ทำฟัน หักวงเงิน OPD</th>
                     <th class="th-sub-pp">PP OPD</th>
                     <th class="th-sub-pp">PP IPD</th>
                     
+
+
+
                     <!-- ภายใต้กลุ่มประกัน SLK (8 ช่อง) -->
-                    <th class="th-sub-slk">SL OPD (THB)</th>
-                    <th class="th-sub-slk">SL IPD (THB)</th>
-                    <th class="th-sub-slk">SL OPD (LKR)</th>
-                    <th class="th-sub-slk">SL IPD (LKR)</th>
-                    <th class="th-sub-slk">ส่วนเกินวงเงินค่ารักษา (THB)</th>
-                    <th class="th-sub-slk">ส่วนเกินวงเงินค่ารักษา (LKR)</th>
-                    <th class="th-sub-slk">เรทค่าเงินที่ประกันคิดให้ (THB)</th>
-                    <th class="th-sub-slk">เรทค่าเงินที่ประกันคิดให้ (LKR)</th>
+                    <th class="th-sub-slk slk-column">SL OPD (THB)</th>
+                    <th class="th-sub-slk slk-column">SL IPD (THB)</th>
+                    <th class="th-sub-slk slk-column">SL OPD (LKR)</th>
+                    <th class="th-sub-slk slk-column">SL IPD (LKR)</th>
+                    <th class="th-sub-slk slk-column">ส่วนเกินวงเงินค่ารักษา (THB)</th>
+                    <th class="th-sub-slk slk-column">ส่วนเกินวงเงินค่ารักษา (LKR)</th>
+                    <th class="th-sub-slk slk-column">เรทค่าเงินที่ประกันคิดให้ (THB/LKR)</th>
+                    <th class="th-sub-slk slk-column">เรทค่าเงินปัจจุบัน (THB/LKR)</th>
                 </tr>
             </thead>
             <tbody id="tableBodyResult">
@@ -492,10 +631,12 @@
                     <td class="text-left">-</td>
                     <td class="text-left">-</td>
                     <td class="text-left">-</td>
+
                     <!-- ฝั่ง PP (3 ช่อง) -->
                     <td class="text-right">-</td>
                     <td class="text-right">-</td>
                     <td class="text-right">-</td>
+
                     <!-- ฝั่ง SLK (8 ช่อง) -->
                     <td class="text-right">-</td>
                     <td class="text-right">-</td>
@@ -505,18 +646,16 @@
                     <td class="text-right">-</td>
                     <td class="text-center">-</td>
                     <td class="text-center">-</td>
+
                     <!-- ส่วนท้าย (3 ช่อง) -->
                     <td class="text-center">-</td>
                     <td class="text-center">-</td>
                     <td class="text-center">-</td>
-                    
                 </tr>
             </tbody>
         </table>
     </div>
 </div>
-
-
 <!-- =============================================================================================================================== -->
 <!-- =================================== 📋 [ส่วนท้ายเรื่อง: เริ่มต้นโครงสร้างกล่องฝั่งล่าง - หน้ากรองประวัติการรักษา] =============================== -->
 <!-- =============================================================================================================================== -->
@@ -555,7 +694,8 @@
 <!-- ------------------------------------------------------------------------------------------------------------------------ -->
 
 <script>
-// ❌ ลบของเก่า: const API_BASE_URL = 'http://localhost:3000';
+    let currentEditingRowIndex = -1; 
+
 
 // ✅ เปลี่ยนมาใช้พิกัดเลขไอพีตัวจริงของคอมพิวเตอร์คุณแบบนี้ครับ:
 const API_BASE_URL = "https://6d7kdf7d-3000.asse.devtunnels.ms";
@@ -650,15 +790,402 @@ function setThaiDateTime() {
                     console.error("ดูสาเหตุบั๊กในความจำเบราว์เซอร์:", e);
                     document.getElementById('caseId').value = "เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว";
             }
-    }
+}
 
                 fetchNextCaseId(); 
     
-    // ------------------------------------------------------------------------------------------------------------------------- //
-    // 🎛️ [คำสั่งควบคุมส่วนที่ 2: คำสั่งรับข้อความและเคาะไปดึงค่าพนักงานจากกล่องที่ 2]                                                       //
-    // ------------------------------------------------------------------------------------------------------------------------- //
+
+
+
+
+
+// ------------------------------------------------------------------------------------------------------------------------- //
+// 🎛️ [คำสั่งควบคุมส่วนที่ 2: คำสั่งรับข้อความและเคาะไปดึงค่าพนักงานจากกล่องที่ 2]                                                       //
+// ------------------------------------------------------------------------------------------------------------------------- //
     document.getElementById('searchBtn').addEventListener('click', performSearch);
     document.getElementById('keywordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
+
+
+
+// =======================================================================
+// 🔐 [ระบบควบคุมซ่อน-แสดง คอลัมน์ประกัน SLK อัตโนมัติตามสถานที่ทำงาน]
+// =======================================================================
+const workLocation = (typeof data !== 'undefined' && data && data.employee) ? (data.employee.colJ || '') : '';
+const slkElements = document.querySelectorAll('.slk-column'); // ค้นหาหัวตารางและช่อง SLK ทั้งหมด
+
+
+
+
+
+
+
+
+
+// ================================================================================================================================================================== //
+// =============  ส่วนบน  ==================== โค้ดฟังชั่นปรับตรรกะในที่เวลาคลิกแล้วจะกรองเอาแถวของเคสนั้นๆมาแสดง หากมีแถวเดียวก็ไม่ต้องลง =========================================== //
+// =================================================================================================================================================================== //
+function renderHistoryTable(historyData) {
+    const tableBody = document.getElementById('tableBodyResult');
+    if (!tableBody) return;
+    tableBody.innerHTML = '';
+
+    if (!historyData || historyData.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="21" class="text-center" style="font-weight:bold; padding:25px; background:#f8f9fa;">ℹ️ พนักงานคนนี้ยังไม่มีประวัติการรักษา</td></tr>`;
+        return;
+    }
+
+    const groupedCases = {};
+    historyData.forEach(item => {
+        const id = item.CaseIdNew;
+        if (!groupedCases[id]) groupedCases[id] = [];
+        groupedCases[id].push(item);
+    });
+
+    Object.keys(groupedCases).forEach(caseId => {
+        const timelines = groupedCases[caseId];
+        
+        // แถวหน้าด่านยึดข้อมูลอัปเดตสถานะล่าสุด (ตัวสุดท้ายของอาร์เรย์) เสมอ
+        const latestEvent = timelines[timelines.length - 1]; 
+        
+        // 🎯 ปรับปรุงใหม่: ล็อกความสามารถให้ทุกเคส ID สามารถคลิกเปลี่ยนสไลด์เปิด-ปิดได้เหมือนกันทั้งหมด 100%
+        const hasMultipleEvents = timelines.length > 1;
+
+        let badgeStyle = latestEvent.statusText && latestEvent.statusText.includes("รักษาเสร็จ") 
+            ? "background-color: #d1e7dd; color: #0f5132; padding: 4px 8px; border-radius: 4px;" 
+            : "background-color: #fff3cd; color: #664d03; padding: 4px 8px; border-radius: 4px;";
+
+        const parentTr = document.createElement('tr');
+        parentTr.className = 'parent-row';
+        // 🎯 บังคับให้เมาส์เปลี่ยนเป็นรูปมือชี้ (Pointer) สำหรับทุกล็อกแถวเพื่อบอกแอดมินว่า "ทุกเคสกดคลิกขยายได้นะ"
+        parentTr.style.cursor = 'pointer';
+        
+        // 🎯 พ่นลูกศร ▼ ให้ปรากฏอยู่ข้างเลขเคส ID ในทุกช่องแถวหลักไม่มีข้อยกเว้น
+        parentTr.innerHTML = `
+            <td class="text-center font-bold">
+                <div class="case-cell"><span class="txt-case-id">${caseId}</span><span class="toggle-arrow" style="margin-left:5px;">▼</span></div>
+            </td>
+            <td class="text-center">${latestEvent.treatmentDateTime || '-'}</td>
+            <td class="text-center"><span style="${badgeStyle}">${latestEvent.statusText || 'รอดำเนินการ'}</span></td>
+            <td class="text-left" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${latestEvent.symptoms || '-'}</td>
+            <td class="text-left">${latestEvent.hospital || '-'}</td>
+            <td class="text-right" style="background:#f9fff9;">${latestEvent.DentalOPD || '0'}</td>
+            <td class="text-right" style="background:#f9fff9;">${latestEvent.PPUsageOPD || '0'}</td>
+            <td class="text-right" style="background:#f9fff9;">${latestEvent.PPUsageIPD || '0'}</td>
+            <td class="text-right slk-column" style="background:#fffdf0;">${latestEvent.SLKUsageOpdThB || '0'}</td>
+            <td class="text-right slk-column" style="background:#fffdf0;">${latestEvent.SLKUsageIpdThB || '0'}</td>
+            <td class="text-right slk-column" style="background:#fffdf0;">${latestEvent.SLKUsageOpdLkr || '0'}</td>
+            <td class="text-right slk-column" style="background:#fffdf0;">${latestEvent.SLKUsageIpdLkr || '0'}</td>
+            <td class="text-right slk-column" style="color:red; background:#fffdf0;">${latestEvent.OverLimitCreditInsThB || '0'}</td>
+            <td class="text-right slk-column" style="color:red; background:#fffdf0;">${latestEvent.OverLimitCreditInsLkr || '0'}</td>
+            <td class="text-center slk-column" style="background:#fffdf0;">${latestEvent.ExchangeRatesIns || '1'}</td>
+            <td class="text-center slk-column" style="background:#fffdf0;">${latestEvent.ExchangeRatesInt || '1'}</td>
+            <td class="text-left">${latestEvent.ClinicianReportedOutcomes || '-'}</td>
+            <td class="text-left">${latestEvent.DocumentsAttached || '-'}</td>
+            <td class="text-left">${latestEvent.notes || '-'}</td>
+            <td class="text-center">${latestEvent.autoDateTime || '-'}</td>
+            <td class="text-center">${latestEvent.adminName || '-'}</td>
+            <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- คลิกเพื่อดูไทม์ไลน์ -</td>
+        `;
+        tableBody.appendChild(parentTr);
+
+        const childRowsArray = [];
+        
+        // 🎯 กางประวัติไทม์ไลน์ย่อยออกมาตามปกติ (หากเป็นเคสเดี่ยว ก็จะวนลูปรันสร้างออกมาแค่ 1 แถวอย่างถูกต้อง)
+        timelines.forEach((event) => {
+            const childTr = document.createElement('tr');
+            childTr.className = `child-row-of-${caseId}`;
+            childTr.style.display = 'none'; 
+            childTr.style.backgroundColor = '#f4f7f6'; 
+
+            childTr.innerHTML = `
+                <td class="text-center font-bold" style="color:#0b5ed7; background:#eef1f6;">${caseId}</td>
+                <td class="text-center" style="font-size:12px; color:#555;">${event.treatmentDateTime || '-'}</td>
+                <td class="text-center" style="font-size:12px; color:#555;">${event.statusText || '-'}</td>
+                <td class="text-left" style="white-space:normal !important; max-width:200px;">${event.symptoms || '-'}</td>
+                <td class="text-left">${event.hospital || '-'}</td>
+                <td class="text-right" style="background:#edf7ed;">${event.DentalOPD || '0'}</td>
+                <td class="text-right" style="background:#edf7ed;">${event.PPUsageOPD || '0'}</td>
+                <td class="text-right" style="background:#edf7ed;">${event.PPUsageIPD || '0'}</td>
+                <td class="text-right slk-column" style="background:#fffbe6;">${event.SLKUsageOpdThB || '0'}</td>
+                <td class="text-right slk-column" style="background:#fffbe6;">${event.SLKUsageIpdThB || '0'}</td>
+                <td class="text-right slk-column" style="background:#fffbe6;">${event.SLKUsageOpdLkr || '0'}</td>
+                <td class="text-right slk-column" style="background:#fffbe6;">${event.SLKUsageIpdLkr || '0'}</td>
+                <td class="text-right slk-column" style="color:red; background:#fffbe6;">${event.OverLimitCreditInsThB || '0'}</td>
+                <td class="text-right slk-column" style="color:red; background:#fffbe6;">${event.OverLimitCreditInsLkr || '0'}</td>
+                <td class="text-center slk-column" style="background:#fffbe6;">${event.ExchangeRatesIns || '1'}</td>
+                <td class="text-center slk-column" style="background:#fffbe6;">${event.ExchangeRatesInt || '1'}</td>
+                <td class="text-left">${event.ClinicianReportedOutcomes || '-'}</td>
+                <td class="text-left">${event.DocumentsAttached || '-'}</td>
+                <td class="text-left">${event.notes || '-'}</td>
+                <td class="text-center" style="font-size:12px;">${event.autoDateTime || '-'}</td>
+                <td class="text-center" style="font-size:12px;">${event.adminName || '-'}</td>
+                <td class="text-center" style="background:#fff;">
+                    <button type="button" class="btn-edit-minimal" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${window.btoa(unescape(encodeURIComponent(JSON.stringify(event))))}')))); populateDataToForm(decodedData);">✏️ แก้ไข</button>
+                    <button type="button" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(${event.targetRowNumber}, '${caseId}')">🗑️ ลบ</button>
+                </td>
+            `;
+            tableBody.appendChild(childTr);
+            childRowsArray.push(childTr);
+        });
+
+        // 🎯 สั่งฝังแถวเว้นช่องไฟสีขาวและแนบกล่องปุ่มยาวสีเขียวเข้าประกบท้ายขบวนให้ทุกเคสอย่างเสมอภาค
+        const spacerTr = document.createElement('tr');
+        spacerTr.className = `child-row-of-${caseId}-spacer`;
+        spacerTr.style.display = 'none'; 
+        
+        spacerTr.innerHTML = `
+            <td colspan="21" style="height: 45px !important; background-color: #ffffff !important; border: none !important; padding: 8px 15px !important; text-align: left;">
+                <button type="button" style="padding: 6px 20px; background-color: #198754; color: white; border: none; border-radius: 5px; font-size: 12.5px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${window.btoa(unescape(encodeURIComponent(JSON.stringify(latestEvent))))}')))); populateOutcomeToModal(decodedData);">
+                    🏥 อัปเดตผลการรักษา
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(spacerTr);
+        childRowsArray.push(spacerTr);
+
+        // ระบบคลิกสลับหน้าจอ (Toggle) ทำงานสแตนด์บายได้ทุกแถวอย่างเสรี
+        parentTr.addEventListener('click', (e) => {
+            if (e.target.classList.contains('btn-edit-minimal') || e.target.tagName === 'BUTTON') return;
+            const isCurrentlyOpen = parentTr.classList.contains('is-open');
+
+            if (!isCurrentlyOpen) {
+                parentTr.classList.add('is-open');
+                childRowsArray.forEach(row => row.style.display = '');
+                const txtCaseId = parentTr.querySelector('.txt-case-id');
+                if (txtCaseId) txtCaseId.style.display = 'none';
+
+                Array.from(parentTr.children).forEach((td, idx) => {
+                    if (idx > 0 && idx < 21) td.style.opacity = '0'; 
+                });
+                const arrow = parentTr.querySelector('.toggle-arrow');
+                if (arrow) arrow.innerText = '▲';
+            } else {
+                parentTr.classList.remove('is-open');
+                childRowsArray.forEach(row => row.style.display = 'none');
+                const txtCaseId = parentTr.querySelector('.txt-case-id');
+                if (txtCaseId) txtCaseId.style.display = '';
+                Array.from(parentTr.children).forEach((td) => { td.style.opacity = '1'; });
+                const arrow = parentTr.querySelector('.toggle-arrow');
+                if (arrow) arrow.innerText = '▼';
+            }
+        });
+    });
+
+    const hiddenWorkLocationEl = document.getElementById('hiddenWorkLocation');
+    const workLocation = hiddenWorkLocationEl ? hiddenWorkLocationEl.value : '';
+    const slkElements = document.querySelectorAll('.slk-column');
+
+    if (workLocation.toUpperCase().includes('SL')) {
+        slkElements.forEach(el => el.style.display = '');
+    } else {
+        slkElements.forEach(el => el.style.display = 'none');
+    }
+}
+
+// ================================================================================================================================================================== //
+// ============= ส่วนล่าง  ==================== โค้ดฟังชั่นปรับตรรกะในที่เวลาคลิกแล้วจะกรองเอาแถวของเคสนั้นๆมาแสดง หากมีแถวเดียวก็ไม่ต้องลง =========================================== //
+// =================================================================================================================================================================== //
+
+
+
+
+
+
+
+
+// 🎯 ฟังก์ชันเสริมสำหรับรองรับการคลิกปุ่มลบ (เรียกใช้งานหน้าบ้านประสานงานหลังบ้าน)
+function executeDeleteRow(rowNumber, caseId) {
+    if (confirm(`⚠️ คุณต้องการลบข้อมูลประวัติแถวนี้ของ เคส ID: ${caseId} ใช่หรือไม่?\n(การลบจะไม่มีการกู้คืนข้อมูลบน Google Sheets)`)) {
+        alert(`ระบบกำลังพัฒนาพิกัดคำสั่งยิงไปลบบรรทัดที่ ${rowNumber} บนชีตจริง`);
+        // คุณสามารถเขียนเพิ่มฟังก์ชัน fetch ยิงหาเซิร์ฟเวอร์หลังบ้านเพื่อทำคำสั่ง delete แถวชีตในอนาคตได้เลยตรงนี้ครับ
+    }
+}
+
+
+
+
+
+
+
+
+
+// 🎯 แก้ไขปรับปรุงใหม่: สั่งเปิดหน้าต่างแบบฟอร์มป๊อปอัป Modal ให้ดีดเด้งกึ่งกลางจอเป๊ะๆ 100%
+    function populateDataToForm(eventItem) {
+    // 1. ล็อกเลขบรรทัดจริงเก็บเข้าตัวแปรกลางหลักหลังบ้าน (ยึดตามคำสั่งควบคุมขั้นตอนที่ 1)
+    currentEditingRowIndex = eventItem.targetRowNumber || -1;
+
+    // 2. สั่งปลุกหน้าต่างป๊อปอัปกล่องข้อความโครงสร้าง HTML ของเราให้เด้งแสดงผลกึ่งกลางหน้าจอทันที
+    const modal = document.getElementById('editCaseModal');
+    if (modal) {
+        modal.style.setProperty('display', 'flex', 'important'); 
+    }
+
+    // ฟังก์ชันย่อยสำหรับป้อนค่าเข้าช่องอินพุตภายในโมดอลป๊อปอัปอย่างปลอดภัย
+           function setMdInput(id, value) {
+            const el = document.getElementById(id);
+            if (el) {
+                let cleanValue = (value !== undefined && value !== null) ? String(value) : '';
+                
+                // 🎯 ปรับปรุงใหม่: ลบทั้งคอมม่า และลบช่องว่าง/เว้นวรรคทุกจุดทิ้งทันทีหากอินพุตเป็น type="number"
+                if (el.type === 'number') {
+                    cleanValue = cleanValue.replace(/,/g, '').replace(/\s+/g, '').trim();
+                }
+                
+                el.value = cleanValue;
+            }
+        }
+
+
+    // 3. หยอดป้อนค่าข้อมูลทั่วไปประจำเคสลงช่องกรอกในกล่องป๊อปอัป
+    setMdInput('mdCaseId', eventItem.CaseIdNew);
+    setMdInput('mdHospitalSelect', eventItem.hospital);
+    setMdInput('mdSymptomsInput', eventItem.symptoms);
+    setMdInput('mdNotesInput', eventItem.notes);
+
+    // 4. วิเคราะห์สับสยายแยกวันที่และเวลาออกจากกันให้สะอาด เพื่อล็อกช่อง Flatpickr เดี่ยวๆ
+    const rawDateTime = String(eventItem.treatmentDateTime || '').trim();
+    const dateTimeParts = rawDateTime.split(' ');
+    let cleanDate = dateTimeParts[0] || '';
+    let cleanTime = dateTimeParts[1] || '';
+    
+    // ล้างเครื่องหมายจุลภาคขยะ (,) ที่อาจจะหลงเหลือติดมาจากฐานข้อมูลชีต
+    cleanDate = cleanDate.replace(/,/g, '').trim();
+    cleanTime = cleanTime.replace(/,/g, '').trim();
+
+    setMdInput('mdManualDate', cleanDate);
+    setMdInput('mdManualTime', cleanTime);
+
+       // ✅ โค้ดชุดใหม่ที่ปลอดภัยกว่าเดิม (วางแทนที่จุดที่ลบออกได้เลยครับ)
+    const mdDateEl = document.getElementById('mdManualDate');
+    const mdTimeEl = document.getElementById('mdManualTime');
+
+    if (mdDateEl && !mdDateEl._flatpickr) {
+        flatpickr("#mdManualDate", { dateFormat: "d/m/Y", allowInput: true });
+    }
+    if (mdTimeEl && !mdTimeEl._flatpickr) {
+        flatpickr("#mdManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
+    }
+
+    if (mdDateEl && mdDateEl._flatpickr) mdDateEl._flatpickr.setDate(cleanDate, true);
+    if (mdTimeEl && mdTimeEl._flatpickr) mdTimeEl._flatpickr.setDate(cleanTime, true);
+
+
+    // 5. ดีดข้อมูลสิทธิ์ตัวเลขวงเงินต่างๆ กรอกลงตามล็อกช่องในป๊อปอัปครบทุกไอดี
+    setMdInput('mdInpDentalOPD', eventItem.DentalOPD);
+    setMdInput('mdInpPPUsageOPD', eventItem.PPUsageOPD);
+    setMdInput('mdInpPPUsageIPD', eventItem.PPUsageIPD);
+    setMdInput('mdInpSLKUsageOpdThB', eventItem.SLKUsageOpdThB);
+    setMdInput('mdInpSLKUsageIpdThB', eventItem.SLKUsageIpdThB);
+    setMdInput('mdInpSLKUsageOpdLkr', eventItem.SLKUsageOpdLkr);
+    setMdInput('mdInpSLKUsageIpdLkr', eventItem.SLKUsageIpdLkr);
+    setMdInput('mdInpOverLimitThB', eventItem.OverLimitCreditInsThB);
+    setMdInput('mdInpOverLimitLkr', eventItem.OverLimitCreditInsLkr);
+    setMdInput('mdInpExchangeRatesIns', eventItem.ExchangeRatesIns);
+    setMdInput('mdInpExchangeRatesInt', eventItem.ExchangeRatesInt);
+    
+    // บรรจุสิทธิ์ผลรักษาและเอกสารลงฟิลด์ป๊อปอัปเพื่อพร้อมอัปเดตย้อนหลัง
+    setMdInput('mdInpClinician', eventItem.ClinicianReportedOutcomes);
+    setMdInput('mdInpDocs', eventItem.DocumentsAttached);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+    async function executeFormUpdate() {
+    const backupEmpName = document.getElementById('hiddenEmpName').value;
+    const backupCompany = document.getElementById('hiddenCompany').value;
+    const backupInsuranceId = document.getElementById('hiddenInsuranceId').value;
+    const backupSize = document.getElementById('hiddenSize').value;
+    const backupLocation = document.getElementById('hiddenWorkLocation').value;
+    const symptoms = document.getElementById('symptomsInput').value;
+
+      if (!symptoms.trim()) { 
+        alert("กรุณากรอกอาการป่วย"); 
+        return; 
+    }
+
+    const claimStatus = document.getElementById('claimStatus');
+
+    const payload = {
+        sheetRowIndex: currentEditingRowIndex, // เลขแถวตรงเป้า (เช่น 717)
+        CaseIdNew: document.getElementById('caseId').value || '-',
+        autoDateTime: document.getElementById('headerDateTimeValue').innerText,
+        adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin', // ดึงชื่อแอดมินลงคอลัมน์ C
+        treatmentDateTime: `${document.getElementById('manualDate').value} ${document.getElementById('manualTime').value}`.trim() || '-',
+        company: backupCompany !== '-' ? backupCompany : 'CALL 365',
+        workLocation: backupLocation !== '-' ? backupLocation : '-',
+        hospital: document.getElementById('hospitalSelect').value,
+        symptoms: symptoms,
+        
+        // 🎯 ล็อกชื่อตัวแปรให้สะกดตรงเป้าหมายตามกระบวนการรับค่าของไฟล์เซิร์ฟเวอร์หลังบ้าน
+        insuranceId: backupInsuranceId !== '-' ? backupInsuranceId : '-', 
+        size: backupSize !== '-' ? backupSize : 'M', 
+        employeeName: backupEmpName !== '-' ? backupEmpName : 'อาเฟย ศิรินภา', 
+        
+        statusText: "แก้ไขและปรับปรุงข้อมูลเคสการรักษา", 
+        DentalOPD: document.getElementById('inpDentalOPD')?.value || '0',
+        PPUsageOPD: document.getElementById('inpPPUsageOPD')?.value || '0',
+        PPUsageIPD: document.getElementById('inpPPUsageIPD')?.value || '0',
+        SLKUsageOpdThB: document.getElementById('inpSLKUsageOpdThB')?.value || '0',
+        SLKUsageIpdThB: document.getElementById('inpSLKUsageIpdThB')?.value || '0',
+        SLKUsageOpdLkr: document.getElementById('inpSLKUsageOpdLkr')?.value || '0',
+        SLKUsageIpdLkr: document.getElementById('inpSLKUsageIpdLkr')?.value || '0',
+        OverLimitCreditInsThB: document.getElementById('inpOverLimitThB')?.value || '0',
+        OverLimitCreditInsLkr: document.getElementById('inpOverLimitLkr')?.value || '0',
+        ExchangeRatesIns: document.getElementById('inpExchangeRatesIns')?.value || '1',
+        ExchangeRatesInt: document.getElementById('inpExchangeRatesInt')?.value || '1',
+        ClinicianReportedOutcomes: document.getElementById('inpClinician')?.value || document.getElementById('inpOutcomes')?.value || '-',
+        DocumentsAttached: document.getElementById('inpDocs')?.value || document.getElementById('inpDocuments')?.value || '-',
+        notes: document.getElementById('notesInput').value || '-'
+    };
+
+    // 🚨 [กล่องระบบตรวจสอบขั้นตอนที่ 2] พิมพ์เปิดกะละมังข้อมูลออกมากางเช็คดูความปลอดภัยก่อนยิงส่งจริง
+    if (confirm(`🧪 [ระบบทดสอบขั้นตอนที่ 2 - ตรวจเช็คก้อนข้อมูล Payload ก่อนส่ง]\n\n` +
+                `• เลขบรรทัดที่ระบบกำลังจะวิ่งไปเขียนทับ: แถวที่ ${payload.sheetRowIndex}\n` +
+                `• ชื่อเจ้าหน้าที่ผู้บันทึกเคส: คุณ ${payload.adminName}\n` +
+                `• ชื่อโรงพยาบาลเป้าหมาย: ${payload.hospital}\n` +
+                `• อาการป่วยใหม่ที่กรอกแก้: ${payload.symptoms}\n\n` +
+                `กรุณาตรวจสอบว่าเลขบรรทัด และ ข้อมูลครบไหม?\n` +
+                `- หากถูกต้องครบถ้วน กดปุ่ม "ตกลง (OK)" เพื่อปล่อยสิทธิ์ให้ข้อมูลยิงไปหาหลังบ้าน\n` +
+                `- หากไม่ถูกต้อง กด "ยกเลิก (Cancel)" เพื่อหยุดล็อกระบบไว้ก่อนครับ`)) {
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/update-treatment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (response.ok && result.success) {
+                alert('🎉 บันทึกปรับปรุงแก้ไขข้อมูลและส่งแถวลง Google Sheets สำเร็จเรียบร้อย!');
+                location.reload();
+            } else { alert('❌ เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: ' + result.message); }
+        } catch (e) { alert('❌ ขัดข้องในการติดต่อเชื่อมต่อ API หลังบ้าน'); }
+    }
+}
+
+
+    // 🎛️ [คำสั่งควบคุมส่วนที่ 3.1 ส่วนท้าย: คำสั่งในการเก็บพับข้อมูลไว้ในแถวเดียวเพื่อเก็บเลขเคสไว้ไปแก้ไขบันทึกผลและตรวจสอบ] 
+
+
+
+
+
+
+
+
+
+
+
 
     async function performSearch() {
         const keyword = document.getElementById('keywordInput').value;
@@ -692,7 +1219,12 @@ function setThaiDateTime() {
                 messageDiv.innerText = `พบข้อมูลพนักงานเรียบร้อยแล้ว`; 
                 messageDiv.style.color = 'green';
 
-                const inputsToEnable = ['manualDate', 'manualTime', 'hospitalSelect', 'symptomsInput', 'notesInput', 'submitBtn'];
+                 const inputsToEnable = [
+                'manualDate', 'manualTime', 'hospitalSelect', 'symptomsInput', 'notesInput', 'submitBtn',
+                'inpDentalOPD', 'inpPPUsageOPD', 'inpPPUsageIPD', 'inpSLKUsageOpdThB', 'inpSLKUsageIpdThB', 
+                'inpSLKUsageOpdLkr', 'inpSLKUsageIpdLkr', 'inpOverLimitThB', 'inpOverLimitLkr', 
+                'inpExchangeRatesIns', 'inpExchangeRatesInt', 'inpClinician', 'inpDocs'
+               ];
                 inputsToEnable.forEach(id => {
                     const el = document.getElementById(id);
                     if (el) {
@@ -711,11 +1243,33 @@ function setThaiDateTime() {
                 document.getElementById('hiddenWorkLocation').value = emp.colJ || '-';
                 document.getElementById('hiddenInsuranceId').value = emp.colC || '-'; 
 
+                // =======================================================================
+                // 🔐 [ระบบควบคุมซ่อน-แสดง คอลัมน์ประกัน SLK อัตโนมัติตามสถานที่ทำงาน]
+                // =======================================================================
+                const workLocation = (data && data.employee) ? (data.employee.colJ || '') : '';
+                const slkElements = document.querySelectorAll('.slk-column');
+
+                // ตรวจสอบว่าในสถานที่ทำงานมีคำว่า "SL" หรือไม่ (แปลงเป็นตัวพิมพ์ใหญ่เพื่อความแม่นยำ)
+                if (workLocation.toUpperCase().includes('SL')) {
+                    // 🟢 กรณีเจอคำว่า SL -> ให้แสดงกลุ่มคอลัมน์ SLK ตามปกติ
+                    slkElements.forEach(el => {
+                        el.style.display = ''; 
+                    });
+                } else {
+                    // 🔴 กรณีเป็นพนักงาน PP หรืออื่นๆ ที่ไม่มีคำว่า SL -> สั่งซ่อนคอลัมน์ SLK ทิ้งทันที!
+                    slkElements.forEach(el => {
+                        el.style.display = 'none';
+                    });
+                }
+                // =======================================================================
+
+
+
                 // สร้างการ์ดข้อมูลพนักงานฝั่งซ้ายมือ
                 const card = document.createElement('div');
                 card.className = 'result-item';
                 card.innerHTML = `
-                    <p style="color: #28a745; font-weight: bold; font-size: 15px; margin: 0 0 10px 0;">📢 ผลลัพธ์:เจอ! (แถวที่ ${emp.foundRow})</p>
+                    <p style="color: #28a745; font-weight: bold; font-size: 15px; margin: 0 0 10px 0;"> ผลลัพธ์:เจอ (แถวที่ ${emp.foundRow})</p>
                     <div class="info-row"><span class="label-text">ชื่อ :</span><span class="value-text">${emp.colG}</span></div>
                     <div class="info-row"><span class="label-text">บริษัท :</span><span class="value-text">${emp.colB}</span></div>
                     <div class="info-row"><span class="label-text">SIZE :</span><span class="value-text">${emp.colD}</span></div>
@@ -728,40 +1282,8 @@ function setThaiDateTime() {
                 `;
                 resultsList.appendChild(card);
 
-                // 📊 🔁 ดึงประวัติจริงทุกแถวมาสยายเรียงจากซ้ายไปขวาลงตารางด้านล่างสุดตามเงื่อนไข
-                if (tableBody) {
-                    if (data.history && data.history.length > 0) {
-                        data.history.forEach(historyItem => {
-                            const tr = document.createElement('tr');
-                            tr.innerHTML = `
-                                <td class="text-center font-bold">${historyItem.CaseIdNew}</td>
-                                <td class="text-center">${historyItem.treatmentDateTime}</td>
-                                <td class="text-center">${historyItem.autoDateTime}</td>
-                                <td class="text-center">${historyItem.adminName}</td>
-                                <td class="text-center">${historyItem.statusText}</td>
-                                <td class="text-left">${historyItem.symptoms}</td>
-                                <td class="text-left">${historyItem.hospital}</td>
-                                <td class="text-left">${historyItem.DentalOPD}</td>
-                                <td class="text-left">${historyItem.PPUsageOPD}</td>
-                                <td class="text-left">${historyItem.PPUsageIPD}</td>
-                                <td class="text-left">${historyItem.SLKUsageOpdThB}</td>
-                                <td class="text-left">${historyItem.SLKUsageIpdThB}</td>
-                                <td class="text-left">${historyItem.SLKUsageOpdLkr}</td>
-                                <td class="text-left">${historyItem.SLKUsageIpdLkr}</td>
-                                <td class="text-left">${historyItem.OverLimitCreditInsThB}</td>
-                                <td class="text-left">${historyItem.OverLimitCreditInsLkr}</td>
-                                <td class="text-left">${historyItem.ExchangeRatesIns}</td>
-                                <td class="text-left">${historyItem.ExchangeRatesInt}</td>
-                                <td class="text-left">${historyItem.ClinicianReportedOutcomes}</td>
-                                <td class="text-left">${historyItem.DocumentsAttached}</td>
-                                <td class="text-left">${historyItem.notes}</td>
-                            `;
-                            tableBody.appendChild(tr);
-                        });
-                    } else {
-                        tableBody.innerHTML = `<tr><td colspan="17" class="text-center" style="color: #666; padding: 25px; font-weight: bold;">ℹ️ พนักงานคนนี้ยังไม่มีประวัติการเข้ารับการรักษาในระบบ</td></tr>`;
-                    }
-                }
+                renderHistoryTable(data.history);
+       
 
             } else {
                 messageDiv.innerText = data.message || 'ไม่พบข้อมูลในระบบ'; 
@@ -799,9 +1321,10 @@ function setThaiDateTime() {
         console.log("ชื่อแอดมินที่เบราว์เซอร์จำได้ในหน้านี้:", currentEmployeeName);
 
         const payload = {
-            caseId: parseInt(document.getElementById('caseId').value, 10) || 0,
+            sheetRowIndex: currentEditingRowIndex, 
+            CaseIdNew: document.getElementById('caseId').value || '-',
             autoDateTime: document.getElementById('headerDateTimeValue').innerText, // 🎯 แก้ไข: ดึงเวลาจาก span ผ่าน innerText ให้ถูกต้อง
-            adminName: currentEmployeeName, // (ส่งไปทั้งสองคอลัมน์หากพนักงานคีย์ข้อมูลเอง)
+            adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
             treatmentDateTime: treatmentDateTime,
             company: document.getElementById('hiddenCompany').value,
             workLocation: document.getElementById('hiddenWorkLocation').value,
@@ -884,7 +1407,7 @@ function logoutUser() {
     alert("🔒 คุณไม่มีการเคลื่อนไหวนานเกินไป ระบบจะทำการออกจากระบบเพื่อความปลอดภัยครับ");
     
     // 1. เคลียร์ชื่อพนักงานออกจากความจำเครื่องเบราว์เซอร์
-    sessionStorage.removeItem('loggedInEmployeeName');
+    sessionStorage.removeItem('loggedInAdminName');
     
     // 2. เด้งหน้าจอกลับไปยังหน้า index.html (หน้า Login)
     window.location.href = 'index.html';
@@ -913,18 +1436,6 @@ setupInactivityTimer();
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 });
 
 
@@ -934,26 +1445,507 @@ setupInactivityTimer();
 
 
 
- <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            setThaiDateTime();
 
-            // สั่งรันปฏิทิน
-            flatpickr("#manualDate", {
-                dateFormat: "d/m/Y",
-                allowInput: false,
-                noCalendar: false
-            });
 
-            // สั่งรันนาฬิกา
-            flatpickr("#manualTime", {
-                enableTime: true,
-                noCalendar: true,
-                dateFormat: "H:i",
-                time_24hr: true
+<!-- ============================================================การแก้ไขข้อมูลย้อนหลัง============================================================== -->
+<!-- ============================================================================================================================================ -->
+<!-- ============================= [ส่วนบน] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับแก้ไขข้อมูลย้อนหลัง (Edit Custom Modal) ======================================= -->
+<!-- ============================================================================================================================================ -->
+<div id="editCaseModal">
+    <div>
+        <!-- ส่วนหัวของกล่องป๊อปอัป -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 15px;">
+            <h3 style="margin: 0; color: #ffc107; font-family: 'Segoe UI', Tahoma, sans-serif;">📝 ปรับปรุงและแก้ไขข้อมูลเคสย้อนหลัง</h3>
+            <span style="font-size: 24px; cursor: pointer; color: #aaa; font-weight: bold; line-height: 1;" onclick="document.getElementById('editCaseModal').style.setProperty('display', 'none', 'important');">&times;</span>
+        </div>
+
+        <!-- ฟอร์มกรอกข้อมูลปรับปรุงแก้ไขภายในป๊อปอัป -->
+        <form id="modalEditForm">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เคส ID :</label>
+                    <input type="text" id="mdCaseId" readonly style="background-color: #e9ecef; color: #495057; cursor: not-allowed;">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">สถานพยาบาล :</label>
+                    <select id="mdHospitalSelect" required>
+                        <option value="รอยัล อังกอร์">รอยัล อังกอร์</option>
+                        <option value="จัสมิน คลินิก">จัสมิน คลินิก</option>
+                        <option value="เทวิน ข้างฮุยเกียร์">เทวิน ข้างฮุยเกียร์</option>
+                        <option value="คลินิกโซน 3">คลินิกโซน 3</option>
+                        <option value="คลินิก สุวิสา">คลินิก สุวิสา</option>
+                        <option value="คลินิกไทยช่าง (ท้ายคลัง)">คลินิกไทยช่าง (ท้ายคลัง)</option>
+                        <option value="คลินิกวงเทพ">คลินิกวงเทพ</option>
+                        <option value="คลินิกโอเคทินนา">คลินิกโอเคทินนา</option>
+                        <option value="อื่นๆ กรุงเทพและปริมณฑล">อื่นๆ กรุงเทพและปริมณฑล</option>
+                        <option value="อื่นๆ ต่างจังหวัด">อื่นๆ ต่างจังหวัด</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">วันที่เข้ารักษา :</label>
+                    <input type="text" id="mdManualDate" placeholder="📅 คลิกเลือกวันที่...">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เวลาที่เข้ารักษา :</label>
+                    <input type="text" id="mdManualTime" placeholder="⏰ คลิกเลือกเวลา...">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">อาการป่วย :<span style="color:red;">*</span></label>
+                <textarea id="mdSymptomsInput" required placeholder="ระบุอาการป่วยที่ต้องการปรับปรุงแก้ไข..." style="min-height: 70px;"></textarea>
+            </div>
+
+            <!-- โซนกรอกสิทธิ์ตัวเลขวงเงิน (แบ่งเป็น 3 คอลัมน์) -->
+            <p style="margin: 15px 0 8px 0; font-weight: bold; color: #198754; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">📊 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัย</p>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">ทำฟัน หักวงเงิน OPD</label><input type="number" id="mdInpDentalOPD" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP OPD</label><input type="number" id="mdInpPPUsageOPD" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP IPD</label><input type="number" id="mdInpPPUsageIPD" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (T)</label><input type="number" id="mdInpSLKUsageOpdThB" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (T)</label><input type="number" id="mdInpSLKUsageIpdThB" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (L)</label><input type="number" id="mdInpSLKUsageOpdLkr" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (L)</label><input type="number" id="mdInpSLKUsageIpdLkr" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">ส่วนเกินวงเงินค่ารักษา (T)</label><input type="number" id="mdInpOverLimitThB" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">ส่วนเกินวงเงินค่ารักษา (L)</label><input type="number" id="mdInpOverLimitLkr" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">เรทค่าเงินที่ประกันคิดให้</label><input type="number" id="mdInpExchangeRatesIns" value="1" step="0.01"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">เรทค่าเงินปัจจุบัน</label><input type="number" id="mdInpExchangeRatesInt" value="1" step="0.01"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">ผลการรักษา</label><input type="text" id="mdInpClinician" placeholder="-"></div>
+                <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">เอกสารแนบ</label><input type="text" id="mdInpDocs" placeholder="-"></div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">หมายเหตุเพิ่มเติม :</label>
+                <textarea id="mdNotesInput" placeholder="ข้อมูลอื่นๆ..." style="min-height: 50px;"></textarea>
+            </div>
+
+            <!-- ปุ่มกดยืนยันหรือยกเลิกการส่งค่าแก้ไขย้อนหลัง -->
+            <div style="display: flex; gap: 10px;">
+                <button type="button" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="document.getElementById('editCaseModal').style.setProperty('display', 'none', 'important');">❌ ยกเลิก</button>
+                <button type="submit" style="flex: 2; padding: 12px; background: #ffc107; color: #212529; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">💾 ยืนยันการอัปเดตแก้ไขทับบรรทัดเดิม</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- ============================================================การแก้ไขข้อมูลย้อนหลัง=============================================================== -->
+<!-- ============================================================================================================================================= -->
+<!-- ============================= [ส่วนล่าง] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับแก้ไขข้อมูลย้อนหลัง (Edit Custom Modal) ======================================== -->
+<!-- ============================================================================================================================================= -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!----------------------------------------------------------------------------------------------------------------------------->
+<!-----------ส่วนหัว---------------- ส่วนการควบคุมป็อปอัปเพื่อแก้ไขข้อมูลและนำบันทึกลงแถวที่แก้ไข ------------------------------------------>
+<!----------------------------------------------------------------------------------------------------------------------------->
+
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        // 1. ตั้งเวลาระบบและดึงข้อมูล Case ID เริ่มต้น
+        setThaiDateTime();
+        if (typeof fetchNextCaseId === "function") {
+            fetchNextCaseId();
+        }
+
+        // 2. สั่งรันปฏิทินและนาฬิกาฝั่งฟอร์มหลัก
+        flatpickr("#manualDate", { dateFormat: "d/m/Y", allowInput: true, noCalendar: false });
+        flatpickr("#manualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
+
+        // =========================================================================================
+        // 🎯 ผูกอีเวนต์ปุ่มกดในป๊อปอัปหลังจากโครงสร้าง HTML ป๊อปอัปโหลดเสร็จสมบูรณ์ 100%
+        // =========================================================================================
+        const editFormEl = document.getElementById('modalEditForm');
+        if (editFormEl) {
+            editFormEl.addEventListener('submit', async (e) => {
+                e.preventDefault(); // บล็อกหน้าจอไม่ให้รีเฟรชทิ้ง
+
+                const symptoms = document.getElementById('mdSymptomsInput').value;
+                if (!symptoms.trim()) { 
+                    alert("⚠️ กรุณากรอกรายละเอียดอาการป่วยในป๊อปอัปด้วยครับ"); 
+                    document.getElementById('mdSymptomsInput').focus();
+                    return; 
+                }
+
+                // รวบรวมก้อนข้อมูล Payload ทั้งหมดจากช่องฟอร์มป๊อปอัป
+                const payload = {
+                    sheetRowIndex: currentEditingRowIndex, 
+                    CaseIdNew: document.getElementById('mdCaseId').value || '-',
+                    autoDateTime: document.getElementById('headerDateTimeValue').innerText, 
+                    adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin', 
+                    treatmentDateTime: `${document.getElementById('mdManualDate').value} ${document.getElementById('mdManualTime').value}`.trim() || '-',
+                    company: document.getElementById('hiddenCompany').value || 'CALL 365',
+                    workLocation: document.getElementById('hiddenWorkLocation').value || '-',
+                    hospital: document.getElementById('mdHospitalSelect').value,
+                    symptoms: symptoms,
+                    insuranceId: document.getElementById('hiddenInsuranceId').value || '-',
+                    size: document.getElementById('hiddenSize').value || 'M',
+                    employeeName: document.getElementById('hiddenEmpName').value || '-',
+                    statusText: "แก้ไขและปรับปรุงข้อมูลเคสการรักษา", 
+                    
+                    // ดึงยอดสิทธิ์วงเงินจากป๊อปอัป
+                    DentalOPD: document.getElementById('mdInpDentalOPD').value || '0',
+                    PPUsageOPD: document.getElementById('mdInpPPUsageOPD').value || '0',
+                    PPUsageIPD: document.getElementById('mdInpPPUsageIPD').value || '0',
+                    SLKUsageOpdThB: document.getElementById('mdInpSLKUsageOpdThB').value || '0',
+                    SLKUsageIpdThB: document.getElementById('mdInpSLKUsageIpdThB').value || '0',
+                    SLKUsageOpdLkr: document.getElementById('mdInpSLKUsageOpdLkr').value || '0',
+                    SLKUsageIpdLkr: document.getElementById('mdInpSLKUsageIpdLkr').value || '0',
+                    OverLimitCreditInsThB: document.getElementById('mdInpOverLimitThB').value || '0',
+                    OverLimitCreditInsLkr: document.getElementById('mdInpOverLimitLkr').value || '0',
+                    ExchangeRatesIns: document.getElementById('mdInpExchangeRatesIns').value || '1',
+                    ExchangeRatesInt: document.getElementById('mdInpExchangeRatesInt').value || '1',
+                    
+                    ClinicianReportedOutcomes: document.getElementById('mdInpClinician').value || '-',
+                    DocumentsAttached: document.getElementById('mdInpDocs').value || '-',
+                    notes: document.getElementById('mdNotesInput').value || '-'
+                };
+
+                // แสดงกล่องตรวจสอบความปลอดภัย Payload ก่อนปล่อยสัญญาณยิง
+                if (confirm(`🧪 [ระบบตรวจสอบ Payload ป๊อปอัปก่อนส่งจริง]\n\n• บรรทัดบนแผ่นชีต: แถวที่ ${payload.sheetRowIndex}\n• ยืนยันเคส ID: ${payload.CaseIdNew}\n• สถานพยาบาล: ${payload.hospital}\n\nกดปุ่ม "ตกลง (OK)" เพื่อส่งค่าไปอัปเดตหลังบ้านครับ`)) {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/update-treatment`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (response.ok && result.success) {
+                            alert('🎉 บันทึกปรับปรุงแก้ไขข้อมูลและส่งแถวลง Google Sheets สำเร็จเรียบร้อย!');
+                            document.getElementById('editCaseModal').style.setProperty('display', 'none', 'important'); 
+                            location.reload(); // รีเฟรชหน้าเพื่อดึงข้อมูลล่าสุด
+                        } else { 
+                            alert('❌ เกิดข้อผิดพลาดจากเซิร์ฟเวอร์หลังบ้าน: ' + (result.message || 'เซิฟเวอร์ปฏิเสธคำขอ')); 
+                        }
+                    } catch (error) { 
+                        console.error("Update Error:", error);
+                        alert('❌ ขัดข้องทางเทคนิคในการติดต่อเชื่อมต่อ API อัปเดตหลังบ้าน'); 
+                    }
+                }
             });
-        });
-    </script>
+        }
+
+        // =========================================================================================
+        // 🎯 1. ระบบดักจับการกดปุ่มส่งฟอร์มเพื่อบันทึก "อัปเดตผลการรักษา" เป็นบรรทัดใหม่ต่อท้ายล่างสุด
+        // =========================================================================================
+        const outcomeFormEl = document.getElementById('modalOutcomeForm');
+        if (outcomeFormEl) {
+            outcomeFormEl.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const payload = {
+                    sheetRowIndex: -1, // ล็อกเป็น -1 เสมอเพื่อให้ฝั่งเซิร์ฟเวอร์นำข้อมูลไปเพิ่มเป็นแถวใหม่ล่างสุดของชีต
+                    CaseIdNew: document.getElementById('ocCaseId').value,
+                    autoDateTime: document.getElementById('headerDateTimeValue').innerText,
+                    adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
+                    treatmentDateTime: `${document.getElementById('ocManualDate').value} ${document.getElementById('ocManualTime').value}`.trim(),
+                    company: document.getElementById('hiddenCompany').value || 'CALL 365',
+                    workLocation: document.getElementById('hiddenWorkLocation').value || '-',
+                    hospital: document.getElementById('ocHospital').value,
+                    symptoms: document.getElementById('ocSymptoms').value,
+                    insuranceId: document.getElementById('hiddenInsuranceId').value || '-',
+                    size: document.getElementById('hiddenSize').value || 'M',
+                    employeeName: document.getElementById('hiddenEmpName').value || '-',
+
+                     statusText: (() => {
+                    const selectedStatus = document.getElementById('ocStatusSelect').value;
+                    if (selectedStatus === 'อื่นๆ') {
+                        const extraText = document.getElementById('ocStatusOtherInput').value.trim();
+                        return extraText ? `อื่นๆ - ${extraText}` : 'อื่นๆ';
+                    }
+                    return selectedStatus;
+                    })(),
+                    
+                    DentalOPD: document.getElementById('ocInpDentalOPD').value || '0',
+                    PPUsageOPD: document.getElementById('ocInpPPUsageOPD').value || '0',
+                    PPUsageIPD: document.getElementById('ocInpPPUsageIPD').value || '0',
+                    ClinicianReportedOutcomes: document.getElementById('ocInpClinician').value,
+                    DocumentsAttached: document.getElementById('ocInpDocs').value || '-',
+                    notes: document.getElementById('ocNotesInput').value || '-'
+                };
+
+                if (confirm(`💾 ยืนยันการส่งอัปเดตผลการรักษาสำหรับ เคส ID: ${payload.CaseIdNew} ใช่หรือไม่?`)) {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/save-treatment`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const result = await response.json();
+                        if (response.ok && result.success) {
+                            alert('🎉 อัปเดตผลการรักษาสำเร็จและส่งประวัติลงฐานข้อมูล Sheets เรียบร้อย!');
+                            document.getElementById('outcomeUpdateModal').style.display = 'none';
+                            location.reload();
+                        } else { 
+                            alert('❌ เซิร์ฟเวอร์หลังบ้านปฏิเสธคำขอ: ' + result.message); 
+                        }
+                    } catch (err) { 
+                        alert('❌ ขัดข้องทางเทคนิคในการเชื่อมต่อ API อัปเดตหลังบ้าน'); 
+                    }
+                }
+            });
+        }
+
+        // =========================================================================================
+        // 🎯 2. ฟังก์ชันหยอดค่าข้อมูลประวัติพนักงานเดิม เข้าสู่หน้าต่างป๊อปอัปผลการรักษา (Populate Data)
+        // =========================================================================================
+        window.populateOutcomeToModal = function(eventItem) {
+   
+        const hiddenWorkLocationEl = document.getElementById('hiddenWorkLocation');
+        const workLocation = hiddenWorkLocationEl ? hiddenWorkLocationEl.value : '';
+        const slkWrapper = document.getElementById('ocSlkFieldsWrapper');
+
+        if (slkWrapper) {
+            if (workLocation.toUpperCase().includes('SL')) {
+                slkWrapper.style.display = 'block';
+            } else {
+                slkWrapper.style.display = 'none';
+            }
+        }
+
+
+                if (document.getElementById('ocStatusSelect')) {
+        document.getElementById('ocStatusSelect').value = ''; 
+        toggleOcOtherInput(''); 
+                  }
+
+            currentEditingRowIndex = eventItem.targetRowNumber || -1;
+            const modal = document.getElementById('outcomeUpdateModal');
+            if (modal) { modal.style.display = 'flex'; }
+
+            function setOcInput(id, value) {
+                const el = document.getElementById(id);
+                if (el) {
+                    let cleanValue = (value !== undefined && value !== null) ? String(value) : '';
+                    if (el.type === 'number') {
+                        cleanValue = cleanValue.replace(/,/g, '').replace(/\s+/g, '').trim();
+                    }
+                    el.value = cleanValue;
+                }
+            }
+
+            // ดีดค่าล็อก Readonly สีเทาขึ้นโมดอลป๊อปอัปสีเขียว
+            setOcInput('ocCaseId', eventItem.CaseIdNew);
+            setOcInput('ocHospital', eventItem.hospital);
+            setOcInput('ocSymptoms', eventItem.symptoms);
+
+            // ดีดค่าเงินเดิมขึ้นสแตนด์บายรอตรวจเช็คในฟอร์ม
+            setOcInput('ocInpDentalOPD', eventItem.DentalOPD);
+            setOcInput('ocInpPPUsageOPD', eventItem.PPUsageOPD);
+            setOcInput('ocInpPPUsageIPD', eventItem.PPUsageIPD);
+
+      
+            setOcInput('ocInpSlkOpdThb', eventItem.SLKUsageOpdThB);
+            setOcInput('ocInpSlkIpdThb', eventItem.SLKUsageIpdThB);
+            setOcInput('ocInpSlkOpdLkr', eventItem.SLKUsageOpdLkr);
+            setOcInput('ocInpSlkIpdLkr', eventItem.SLKUsageIpdLkr);
+            setOcInput('ocInpOverThb', eventItem.OverLimitCreditInsThB);
+            setOcInput('ocInpOverLkr', eventItem.OverLimitCreditInsLkr);
+            setOcInput('ocInpRateIns', eventItem.ExchangeRatesIns || '1');
+            setOcInput('ocInpRateInt', eventItem.ExchangeRatesInt || '1');
+                    
+
+            // แยกแกะส่วนวันที่และเวลาเพื่อจัดเตรียมเข้าช่อง Flatpickr ใต้กล่องอาการป่วย
+            const rawDateTime = String(eventItem.treatmentDateTime || '').trim();
+            const dateTimeParts = rawDateTime.split(' ');
+            
+            let cleanDate = dateTimeParts[0] || '';
+            let cleanTime = dateTimeParts[1] || '';
+            
+            cleanDate = cleanDate.replace(/,/g, '').trim();
+            cleanTime = cleanTime.replace(/,/g, '').trim();
+
+            setOcInput('ocManualDate', cleanDate);
+            setOcInput('ocManualTime', cleanTime);
+
+            // ปลุกสั่งปฏิทินและนาฬิกาของหน้าป๊อปอัปให้พร้อมเปิดสิทธิ์ผูกมัดรับค่า
+            if (!document.getElementById('ocManualDate')._flatpickr) { 
+                flatpickr("#ocManualDate", { dateFormat: "d/m/Y", allowInput: true }); 
+            }
+            if (!document.getElementById('ocManualTime')._flatpickr) { 
+                flatpickr("#ocManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true }); 
+            }
+        };
+
+    }); // ปิดครอบฟังก์ชันใหญ่ DOMContentLoaded (บรรทัด 1554 ของส่วนที่ 1) อย่างถูกต้องครบคู่สมบูรณ์
+
+
+
+
+
+
+// 🎯 ฟังก์ชันช่วย เปิด/ซ่อน ช่องกรอกข้อความเสริมเมื่อเลือกขั้นตอนการรักษาเป็น "อื่นๆ"
+function toggleOcOtherInput(selectedValue) {
+    const wrapper = document.getElementById('ocStatusOtherWrapper');
+    const otherInput = document.getElementById('ocStatusOtherInput');
+    if (wrapper && otherInput) {
+        if (selectedValue === 'อื่นๆ') {
+            wrapper.style.display = 'block';
+            otherInput.required = true; // บังคับให้ต้องพิมพ์ห้ามปล่อยว่าง
+            otherInput.focus();
+        } else {
+            wrapper.style.display = 'none';
+            otherInput.required = false;
+            otherInput.value = ''; // ล้างข้อความเก่าทิ้ง
+        }
+    }
+}
+
+
+
+</script>
+
+
+
+<!-- ------------------------------------------------------------------------------------------------------------------------- -->
+<!-- ----------ส่วนท้าย---------------- ส่วนการควบคุมป็อปอัปเพื่อแก้ไขข้อมูลและนำบันทึกลงแถวที่แก้ไข -------------------------------------- -->
+<!-- ------------------------------------------------------------------------------------------------------------------------- -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ============================================================ การอัปเดตผลการรักษา =============================================================== -->
+<!-- ============================================================================================================================================== -->
+<!-- ============================= [ส่วนบน] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับการอัปเดตผลการรักษา (Outcome Update Modal) ===================================== -->
+<!-- =============================================================================================================================================== -->
+
+<div id="outcomeUpdateModal" style="display: none; position: fixed !important; z-index: 99999 !important; left: 0; top: 0; width: 100vw !important; height: 100vh !important; background-color: rgba(0, 0, 0, 0.5) !important; align-items: center !important; justify-content: center !important;">
+    <div style="background-color: #ffffff !important; padding: 25px !important; border-radius: 12px !important; width: 95% !important; max-width: 1100px !important; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25) !important; max-height: 90vh !important; overflow-y: auto !important; border-top: 6px solid #198754 !important; animation: popupFadeIn 0.25s ease-out;">
+<!-- ส่วนหัวป๊อปอัปสีเขียวการแพทย์ -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 15px;">
+            <h3 style="margin: 0; color: #198754; font-family: 'Segoe UI', Tahoma, sans-serif;">📝 อัปเดตผลการรักษาและประวัติสรุปเคส</h3>
+            <span style="font-size: 24px; cursor: pointer; color: #aaa; font-weight: bold; line-height: 1;" onclick="document.getElementById('outcomeUpdateModal').style.setProperty('display', 'none', 'important');">&times;</span>
+        </div>
+
+        <form id="modalOutcomeForm">
+            <!-- โซนช่องหลัก: ล็อกให้เป็น Readonly ทึบทั้งหมดตามเงื่อนไข -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เคส ID :</label>
+                    <input type="text" id="ocCaseId" readonly style="background-color: #e9ecef !important; color: #495057; cursor: not-allowed;">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">สถานพยาบาล :</label>
+                    <input type="text" id="ocHospital" readonly style="background-color: #e9ecef !important; color: #495057; cursor: not-allowed;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">อาการป่วย :</label>
+                <textarea id="ocSymptoms" readonly style="background-color: #e9ecef !important; color: #495057; cursor: not-allowed; min-height: 60px;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">ขั้นตอนการรักษา <span style="color:red;">*</span></label>
+                <select id="ocStatusSelect" required style="width: 100% !important; padding: 8px !important; border: 1px solid #ced4da !important; border-radius: 6px !important; background-color: #ffffff !important;" onchange="toggleOcOtherInput(this.value)">
+                    <option value="" disabled selected>-- กรุณาคลิกเลือกสถานะขั้นตอนการรักษาปัจจุบัน --</option>
+                    <option value="แจ้งประกันแล้ว เข้ารับการรักษาอยู่">แจ้งประกันแล้ว เข้ารับการรักษาอยู่</option>
+                    <option value="รักษายังไม่หาย นอนดูอาการ">รักษายังไม่หาย นอนดูอาการ</option>
+                    <option value="รักษาตัวที่ฝั่งไทย บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP">รักษาตัวที่ฝั่งไทย บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP</option>
+                    <option value="รักษาตัวที่ฝั่ง PP บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP">รักษาตัวที่ฝั่ง PP บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP</option>
+                    <option value="รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย รอทำเรื่องเคลมบริษัทประกันเดินทาง SLK">รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย รอทำเรื่องเคลมบริษัทประกันเดินทาง SLK</option>
+                    <option value="รอนำส่งเอกสารไปเคลมประกันเดินทาง SLK">รอนำส่งเอกสารไปเคลมประกันเดินทาง SLK</option>
+                    <option value="ส่งเอกสารหรือบิลไปเคลมเงินประกันแล้วและรอรับเงิน SLK">ส่งเอกสารหรือบิลไปเคลมเงินประกันแล้วและรอรับเงิน SLK</option>
+                    <option value="ได้รับเงินแล้ว รอนำไปแลกและนำไปคืนประกัน SLK">ได้รับเงินแล้ว รอนำไปแลกและนำไปคืนประกัน SLK</option>
+                    <option value="รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย PP">รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย PP</option>
+                    <option value="อื่นๆ">อื่นๆ (โปรดระบุรายละเอียดเพิ่มเติม)</option>
+                </select>
+            </div>
+
+            <!-- 🎯 กล่องลับสำหรับพิมพ์ข้อความเสริมด้านหลัง (จะดีดกางออกเฉพาะตอนเลือก "อื่นๆ") -->
+            <div id="ocStatusOtherWrapper" style="display: none; margin-bottom: 15px; background-color: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px dashed #198754;">
+                <label style="font-size: 12px; font-weight: bold; color: #198754; display: block; margin-bottom: 4px;">ระบุรายละเอียดขั้นตอนการรักษาเพิ่มเติม :</label>
+                <input type="text" id="ocStatusOtherInput" placeholder="พิมพ์ข้อความเสริมต่อท้ายสถานะที่ต้องการระบุที่นี่...">
+            </div>
+
+
+
+            <!-- 🎯 ย้ายพิกัดปฏิทิน: ขยับชดเชยลงมาอยู่ใต้กล่องอาการป่วยตามสั่ง และเปลี่ยนชื่อหัวข้อ -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">วันที่บันทึกผลการรักษา :</label>
+                    <input type="text" id="ocManualDate" placeholder="📅 คลิกเลือกวันที่...">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เวลาที่บันทึกผลการรักษา :</label>
+                    <input type="text" id="ocManualTime" placeholder="⏰ คลิกเลือกเวลา...">
+                </div>
+            </div>
+
+            <p style="margin: 15px 0 8px 0; font-weight: bold; color: #198754; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">📊 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัย</p>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">ทำฟัน หักวงเงิน OPD</label><input type="number" id="ocInpDentalOPD" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP OPD</label><input type="number" id="ocInpPPUsageOPD" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP IPD</label><input type="number" id="ocInpPPUsageIPD" value="0"></div>
+            </div>
+           
+            <div id="ocSlkFieldsWrapper" style="display: none; margin-top: 15px;">
+                <p style="margin: 10px 0 8px 0; font-weight: bold; color: #b48608; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">🧮 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัยเดินทาง SLK</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; background: #fffdf0; padding: 12px; border-radius: 6px; border: 1px solid #ffecb3;">
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (THB)</label><input type="number" id="ocInpSlkOpdThb" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (THB)</label><input type="number" id="ocInpSlkIpdThb" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (LKR)</label><input type="number" id="ocInpSlkOpdLkr" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (LKR)</label><input type="number" id="ocInpSlkIpdLkr" value="0"></div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: #fffdf0; padding: 12px; border-radius: 6px; border: 1px solid #ffecb3;">
+                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:red;">ส่วนเกินวงเงินค่ารักษา (THB)</label><input type="number" id="ocInpOverThb" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:red;">ส่วนเกินวงเงินค่ารักษา (LKR)</label><input type="number" id="ocInpOverLkr" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:#b48608;">เรทค่าเงินที่ประกันคิดให้ (THB/LKR)</label><input type="number" id="ocInpRateIns" value="1" step="any"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:#b48608;">เรทค่าเงินปัจจุบัน (THB/LKR)</label><input type="number" id="ocInpRateInt" value="1" step="any"></div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">ผลการรักษา <span style="color:red;">*</span></label><input type="text" id="ocInpClinician" required placeholder="พิมพ์สรุปผล เช่น อาการดีขึ้น กลับบ้านได้..."></div>
+                <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">เอกสารแนบ</label><input type="text" id="ocInpDocs" placeholder="ใบเสร็จ, ใบรับรองแพทย์..."></div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">หมายเหตุเพิ่มเติม :</label>
+                <textarea id="ocNotesInput" placeholder="ระบุรายละเอียดอื่น ๆ..." style="min-height: 50px;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="button" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="document.getElementById('outcomeUpdateModal').style.setProperty('display', 'none', 'important');">❌ ยกเลิก</button>
+                <button type="submit" style="flex: 2; padding: 12px; background: #198754; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">💾 ยืนยันการอัปเดตผลการรักษาลงระบบ</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- ============================================================ การอัปเดตผลการรักษา =============================================================== -->
+<!-- ============================================================================================================================================== -->
+<!-- ============================= [ส่วนล่าง] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับการอัปเดตผลการรักษา (Outcome Update Modal) ===================================== -->
+<!-- =============================================================================================================================================== -->
+
+
+
+
+
+
 
 
 

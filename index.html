@@ -69,7 +69,7 @@ const API_BASE_URL = "https://6d7kdf7d-3000.asse.devtunnels.ms";
                 messageDiv.style.color = 'green';
                 // คุณสามารถใส่คำสั่งเปลี่ยนหน้าเว็บตรงนี้ได้ เช่น window.location.href = '/dashboard';
 
-              sessionStorage.setItem('loggedInEmployeeName', data.user.name);
+              sessionStorage.setItem('loggedInAdminName', data.user.name);
 
                 
 //----------------------------------เพิ่มมาให้กระโดนไปหน้าค้นหา----------------------------------//
@@ -87,7 +87,7 @@ const API_BASE_URL = "https://6d7kdf7d-3000.asse.devtunnels.ms";
 
 
             } else {
-                messageDiv.innerText = data.message;
+                messageDiv.innerText = data.message || 'ล็อกอินไม่สำเร็จ';
                 messageDiv.style.color = 'red';
             }
         } catch (error) {
