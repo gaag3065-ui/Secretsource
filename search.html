@@ -530,7 +530,8 @@
         </div>
 
         <!-- ปุ่มสำหรับกดส่งข้อมูล บันทึกข้อมูลและปิดฟอร์มอย่างเป็นระบบ -->
-        <button type="submit" id="submitBtn" class="btn-submit" disabled style="background-color: #6c757d; cursor: not-allowed;">➕ บันทึกข้อมูลเข้าสู่ระบบ</button>
+        <button type="button" id="submitBtn" onclick="document.getElementById('claimForm').dispatchEvent(new Event('submit'))" class="btn btn-success" style="width: 100%; padding: 12px; font-weight: bold; border-radius: 6px;">🟢 บันทึกข้อมูลเข้าสู่ระบบ</button>
+
     </form>
 
     <div id="claimStatus"></div>
@@ -1025,10 +1026,49 @@ async function executeDeleteRow(targetRowNumber, caseId) {
 
         const result = await response.json();
 
-        if (response.ok && result.success) {
+
+
+//--------------------------------------------------------------------------------------
+
+       if (response.ok && result.success) {
             alert(`🎉 ลบข้อมูลแถวที่ ${targetRowNumber} (เคส ID: ${caseId}) สำเร็จและส่งประวัติลงฐานข้อมูล Sheets เรียบร้อย!`);
-            location.reload(); // รีเฟรชหน้าเว็บทันทีเพื่ออัปเดตตารางสรุปใหม่
-        } else {
+            
+            // 🎯 ดึงทุกแถวในตารางสรุปด้านล่างมาสแกนตรวจสอบ
+            const allTableRows = document.querySelectorAll('#tableBodyResult tr');
+            let deletedFromDOM = false;
+
+            allTableRows.forEach(row => {
+                // ค้นหาปุ่มลบที่มีอยู่ในบรรทัดนั้น ๆ
+                const deleteButton = row.querySelector('button[onclick*="executeDeleteRow"]');
+                if (deleteButton) {
+                    const onclickStr = deleteButton.getAttribute('onclick');
+                    
+                    // 🎯 เจาะพิกัดเด็ดขาด: เช็กว่าข้อความคำสั่งบนปุ่มลบระบุเลขแถวชีตจริงตรงกับ targetRowNumber ที่เพิ่งสั่งลบไปหรือไม่
+                    if (onclickStr.includes(`executeDeleteRow(${targetRowNumber},`) || 
+                        onclickStr.includes(`'${caseId}'`) && onclickStr.includes(`${targetRowNumber}`)) {
+                        
+                        row.remove(); // 💥 ระเบิดทำลายแถวดั้งเดิม (กรณีที่ 1) ทิ้งออกจากหน้าจอทันทีคาตา!
+                        deletedFromDOM = true;
+                        console.log(`🚨 [Live DOM Deletion - Case 1] ลบแถวดั้งเดิมพิกัดชีตที่ ${targetRowNumber} ออกสำเร็จ!`);
+                    }
+                }
+            });
+
+            // 🎯 แผนสำรอง (กรณีที่ 2): หากเป็นแถวเกิดใหม่สด ๆ ที่เพิ่งดีดงอกเพิ่มเข้ามาและดัชนียังไม่สลักเลขแถวชีตตรง ๆ
+            if (!deletedFromDOM) {
+                const freshRows = document.querySelectorAll(`.child-row-of-${caseId}`);
+                freshRows.forEach(row => {
+                    // ตรวจสแกนหาแถวไฮไลต์เรียลไทม์ หรือแถวที่มีเนื้อหาคำอธิบายสลับเป้าหมาย หากตรงกันให้สั่งทำลายทิ้งด้วย
+                    if (row.style.backgroundColor === 'rgb(237, 247, 237)' || 
+                        row.innerHTML.includes('(เพิ่มใหม่เข้าระบบแล้ว)') || 
+                        row.innerHTML.includes('executeDeleteRow(this.closest(\'tr\').rowIndex')) {
+                        
+                        row.remove(); // 💥 ทำลายแถวเกิดใหม่ (กรณีที่ 2) ทิ้งออกจากจอทันทีนุ่มนวล!
+                        console.log(`🚨 [Live DOM Deletion - Case 2] ลบแถวฉีดสดเรียลไทม์ออกสำเร็จ!`);
+                    }
+                });
+            }
+        }else {
             alert('❌ เกิดข้อผิดพลาดจากเซิร์ฟเวอร์หลังบ้าน: ' + result.message);
         }
     } catch (err) {
@@ -1044,10 +1084,20 @@ async function executeDeleteRow(targetRowNumber, caseId) {
 
 
 
-
+let currentDomRowIndex = -1;
 
 // 🎯 แก้ไขปรับปรุงใหม่: สั่งเปิดหน้าต่างแบบฟอร์มป๊อปอัป Modal ให้ดีดเด้งกึ่งกลางจอเป๊ะๆ 100%
     function populateDataToForm(eventItem) {
+
+    //  สั่งให้ระบบค้นหาและจำพิกัดบรรทัดบนหน้าจอของปุ่มที่แอดมินเพิ่งคลิกเข้ามา
+    const allRows = document.querySelectorAll('#tableBodyResult tr');
+    allRows.forEach((row, idx) => {
+        // ดักหาแถวที่มีข้อมูลอาการป่วยและวันที่ตรวจตรงกันกับที่กดเข้ามา
+        if (row.innerHTML.includes(eventItem.symptoms) && row.innerHTML.includes(eventItem.treatmentDateTime)) {
+            currentDomRowIndex = row.rowIndex; // บันทึกพิกัดลำดับแถวหน้าจอจริงเก็บไว้ในตัวแปรกลาง
+        }
+    });
+
     // 1. ล็อกเลขบรรทัดจริงเก็บเข้าตัวแปรกลางหลักหลังบ้าน (ยึดตามคำสั่งควบคุมขั้นตอนที่ 1)
     currentEditingRowIndex = eventItem.targetRowNumber || -1;
 
@@ -1338,7 +1388,8 @@ async function executeDeleteRow(targetRowNumber, caseId) {
     // 🎛️ ระบบดักจับการบันทึกฟอร์มข้อมูลเคลมเข้ารักษา                                                                               //
     // ------------------------------------------------------------------------------------------------------------------------- //
     document.getElementById('claimForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
+
+        e.preventDefault(); 
 
         const symptoms = document.getElementById('symptomsInput').value;
         const claimStatus = document.getElementById('claimStatus');
@@ -1388,32 +1439,47 @@ async function executeDeleteRow(targetRowNumber, caseId) {
                 claimStatus.style.color = 'green';
                 alert('🎉 บันทึกข้อมูลสำเร็จเรียบร้อยแล้วครับ!');
                 
-            document.getElementById('claimForm').reset();
-            setThaiDateTime(); 
-            fetchNextCaseId(); 
+        if (document.getElementById('hospitalSelect')) document.getElementById('hospitalSelect').value = ''; 
+        if (document.getElementById('distanceInput')) document.getElementById('distanceInput').value = ''; 
+        if (document.getElementById('symptomsInput')) document.getElementById('symptomsInput').value = ''; 
+        if (document.getElementById('notesInput')) document.getElementById('notesInput').value = ''; 
 
-            document.getElementById('keywordInput').value = '';
-            document.getElementById('message').innerText = '';
-            document.getElementById('resultsList').innerHTML = '';
 
-            // 🧼 ล้างข้อมูลตารางประวัติด้านล่างหลังเคลมสำเร็จเพื่อความสะอาด
-            const tableBody = document.getElementById('tableBodyResult');
-            if (tableBody) tableBody.innerHTML = '';
+
+        // สั่งรันดึงเลขเคส ID ตัวถัดไปตัวล่าสุดมาสแตนด์บายโชว์
+        if (typeof fetchNextCaseId === "function") {
+            fetchNextCaseId();
+        }
+
+
+           // ✅ เปลี่ยนมาเรียกใช้ตัวฉีดแถวสดพ่วงก้อนข้อมูล payload ในฝั่งเปิดเคสตรงจุดนี้แทนครับ
+        if (typeof injectNewRowToTableRealtime === "function") {
+            injectNewRowToTableRealtime(payload);
+        }
+
+
+
+        if (document.getElementById('manualDate')) document.getElementById('manualDate').value = '';
+        if (document.getElementById('manualTime')) document.getElementById('manualTime').value = '';
+        if (document.getElementById('hospitalSelect')) document.getElementById('hospitalSelect').value = ''; 
+        if (document.getElementById('distanceInput')) document.getElementById('distanceInput').value = ''; 
+        if (document.getElementById('symptomsInput')) document.getElementById('symptomsInput').value = ''; 
+        if (document.getElementById('notesInput')) document.getElementById('notesInput').value = ''; 
+
+
 
             // 🔒 สั่งล็อกช่องกรอกข้อมูลฝั่งขวากลับมาเป็นสีเทาทึบและกดไม่ได้เหมือนเดิม
-            const inputsToDisable = ['manualDate', 'manualTime', 'hospitalSelect', 'symptomsInput', 'notesInput', 'submitBtn'];
-            inputsToDisable.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.disabled = true; // ล็อกไม่ให้กรอก
-                    if (id === 'submitBtn') {
-                        el.style.backgroundColor = '#6c757d'; // เปลี่ยนปุ่มกลับเป็นสีเทา
-                    } else {
-                        el.style.backgroundColor = '#e9ecef'; // เปลี่ยนช่องกรอกเป็นสีเทาทึบ
-                    }
-                    el.style.cursor = 'not-allowed'; // เปลี่ยนสัญลักษณ์เมาส์เป็นรูปห้ามกด
-                }
-            });
+            const headerTimeEl = document.getElementById('headerDateTimeValue');
+            if (headerTimeEl) {
+                headerTimeEl.innerText = new Date().toLocaleString('th-TH', { 
+                    timeZone: 'Asia/Bangkok',
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false 
+                }) + ' น.';
+            }
+
 
         } else {
             claimStatus.innerText = `❌ ${result.message || 'บันทึกไม่สำเร็จ'}`;
@@ -1537,15 +1603,15 @@ setupInactivityTimer();
             <!-- โซนกรอกสิทธิ์ตัวเลขวงเงิน (แบ่งเป็น 3 คอลัมน์) -->
             <p style="margin: 15px 0 8px 0; font-weight: bold; color: #198754; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">📊 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัย</p>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">
-                <div><label style="font-size:11px; font-weight:bold; color:#555;">ทำฟัน หักวงเงิน OPD</label><input type="number" id="mdInpDentalOPD" value="0"></div>
-                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP OPD</label><input type="number" id="mdInpPPUsageOPD" value="0"></div>
-                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP IPD</label><input type="number" id="mdInpPPUsageIPD" value="0"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (T)</label><input type="number" id="mdInpSLKUsageOpdThB" value="0"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (T)</label><input type="number" id="mdInpSLKUsageIpdThB" value="0"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (L)</label><input type="number" id="mdInpSLKUsageOpdLkr" value="0"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (L)</label><input type="number" id="mdInpSLKUsageIpdLkr" value="0"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">ส่วนเกินวงเงินค่ารักษา (T)</label><input type="number" id="mdInpOverLimitThB" value="0"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">ส่วนเกินวงเงินค่ารักษา (L)</label><input type="number" id="mdInpOverLimitLkr" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">ทำฟัน หักวงเงิน OPD</label><input type="number" id="mdInpDentalOPD" step="any" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP OPD</label><input type="number" id="mdInpPPUsageOPD" step="any" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP IPD</label><input type="number" id="mdInpPPUsageIPD" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (T)</label><input type="number" id="mdInpSLKUsageOpdThB" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (T)</label><input type="number" id="mdInpSLKUsageIpdThB" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (L)</label><input type="number" id="mdInpSLKUsageOpdLkr" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (L)</label><input type="number" id="mdInpSLKUsageIpdLkr" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">ส่วนเกินวงเงินค่ารักษา (T)</label><input type="number" id="mdInpOverLimitThB" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">ส่วนเกินวงเงินค่ารักษา (L)</label><input type="number" id="mdInpOverLimitLkr" step="any" value="0"></div>
                 <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">เรทค่าเงินที่ประกันคิดให้</label><input type="number" id="mdInpExchangeRatesIns" value="1" step="0.01"></div>
                 <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">เรทค่าเงินปัจจุบัน</label><input type="number" id="mdInpExchangeRatesInt" value="1" step="0.01"></div>
             </div>
@@ -1661,20 +1727,71 @@ setupInactivityTimer();
                         
                         const result = await response.json();
                         
-                        if (response.ok && result.success) {
-                            alert('🎉 บันทึกปรับปรุงแก้ไขข้อมูลและส่งแถวลง Google Sheets สำเร็จเรียบร้อย!');
-                            document.getElementById('editCaseModal').style.setProperty('display', 'none', 'important'); 
-                            location.reload(); // รีเฟรชหน้าเพื่อดึงข้อมูลล่าสุด
-                        } else { 
-                            alert('❌ เกิดข้อผิดพลาดจากเซิร์ฟเวอร์หลังบ้าน: ' + (result.message || 'เซิฟเวอร์ปฏิเสธคำขอ')); 
-                        }
-                    } catch (error) { 
-                        console.error("Update Error:", error);
-                        alert('❌ ขัดข้องทางเทคนิคในการติดต่อเชื่อมต่อ API อัปเดตหลังบ้าน'); 
-                    }
+//------------------------------------------------------------------------------------------------------//
+
+if (response.ok && result.success) {
+            alert('🎉 บันทึกปรับปรุงแก้ไขข้อมูลและส่งแถวลง Google Sheets สำเร็จเรียบร้อย!');
+            
+            const editModal = document.getElementById('editCaseModal');
+            if (editModal) { editModal.style.setProperty('display', 'none', 'important'); }
+
+            // 🎯 เจาะเป้าหมายตรงตัว: วิ่งไปหาบรรทัดแถวบนหน้าจอเบราว์เซอร์จริงตามพิกัดตัวแปรกลางที่จำไว้
+            const targetRow = document.getElementById('tableBodyResult').parentNode.rows[currentDomRowIndex];
+            
+            if (targetRow) {
+                // ฟังก์ชันช่วยจัดระเบียบสัญกรณ์การเงินและเศษทศนิยม 2 ตำแหน่งให้สวยงามกลมกลืน
+                const fmt = (val) => {
+                    if (val === undefined || val === null || val === '') return '0.00';
+                    let num = parseFloat(String(val).replace(/,/g, '').replace(/\s+/g, '').trim());
+                    return isNaN(num) ? '0.00' : num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                };
+
+                // 🎯 ทำการฉีดพ่นค่าตัวเลขและคำอธิบายชุดใหม่เข้าไปสับเปลี่ยนในช่องเซลล์ตารางย่อยเดิมทันทีคาตา
+                const cells = targetRow.children;
+                if (cells.length >= 21) {
+                    cells[1].innerText = payload.treatmentDateTime || '-';         // ช่องวันที่/เวลา
+                    cells[2].innerText = payload.statusText || '-';                 // ช่องขั้นตอนการรักษา
+                    cells[3].innerText = payload.symptoms || '-';                   // ช่องอาการป่วย
+                    cells[4].innerText = payload.hospital || '-';                   // ช่องสถานพยาบาล
+                    cells[5].style.fontWeight = 'bold'; cells[5].innerText = fmt(payload.DentalOPD);     // ช่องทำฟัน OPD
+                    cells[6].style.fontWeight = 'bold'; cells[6].innerText = fmt(payload.PPUsageOPD);    // ช่อง PP OPD
+                    cells[7].style.fontWeight = 'bold'; cells[7].innerText = fmt(payload.PPUsageIPD);    // ช่อง PP IPD
+                    cells[8].style.fontWeight = 'bold'; cells[8].innerText = fmt(payload.SLKUsageOpdThB); // ช่อง SL OPD (THB)
+                    cells[9].style.fontWeight = 'bold'; cells[9].innerText = fmt(payload.SLKUsageIpdThB); // ช่อง SL IPD (THB)
+                    cells[10].style.fontWeight = 'bold'; cells[10].innerText = fmt(payload.SLKUsageOpdLkr); // ช่อง SL OPD (LKR)
+                    cells[11].style.fontWeight = 'bold'; cells[11].innerText = fmt(payload.SLKUsageIpdLkr); // ช่อง SL IPD (LKR)
+                    cells[12].style.fontWeight = 'bold'; cells[12].innerText = fmt(payload.OverLimitCreditInsThB); // ช่องส่วนเกิน (THB)
+                    cells[13].style.fontWeight = 'bold'; cells[13].innerText = fmt(payload.OverLimitCreditInsLkr); // ช่องส่วนเกิน (LKR)
+                    cells[14].innerText = payload.ExchangeRatesIns || '1';          // ช่องเรทประกัน (THB)
+                    cells[15].innerText = payload.ExchangeRatesInt || '1';          // ช่องเรทประกัน (LKR)
+                    cells[16].innerText = payload.ClinicianReportedOutcomes || '-';  // ช่องผลการรักษา
+                    cells[17].innerText = payload.DocumentsAttached || '-';          // ช่องเอกสารแนบ
+                    cells[18].innerText = payload.notes || '-';                      // ช่องหมายเหตุ
+                    cells[19].innerText = payload.autoDateTime || displayAutoTime;  // ช่องเวลาบันทึกออโต้
+                    cells[20].innerText = payload.adminName || '-';                  // ช่องชื่อแอดมิน
                 }
-            });
+
+                   // 🎯 บันทึกครอบค่าล่าสุดฝังคืนลงไปในปุ่มแก้ไขของบรรทัดนั้นด้วย
+                const editButton = targetRow.querySelector('.btn-edit-minimal');
+                if (editButton) {
+                    const safeJsonString = JSON.stringify({ ...payload, targetRowNumber: payload.sheetRowIndex });
+                    const safeEncodedBase64 = window.btoa(unescape(encodeURIComponent(safeJsonString)));
+                    editButton.setAttribute('onclick', `event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateDataToForm(decodedData);`);
+                }
+
+                // เปลี่ยนสีแถวเป้าหมายให้เป็นสีไฮไลต์สีเขียวอ่อนกระตุ้นสายตา
+                targetRow.style.backgroundColor = '#edf7ed';
+                console.log(`🎯 [Direct Row Update Success] สับเปลี่ยนค่าเงินในแถวหน้าจออันดับที่ ${currentDomRowIndex} สำเร็จเสร็จสิ้น!`);
+            }
         }
+
+          } catch (error) { 
+               console.error("Update Error:", error);
+                alert('❌ ขัดข้องทางเทคนิคในการติดต่อเชื่อมต่อ API อัปเดตหลังบ้าน'); 
+            }
+        }
+     });
+    }
 
         // =========================================================================================
         // 🎯 1. ระบบดักจับการกดปุ่มส่งฟอร์มเพื่อบันทึก "อัปเดตผลการรักษา" เป็นบรรทัดใหม่ต่อท้ายล่างสุด
@@ -1723,10 +1840,24 @@ setupInactivityTimer();
                             body: JSON.stringify(payload)
                         });
                         const result = await response.json();
+
+                        
                         if (response.ok && result.success) {
                             alert('🎉 อัปเดตผลการรักษาสำเร็จและส่งประวัติลงฐานข้อมูล Sheets เรียบร้อย!');
-                            document.getElementById('outcomeUpdateModal').style.display = 'none';
-                            location.reload();
+
+                       const outcomeModal = document.getElementById('outcomeUpdateModal');
+                        if (outcomeModal) { 
+                            outcomeModal.style.display = 'none'; 
+                        }
+
+                        payload.updatedRowIndex = result.updatedRowIndex;
+                        payload.sheetRowIndex = result.updatedRowIndex;
+
+                       // ✅ เปลี่ยนมาเรียกใช้ตัวฉีดแถวสดโดยพ่วงก้อนข้อมูล payload เข้าไปด้วยทันที:
+                        if (typeof injectNewRowToTableRealtime === "function") {
+                            injectNewRowToTableRealtime(payload);
+                        }
+
                         } else { 
                             alert('❌ เซิร์ฟเวอร์หลังบ้านปฏิเสธคำขอ: ' + result.message); 
                         }
@@ -1844,6 +1975,115 @@ function toggleOcOtherInput(selectedValue) {
 
 
 
+
+
+
+
+// =========================================================================================
+// 🎯 [พัฒนาต่อ] ฟังก์ชันดึงประวัติมาดีดแทรกแถวใหม่ในตารางทันที โดยไม่มีการกะพริบปิด-เปิดหน้าต่าง
+// =========================================================================================
+
+function injectNewRowToTableRealtime(payloadData) {
+    const tableBody = document.getElementById('tableBodyResult');
+    if (!tableBody || !payloadData) return;
+
+    if (tableBody.innerHTML.includes("ยังไม่มีประวัติ")) {
+        tableBody.innerHTML = '';
+    }
+
+    const newChildTr = document.createElement('tr');
+    newChildTr.className = `child-row-of-${payloadData.CaseIdNew}`;
+    newChildTr.style.backgroundColor = '#edf7ed'; // ไฮไลต์สีเขียวอ่อนบ่งบอกสถานะแถวสดเรียลไทม์
+    
+    const displayAutoTime = payloadData.autoDateTime || new Date().toLocaleString('th-TH');
+
+    // 🎯 [เพิ่มใหม่] ฟังก์ชันช่วยแปลงค่าตัวเลขให้ใส่ Comma คั่นหลักพัน และล็อกทศนิยม 2 ตำแหน่งให้ตรงตามผังตารางหลัก
+    const formatMoney = (val) => {
+        if (val === undefined || val === null || val === '') return '0.00';
+        // ล้างคอมม่าหรือเว้นวรรคเดิมออกก่อนเผื่อมีติดมา
+        let num = parseFloat(String(val).replace(/,/g, '').trim());
+        if (isNaN(num)) return '0.00';
+        // คืนค่ากลับมาในสไตล์ใส่จุลภาคหลักพันและจุดทศนิยมสองตำแหน่ง
+        return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+   const mockEventItem = {
+        // 🎯 สแกนรับค่าเลขแถวจริงอย่างปลอดภัยสูงสุด รองรับทุกชื่อคีย์ที่ถูกส่งมาจากทุกฟอร์มในระบบ
+        targetRowNumber: payloadData.updatedRowIndex || payloadData.sheetRowIndex || payloadData.targetRowNumber || -1, 
+        CaseIdNew: payloadData.CaseIdNew,
+        treatmentDateTime: payloadData.treatmentDateTime,
+        statusText: payloadData.statusText,
+        symptoms: payloadData.symptoms,
+        hospital: payloadData.hospital,
+        DentalOPD: payloadData.DentalOPD,
+        PPUsageOPD: payloadData.PPUsageOPD,
+        PPUsageIPD: payloadData.PPUsageIPD,
+        SLKUsageOpdThB: payloadData.SLKUsageOpdThB,
+        SLKUsageIpdThB: payloadData.SLKUsageIpdThB,
+        SLKUsageOpdLkr: payloadData.SLKUsageOpdLkr,
+        SLKUsageIpdLkr: payloadData.SLKUsageIpdLkr,
+        OverLimitCreditInsThB: payloadData.OverLimitCreditInsThB,
+        OverLimitCreditInsLkr: payloadData.OverLimitCreditInsLkr,
+        ExchangeRatesIns: payloadData.ExchangeRatesIns,
+        ExchangeRatesInt: payloadData.ExchangeRatesInt,
+        ClinicianReportedOutcomes: payloadData.ClinicianReportedOutcomes,
+        DocumentsAttached: payloadData.DocumentsAttached,
+        notes: payloadData.notes,
+        autoDateTime: displayAutoTime,
+        adminName: payloadData.adminName
+    };
+
+    const safeJsonString = JSON.stringify(mockEventItem);
+    const safeEncodedBase64 = window.btoa(unescape(encodeURIComponent(safeJsonString)));
+
+    // 🎯 นำฟังก์ชัน formatMoney ครอบฟิลด์ตัวเลขทั้งหมดเพื่อจัดระเบียบตัวเลขให้แสดงผลตรงล็อกสวยงาม
+    newChildTr.innerHTML = `
+        <td class="text-center font-bold" style="color:#198754; background:#eef1f6;">${payloadData.CaseIdNew}</td>
+        <td class="text-center" style="font-size:12px; color:#555;">${payloadData.treatmentDateTime || '-'}</td>
+        <td class="text-center" style="font-size:12px; color:#555;">${payloadData.statusText || '-'}</td>
+        <td class="text-left" style="white-space:normal !important; max-width:200px;">${payloadData.symptoms || '-'}</td>
+        <td class="text-left">${payloadData.hospital || '-'}</td>
+        <td class="text-right" style="background:#edf7ed; font-weight:bold;">${formatMoney(payloadData.DentalOPD)}</td>
+        <td class="text-right" style="background:#edf7ed; font-weight:bold;">${formatMoney(payloadData.PPUsageOPD)}</td>
+        <td class="text-right" style="background:#edf7ed; font-weight:bold;">${formatMoney(payloadData.PPUsageIPD)}</td>
+        <td class="text-right slk-column" style="background:#fffbe6; font-weight:bold;">${formatMoney(payloadData.SLKUsageOpdThB)}</td>
+        <td class="text-right slk-column" style="background:#fffbe6; font-weight:bold;">${formatMoney(payloadData.SLKUsageIpdThB)}</td>
+        <td class="text-right slk-column" style="background:#fffbe6; font-weight:bold;">${formatMoney(payloadData.SLKUsageOpdLkr)}</td>
+        <td class="text-right slk-column" style="background:#fffbe6; font-weight:bold;">${formatMoney(payloadData.SLKUsageIpdLkr)}</td>
+        <td class="text-right slk-column" style="color:red; background:#fffbe6; font-weight:bold;">${formatMoney(payloadData.OverLimitCreditInsThB)}</td>
+        <td class="text-right slk-column" style="color:red; background:#fffbe6; font-weight:bold;">${formatMoney(payloadData.OverLimitCreditInsLkr)}</td>
+        <td class="text-center slk-column" style="background:#fffbe6;">${payloadData.ExchangeRatesIns || '1'}</td>
+        <td class="text-center slk-column" style="background:#fffbe6;">${payloadData.ExchangeRatesInt || '1'}</td>
+        <td class="text-left">${payloadData.ClinicianReportedOutcomes || '-'}</td>
+        <td class="text-left">${payloadData.DocumentsAttached || '-'}</td>
+        <td class="text-left">${payloadData.notes || '-'}</td>
+        <td class="text-center" style="font-size:12px;">${displayAutoTime}</td>
+        <td class="text-center" style="font-size:12px;">${payloadData.adminName || 'Admin'}</td>
+        <td class="text-center" style="background:#fff; white-space: nowrap;">
+            <button type="button" class="btn-edit-minimal" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateDataToForm(decodedData);">✏️ แก้ไข</button>
+            <button type="button" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(this.closest('tr').rowIndex, '${payloadData.CaseIdNew}')">🗑️ ลบ</button>
+        </td>
+    `;
+
+    const hiddenWorkLocationEl = document.getElementById('hiddenWorkLocation');
+    const workLocation = hiddenWorkLocationEl ? hiddenWorkLocationEl.value : '';
+    const newSlkElements = newChildTr.querySelectorAll('.slk-column');
+
+    if (!workLocation.toUpperCase().includes('SL')) {
+        newSlkElements.forEach(el => el.style.display = 'none');
+    }
+
+    const existingRows = document.querySelectorAll(`.child-row-of-${payloadData.CaseIdNew}`);
+    if (existingRows.length > 0) {
+        const lastRowInGroup = existingRows[existingRows.length - 1];
+        lastRowInGroup.parentNode.insertBefore(newChildTr, lastRowInGroup.nextSibling);
+        console.log(`🎉 [Live Formatted Injection] ฉีดแถวใหม่พร้อมสัญกรณ์การจัดตัวเลขสำเร็จ!`);
+    } else {
+        tableBody.appendChild(newChildTr);
+    }
+}
+
+
 </script>
 
 
@@ -1934,24 +2174,24 @@ function toggleOcOtherInput(selectedValue) {
 
             <p style="margin: 15px 0 8px 0; font-weight: bold; color: #198754; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">📊 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัย</p>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">
-                <div><label style="font-size:11px; font-weight:bold; color:#555;">ทำฟัน หักวงเงิน OPD</label><input type="number" id="ocInpDentalOPD" value="0"></div>
-                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP OPD</label><input type="number" id="ocInpPPUsageOPD" value="0"></div>
-                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP IPD</label><input type="number" id="ocInpPPUsageIPD" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">ทำฟัน หักวงเงิน OPD</label><input type="number" id="ocInpDentalOPD" step="any" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP OPD</label><input type="number" id="ocInpPPUsageOPD" step="any" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP IPD</label><input type="number" id="ocInpPPUsageIPD" step="any" value="0"></div>
             </div>
            
             <div id="ocSlkFieldsWrapper" style="display: none; margin-top: 15px;">
                 <p style="margin: 10px 0 8px 0; font-weight: bold; color: #b48608; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">🧮 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัยเดินทาง SLK</p>
                 
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; background: #fffdf0; padding: 12px; border-radius: 6px; border: 1px solid #ffecb3;">
-                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (THB)</label><input type="number" id="ocInpSlkOpdThb" value="0"></div>
-                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (THB)</label><input type="number" id="ocInpSlkIpdThb" value="0"></div>
-                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (LKR)</label><input type="number" id="ocInpSlkOpdLkr" value="0"></div>
-                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (LKR)</label><input type="number" id="ocInpSlkIpdLkr" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (THB)</label><input type="number" id="ocInpSlkOpdThb" step="any" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (THB)</label><input type="number" id="ocInpSlkIpdThb" step="any" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (LKR)</label><input type="number" id="ocInpSlkOpdLkr" step="any" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (LKR)</label><input type="number" id="ocInpSlkIpdLkr" step="any" value="0"></div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: #fffdf0; padding: 12px; border-radius: 6px; border: 1px solid #ffecb3;">
-                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:red;">ส่วนเกินวงเงินค่ารักษา (THB)</label><input type="number" id="ocInpOverThb" value="0"></div>
-                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:red;">ส่วนเกินวงเงินค่ารักษา (LKR)</label><input type="number" id="ocInpOverLkr" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:red;">ส่วนเกินวงเงินค่ารักษา (THB)</label><input type="number" id="ocInpOverThb" step="any" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:red;">ส่วนเกินวงเงินค่ารักษา (LKR)</label><input type="number" id="ocInpOverLkr" step="any" value="0"></div>
                     <div><label style="font-size:11px; font-weight:bold; color:#555; color:#b48608;">เรทค่าเงินที่ประกันคิดให้ (THB/LKR)</label><input type="number" id="ocInpRateIns" value="1" step="any"></div>
                     <div><label style="font-size:11px; font-weight:bold; color:#555; color:#b48608;">เรทค่าเงินปัจจุบัน (THB/LKR)</label><input type="number" id="ocInpRateInt" value="1" step="any"></div>
                 </div>
