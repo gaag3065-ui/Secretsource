@@ -1433,63 +1433,58 @@ let currentDomRowIndex = -1;
                 body: JSON.stringify(payload)
             });
 
-            const result = await response.json();
+          const result = await response.json();
+            
             if (response.ok && result.success) {
+                // 1. พ่นข้อความสถานะตัวหนังสือสีเขียวบนหน้าจอ
                 claimStatus.innerText = `✅ ${result.message}`;
                 claimStatus.style.color = 'green';
-                alert('🎉 บันทึกข้อมูลสำเร็จเรียบร้อยแล้วครับ!');
-                
-        if (document.getElementById('hospitalSelect')) document.getElementById('hospitalSelect').value = ''; 
-        if (document.getElementById('distanceInput')) document.getElementById('distanceInput').value = ''; 
-        if (document.getElementById('symptomsInput')) document.getElementById('symptomsInput').value = ''; 
-        if (document.getElementById('notesInput')) document.getElementById('notesInput').value = ''; 
 
+                // 2. ดีดกล่องแจ้งเตือนจองคิวอัจฉริยะขึ้นมาให้แอดมินกด OK
+                alert(result.message);
 
+                // 3. สับเปลี่ยนเลขเคส ID และเลขแถวจริงที่ได้คิวถาวรมาจากฐานข้อมูลหลังบ้าน
+                payload.CaseIdNew = result.finalCaseId;
+                payload.sheetRowIndex = result.updatedRowIndex;
 
-        // สั่งรันดึงเลขเคส ID ตัวถัดไปตัวล่าสุดมาสแตนด์บายโชว์
-        if (typeof fetchNextCaseId === "function") {
-            fetchNextCaseId();
-        }
+                // 4. บังคับล้างค่าช่องกรอกข้อมูลฝั่งขวาทุกฟิลด์ให้สะอาดหมดจดเป็นค่าว่างเริ่มต้น
+                if (document.getElementById('hospitalSelect')) document.getElementById('hospitalSelect').value = ''; 
+                if (document.getElementById('distanceInput')) document.getElementById('distanceInput').value = ''; 
+                if (document.getElementById('symptomsInput')) document.getElementById('symptomsInput').value = ''; 
+                if (document.getElementById('notesInput')) document.getElementById('notesInput').value = ''; 
 
+                // 5. สั่งอัปเดตเวลานาฬิกาบนหัวเว็บให้กระดิกวินาทีเป็นปัจจุบัน
+                const headerTimeEl = document.getElementById('headerDateTimeValue');
+                if (headerTimeEl) {
+                    headerTimeEl.innerText = new Date().toLocaleString('th-TH', { 
+                        timeZone: 'Asia/Bangkok',
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false 
+                    }) + ' น.';
+                }
 
-           // ✅ เปลี่ยนมาเรียกใช้ตัวฉีดแถวสดพ่วงก้อนข้อมูล payload ในฝั่งเปิดเคสตรงจุดนี้แทนครับ
-        if (typeof injectNewRowToTableRealtime === "function") {
-            injectNewRowToTableRealtime(payload);
-        }
+                // 6. 🎯 สั่งฉีดพ่นแถวใหม่สดเข้ากลุ่มเคส ID เดียวกันทันทีคาตา เนียนนิ่ง ไม่กะพริบตา (เรียกใช้เพียง "จุดเดียว")
+                if (typeof injectNewRowToTableRealtime === "function") {
+                    injectNewRowToTableRealtime(payload);
+                }
 
+                // 7. สั่งกระตุ้น API ไปดึงเลขเคส ID ลำดับถัดไปมารอเปิดเคสใบใหม่ในช่องอินพุตต่อเนื่อง
+                if (typeof fetchNextCaseId === "function") {
+                    fetchNextCaseId();
+                }
 
-
-        if (document.getElementById('manualDate')) document.getElementById('manualDate').value = '';
-        if (document.getElementById('manualTime')) document.getElementById('manualTime').value = '';
-        if (document.getElementById('hospitalSelect')) document.getElementById('hospitalSelect').value = ''; 
-        if (document.getElementById('distanceInput')) document.getElementById('distanceInput').value = ''; 
-        if (document.getElementById('symptomsInput')) document.getElementById('symptomsInput').value = ''; 
-        if (document.getElementById('notesInput')) document.getElementById('notesInput').value = ''; 
-
-
-
-            // 🔒 สั่งล็อกช่องกรอกข้อมูลฝั่งขวากลับมาเป็นสีเทาทึบและกดไม่ได้เหมือนเดิม
-            const headerTimeEl = document.getElementById('headerDateTimeValue');
-            if (headerTimeEl) {
-                headerTimeEl.innerText = new Date().toLocaleString('th-TH', { 
-                    timeZone: 'Asia/Bangkok',
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false 
-                }) + ' น.';
+            } else {
+                // กรณีหลังบ้านประท้วงข้อผิดพลาด
+                claimStatus.innerText = `❌ ${result.message || 'บันทึกไม่สำเร็จ'}`;
+                claimStatus.style.color = 'red';
             }
-
-
-        } else {
-            claimStatus.innerText = `❌ ${result.message || 'บันทึกไม่สำเร็จ'}`;
-            claimStatus.style.color = 'red';
-        }
-    } catch (error) {
-        console.error(error);
-        claimStatus.innerText = '❌ เกิดข้อผิดพลาดร้ายแรงในการเชื่อมต่อเซิร์ฟเวอร์';
-        claimStatus.style.color = 'red';
-    }
+            } catch (error) {
+                console.error(error);
+                claimStatus.innerText = '❌ เกิดข้อผิดพลาดร้ายแรงในการเชื่อมต่อเซิร์ฟเวอร์';
+                claimStatus.style.color = 'red';
+            }
 
 
 
