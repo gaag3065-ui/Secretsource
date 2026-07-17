@@ -1791,77 +1791,88 @@ if (response.ok && result.success) {
         // =========================================================================================
         // 🎯 1. ระบบดักจับการกดปุ่มส่งฟอร์มเพื่อบันทึก "อัปเดตผลการรักษา" เป็นบรรทัดใหม่ต่อท้ายล่างสุด
         // =========================================================================================
-        const outcomeFormEl = document.getElementById('modalOutcomeForm');
-        if (outcomeFormEl) {
-            outcomeFormEl.addEventListener('submit', async (e) => {
-                e.preventDefault();
+  const outcomeFormEl = document.getElementById('modalOutcomeForm');
+if (outcomeFormEl) {
+    outcomeFormEl.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-                const payload = {
-                    sheetRowIndex: -1, // ล็อกเป็น -1 เสมอเพื่อให้ฝั่งเซิร์ฟเวอร์นำข้อมูลไปเพิ่มเป็นแถวใหม่ล่างสุดของชีต
-                    CaseIdNew: document.getElementById('ocCaseId').value,
-                    autoDateTime: document.getElementById('headerDateTimeValue').innerText,
-                    adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
-                    treatmentDateTime: `${document.getElementById('ocManualDate').value} ${document.getElementById('ocManualTime').value}`.trim(),
-                    company: document.getElementById('hiddenCompany').value || 'CALL 365',
-                    workLocation: document.getElementById('hiddenWorkLocation').value || '-',
-                    hospital: document.getElementById('ocHospital').value,
-                    symptoms: document.getElementById('ocSymptoms').value,
-                    insuranceId: document.getElementById('hiddenInsuranceId').value || '-',
-                    size: document.getElementById('hiddenSize').value || 'M',
-                    employeeName: document.getElementById('hiddenEmpName').value || '-',
+        const payload = {
+            sheetRowIndex: -1, 
+            CaseIdNew: document.getElementById('ocCaseId').value, // ดึงเลขเคส เช่น 812
+            autoDateTime: document.getElementById('headerDateTimeValue').innerText,
+            adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
+            treatmentDateTime: `${document.getElementById('ocManualDate').value} ${document.getElementById('ocManualTime').value}`.trim(),
+            company: document.getElementById('hiddenCompany').value || 'CALL 365',
+            workLocation: document.getElementById('hiddenWorkLocation').value || '-',
+            hospital: document.getElementById('ocHospital').value,
+            symptoms: document.getElementById('ocSymptoms').value,
+            insuranceId: document.getElementById('hiddenInsuranceId').value || '-',
+            size: document.getElementById('hiddenSize').value || 'M',
+            employeeName: document.getElementById('hiddenEmpName').value || '-',
 
-                     statusText: (() => {
-                    const selectedStatus = document.getElementById('ocStatusSelect').value;
-                    if (selectedStatus === 'อื่นๆ') {
-                        const extraText = document.getElementById('ocStatusOtherInput').value.trim();
-                        return extraText ? `อื่นๆ - ${extraText}` : 'อื่นๆ';
-                    }
-                    return selectedStatus;
-                    })(),
-                    
-                    DentalOPD: document.getElementById('ocInpDentalOPD').value || '0',
-                    PPUsageOPD: document.getElementById('ocInpPPUsageOPD').value || '0',
-                    PPUsageIPD: document.getElementById('ocInpPPUsageIPD').value || '0',
-                    ClinicianReportedOutcomes: document.getElementById('ocInpClinician').value,
-                    DocumentsAttached: document.getElementById('ocInpDocs').value || '-',
-                    notes: document.getElementById('ocNotesInput').value || '-'
-                };
+            // 🎯 แนบตัวแปรชี้ขาด ส่งสัญญาณบอกหลังบ้านว่านี่คือการเพิ่มประวัติเคสเก่า ห้ามเปลี่ยนเลขเคสเด็ดขาด!
+            isTimelineUpdate: true, 
 
-                if (confirm(`💾 ยืนยันการส่งอัปเดตผลการรักษาสำหรับ เคส ID: ${payload.CaseIdNew} ใช่หรือไม่?`)) {
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/api/save-treatment`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        const result = await response.json();
-
-                        
-                        if (response.ok && result.success) {
-                            alert('🎉 อัปเดตผลการรักษาสำเร็จและส่งประวัติลงฐานข้อมูล Sheets เรียบร้อย!');
-
-                       const outcomeModal = document.getElementById('outcomeUpdateModal');
-                        if (outcomeModal) { 
-                            outcomeModal.style.display = 'none'; 
-                        }
-
-                        payload.updatedRowIndex = result.updatedRowIndex;
-                        payload.sheetRowIndex = result.updatedRowIndex;
-
-                       // ✅ เปลี่ยนมาเรียกใช้ตัวฉีดแถวสดโดยพ่วงก้อนข้อมูล payload เข้าไปด้วยทันที:
-                        if (typeof injectNewRowToTableRealtime === "function") {
-                            injectNewRowToTableRealtime(payload);
-                        }
-
-                        } else { 
-                            alert('❌ เซิร์ฟเวอร์หลังบ้านปฏิเสธคำขอ: ' + result.message); 
-                        }
-                    } catch (err) { 
-                        alert('❌ ขัดข้องทางเทคนิคในการเชื่อมต่อ API อัปเดตหลังบ้าน'); 
-                    }
+            statusText: (() => {
+                const selectedStatus = document.getElementById('ocStatusSelect').value;
+                if (selectedStatus === 'อื่นๆ') {
+                    const extraText = document.getElementById('ocStatusOtherInput').value.trim();
+                    return extraText ? `อื่นๆ - ${extraText}` : 'อื่นๆ';
                 }
-            });
+                return selectedStatus;
+            })(),
+            
+            DentalOPD: document.getElementById('ocInpDentalOPD').value || '0',
+            PPUsageOPD: document.getElementById('ocInpPPUsageOPD').value || '0',
+            PPUsageIPD: document.getElementById('ocInpPPUsageIPD').value || '0',
+            
+            // ดึงสิทธิ์ค่าเงิน SLK มาฝากส่งให้ครบถ้วนป้องกันการบันทึกสูญหาย
+            SLKUsageOpdThB: document.getElementById('ocInpSlkOpdThb')?.value || '0',
+            SLKUsageIpdThB: document.getElementById('ocInpSlkIpdThb')?.value || '0',
+            SLKUsageOpdLkr: document.getElementById('ocInpSlkOpdLkr')?.value || '0',
+            SLKUsageIpdLkr: document.getElementById('ocInpSlkIpdLkr')?.value || '0',
+            OverLimitCreditInsThB: document.getElementById('ocInpOverThb')?.value || '0',
+            OverLimitCreditInsLkr: document.getElementById('ocInpOverLkr')?.value || '0',
+            ExchangeRatesIns: document.getElementById('ocInpRateIns')?.value || '1',
+            ExchangeRatesInt: document.getElementById('ocInpRateInt')?.value || '1',
+
+            ClinicianReportedOutcomes: document.getElementById('ocInpClinician').value || '-',
+            DocumentsAttached: document.getElementById('ocInpDocs').value || '-',
+            notes: document.getElementById('ocNotesInput').value || '-'
+        };
+
+        if (confirm(`💾 ยืนยันการส่งอัปเดตผลการรักษาสำหรับ เคส ID: ${payload.CaseIdNew} ใช่หรือไม่?`)) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/save-treatment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert('🎉 อัปเดตผลการรักษาสำเร็จและส่งประวัติลงฐานข้อมูล Sheets เรียบร้อยตรงล็อก!');
+                    
+                    const outcomeModal = document.getElementById('outcomeUpdateModal');
+                    if (outcomeModal) { outcomeModal.style.display = 'none'; }
+
+                    payload.updatedRowIndex = result.updatedRowIndex;
+                    payload.sheetRowIndex = result.updatedRowIndex;
+
+                    // สั่งกระตุ้นให้ตารางรีโหลดข้อมูลแบบเรียลไทม์เพื่อดึงผลลัพธ์ล่าสุดมากางแสดงผล
+                    if (typeof performSearch === "function") {
+                        performSearch();
+                    }
+                } else { 
+                    alert('❌ เซิร์ฟเวอร์หลังบ้านปฏิเสธคำขอ: ' + result.message); 
+                }
+            } catch (err) { 
+                alert('❌ ขัดข้องทางเทคนิคในการเชื่อมต่อ API อัปเดตหลังบ้าน'); 
+            }
         }
+    });
+}
+
 
         // =========================================================================================
         // 🎯 2. ฟังก์ชันหยอดค่าข้อมูลประวัติพนักงานเดิม เข้าสู่หน้าต่างป๊อปอัปผลการรักษา (Populate Data)
@@ -2224,4 +2235,3 @@ function injectNewRowToTableRealtime(payloadData) {
 
 </body>
 </html>
-
