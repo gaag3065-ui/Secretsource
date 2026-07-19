@@ -699,7 +699,7 @@
 
 
 // ✅ เปลี่ยนมาใช้พิกัดเลขไอพีตัวจริงของคอมพิวเตอร์คุณแบบนี้ครับ:
-const API_BASE_URL ="https://073n76kt-3000.asse.devtunnels.ms";
+const API_BASE_URL = "https://6d7kdf7d-3000.asse.devtunnels.ms";
 
 
 
@@ -1387,8 +1387,10 @@ let currentDomRowIndex = -1;
     // ------------------------------------------------------------------------------------------------------------------------- //
     // 🎛️ ระบบดักจับการบันทึกฟอร์มข้อมูลเคลมเข้ารักษา                                                                               //
     // ------------------------------------------------------------------------------------------------------------------------- //
+      // ------------------------------------------------------------------------------------------------------------------------- //
+    // 🎛️ ระบบดักจับการบันทึกฟอร์มข้อมูลเคลมเข้ารักษา (เวอร์ชันซ่อมแซมสัญกรณ์วันเวลาหัวเว็บเรียบร้อย)                                    //
+    // ------------------------------------------------------------------------------------------------------------------------- //
     document.getElementById('claimForm').addEventListener('submit', async (e) => {
-
         e.preventDefault(); 
 
         const symptoms = document.getElementById('symptomsInput').value;
@@ -1406,13 +1408,11 @@ let currentDomRowIndex = -1;
         const manualDate = document.getElementById('manualDate').value;
         const manualTime = document.getElementById('manualTime').value;
         const treatmentDateTime = `${manualDate} ${manualTime}`.trim() || '-';
-        const currentEmployeeName = sessionStorage.getItem('loggedInEmployeeName') || '';
-        console.log("ชื่อแอดมินที่เบราว์เซอร์จำได้ในหน้านี้:", currentEmployeeName);
 
         const payload = {
             sheetRowIndex: currentEditingRowIndex, 
             CaseIdNew: document.getElementById('caseId').value || '-',
-            autoDateTime: document.getElementById('headerDateTimeValue').innerText, // 🎯 แก้ไข: ดึงเวลาจาก span ผ่าน innerText ให้ถูกต้อง
+            autoDateTime: document.getElementById('headerDateTimeValue').innerText, 
             adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
             treatmentDateTime: treatmentDateTime,
             company: document.getElementById('hiddenCompany').value,
@@ -1433,58 +1433,44 @@ let currentDomRowIndex = -1;
                 body: JSON.stringify(payload)
             });
 
-          const result = await response.json();
+            const result = await response.json();
             
             if (response.ok && result.success) {
-                // 1. พ่นข้อความสถานะตัวหนังสือสีเขียวบนหน้าจอ
                 claimStatus.innerText = `✅ ${result.message}`;
                 claimStatus.style.color = 'green';
 
-                // 2. ดีดกล่องแจ้งเตือนจองคิวอัจฉริยะขึ้นมาให้แอดมินกด OK
                 alert(result.message);
 
-                // 3. สับเปลี่ยนเลขเคส ID และเลขแถวจริงที่ได้คิวถาวรมาจากฐานข้อมูลหลังบ้าน
                 payload.CaseIdNew = result.finalCaseId;
                 payload.sheetRowIndex = result.updatedRowIndex;
 
-                // 4. บังคับล้างค่าช่องกรอกข้อมูลฝั่งขวาทุกฟิลด์ให้สะอาดหมดจดเป็นค่าว่างเริ่มต้น
                 if (document.getElementById('hospitalSelect')) document.getElementById('hospitalSelect').value = ''; 
-                if (document.getElementById('distanceInput')) document.getElementById('distanceInput').value = ''; 
+                if (document.getElementById('distanceInput')) document.getElementById('distanceInput').value = '-'; 
                 if (document.getElementById('symptomsInput')) document.getElementById('symptomsInput').value = ''; 
                 if (document.getElementById('notesInput')) document.getElementById('notesInput').value = ''; 
 
-                // 5. สั่งอัปเดตเวลานาฬิกาบนหัวเว็บให้กระดิกวินาทีเป็นปัจจุบัน
-                const headerTimeEl = document.getElementById('headerDateTimeValue');
-                if (headerTimeEl) {
-                    headerTimeEl.innerText = new Date().toLocaleString('th-TH', { 
-                        timeZone: 'Asia/Bangkok',
-                        hour: '2-digit', 
-                        minute: '2-digit',
-                        second: '2-digit',
-                        hour12: false 
-                    }) + ' น.';
-                }
+                // 🎯 [แก้ไขจุดบั๊กที่ 1]: สั่งรันฟังก์ชันกลางในการฟอร์แมตวันเวลาไทย เพื่อคงรูปเล่ม วัน เดือน ปี ไว้ให้เหมือนเดิม ไม่หดสั้นเหลือแค่เวลา
+                setThaiDateTime();
 
-                // 6. 🎯 สั่งฉีดพ่นแถวใหม่สดเข้ากลุ่มเคส ID เดียวกันทันทีคาตา เนียนนิ่ง ไม่กะพริบตา (เรียกใช้เพียง "จุดเดียว")
                 if (typeof injectNewRowToTableRealtime === "function") {
                     injectNewRowToTableRealtime(payload);
                 }
 
-                // 7. สั่งกระตุ้น API ไปดึงเลขเคส ID ลำดับถัดไปมารอเปิดเคสใบใหม่ในช่องอินพุตต่อเนื่อง
                 if (typeof fetchNextCaseId === "function") {
                     fetchNextCaseId();
                 }
 
             } else {
-                // กรณีหลังบ้านประท้วงข้อผิดพลาด
                 claimStatus.innerText = `❌ ${result.message || 'บันทึกไม่สำเร็จ'}`;
                 claimStatus.style.color = 'red';
             }
-            } catch (error) {
-                console.error(error);
-                claimStatus.innerText = '❌ เกิดข้อผิดพลาดร้ายแรงในการเชื่อมต่อเซิร์ฟเวอร์';
-                claimStatus.style.color = 'red';
-            }
+        } catch (error) {
+            console.error(error);
+            claimStatus.innerText = '❌ เกิดข้อผิดพลาดร้ายแรงในการเชื่อมต่อเซิร์ฟเวอร์';
+            claimStatus.style.color = 'red';
+        }
+
+
 
 
 
@@ -1988,108 +1974,346 @@ function toggleOcOtherInput(selectedValue) {
 // =========================================================================================
 // 🎯 [พัฒนาต่อ] ฟังก์ชันดึงประวัติมาดีดแทรกแถวใหม่ในตารางทันที โดยไม่มีการกะพริบปิด-เปิดหน้าต่าง
 // =========================================================================================
-
+// 🎯 ฟังก์ชันฉีดแถวสดเรียลไทม์ (แก้ไขจัดเรียงลำดับพิกัดให้ไหลลงสู่ด้านล่างตารางอย่างเสมอภาคและคงที่)
 function injectNewRowToTableRealtime(payloadData) {
     const tableBody = document.getElementById('tableBodyResult');
     if (!tableBody || !payloadData) return;
 
-    if (tableBody.innerHTML.includes("ยังไม่มีประวัติ")) {
+    if (tableBody.innerHTML.includes("ยังไม่มีประวัติ") || tableBody.innerHTML.includes("กรุณาค้นหา")) {
         tableBody.innerHTML = '';
     }
 
-    const newChildTr = document.createElement('tr');
-    newChildTr.className = `child-row-of-${payloadData.CaseIdNew}`;
-    newChildTr.style.backgroundColor = '#edf7ed'; // ไฮไลต์สีเขียวอ่อนบ่งบอกสถานะแถวสดเรียลไทม์
-    
+    const caseId = payloadData.CaseIdNew;
+    const targetRowNo = payloadData.updatedRowIndex || payloadData.sheetRowIndex || -1;
     const displayAutoTime = payloadData.autoDateTime || new Date().toLocaleString('th-TH');
 
-    // 🎯 [เพิ่มใหม่] ฟังก์ชันช่วยแปลงค่าตัวเลขให้ใส่ Comma คั่นหลักพัน และล็อกทศนิยม 2 ตำแหน่งให้ตรงตามผังตารางหลัก
     const formatMoney = (val) => {
         if (val === undefined || val === null || val === '') return '0.00';
-        // ล้างคอมม่าหรือเว้นวรรคเดิมออกก่อนเผื่อมีติดมา
         let num = parseFloat(String(val).replace(/,/g, '').trim());
         if (isNaN(num)) return '0.00';
-        // คืนค่ากลับมาในสไตล์ใส่จุลภาคหลักพันและจุดทศนิยมสองตำแหน่ง
         return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
-   const mockEventItem = {
-        // 🎯 สแกนรับค่าเลขแถวจริงอย่างปลอดภัยสูงสุด รองรับทุกชื่อคีย์ที่ถูกส่งมาจากทุกฟอร์มในระบบ
-        targetRowNumber: payloadData.updatedRowIndex || payloadData.sheetRowIndex || payloadData.targetRowNumber || -1, 
-        CaseIdNew: payloadData.CaseIdNew,
-        treatmentDateTime: payloadData.treatmentDateTime,
-        statusText: payloadData.statusText,
-        symptoms: payloadData.symptoms,
-        hospital: payloadData.hospital,
-        DentalOPD: payloadData.DentalOPD,
-        PPUsageOPD: payloadData.PPUsageOPD,
-        PPUsageIPD: payloadData.PPUsageIPD,
-        SLKUsageOpdThB: payloadData.SLKUsageOpdThB,
-        SLKUsageIpdThB: payloadData.SLKUsageIpdThB,
-        SLKUsageOpdLkr: payloadData.SLKUsageOpdLkr,
-        SLKUsageIpdLkr: payloadData.SLKUsageIpdLkr,
-        OverLimitCreditInsThB: payloadData.OverLimitCreditInsThB,
-        OverLimitCreditInsLkr: payloadData.OverLimitCreditInsLkr,
-        ExchangeRatesIns: payloadData.ExchangeRatesIns,
-        ExchangeRatesInt: payloadData.ExchangeRatesInt,
-        ClinicianReportedOutcomes: payloadData.ClinicianReportedOutcomes,
-        DocumentsAttached: payloadData.DocumentsAttached,
-        notes: payloadData.notes,
+    const mockEventItem = {
+        targetRowNumber: targetRowNo, 
+        CaseIdNew: caseId,
+        treatmentDateTime: payloadData.treatmentDateTime || '-',
+        statusText: payloadData.statusText || 'แจ้งประกัน กำลังเข้ารับการรักษา',
+        symptoms: payloadData.symptoms || '-',
+        hospital: payloadData.hospital || '-',
+        DentalOPD: payloadData.DentalOPD || '0',
+        PPUsageOPD: payloadData.PPUsageOPD || '0',
+        PPUsageIPD: payloadData.PPUsageIPD || '0',
+        SLKUsageOpdThB: payloadData.SLKUsageOpdThB || '0',
+        SLKUsageIpdThB: payloadData.SLKUsageIpdThB || '0',
+        SLKUsageOpdLkr: payloadData.SLKUsageOpdLkr || '0',
+        SLKUsageIpdLkr: payloadData.SLKUsageIpdLkr || '0',
+        OverLimitCreditInsThB: payloadData.OverLimitCreditInsThB || '0',
+        OverLimitCreditInsLkr: payloadData.OverLimitCreditInsLkr || '0',
+        ExchangeRatesIns: payloadData.ExchangeRatesIns || '1',
+        ExchangeRatesInt: payloadData.ExchangeRatesInt || '1',
+        ClinicianReportedOutcomes: payloadData.ClinicianReportedOutcomes || '-',
+        DocumentsAttached: payloadData.documentsAttached || payloadData.DocumentsAttached || '-',
+        notes: payloadData.notes || '-',
         autoDateTime: displayAutoTime,
-        adminName: payloadData.adminName
+        adminName: payloadData.adminName || 'System Admin'
     };
 
     const safeJsonString = JSON.stringify(mockEventItem);
     const safeEncodedBase64 = window.btoa(unescape(encodeURIComponent(safeJsonString)));
 
-    // 🎯 นำฟังก์ชัน formatMoney ครอบฟิลด์ตัวเลขทั้งหมดเพื่อจัดระเบียบตัวเลขให้แสดงผลตรงล็อกสวยงาม
-    newChildTr.innerHTML = `
-        <td class="text-center font-bold" style="color:#198754; background:#eef1f6;">${payloadData.CaseIdNew}</td>
-        <td class="text-center" style="font-size:12px; color:#555;">${payloadData.treatmentDateTime || '-'}</td>
-        <td class="text-center" style="font-size:12px; color:#555;">${payloadData.statusText || '-'}</td>
-        <td class="text-left" style="white-space:normal !important; max-width:200px;">${payloadData.symptoms || '-'}</td>
-        <td class="text-left">${payloadData.hospital || '-'}</td>
-        <td class="text-right" style="background:#edf7ed; font-weight:bold;">${formatMoney(payloadData.DentalOPD)}</td>
-        <td class="text-right" style="background:#edf7ed; font-weight:bold;">${formatMoney(payloadData.PPUsageOPD)}</td>
-        <td class="text-right" style="background:#edf7ed; font-weight:bold;">${formatMoney(payloadData.PPUsageIPD)}</td>
-        <td class="text-right slk-column" style="background:#fffbe6; font-weight:bold;">${formatMoney(payloadData.SLKUsageOpdThB)}</td>
-        <td class="text-right slk-column" style="background:#fffbe6; font-weight:bold;">${formatMoney(payloadData.SLKUsageIpdThB)}</td>
-        <td class="text-right slk-column" style="background:#fffbe6; font-weight:bold;">${formatMoney(payloadData.SLKUsageOpdLkr)}</td>
-        <td class="text-right slk-column" style="background:#fffbe6; font-weight:bold;">${formatMoney(payloadData.SLKUsageIpdLkr)}</td>
-        <td class="text-right slk-column" style="color:red; background:#fffbe6; font-weight:bold;">${formatMoney(payloadData.OverLimitCreditInsThB)}</td>
-        <td class="text-right slk-column" style="color:red; background:#fffbe6; font-weight:bold;">${formatMoney(payloadData.OverLimitCreditInsLkr)}</td>
-        <td class="text-center slk-column" style="background:#fffbe6;">${payloadData.ExchangeRatesIns || '1'}</td>
-        <td class="text-center slk-column" style="background:#fffbe6;">${payloadData.ExchangeRatesInt || '1'}</td>
-        <td class="text-left">${payloadData.ClinicianReportedOutcomes || '-'}</td>
-        <td class="text-left">${payloadData.DocumentsAttached || '-'}</td>
-        <td class="text-left">${payloadData.notes || '-'}</td>
-        <td class="text-center" style="font-size:12px;">${displayAutoTime}</td>
-        <td class="text-center" style="font-size:12px;">${payloadData.adminName || 'Admin'}</td>
+    const parentTr = document.createElement('tr');
+    parentTr.className = 'parent-row';
+    parentTr.style.cursor = 'pointer';
+    parentTr.style.backgroundColor = '#edf7ed'; 
+
+    parentTr.innerHTML = `
+        <td class="text-center font-bold" style="color:#198754;">
+            <div class="case-cell"><span class="txt-case-id">${caseId}</span><span class="toggle-arrow" style="margin-left:5px;">▼</span></div>
+        </td>
+        <td class="text-center">${mockEventItem.treatmentDateTime}</td>
+        <td class="text-center"><span style="background-color: #fff3cd; color: #664d03; padding: 4px 8px; border-radius: 4px;">${mockEventItem.statusText}</span></td>
+        <td class="text-left" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${mockEventItem.symptoms}</td>
+        <td class="text-left">${mockEventItem.hospital}</td>
+        <td class="text-right" style="font-weight:bold;">${formatMoney(mockEventItem.DentalOPD)}</td>
+        <td class="text-right" style="font-weight:bold;">${formatMoney(mockEventItem.PPUsageOPD)}</td>
+        <td class="text-right" style="font-weight:bold;">${formatMoney(mockEventItem.PPUsageIPD)}</td>
+        <td class="text-right slk-column" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageOpdThB)}</td>
+        <td class="text-right slk-column" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageIpdThB)}</td>
+        <td class="text-right slk-column" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageOpdLkr)}</td>
+        <td class="text-right slk-column" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageIpdLkr)}</td>
+        <td class="text-right slk-column" style="color:red; font-weight:bold;">${formatMoney(mockEventItem.OverLimitCreditInsThB)}</td>
+        <td class="text-right slk-column" style="color:red; font-weight:bold;">${formatMoney(mockEventItem.OverLimitCreditInsLkr)}</td>
+        <td class="text-center slk-column">${mockEventItem.ExchangeRatesIns}</td>
+        <td class="text-center slk-column">${mockEventItem.ExchangeRatesInt}</td>
+        <td class="text-left">${mockEventItem.ClinicianReportedOutcomes}</td>
+        <td class="text-left">${mockEventItem.DocumentsAttached}</td>
+        <td class="text-left">${mockEventItem.notes}</td>
+        <td class="text-center">${mockEventItem.autoDateTime}</td>
+        <td class="text-center">${mockEventItem.adminName}</td>
+        <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- ไทม์ไลน์เรียลไทม์ -</td>
+    `;
+
+    const childTr = document.createElement('tr');
+    childTr.className = `child-row-of-${caseId}`;
+    childTr.style.display = 'none'; 
+    childTr.style.backgroundColor = '#f4f7f6'; 
+
+    childTr.innerHTML = `
+        <td class="text-center font-bold" style="color:#0b5ed7; background:#eef1f6;">${caseId}</td>
+        <td class="text-center" style="font-size:12px; color:#555;">${mockEventItem.treatmentDateTime}</td>
+        <td class="text-center" style="font-size:12px; color:#555;">${mockEventItem.statusText}</td>
+        <td class="text-left" style="white-space:normal !important; max-width:200px;">${mockEventItem.symptoms}</td>
+        <td class="text-left">${mockEventItem.hospital}</td>
+        <td class="text-right">${formatMoney(mockEventItem.DentalOPD)}</td>
+        <td class="text-right">${formatMoney(mockEventItem.PPUsageOPD)}</td>
+        <td class="text-right">${formatMoney(mockEventItem.PPUsageIPD)}</td>
+        <td class="text-right slk-column">${formatMoney(mockEventItem.SLKUsageOpdThB)}</td>
+        <td class="text-right slk-column">${formatMoney(mockEventItem.SLKUsageIpdThB)}</td>
+        <td class="text-right slk-column">${formatMoney(mockEventItem.SLKUsageOpdLkr)}</td>
+        <td class="text-right slk-column">${formatMoney(mockEventItem.SLKUsageIpdLkr)}</td>
+        <td class="text-right slk-column" style="color:red;">${formatMoney(mockEventItem.OverLimitCreditInsThB)}</td>
+        <td class="text-right slk-column" style="color:red;">${formatMoney(mockEventItem.OverLimitCreditInsLkr)}</td>
+        <td class="text-center slk-column">${mockEventItem.ExchangeRatesIns}</td>
+        <td class="text-center slk-column">${mockEventItem.ExchangeRatesInt}</td>
+        <td class="text-left">${mockEventItem.ClinicianReportedOutcomes}</td>
+        <td class="text-left">${mockEventItem.DocumentsAttached}</td>
+        <td class="text-left">${mockEventItem.notes}</td>
+        <td class="text-center" style="font-size:12px;">${mockEventItem.autoDateTime}</td>
+        <td class="text-center" style="font-size:12px;">${mockEventItem.adminName}</td>
         <td class="text-center" style="background:#fff; white-space: nowrap;">
             <button type="button" class="btn-edit-minimal" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateDataToForm(decodedData);">✏️ แก้ไข</button>
-            <button type="button" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(this.closest('tr').rowIndex, '${payloadData.CaseIdNew}')">🗑️ ลบ</button>
+            <button type="button" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(${targetRowNo}, '${caseId}')">🗑️ ลบ</button>
         </td>
     `;
 
-    const hiddenWorkLocationEl = document.getElementById('hiddenWorkLocation');
-    const workLocation = hiddenWorkLocationEl ? hiddenWorkLocationEl.value : '';
-    const newSlkElements = newChildTr.querySelectorAll('.slk-column');
+    const spacerTr = document.createElement('tr');
+    spacerTr.className = `child-row-of-${caseId}-spacer`;
+    spacerTr.style.display = 'none'; 
+    
+    spacerTr.innerHTML = `
+        <td colspan="22" style="height: 45px !important; background-color: #ffffff !important; border: none !important; padding: 8px 15px !important; text-align: left;">
+            <button type="button" style="padding: 6px 20px; background-color: #198754; color: white; border: none; border-radius: 5px; font-size: 12.5px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateOutcomeToModal(decodedData);">
+                🏥 อัปเดตผลการรักษา
+            </button>
+        </td>
+    `;
 
-    if (!workLocation.toUpperCase().includes('SL')) {
-        newSlkElements.forEach(el => el.style.display = 'none');
-    }
+    // 🎯 [แก้ไขจุดบั๊กที่ 2]: เปลี่ยนจากคำสั่ง insertBefore (แทรกบนสุด) มาใช้คำสั่ง appendChild (ต่อท้ายล่างสุด)
+    // เพื่อบังคับให้แถวเกิดใหม่ไหลลงล่างตารางอย่างเป็นระบบ สอดคล้องกับพิกัดข้อมูลก่อนและหลังรีเฟรชหน้าจอเด็ดขาด 100%
+    tableBody.appendChild(parentTr);
+    tableBody.appendChild(childTr);
+    tableBody.appendChild(spacerTr);
 
-    const existingRows = document.querySelectorAll(`.child-row-of-${payloadData.CaseIdNew}`);
-    if (existingRows.length > 0) {
-        const lastRowInGroup = existingRows[existingRows.length - 1];
-        lastRowInGroup.parentNode.insertBefore(newChildTr, lastRowInGroup.nextSibling);
-        console.log(`🎉 [Live Formatted Injection] ฉีดแถวใหม่พร้อมสัญกรณ์การจัดตัวเลขสำเร็จ!`);
-    } else {
-        tableBody.appendChild(newChildTr);
-    }
+    const childRowsArray = [childTr, spacerTr];
+
+    parentTr.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-edit-minimal') || e.target.tagName === 'BUTTON') return;
+        const isCurrentlyOpen = parentTr.classList.contains('is-open');
+
+        if (!isCurrentlyOpen) {
+            parentTr.classList.add('is-open');
+            childRowsArray.forEach(row => row.style.display = '');
+            const txtCaseId = parentTr.querySelector('.txt-case-id');
+            if (txtCaseId) txtCaseId.style.display = 'none';
+
+            Array.from(parentTr.children).forEach((td, idx) => {
+                if (idx > 0 && idx < 22) td.style.opacity = '0'; 
+            });
+            const arrow = parentTr.querySelector('.toggle-arrow');
+            if (arrow) arrow.innerText = '▲';
+        } else {
+            parentTr.classList.remove('is-open');
+            childRowsArray.forEach(row => row.style.display = 'none');
+            const txtCaseId = parentTr.querySelector('.txt-case-id');
+  if (txtCaseId) txtCaseId.style.display = '';
+            Array.from(parentTr.children).forEach((td) => { td.style.opacity = '1'; });
+            const arrow = parentTr.querySelector('.toggle-arrow');
+            if (arrow) arrow.innerText = '▼';
+        }
+    });
+
+    // 🔐 ระบบควบคุมการสแกนซ่อน-แสดงคอลัมน์ประกันกลุ่ม SLK อัตโนมัติตามสถานที่ทำงานของแถวเปิดสดใบใหม่
+    const workLocation = document.getElementById('hiddenWorkLocation')?.value || '';
+    const slkElements = parentTr.querySelectorAll('.slk-column');
+    slkElements.forEach(el => el.style.display = workLocation.toUpperCase().includes('SL') ? '' : 'none');
+    
+    // ทำซ้ำสำหรับช่อง slk-column ภายในแถวย่อยเพื่อควบคุมสิทธิ์หน้าจอให้เท่าเทียมกัน
+    const subSlkElements = childTr.querySelectorAll('.slk-column');
+    subSlkElements.forEach(el => el.style.display = workLocation.toUpperCase().includes('SL') ? '' : 'none');
+
+    console.log(`🎉 [Live Scientific Injection Success] แก้ไขตำแหน่งไหลลงด้านล่างสุดเรียบร้อยแล้ว!`);
 }
 
 
+
+
+// 🎯 จัดการโหมดแก้ไขป๊อปอัป Modal (กล่องเหลืองทอง)
+function openEditModal(eventItem, domIndex) {
+    currentEditingRowIndex = eventItem.targetRowNumber || -1;
+    currentDomRowIndex = domIndex;
+
+    const modal = document.getElementById('editCaseModal');
+    if (modal) modal.style.display = 'flex';
+
+    function setVal(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.value = (val !== undefined && val !== null) ? String(val).replace(/,/g, '').trim() : '';
+    }
+
+    setVal('mdCaseId', eventItem.CaseIdNew);
+    setVal('mdHospitalSelect', eventItem.hospital);
+    setVal('mdSymptomsInput', eventItem.symptoms);
+    setVal('mdStatusText', eventItem.statusText || 'รอดำเนินการ');
+    setVal('mdInpDentalOPD', eventItem.DentalOPD || '0');
+    setVal('mdInpPPUsageOPD', eventItem.PPUsageOPD || '0');
+    setVal('mdInpPPUsageIPD', eventItem.PPUsageIPD || '0');
+    setVal('mdInpSLKUsageOpdThB', eventItem.SLKUsageOpdThB || '0');
+    setVal('mdInpSLKUsageIpdThB', eventItem.SLKUsageIpdThB || '0');
+    setVal('mdInpSLKUsageOpdLkr', eventItem.SLKUsageOpdLkr || '0');
+    setVal('mdInpSLKUsageIpdLkr', eventItem.SLKUsageIpdLkr || '0');
+    setVal('mdInpOverLimitThB', eventItem.OverLimitCreditInsThB || '0');
+    setVal('mdInpOverLimitLkr', eventItem.OverLimitCreditInsLkr || '0');
+    setVal('mdInpExchangeRatesIns', eventItem.ExchangeRatesIns || '1');
+    setVal('mdInpExchangeRatesInt', eventItem.ExchangeRatesInt || '1');
+    setVal('mdInpClinician', eventItem.ClinicianReportedOutcomes || '-');
+    setVal('mdInpDocs', eventItem.documentsAttached || eventItem.DocumentsAttached || '-');
+    setVal('mdNotesInput', eventItem.notes || '-');
+
+    const rawDateTime = String(eventItem.treatmentDateTime || '').trim();
+    const parts = rawDateTime.split(' ');
+    setVal('mdManualDate', parts[0] || '');
+    setVal('mdManualTime', parts[1] || '');
+
+    const workLocation = document.getElementById('hiddenWorkLocation').value;
+    const modalSlk = document.querySelectorAll('#editCaseModal .slk-column');
+    modalSlk.forEach(el => el.style.display = workLocation.toUpperCase().includes('SL') ? '' : 'none');
+}
+
+function closeEditModal() {
+    document.getElementById('editCaseModal').style.display = 'none';
+}
+
+// 🎯 ส่งคำสั่งอัปเดตจากป๊อปอัป (กล่องเหลืองทอง)
+document.getElementById('modalEditForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const symptoms = document.getElementById('mdSymptomsInput').value;
+    if (!symptoms.trim()) { alert("กรุณากรอกอาการป่วย"); return; }
+
+    const payload = {
+        sheetRowIndex: currentEditingRowIndex,
+        CaseIdNew: document.getElementById('mdCaseId').value,
+        autoDateTime: document.getElementById('headerDateTimeValue').innerText,
+        adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
+        treatmentDateTime: `${document.getElementById('mdManualDate').value} ${document.getElementById('mdManualTime').value}`.trim(),
+        company: document.getElementById('hiddenCompany').value,
+        workLocation: document.getElementById('hiddenWorkLocation').value,
+        hospital: document.getElementById('mdHospitalSelect').value,
+        symptoms: symptoms,
+        insuranceId: document.getElementById('hiddenInsuranceId').value,
+        size: document.getElementById('hiddenSize').value,
+        employeeName: document.getElementById('hiddenEmpName').value,
+        statusText: document.getElementById('mdStatusText').value,
+        DentalOPD: document.getElementById('mdInpDentalOPD').value || '0',
+        PPUsageOPD: document.getElementById('mdInpPPUsageOPD').value || '0',
+        PPUsageIPD: document.getElementById('mdInpPPUsageIPD').value || '0',
+        SLKUsageOpdThB: document.getElementById('mdInpSLKUsageOpdThB').value || '0',
+        SLKUsageIpdThB: document.getElementById('mdInpSLKUsageIpdThB').value || '0',
+        SLKUsageOpdLkr: document.getElementById('mdInpSLKUsageOpdLkr').value || '0',
+        SLKUsageIpdLkr: document.getElementById('mdInpSLKUsageIpdLkr').value || '0',
+        OverLimitCreditInsThB: document.getElementById('mdInpOverLimitThB').value || '0',
+        OverLimitCreditInsLkr: document.getElementById('mdInpOverLimitLkr').value || '0',
+        ExchangeRatesIns: document.getElementById('mdInpExchangeRatesIns').value || '1',
+        ExchangeRatesInt: document.getElementById('mdInpExchangeRatesInt').value || '1',
+        ClinicianReportedOutcomes: document.getElementById('mdInpClinician').value || '-',
+        DocumentsAttached: document.getElementById('mdInpDocs').value || '-',
+        notes: document.getElementById('mdNotesInput').value || '-'
+    };
+
+    if (confirm("ยืนยันอัปเดตข้อมูลทับบรรทัดเดิมลง Google Sheets?")) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/update-treatment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (response.ok && result.success) {
+                alert('🎉 บันทึกการอัปเดตเรียบร้อยแล้ว!');
+                closeEditModal();
+                performSearch(); // สั่งรีโหลดการแสดงผลตารางเพื่ออัปเดตตัวเลขใหม่ทันที
+            } else {
+                alert('❌ ปฏิเสธการบันทึก: ' + result.message);
+            }
+        } catch (err) {
+            alert('❌ ขัดข้องทางเทคนิคเครือข่าย');
+        }
+    }
+});
+
+// 🎯 ส่งคำสั่งลบข้อมูลถาวร
+document.getElementById('deleteCaseBtn').addEventListener('click', async () => {
+    if (currentEditingRowIndex < 2) { alert("พิกัดแถวไม่ถูกต้อง"); return; }
+    const caseId = document.getElementById('mdCaseId').value;
+
+    if (!confirm(`⚠️ คุณต้องการลบข้อมูลประวัติของเคส ID: ${caseId} ใช่หรือไม่?`)) return;
+    if (!confirm(`🚨 คำเตือนสูงสุด: ข้อมูลในแถวที่ ${currentEditingRowIndex} จะถูกตัดทิ้งถาวร ยืนยันกด OK...`)) return;
+
+    try {
+        const payload = {
+            sheetRowIndex: currentEditingRowIndex,
+            CaseIdNew: caseId,
+            adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
+            autoDateTime: document.getElementById('headerDateTimeValue').innerText
+        };
+
+        const response = await fetch(`${API_BASE_URL}/api/delete-treatment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert(`🎉 ลบข้อมูลแถวเรียบร้อยแล้ว!`);
+            closeEditModal();
+            performSearch();
+        } else {
+            alert('❌ ผิดพลาด: ' + result.message);
+        }
+    } catch (err) {
+        alert('❌ ขัดข้องทางเทคนิคในการเชื่อมต่อหลังบ้าน');
+    }
+});
+
+// ⏳ ระบบตรวจจับความเคลื่อนไหว สั่งออกจากระบบอัตโนมัติ (Inactivity Timeout)
+const INACTIVITY_LIMIT = 5 * 60 * 1000; 
+let timeoutId;
+function logoutUser() {
+    alert("🔒 ระบบตัดเซสชันการทำงานเนื่องจากไม่มีการเคลื่อนไหว เพื่อรักษาความปลอดภัย");
+    sessionStorage.removeItem('loggedInAdminName');
+    window.location.href = 'index.html';
+}
+function resetTimer() {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(logoutUser, INACTIVITY_LIMIT);
+}
+window.onload = resetTimer;
+window.onmousemove = resetTimer;
+window.onmousedown = resetTimer;
+window.onclick = resetTimer;
+window.onkeypress = resetTimer;
+
+window.addEventListener('DOMContentLoaded', () => {
+    setThaiDateTime();
+    fetchNextCaseId();
+    flatpickr("#manualDate", { dateFormat: "d/m/Y", defaultDate: "today", allowInput: true });
+    flatpickr("#manualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, defaultDate: "now", allowInput: true });
+    flatpickr("#mdManualDate", { dateFormat: "d/m/Y", allowInput: true });
+    flatpickr("#mdManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
+    flatpickr("#ocManualDate", { dateFormat: "d/m/Y", allowInput: true });
+    flatpickr("#ocManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
+});
 </script>
 
 
