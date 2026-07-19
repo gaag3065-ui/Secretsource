@@ -37,67 +37,56 @@
 
 <script>
 
-// ❌ ลบของเก่า: const API_BASE_URL = 'http://localhost:3000';
+   
 
+// ⚠️ เมื่อย้ายเครื่องหลังบ้านเสร็จแล้ว อย่าลืมนำ URL หลังบ้านตัวใหม่มาเปลี่ยนที่นี่นะครับ
+const API_BASE_URL = "https://073n76kt-3000.asse.devtunnels.ms";
 
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const messageDiv = document.getElementById('message');
+    
+    messageDiv.innerText = 'กำลังตรวจสอบข้อมูล...';
+    messageDiv.style.color = 'black';
 
+    try {
+        // ส่งข้อมูลไปยัง API หลังบ้าน
+        const response = await fetch(`${API_BASE_URL}/api/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include', // ✅ เพิ่มตรงนี้: เพื่อรองรับ credentials: true ที่เราตั้งค่าไว้ในเซิร์ฟเวอร์หลังบ้าน
+            body: JSON.stringify({ username, password })
+        });
 
-// ✅ เปลี่ยนมาใช้พิกัดเลขไอพีตัวจริงของคอมพิวเตอร์คุณแบบนี้ครับ:
-const API_BASE_URL = "https://6d7kdf7d-3000.asse.devtunnels.ms";
+        const data = await response.json();
 
+        if (response.ok && data.success) {
+            messageDiv.innerText = data.message;
+            messageDiv.style.color = 'green';
+            
+            sessionStorage.setItem('loggedInAdminName', data.user.name);
 
+            // ------------------ หน่วงเวลา 1 วินาทีแล้วกระโดดไปหน้าค้นหา ------------------ //
+            setTimeout(() => {
+                window.location.href = 'search.html';
+            }, 1000);
+            // ------------------------------------------------------------------------- //
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const messageDiv = document.getElementById('message');
-        
-        messageDiv.innerText = 'กำลังตรวจสอบข้อมูล...';
-        messageDiv.style.color = 'black';
-
-        try {
-            // ส่งข้อมูลไปยัง API หลังบ้านที่สร้างไว้
-            const response = await fetch(`${API_BASE_URL}/api/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                messageDiv.innerText = data.message;
-                messageDiv.style.color = 'green';
-                // คุณสามารถใส่คำสั่งเปลี่ยนหน้าเว็บตรงนี้ได้ เช่น window.location.href = '/dashboard';
-
-              sessionStorage.setItem('loggedInAdminName', data.user.name);
-
-                
-//----------------------------------เพิ่มมาให้กระโดนไปหน้าค้นหา----------------------------------//
-
-
-    setTimeout(() => {
-        window.location.href = 'search.html';
-    }, 1000);
-
-
-//-------------------------------------------------------------------------------------------//
-
-
-
-
-
-            } else {
-                messageDiv.innerText = data.message || 'ล็อกอินไม่สำเร็จ';
-                messageDiv.style.color = 'red';
-            }
-        } catch (error) {
-            messageDiv.innerText = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+        } else {
+            messageDiv.innerText = data.message || 'ล็อกอินไม่สำเร็จ';
             messageDiv.style.color = 'red';
         }
-    });
+    } catch (error) {
+        messageDiv.innerText = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+        messageDiv.style.color = 'red';
+    }
+});
+
+
+
 </script>
 
 </body>
