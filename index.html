@@ -39,8 +39,8 @@
 
    
 
-// ⚠️ เมื่อย้ายเครื่องหลังบ้านเสร็จแล้ว อย่าลืมนำ URL หลังบ้านตัวใหม่มาเปลี่ยนที่นี่นะครับ
-const API_BASE_URL = "https://073n76kt-3000.asse.devtunnels.ms";
+import 'dotenv/config'
+const API_BASE_URL = process.env.API_BASE_URL;
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
