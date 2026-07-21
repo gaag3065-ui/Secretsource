@@ -2251,40 +2251,6 @@ document.getElementById('modalEditForm').addEventListener('submit', async (e) =>
     }
 });
 
-// 🎯 ส่งคำสั่งลบข้อมูลถาวร
-document.getElementById('deleteCaseBtn').addEventListener('click', async () => {
-    if (currentEditingRowIndex < 2) { alert("พิกัดแถวไม่ถูกต้อง"); return; }
-    const caseId = document.getElementById('mdCaseId').value;
-
-    if (!confirm(`⚠️ คุณต้องการลบข้อมูลประวัติของเคส ID: ${caseId} ใช่หรือไม่?`)) return;
-    if (!confirm(`🚨 คำเตือนสูงสุด: ข้อมูลในแถวที่ ${currentEditingRowIndex} จะถูกตัดทิ้งถาวร ยืนยันกด OK...`)) return;
-
-    try {
-        const payload = {
-            sheetRowIndex: currentEditingRowIndex,
-            CaseIdNew: caseId,
-            adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
-            autoDateTime: document.getElementById('headerDateTimeValue').innerText
-        };
-
-        const response = await fetch(`${API_BASE_URL}/api/delete-treatment`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-            alert(`🎉 ลบข้อมูลแถวเรียบร้อยแล้ว!`);
-            closeEditModal();
-            performSearch();
-        } else {
-            alert('❌ ผิดพลาด: ' + result.message);
-        }
-    } catch (err) {
-        alert('❌ ขัดข้องทางเทคนิคในการเชื่อมต่อหลังบ้าน');
-    }
-});
 
 // ⏳ ระบบตรวจจับความเคลื่อนไหว สั่งออกจากระบบอัตโนมัติ (Inactivity Timeout)
 const INACTIVITY_LIMIT = 5 * 60 * 1000; 
