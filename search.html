@@ -2274,7 +2274,7 @@ window.addEventListener('DOMContentLoaded', () => {
     setThaiDateTime();
     fetchNextCaseId();
     flatpickr("#manualDate", { dateFormat: "d/m/Y", defaultDate: "today", allowInput: true });
-    flatpickr("#manualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, defaultDate: "now", allowInput: true });
+    flatpickr("#manualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, defaultDate: new Date(), allowInput: true });
     flatpickr("#mdManualDate", { dateFormat: "d/m/Y", allowInput: true });
     flatpickr("#mdManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
     flatpickr("#ocManualDate", { dateFormat: "d/m/Y", allowInput: true });
