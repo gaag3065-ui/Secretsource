@@ -1,4 +1,5 @@
 // 🎯 วางกลุ่มนี้ไว้บนสุดของไฟล์ insuranceclaimhistory.js
+const API_BASE_URL = "https://073n76kt-3000.asse.devtunnels.ms";
 let currentEditingRowIndex = -1; 
 let currentDomRowIndex = -1;
 let currentActiveCaseId = "";
