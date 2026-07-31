@@ -1,0 +1,320 @@
+
+<!-- 📦 กล่องรวมขนาดใหญ่ด้านล่าง (Full Width Container) -->
+<div class="card-container bottom-full-box">
+    <h2>📊 ประวัติการรักษา รายละเอียดและการคำนวณสิทธิ์การรักษาอย่างละเอียด</h2>
+    
+    <div class="responsive-table-wrapper">
+       <table class="custom-claim-table">
+            <thead>
+
+                <!-- แถวที่ 1: หัวข้อปกติจะควบลงล่าง (rowspan) ส่วนกลุ่มประกันจะควบออกข้าง (colspan) -->
+                <tr>
+                    <th rowspan="2">เลขเคส ID</th>
+                    <th rowspan="2">เวลาและวันที่เข้ารักษา</th>
+                    <th rowspan="2">ขั้นตอนการรักษา</th>
+                    <th rowspan="2">อาการป่วย</th>
+                    <th rowspan="2">สถานที่รักษา</th>
+                    
+                    <!-- ส่วนหัวควบกลุ่มประกัน -->
+                    <th colspan="3" class="th-group-pp">ยอดวงเงินค่ารักษาประกัน PP</th>
+                    <th colspan="8" class="th-group-slk slk-column">ยอดวงเงินค่ารักษาประกัน SLK</th>
+        
+                    <th rowspan="2">ผลการรักษา</th>
+                    <th rowspan="2">เอกสารที่ต้องแนบ</th>
+                    <th rowspan="2">หมายเหตุ</th>
+                    <th rowspan="2">เวลาและวันที่บันทึกข้อมูล</th>
+                    <th rowspan="2">แอดมินที่บันทึกข้อมูล</th>     
+                    <!-- ✅ เพิ่มคอลัมน์ใหม่ขวาสุด -->
+                    <th rowspan="2" style="background-color: #f1f3f5; color: #333;">แก้ไขข้อมูล</th>     
+                </tr>
+
+                <!-- แถวที่ 2: จะเหลือเฉพาะช่องหัวข้อย่อยของประกัน PP และ SLK เท่านั้น ไม่เบี้ยวแน่นอน -->      
+                <tr>
+                    <!-- ภายใต้กลุ่มประกัน PP (3 ช่อง) -->
+                    <th class="th-sub-pp">ทำฟัน หักวงเงิน OPD</th>
+                    <th class="th-sub-pp">PP OPD</th>
+                    <th class="th-sub-pp">PP IPD</th>
+
+                    <!-- ภายใต้กลุ่มประกัน SLK (8 ช่อง) -->
+                    <th class="th-sub-slk slk-column">SL OPD (THB)</th>
+                    <th class="th-sub-slk slk-column">SL IPD (THB)</th>
+                    <th class="th-sub-slk slk-column">SL OPD (LKR)</th>
+                    <th class="th-sub-slk slk-column">SL IPD (LKR)</th>
+                    <th class="th-sub-slk slk-column">ส่วนเกินวงเงินค่ารักษา (THB)</th>
+                    <th class="th-sub-slk slk-column">ส่วนเกินวงเงินค่ารักษา (LKR)</th>
+                    <th class="th-sub-slk slk-column">เรทค่าเงินที่ประกันคิดให้ (THB/LKR)</th>
+                    <th class="th-sub-slk slk-column">เรทค่าเงินปัจจุบัน (THB/LKR)</th>
+                </tr>
+            </thead>
+            <tbody id="tableBodyResult">
+                <!-- ตัวอย่างแถวแสดงผลข้อมูล (มีทั้งหมด 17 คอลัมน์ รองรับ 17 แท็ก td ตรงล็อกเป๊ะๆ) -->
+                <tr>
+                    <td class="text-center font-bold">-</td>
+                    <td class="text-center">-</td>
+                    <td class="text-center">-</td>
+                    <td class="text-left">-</td>
+                    <td class="text-left">-</td>
+                    <td class="text-left">-</td>
+                    <td class="text-left">-</td>
+
+                    <!-- ฝั่ง PP (3 ช่อง) -->
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+
+                    <!-- ฝั่ง SLK (8 ช่อง) -->
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-center">-</td>
+                    <td class="text-center">-</td>
+
+                    <!-- ส่วนท้าย (3 ช่อง) -->
+                    <td class="text-center">-</td>
+                    <td class="text-center">-</td>
+                    <td class="text-center">-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<!-- 🚨 ปุ่มเมนูออกจากระบบสีแดงขนาดใหญ่ด้านล่างสุดของหน้าจอ -->
+<div style="width: 100%; display: flex; justify-content: center; margin-top: 30px; margin-bottom: 20px; padding: 0 15px;">
+    <button type="button" onclick="manualLogout()" style="width: 100%; max-width: 400px; padding: 14px; background-color: #dc3545; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(220, 53, 69, 0.2); transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+        🔒 ออกจากระบบบริหารจัดการ (Logout)
+    </button>
+</div>
+
+
+<!-- ============================================================ การอัปเดตผลการรักษา =============================================================== -->
+<!-- ============================================================================================================================================== -->
+<!-- ============================= [ส่วนบน] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับการอัปเดตผลการรักษา (Outcome Update Modal) ===================================== -->
+<!-- =============================================================================================================================================== -->
+
+<div id="outcomeUpdateModal" style="display: none; position: fixed !important; z-index: 99999 !important; left: 0; top: 0; width: 100vw !important; height: 100vh !important; background-color: rgba(0, 0, 0, 0.5) !important; align-items: center !important; justify-content: center !important;">
+    <div style="background-color: #ffffff !important; padding: 25px !important; border-radius: 12px !important; width: 95% !important; max-width: 1100px !important; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25) !important; max-height: 90vh !important; overflow-y: auto !important; border-top: 6px solid #198754 !important; animation: popupFadeIn 0.25s ease-out;">
+<!-- ส่วนหัวป๊อปอัปสีเขียวการแพทย์ -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 15px;">
+            <h3 style="margin: 0; color: #198754; font-family: 'Segoe UI', Tahoma, sans-serif;">📝 อัปเดตผลการรักษาและประวัติสรุปเคส</h3>
+            <span style="font-size: 24px; cursor: pointer; color: #aaa; font-weight: bold; line-height: 1;" onclick="document.getElementById('outcomeUpdateModal').style.setProperty('display', 'none', 'important');">&times;</span>
+        </div>
+
+        <form id="modalOutcomeForm">
+            <!-- โซนช่องหลัก: ล็อกให้เป็น Readonly ทึบทั้งหมดตามเงื่อนไข -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เคส ID :</label>
+                    <input type="text" id="ocCaseId" readonly style="background-color: #e9ecef !important; color: #495057; cursor: not-allowed;">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">สถานพยาบาล :</label>
+                    <input type="text" id="ocHospital" readonly style="background-color: #e9ecef !important; color: #495057; cursor: not-allowed;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">อาการป่วย :</label>
+                <textarea id="ocSymptoms" readonly style="background-color: #e9ecef !important; color: #495057; cursor: not-allowed; min-height: 60px;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">ขั้นตอนการรักษา <span style="color:red;">*</span></label>
+                <select id="ocStatusSelect" required style="width: 100% !important; padding: 8px !important; border: 1px solid #ced4da !important; border-radius: 6px !important; background-color: #ffffff !important;" onchange="toggleOcOtherInput(this.value)">
+                    <option value="" disabled selected>-- กรุณาคลิกเลือกสถานะขั้นตอนการรักษาปัจจุบัน --</option>
+                    <option value="แจ้งประกันแล้ว เข้ารับการรักษาอยู่">แจ้งประกันแล้ว เข้ารับการรักษาอยู่</option>
+                    <option value="รักษายังไม่หาย นอนดูอาการ">รักษายังไม่หาย นอนดูอาการ</option>
+                    <option value="รักษาตัวที่ฝั่งไทย บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP">รักษาตัวที่ฝั่งไทย บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP</option>
+                    <option value="รักษาตัวที่ฝั่ง PP บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP">รักษาตัวที่ฝั่ง PP บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP</option>
+                    <option value="รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย รอทำเรื่องเคลมบริษัทประกันเดินทาง SLK">รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย รอทำเรื่องเคลมบริษัทประกันเดินทาง SLK</option>
+                    <option value="รอนำส่งเอกสารไปเคลมประกันเดินทาง SLK">รอนำส่งเอกสารไปเคลมประกันเดินทาง SLK</option>
+                    <option value="ส่งเอกสารหรือบิลไปเคลมเงินประกันแล้วและรอรับเงิน SLK">ส่งเอกสารหรือบิลไปเคลมเงินประกันแล้วและรอรับเงิน SLK</option>
+                    <option value="ได้รับเงินแล้ว รอนำไปแลกและนำไปคืนประกัน SLK">ได้รับเงินแล้ว รอนำไปแลกและนำไปคืนประกัน SLK</option>
+                    <option value="รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย PP">รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย PP</option>
+                    <option value="อื่นๆ">อื่นๆ (โปรดระบุรายละเอียดเพิ่มเติม)</option>
+                </select>
+            </div>
+
+            <!-- 🎯 กล่องลับสำหรับพิมพ์ข้อความเสริมด้านหลัง (จะดีดกางออกเฉพาะตอนเลือก "อื่นๆ") -->
+            <div id="ocStatusOtherWrapper" style="display: none; margin-bottom: 15px; background-color: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px dashed #198754;">
+                <label style="font-size: 12px; font-weight: bold; color: #198754; display: block; margin-bottom: 4px;">ระบุรายละเอียดขั้นตอนการรักษาเพิ่มเติม :</label>
+                <input type="text" id="ocStatusOtherInput" placeholder="พิมพ์ข้อความเสริมต่อท้ายสถานะที่ต้องการระบุที่นี่...">
+            </div>
+
+
+
+            <!-- 🎯 ย้ายพิกัดปฏิทิน: ขยับชดเชยลงมาอยู่ใต้กล่องอาการป่วยตามสั่ง และเปลี่ยนชื่อหัวข้อ -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">วันที่บันทึกผลการรักษา :</label>
+                    <input type="text" id="ocManualDate" placeholder="📅 คลิกเลือกวันที่...">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เวลาที่บันทึกผลการรักษา :</label>
+                    <input type="text" id="ocManualTime" placeholder="⏰ คลิกเลือกเวลา...">
+                </div>
+            </div>
+
+            <p style="margin: 15px 0 8px 0; font-weight: bold; color: #198754; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">📊 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัย</p>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">ทำฟัน หักวงเงิน OPD</label><input type="number" id="ocInpDentalOPD" step="any" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP OPD</label><input type="number" id="ocInpPPUsageOPD" step="any" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP IPD</label><input type="number" id="ocInpPPUsageIPD" step="any" value="0"></div>
+            </div>
+           
+            <div id="ocSlkFieldsWrapper" style="display: none; margin-top: 15px;">
+                <p style="margin: 10px 0 8px 0; font-weight: bold; color: #b48608; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">🧮 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัยเดินทาง SLK</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; background: #fffdf0; padding: 12px; border-radius: 6px; border: 1px solid #ffecb3;">
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (THB)</label><input type="number" id="ocInpSlkOpdThb" step="any" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (THB)</label><input type="number" id="ocInpSlkIpdThb" step="any" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (LKR)</label><input type="number" id="ocInpSlkOpdLkr" step="any" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (LKR)</label><input type="number" id="ocInpSlkIpdLkr" step="any" value="0"></div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: #fffdf0; padding: 12px; border-radius: 6px; border: 1px solid #ffecb3;">
+                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:red;">ส่วนเกินวงเงินค่ารักษา (THB)</label><input type="number" id="ocInpOverThb" step="any" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:red;">ส่วนเกินวงเงินค่ารักษา (LKR)</label><input type="number" id="ocInpOverLkr" step="any" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:#b48608;">เรทค่าเงินที่ประกันคิดให้ (THB/LKR)</label><input type="number" id="ocInpRateIns" value="1" step="any"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:#b48608;">เรทค่าเงินปัจจุบัน (THB/LKR)</label><input type="number" id="ocInpRateInt" value="1" step="any"></div>
+                </div>
+            </div>
+            
+            <!-- 📸 [สเต็ปที่ 1 เพิ่มใหม่]: โซนอัปโหลดรูปภาพเพิ่มเติมประจำป๊อปอัปสีเขียวอัปเดตผลการรักษา -->
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="display: block; font-weight: bold; margin-bottom: 6px; font-size: 13px; color: #333;">
+                    📸 รูปหลักฐานตัดวงเงินประกัน :
+                </label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <!-- ปุ่มกดเลือกไฟล์สำหรับป๊อปอัปสีเขียว เปลี่ยน ID และ Event ให้แยกเป็นสัดส่วน -->
+                    <label for="ocImageUpload" style="padding: 8px 16px; background-color: #f8f9fa; border: 1px solid #ced4da; color: #495057; border-radius: 4px; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;">
+                        📁 เลือกรูปภาพปิดเคส
+                    </label>
+                    <input type="file" id="ocImageUpload" accept="image/*" style="display: none;" onchange="updateOcFileName()">
+                    
+                    <!-- ข้อความแสดงชื่อไฟล์ภาพเมื่อเลือกสำเร็จ -->
+                    <span id="ocFileNameDisplay" style="font-size: 13px; color: #6c757d; font-family: sans-serif;">ยังไม่ได้เลือกไฟล์</span>
+                </div>
+            </div>
+            <!-- สิ้นสุดโซนอัปโหลดรูปภาพเพิ่มเติม -->
+             
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">ผลการรักษา <span style="color:red;">*</span></label><input type="text" id="ocInpClinician" required placeholder="พิมพ์สรุปผล เช่น อาการดีขึ้น กลับบ้านได้..."></div>
+                <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">เอกสารแนบ</label><input type="text" id="ocInpDocs" placeholder="ใบเสร็จ, ใบรับรองแพทย์..."></div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">หมายเหตุเพิ่มเติม :</label>
+                <textarea id="ocNotesInput" placeholder="ระบุรายละเอียดอื่น ๆ..." style="min-height: 50px;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="button" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="document.getElementById('outcomeUpdateModal').style.setProperty('display', 'none', 'important');">❌ ยกเลิก</button>
+                <button type="submit" style="flex: 2; padding: 12px; background: #198754; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">💾 ยืนยันการอัปเดตผลการรักษาลงระบบ</button>
+            </div>
+
+        </form>
+    </div>
+</div>
+<!-- ============================================================ การอัปเดตผลการรักษา =============================================================== -->
+<!-- ============================================================================================================================================== -->
+<!-- ============================= [ส่วนล่าง] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับการอัปเดตผลการรักษา (Outcome Update Modal) ===================================== -->
+<!-- =============================================================================================================================================== -->
+
+
+
+
+
+
+<!-- ============================================================การแก้ไขข้อมูลย้อนหลัง============================================================== -->
+<!-- ============================================================================================================================================ -->
+<!-- ============================= [ส่วนบน] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับแก้ไขข้อมูลย้อนหลัง (Edit Custom Modal) ======================================= -->
+<!-- ============================================================================================================================================ -->
+
+
+<div id="editCaseModal">
+    <div>
+        <!-- ส่วนหัวของกล่องป๊อปอัป -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 15px;">
+            <h3 style="margin: 0; color: #ffc107; font-family: 'Segoe UI', Tahoma, sans-serif;">📝 ปรับปรุงและแก้ไขข้อมูลเคสย้อนหลัง</h3>
+            <span style="font-size: 24px; cursor: pointer; color: #aaa; font-weight: bold; line-height: 1;" onclick="document.getElementById('editCaseModal').style.setProperty('display', 'none', 'important');">&times;</span>
+        </div>
+
+        <!-- ฟอร์มกรอกข้อมูลปรับปรุงแก้ไขภายในป๊อปอัป -->
+        <form id="modalEditForm">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เคส ID :</label>
+                    <input type="text" id="mdCaseId" readonly style="background-color: #e9ecef; color: #495057; cursor: not-allowed;">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">สถานพยาบาล :</label>
+                    <select id="mdHospitalSelect" required>
+                        <option value="รอยัล อังกอร์">รอยัล อังกอร์</option>
+                        <option value="จัสมิน คลินิก">จัสมิน คลินิก</option>
+                        <option value="เทวิน ข้างฮุยเกียร์">เทวิน ข้างฮุยเกียร์</option>
+                        <option value="คลินิกโซน 3">คลินิกโซน 3</option>
+                        <option value="คลินิก สุวิสา">คลินิก สุวิสา</option>
+                        <option value="คลินิกไทยช่าง (ท้ายคลัง)">คลินิกไทยช่าง (ท้ายคลัง)</option>
+                        <option value="คลินิกวงเทพ">คลินิกวงเทพ</option>
+                        <option value="คลินิกโอเคทินนา">คลินิกโอเคทินนา</option>
+                        <option value="อื่นๆ กรุงเทพและปริมณฑล">อื่นๆ กรุงเทพและปริมณฑล</option>
+                        <option value="อื่นๆ ต่างจังหวัด">อื่นๆ ต่างจังหวัด</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">วันที่เข้ารักษา :</label>
+                    <input type="text" id="mdManualDate" placeholder="📅 คลิกเลือกวันที่...">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เวลาที่เข้ารักษา :</label>
+                    <input type="text" id="mdManualTime" placeholder="⏰ คลิกเลือกเวลา...">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">อาการป่วย :<span style="color:red;">*</span></label>
+                <textarea id="mdSymptomsInput" required placeholder="ระบุอาการป่วยที่ต้องการปรับปรุงแก้ไข..." style="min-height: 70px;"></textarea>
+            </div>
+
+            <!-- โซนกรอกสิทธิ์ตัวเลขวงเงิน (แบ่งเป็น 3 คอลัมน์) -->
+            <p style="margin: 15px 0 8px 0; font-weight: bold; color: #198754; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">📊 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัย</p>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">ทำฟัน หักวงเงิน OPD</label><input type="number" id="mdInpDentalOPD" step="any" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP OPD</label><input type="number" id="mdInpPPUsageOPD" step="any" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP IPD</label><input type="number" id="mdInpPPUsageIPD" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (T)</label><input type="number" id="mdInpSLKUsageOpdThB" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (T)</label><input type="number" id="mdInpSLKUsageIpdThB" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (L)</label><input type="number" id="mdInpSLKUsageOpdLkr" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (L)</label><input type="number" id="mdInpSLKUsageIpdLkr" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">ส่วนเกินวงเงินค่ารักษา (T)</label><input type="number" id="mdInpOverLimitThB" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">ส่วนเกินวงเงินค่ารักษา (L)</label><input type="number" id="mdInpOverLimitLkr" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">เรทค่าเงินที่ประกันคิดให้</label><input type="number" id="mdInpExchangeRatesIns" value="1" step="0.01"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">เรทค่าเงินปัจจุบัน</label><input type="number" id="mdInpExchangeRatesInt" value="1" step="0.01"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">ผลการรักษา</label><input type="text" id="mdInpClinician" placeholder="-"></div>
+                <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">เอกสารแนบ</label><input type="text" id="mdInpDocs" placeholder="-"></div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">หมายเหตุเพิ่มเติม :</label>
+                <textarea id="mdNotesInput" placeholder="ข้อมูลอื่นๆ..." style="min-height: 50px;"></textarea>
+            </div>
+
+            <!-- ปุ่มกดยืนยันหรือยกเลิกการส่งค่าแก้ไขย้อนหลัง -->
+            <div style="display: flex; gap: 10px;">
+                <button type="button" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="document.getElementById('editCaseModal').style.setProperty('display', 'none', 'important');">❌ ยกเลิก</button>
+                <button type="submit" style="flex: 2; padding: 12px; background: #ffc107; color: #212529; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">💾 ยืนยันการอัปเดตแก้ไขทับบรรทัดเดิม</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- ============================================================การแก้ไขข้อมูลย้อนหลัง=============================================================== -->
+<!-- ============================================================================================================================================= -->
+<!-- ============================= [ส่วนล่าง] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับแก้ไขข้อมูลย้อนหลัง (Edit Custom Modal) ======================================== -->
+<!-- ============================================================================================================================================= -->
+

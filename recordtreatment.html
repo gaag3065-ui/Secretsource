@@ -1,0 +1,142 @@
+<div class="card-container middle-box">
+    <!-- 🔴 ส่วนหัวเรื่อง: จัดการแยกกล่องหัวข้อหลักและเวลาปัจจุบันสีแดงเป็น 2 บรรทัดตามดีไซน์อย่างถูกต้อง -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 20px;">
+        <!-- ฝั่งซ้าย: หัวข้อหลัก -->
+        <h2 style="margin: 0; border: none; padding: 0;">📋 บันทึกข้อมูลการเข้ารักษา(เปิดเคส)</h2>
+        
+        <!-- ฝั่งขวา: วันเวลาระบบแฝดคนละฝั่ง (ย่อขนาดและแบ่งเป็น 2 บรรทัด) -->
+        <div id="headerDateTimeContainer" style="text-align: right; line-height: 1.3; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+            <span style="font-size: 11px; font-weight: bold; color: #666; display: block; margin-bottom: 2px;">วันเวลาในระบบปัจจุบัน (24 ชม.)</span>
+            <span id="headerDateTimeValue" style="color: #dc3545; font-size: 12.5px; font-weight: bold; display: block;"></span>
+        </div>
+    </div>
+
+    <!-- 📥 เริ่มต้นฟอร์มหลัก -->
+     <form id="claimForm">
+        <!-- 🎯 แก้ไขเพิ่มช่องซ่อนให้ครบทุกตัวสะกด เพื่อให้คำสั่งหน้าบ้านมีช่องหยอดค่าชื่อพนักงานและรหัสประกันได้ 100% -->
+        <input type="hidden" id="hiddenEmpName">
+        <input type="hidden" id="employeeName"> <!-- เพิ่มเผื่อตัวสะกดนี้ -->
+        
+        <input type="hidden" id="hiddenInsuranceId">
+        <input type="hidden" id="insuranceId"> <!-- เพิ่มเผื่อตัวสะกดนี้ -->
+        
+        <input type="hidden" id="hiddenCompany">
+        <input type="hidden" id="hiddenSize">
+        <input type="hidden" id="hiddenWorkLocation">
+        
+        <!-- ช่องระบุวันที่เข้ารับการรักษา -->
+        <div class="claim-row">
+            <span class="claim-label">ระบุวันที่เข้ารับการรักษา :</span>
+            <div class="value-text">
+                <input type="text" id="manualDate" placeholder="📅 คลิกเลือกวันที่เข้ารักษา..." disabled style="background-color: #e9ecef; cursor: not-allowed;">
+            </div>
+        </div>
+
+        <!-- ช่องระบุเวลาที่เข้ารับการรักษา -->
+        <div class="claim-row">
+            <span class="claim-label">ระบุเวลาที่เข้ารับการรักษา :</span>
+            <div class="value-text">
+                <input type="text" id="manualTime" placeholder="⏰ คลิกเลือกเวลาที่เข้ารักษา..." disabled style="background-color: #e9ecef; cursor: not-allowed;">
+            </div>
+        </div>
+
+        <!-- ช่องที่ 3: เคส ID -->
+        <div class="claim-row">
+            <span class="claim-label">เคส ID :</span>
+            <div class="value-text">
+                <input type="text" id="caseId" readonly placeholder="กำลังคำนวณเลขเคสถัดไป...">
+            </div>
+        </div>
+
+        <!-- ช่องที่ 4: คลินิกหรือสถานพยาบาล -->
+        <div class="claim-row">
+            <span class="claim-label">คลินิกหรือสถานพยาบาล :<span class="required">*</span></span>
+            <div class="value-text">
+                <select id="hospitalSelect" required disabled style="background-color: #e9ecef; cursor: not-allowed;">
+                    <option value="" disabled selected>-- กรุณาเลือกสถานพยาบาล --</option>
+                    <option value="รอยัล อังกอร์">รอยัล อังกอร์</option>
+                    <option value="จัสมิน คลินิก">จัสมิน คลินิก</option>
+                    <option value="เทวิน ข้างฮุยเกียร์">เทวิน ข้างฮุยเกียร์</option>
+                    <option value="คลินิกโซน 3">คลินิกโซน 3</option>
+                    <option value="คลินิก สุวิสา">คลินิก สุวิสา</option>
+                    <option value="คลินิกไทยช่าง (ท้ายคลัง)">คลินิกไทยช่าง (ท้ายคลัง)</option>
+                    <option value="คลินิกวงเทพ">คลินิกวงเทพ</option>
+                    <option value="คลินิกโอเคทินนา">คลินิกโอเคทินนา</option>
+                    <option value="คลินิกอิลิแก้นต์">คลินิกอิลิแก้นต์</option>
+                    <option value="คลินิกกาแล็คซี่">คลินิกกาแล็คซี่</option>
+                    <option value="Durdans hospital">Durdans hospital</option>
+                    <option value="Clinic Dr. Menghong">Clinic Dr. Menghong</option>
+                    <option value="Akea Thmey Clinic">Akea Thmey Clinic </option>
+                    <option value="Dermall Dental Clinic">Dermall Dental Clinic</option>
+                    <option value="king hospital">king hospital</option>
+                    <option value="Nawaloka Hospital">Nawaloka Hospital</option>
+                    <option value="TPR DENTAL CARE">TPR DENTAL CARE </option>
+                    <option value="คลินิกทำฟันอื่นๆ PP">คลินิกทำฟันอื่นๆ PP</option>
+                    <option value="อื่นๆ กรุงเทพและปริมณฑล">อื่นๆ กรุงเทพและปริมณฑล</option>
+                    <option value="อื่นๆ ต่างจังหวัด">อื่นๆ ต่างจังหวัด</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ช่องที่ 5: ระยะทาง -->
+        <div class="claim-row">
+            <span class="claim-label">ระยะทางอ้างอิง :</span>
+            <div class="value-text">
+                <input type="text" id="distanceInput" readonly placeholder="ระยะทาง google map">
+            </div>
+        </div>
+
+        <!-- ช่องที่ 6: อาการป่วย -->
+        <div class="claim-row align-top">
+            <span class="claim-label">อาการป่วย :<span class="required">*</span></span>
+            <div class="value-text">
+                <textarea id="symptomsInput" required placeholder="กรอกรายละเอียดอาการป่วยอย่างละเอียด..." disabled style="background-color: #e9ecef; cursor: not-allowed;"></textarea>
+            </div>
+        </div>
+
+        
+
+        <!-- ช่องที่ 7: หมายเหตุ -->
+        <div class="claim-row align-top">
+            <span class="claim-label">หมายเหตุเพิ่มเติม :</span>
+            <div class="value-text">
+                <textarea id="notesInput" placeholder="ระบุข้อมูลเพิ่มเติมอื่นๆ (ถ้ามี)..." disabled style="background-color: #e9ecef; cursor: not-allowed;"></textarea>
+            </div>
+        </div>
+
+
+        <!-- เริ่มต้นโซนอัปโหลดรูปภาพ -->
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px;">
+                📸 รูปภาพหลักฐานแจ้งเคสประกัน :
+            </label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <!-- ปุ่มกดเลือกไฟล์ที่ซ่อนหน้าตาเดิมไว้ แล้วแต่งให้เข้ากับธีม -->
+                <label for="imageUpload" style="padding: 8px 16px; background-color: #f8f9fa; border: 1px solid #ced4da; color: #495057; border-radius: 4px; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;">
+                    📁 เลือกรูปภาพเปิดเคส
+                </label>
+                <input type="file" id="imageUpload" accept="image/*" style="display: none;" onchange="updateFileName()">
+                
+                <!-- ข้อความแสดงชื่อไฟล์ที่ถูกเลือก -->
+                <span id="fileNameDisplay" style="font-size: 13px; color: #6c757d;">ยังไม่ได้เลือกไฟล์</span>
+            </div>
+        </div>
+        <!-- สิ้นสุดโซนอัปโหลดรูปภาพ -->
+
+        <!-- 📋 [เพิ่มปุ่มคัดลอกข้อความแจ้งประกันเข้าสู่ระบบ] -->
+        <button type="button" id="btnCopyToClaim" onclick="copyClaimDetailsToClipboard()" style="padding: 8px 16px; background-color: #0d6efd; color: white; border: none; border-radius: 4px; font-size: 13.5px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s; box-shadow: 0 2px 4px rgba(13,110,253,0.15);">
+            📋 คัดลอกข้อความไปแจ้งประกัน
+        </button>
+
+        <!-- ปุ่มสำหรับกดส่งข้อมูล บันทึกข้อมูลและปิดฟอร์มอย่างเป็นระบบ -->
+        <button type="button" id="submitBtn" onclick="document.getElementById('claimForm').dispatchEvent(new Event('submit'))" class="btn btn-success" style="width: 100%; padding: 12px; font-weight: bold; border-radius: 6px;">🟢 บันทึกข้อมูลเข้าสู่ระบบ</button>
+
+    </form>
+
+    <div id="claimStatus"></div>
+
+<!-- =================================== 📋 [ส่วนท้ายเรื่อง: เริ่มต้นโครงสร้างกล่องฝั่งขวา - ระบบการเคลม (บันทึกเข้ารักษา)] ======================= -->
+ <!-- ปิดกันวงเล็บเพื่อแยกส่วนบนและล่าง -->
+</div>
+
+

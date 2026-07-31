@@ -6,807 +6,156 @@
 <head>
  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
-</head>
 
 
 
-<head>
+
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบบริหารจัดการพนักงานและบันทึกข้อมูลการเข้ารักษา</title>
-    <style>
-        /* 🏥 ปรับโครงสร้างหลักแบบ Flexbox ให้ขยายความสูงกล่องเท่ากันอัตโนมัติ */
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: #f4f7f6; 
-            margin: 0; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: stretch; /* 🎯 สั่งให้กล่องซ้ายและขวามีความสูงเท่ากันเสมอ */
-            justify-content: flex-start;
-            gap: 20px;
-        }
-
-        /* 📦 รูปแบบกล่องดีไซน์มาตรฐานแพลตฟอร์มให้มีมิติพิมพ์เดียวกัน */
-        .card-container { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.06); 
-            box-sizing: border-box; 
-            border-top: 6px solid #20c997; /* คาดหัวเตียงสีเขียวโรงพยาบาลเท่ากันทั้งสองฝั่ง */
-            display: flex;
-            flex-direction: column; 
-            justify-content: flex-start;
-
-        }
-
-        .flex-row-container {
-            display: flex !important;
-            flex-direction: row !important; /* ✨ บังคับจัดแถวแนวนอนขนานกัน */
-            align-items: stretch !important; /* 🎯 บังคับให้ทุกกล่องมีความสูงยืดเท่ากับกล่องที่สูงที่สุดอัตโนมัติ */
-            justify-content: space-between !important; ; /* 🎯 กระจายระยะห่างระหว่างกล่องให้เท่ากันและชิดขอบซ้าย-ขวา */
-            gap: 20px !important; /* 🎯 กำหนดระยะห่างคงที่ระหว่างกล่องอย่างเท่าเทียม (20 พิกเซล) */
-            width: 100% !important;
-            max-width: 100%; /* ล็อกขนาดความกว้างรวมของคู่บนให้พอดีกรอบ */
-            box-sizing: border-box;
-            padding: 0 10px; /* เพิ่มระยะขอบเล็กน้อยไม่ให้ชิดขอบจอเกินไป */
-        }
-
-
-        /* 👈 ปรับสัดส่วนพื้นที่กล่องฝั่งซ้าย (ค้นหา) */
-        .left-box {
-            flex: 1 !important; /* 🎯 สั่งให้แชร์พื้นที่เท่ากัน 1 ส่วน */
-            width: auto !important; /* ยกเลิกการล็อกขนาดตายตัว */
-            max-width: none !important; /* ปลดล็อกข้อจำกัดเพื่อให้กล่องขยายเท่ากัน */
-        }
-
-        /* 👉 ปรับสัดส่วนพื้นที่กล่องฝั่งขวา (การเคลม) */
-        .middle-box {
-            flex: 1 !important; /* 🎯 สั่งให้แชร์พื้นที่เท่ากัน 1 ส่วน */
-            width: auto !important;
-            max-width: none !important;
-        }
-
-        /* 👉 ปรับสัดส่วนพื้นที่กล่องฝั่งขวา (การเคลม) */
-        .right-box {
-            flex: 1 !important; /* 🎯 สั่งให้แชร์พื้นที่เท่ากัน 1 ส่วน */
-            width: auto !important;
-            max-width: none !important;
-        }
-
-        h2 { 
-            margin-top: 0; 
-            color: #198754; 
-            text-align: left; 
-            border-bottom: 2px solid #e9ecef; 
-            padding-bottom: 12px; 
-            margin-bottom: 20px; 
-        }
-        
-        .form-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        
-        input[type="text"], select, textarea { 
-            width: 100%; 
-            padding: 11px 12px; 
-            border: 1px solid #ced4da; 
-            border-radius: 6px; 
-            font-size: 15px; 
-            box-sizing: border-box; 
-            background-color: #f8f9fa; 
-        }
-        
-        input[type="text"]:focus, select:focus, textarea:focus { 
-            border-color: #86b7fe; 
-            outline: 0; 
-            background-color: #ffffff; 
-        }
-        
-        input[readonly] { 
-            background-color: #e9ecef; 
-            color: #495057; 
-            cursor: not-allowed; 
-        }
-        
-        /* ล็อกขนาดความสูงขั้นต่ำของช่องกรอกใหญ่ทั้งอาการป่วยและหมายเหตุ */
-        textarea { 
-            resize: vertical; 
-            min-height: 95px; 
-        }
-
-        /* 📊 ตารางการ์ดผลลัพธ์ข้อมูลพนักงานฝั่งซ้าย (ลบกล่องซ้ำซ้อนออกถาวร) */
-        .result-item { 
-            background: #ffffff; 
-            border: 1px solid #e0e0e0; 
-            padding: 20px; 
-            margin-top: 15px; 
-            border-radius: 6px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
-            flex: 1; /* ขยายการ์ดให้ทอดยาวพอดีสัดส่วนกล่องด้านนอก */
-        }
-        
-        .info-row { 
-            display: flex; 
-            margin: 11px 0; 
-            font-size: 15px; 
-            border-bottom: 1px dashed #f0f0f0; 
-            padding-bottom: 6px; 
-        }
-        
-        .label-text { 
-            font-weight: bold; 
-            color: #333333; 
-            width: 150px; 
-            flex-shrink: 0; 
-        }
-        
-        .value-text { 
-            color: #555555; 
-            flex: 1; 
-        }
-
-        /* 📋 การจัดระเบียบฟอร์มแถวกรอกฝั่งขวา */
-        .claim-row { 
-            display: flex; 
-            margin-bottom: 15px; 
-            align-items: center; 
-        }
-        
-        .claim-row.align-top { 
-            align-items: flex-start; 
-        }
-        
-        .claim-label { 
-            font-weight: bold; 
-            color: #343a40; 
-            width: 180px; 
-            flex-shrink: 0; 
-            font-size: 15px; 
-        }
-        
-        .required { color: #dc3545; margin-left: 4px; }
-
-        /* 🔘 ปุ่มกดแยกเฉดสีการแพทย์ชัดเจน */
-        .btn-search { padding: 12px 24px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
-        .btn-search:hover { background: #218838; }
-        
-        .btn-submit { width: 100%; padding: 14px; background-color: #198754; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
-        .btn-submit:hover { background-color: #157347; }
-
-        .map-section { margin-top: 25px; border-top: 2px solid #e9ecef; padding-top: 20px; }
-        .map-title { font-size: 15px; font-weight: bold; color: #0d6efd; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-        .map-box { width: 100%; height: 220px; background-color: #eaeaea; border-radius: 8px; border: 1px solid #ced4da; overflow: hidden; }
-        .map-box iframe { width: 100%; height: 100%; border: 0; }
-
-        #message, #claimStatus { font-weight: bold; margin-top: 10px; text-align: center; }
-    
-    
-/*------------------------------------ กล่องที่ 3 -------------------------------------------*/
-
-/* คลาสสำหรับบังคับกล่องตารางใหญ่ให้กางเต็ม 100% ของหน้าจอ */
-.bottom-full-box {
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box;
-    margin-top: 20px;
-    clear: both;
-}
-
-/* คลาสสำคัญ: บังคับให้เกิดแถบสไลด์บาร์เลื่อนแนวนอนหากตารางยาวเกินหน้าจอ */
-.responsive-table-wrapper {
-    width: 100% !important;
-    overflow-x: auto !important; /* เปิดบาร์เลื่อนสไลด์แนวขนาน */
-    margin-top: 15px;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    background: #ffffff;
-}
-
-/* 🎯 ปรับแต่งแท็ก table ภายใต้ wrapper ให้ขยายตามความยาวข้อความจริง */
-.responsive-table-wrapper table {
-    width: max-content !important; /* ✅ ใช้ตัวนี้ตัวเดียวเพื่อกางตารางตามเนื้อหาจริง ห้ามใช้ width: 100% */
-    border-collapse: collapse !important;
-    font-size: 13px;
-    background-color: #ffffff;
-}
-
-/* 🎯 จัดการให้กล่องหดพอดีข้อความและเว้นช่องไฟสวยงาม */
-.responsive-table-wrapper th, 
-.responsive-table-wrapper td {
-    white-space: nowrap !important; /* ✅ ห้ามข้อความตัดขึ้นบรรทัดใหม่เด็ดขาด จะยาวออกข้างอย่างเดียว */
-    border: 1px solid #dee2e6 !important;
-    padding: 10px 16px !important;  /* ✅ เว้นระยะบน-ล่าง 10px และ ซ้าย-ขวา 16px เพื่อความสวยงาม */
-    vertical-align: middle;
-}
-
-.responsive-table-wrapper th {
-    background-color: #f8f9fa;
-    font-weight: bold;
-    text-align: center;
-}
-
-/* 🎯 ไฮไลต์แถวเมื่อเอาเมาส์ชี้ (Hover Effect) ช่วยให้กวาดสายตาง่ายขึ้น */
-.responsive-table-wrapper tbody tr:hover {
-    background-color: #f1f3f5 !important;
-}
-
-/* 🎯 คลาสสำหรับระบุตำแหน่งข้อความในตาราง */
-.text-center { text-align: center !important; }
-.text-right { text-align: right !important; }
-.text-left { text-align: left !important; }
-.font-bold { font-weight: bold !important; }
-
-/* 🍏 แต่งสีหัวตารางกลุ่ม 7 ประกัน PP */
-.th-group-pp, .th-sub-pp { 
-    background-color: #e2f0d9 !important; 
-    color: #385723 !important; 
-}
-
-/* 🍋 แต่งสีหัวตารางกลุ่ม 8 ประกัน SLK */
-.th-group-slk, .th-sub-slk { 
-    background-color: #fff2cc !important; 
-    color: #7f6000 !important; 
-}
-
-
-
-
-/*------------------------------------ กล่องที่ 3 เพิ่มเติมช่องที่ซ่อนกันอยู่ -------------------------------------------*/
-
-
-/* จัดการตำแหน่งเลขเคสและลูกศรมินิมอลขวามือ */
-.case-cell {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    cursor: pointer;
-}
-.toggle-arrow {
-    font-size: 10px;
-    color: #000000 !important; /* บังคับลูกศรสีดำ */
-    display: inline-block;
-    transition: transform 0.2s ease;
-}
-.parent-row.is-open .toggle-arrow {
-    transform: rotate(180deg); /* หมุนลูกศรกลับหัวเมื่อเปิดออก */
-}
-
-/* ปุ่มแก้ไขดีไซน์บาง ๆ เนียนตา */
-.btn-edit-minimal {
-    padding: 2px 8px;
-    background: transparent;
-    border: 1px solid #ced4da;
-    color: #6c757d;
-    border-radius: 4px;
-    font-size: 11px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.btn-edit-minimal:hover {
-    background: #e9ecef;
-    color: #212529;
-    border-color: #adb5bd;
-}
-
-/* สไตล์ตารางย่อยภายในกล่อง Timeline */
-.sub-timeline-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 10px 0;
-    font-size: 12.5px;
-}
-.sub-timeline-table th {
-    background-color: #f1f3f5 !important;
-    color: #495057 !important;
-    padding: 6px 10px !important;
-    font-weight: 600;
-}
-.sub-timeline-table td {
-    padding: 8px 10px !important;
-    border: 1px solid #dee2e6 !important;
-    background: #ffffff;
-}
-
-
-
-
-
-
-
-
-
-
-
-/* ========================================================================================= */
-/* 🎯 [เพิ่มใหม่] สไตล์จัดระเบียบหน้าต่างแบบฟอร์มป๊อปอัปให้อยู่กึ่งกลางหน้าจอเป๊ะๆ 100% */
-/* ========================================================================================= */
-#editCaseModal {
-    display: none; 
-    position: fixed !important; 
-    z-index: 99999 !important; /* บังคับให้ลอยอยู่เหนือตารางและทุกสิ่งบนหน้าจอ */
-    left: 0; 
-    top: 0; 
-    width: 100vw !important; 
-    height: 100vh !important; 
-    background-color: rgba(0, 0, 0, 0.5) !important; /* ทำพื้นหลังมืดจางๆ ด้านหลังแบบโรงภาพยนตร์ */
-    align-items: center !important; 
-    justify-content: center !important;
-}
-
-/* ตกแต่งไส้ในกล่องฟอร์มป๊อปอัปสีเหลืองทอง */
-#editCaseModal > div {
-    background-color: #ffffff !important; 
-    padding: 30px !important; 
-    border-radius: 12px !important; 
-    width: 90% !important; 
-    max-width: 650px !important; 
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25) !important; 
-    max-height: 85vh !important; 
-    overflow-y: auto !important; /* เปิดบาร์เลื่อนขึ้นลงแนวดิ่งอัตโนมัติหากหน้าจอเล็ก */
-    border-top: 6px solid #ffc107 !important; /* คาดแถบหัวกล่องสีเหลืองทองสำหรับโหมดแก้ไขข้อมูล */
-    animation: popupFadeIn 0.25s ease-out; /* ใส่เอฟเฟกต์เด้งฟึ่บขึ้นมาเบาๆ ให้ดูโมเดิร์น */
-}
-
-/* ฟิลด์อินพุตตัวเลขและตัวอักษรภายในกล่องป๊อปอัป */
-#editCaseModal input, #editCaseModal select, #editCaseModal textarea {
-    background-color: #ffffff !important;
-    border: 1px solid #ced4da !important;
-}
-#editCaseModal input:focus, #editCaseModal select:focus, #editCaseModal textarea:focus {
-    border-color: #ffc107 !important;
-    box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25) !important;
-}
-
-@keyframes popupFadeIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-}
-/* ========================================================================================= */
-/* 🎯 [เพิ่มใหม่] สไตล์จัดระเบียบหน้าต่างแบบฟอร์มป๊อปอัปให้อยู่กึ่งกลางหน้าจอเป๊ะๆ 100% */
-/* ========================================================================================= */
-
-
-
-
-
-</style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <!-- =============================================================================================================================== -->
 <!-- =================================== 📦 [ส่วนท้าย: สิ้นสุดระบบรวมโครงสร้างหลักหน้าจอ] =============================================== -->
 <!-- =============================================================================================================================== -->
+
+
+
+<!-- = ส่วนหน้ารวม = -->
 <div class="flex-row-container">
 
 
+<!-- <div class="card-container left-box">-->
+<!-- = ส่วนหน้าค้นหาข้อมูลพนักงาน = -->
+<div id="search-box-placeholder" class="card-container left-box"></div>
+
+<!--<div class="card-container middle-box"></div>-->
+<!-- = ส่วนหน้าบันทึกข้อมูลเข้ารักษา = -->
+<div id="treatment-box-placeholder" style="flex: 1; min-width: 0;"></div>
 
 
-
-
-
-
-
-
-
-
-
-<!-- =============================================================================================================================== -->
-<!-- =================================== 🔐 [ส่วนท้าย: เริมการระบุบริบทของหน้า Login] ============================================= -->
-<!-- =============================================================================================================================== -->
-<div class="card-container left-box">
-    <h2>🔎 ค้นหาข้อมูลพนักงาน</h2>
-    <div class="form-group">
-        <input type="text" id="keywordInput" placeholder="พิมพ์ชื่อเล่น ชื่อจริง หรือรหัสพนักงาน...">
-        <button id="searchBtn" class="btn-search">ค้นหา</button>
-    </div>
-    <div id="message"></div>
-    <div id="resultsList"></div>
-</div>
-<!-- =============================================================================================================================== -->
-<!-- =================================== 🔐 [ส่วนท้าย: สิ้นสุดการระบุบริบทของหน้า Login] ============================================= -->
-<!-- =============================================================================================================================== -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- =============================================================================================================================== -->
-<!-- =================================== 📋 [ส่วนหัวเรื่อง: เริ่มต้นโครงสร้างกล่องฝั่งขวา - ระบบการเคลม (บันทึกเข้ารักษา)] ======================= -->
-<!-- =============================================================================================================================== -->
-<div class="card-container middle-box">
-    <!-- 🔴 ส่วนหัวเรื่อง: จัดการแยกกล่องหัวข้อหลักและเวลาปัจจุบันสีแดงเป็น 2 บรรทัดตามดีไซน์อย่างถูกต้อง -->
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 20px;">
-        <!-- ฝั่งซ้าย: หัวข้อหลัก -->
-        <h2 style="margin: 0; border: none; padding: 0;">📋 บันทึกข้อมูลการเข้ารักษา(เปิดเคส)</h2>
-        
-        <!-- ฝั่งขวา: วันเวลาระบบแฝดคนละฝั่ง (ย่อขนาดและแบ่งเป็น 2 บรรทัด) -->
-        <div id="headerDateTimeContainer" style="text-align: right; line-height: 1.3; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-            <span style="font-size: 11px; font-weight: bold; color: #666; display: block; margin-bottom: 2px;">วันเวลาในระบบปัจจุบัน (24 ชม.)</span>
-            <span id="headerDateTimeValue" style="color: #dc3545; font-size: 12.5px; font-weight: bold; display: block;"></span>
-        </div>
-    </div>
-
-    <!-- 📥 เริ่มต้นฟอร์มหลัก -->
-     <form id="claimForm">
-        <!-- 🎯 แก้ไขเพิ่มช่องซ่อนให้ครบทุกตัวสะกด เพื่อให้คำสั่งหน้าบ้านมีช่องหยอดค่าชื่อพนักงานและรหัสประกันได้ 100% -->
-        <input type="hidden" id="hiddenEmpName">
-        <input type="hidden" id="employeeName"> <!-- เพิ่มเผื่อตัวสะกดนี้ -->
-        
-        <input type="hidden" id="hiddenInsuranceId">
-        <input type="hidden" id="insuranceId"> <!-- เพิ่มเผื่อตัวสะกดนี้ -->
-        
-        <input type="hidden" id="hiddenCompany">
-        <input type="hidden" id="hiddenSize">
-        <input type="hidden" id="hiddenWorkLocation">
-        
-        <!-- ช่องระบุวันที่เข้ารับการรักษา -->
-        <div class="claim-row">
-            <span class="claim-label">ระบุวันที่เข้ารับการรักษา :</span>
-            <div class="value-text">
-                <input type="text" id="manualDate" placeholder="📅 คลิกเลือกวันที่เข้ารักษา..." disabled style="background-color: #e9ecef; cursor: not-allowed;">
-            </div>
-        </div>
-
-        <!-- ช่องระบุเวลาที่เข้ารับการรักษา -->
-        <div class="claim-row">
-            <span class="claim-label">ระบุเวลาที่เข้ารับการรักษา :</span>
-            <div class="value-text">
-                <input type="text" id="manualTime" placeholder="⏰ คลิกเลือกเวลาที่เข้ารักษา..." disabled style="background-color: #e9ecef; cursor: not-allowed;">
-            </div>
-        </div>
-
-        <!-- ช่องที่ 3: เคส ID -->
-        <div class="claim-row">
-            <span class="claim-label">เคส ID :</span>
-            <div class="value-text">
-                <input type="text" id="caseId" readonly placeholder="กำลังคำนวณเลขเคสถัดไป...">
-            </div>
-        </div>
-
-        <!-- ช่องที่ 4: คลินิกหรือสถานพยาบาล -->
-        <div class="claim-row">
-            <span class="claim-label">คลินิกหรือสถานพยาบาล :<span class="required">*</span></span>
-            <div class="value-text">
-                <select id="hospitalSelect" required disabled style="background-color: #e9ecef; cursor: not-allowed;">
-                    <option value="" disabled selected>-- กรุณาเลือกสถานพยาบาล --</option>
-                    <option value="รอยัล อังกอร์">รอยัล อังกอร์</option>
-                    <option value="จัสมิน คลินิก">จัสมิน คลินิก</option>
-                    <option value="เทวิน ข้างฮุยเกียร์">เทวิน ข้างฮุยเกียร์</option>
-                    <option value="คลินิกโซน 3">คลินิกโซน 3</option>
-                    <option value="คลินิก สุวิสา">คลินิก สุวิสา</option>
-                    <option value="คลินิกไทยช่าง (ท้ายคลัง)">คลินิกไทยช่าง (ท้ายคลัง)</option>
-                    <option value="คลินิกวงเทพ">คลินิกวงเทพ</option>
-                    <option value="คลินิกโอเคทินนา">คลินิกโอเคทินนา</option>
-                    <option value="คลินิกอิลิแก้นต์">คลินิกอิลิแก้นต์</option>
-                    <option value="คลินิกกาแล็คซี่">คลินิกกาแล็คซี่</option>
-                    <option value="Durdans hospital">Durdans hospital</option>
-                    <option value="Clinic Dr. Menghong">Clinic Dr. Menghong</option>
-                    <option value="Akea Thmey Clinic">Akea Thmey Clinic </option>
-                    <option value="Dermall Dental Clinic">Dermall Dental Clinic</option>
-                    <option value="king hospital">king hospital</option>
-                    <option value="Nawaloka Hospital">Nawaloka Hospital</option>
-                    <option value="TPR DENTAL CARE">TPR DENTAL CARE </option>
-                    <option value="คลินิกทำฟันอื่นๆ PP">คลินิกทำฟันอื่นๆ PP</option>
-                    <option value="อื่นๆ กรุงเทพและปริมณฑล">อื่นๆ กรุงเทพและปริมณฑล</option>
-                    <option value="อื่นๆ ต่างจังหวัด">อื่นๆ ต่างจังหวัด</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- ช่องที่ 5: ระยะทาง -->
-        <div class="claim-row">
-            <span class="claim-label">ระยะทางอ้างอิง :</span>
-            <div class="value-text">
-                <input type="text" id="distanceInput" readonly placeholder="ระยะทาง google map">
-            </div>
-        </div>
-
-        <!-- ช่องที่ 6: อาการป่วย -->
-        <div class="claim-row align-top">
-            <span class="claim-label">อาการป่วย :<span class="required">*</span></span>
-            <div class="value-text">
-                <textarea id="symptomsInput" required placeholder="กรอกรายละเอียดอาการป่วยอย่างละเอียด..." disabled style="background-color: #e9ecef; cursor: not-allowed;"></textarea>
-            </div>
-        </div>
-
-        
-
-        <!-- ช่องที่ 7: หมายเหตุ -->
-        <div class="claim-row align-top">
-            <span class="claim-label">หมายเหตุเพิ่มเติม :</span>
-            <div class="value-text">
-                <textarea id="notesInput" placeholder="ระบุข้อมูลเพิ่มเติมอื่นๆ (ถ้ามี)..." disabled style="background-color: #e9ecef; cursor: not-allowed;"></textarea>
-            </div>
-        </div>
-
-        <!-- ปุ่มสำหรับกดส่งข้อมูล บันทึกข้อมูลและปิดฟอร์มอย่างเป็นระบบ -->
-        <button type="button" id="submitBtn" onclick="document.getElementById('claimForm').dispatchEvent(new Event('submit'))" class="btn btn-success" style="width: 100%; padding: 12px; font-weight: bold; border-radius: 6px;">🟢 บันทึกข้อมูลเข้าสู่ระบบ</button>
-
-    </form>
-
-    <div id="claimStatus"></div>
-
-    <!-- 📍 ส่วนโครงสร้างแผนที่ด้านล่างนอกตัวฟอร์ม -->
-    <div class="map-section">
-        <div class="map-title">📍 แผนที่นำทางและพิกัดสถานพยาบาลคู่สัญญา</div>
-        <div class="map-box">
-            <iframe id="hospitalMapFrame" src="https://google.comุงเทพ&t=&z=15&ie=UTF8&iwloc=&output=embed"></iframe>
-        </div>
-    </div>
-</div>
-<!-- =============================================================================================================================== -->
-<!-- =================================== 📋 [ส่วนท้ายเรื่อง: เริ่มต้นโครงสร้างกล่องฝั่งขวา - ระบบการเคลม (บันทึกเข้ารักษา)] ======================= -->
-<!-- =============================================================================================================================== -->
-
-    <!-- ปิดกันวงเล็บเพื่อแยกส่วนบนและล่าง -->
 </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- =============================================================================================================================== -->
-<!-- =================================== 📋 [ส่วนหัวเรื่อง: เริ่มต้นโครงสร้างกล่องฝั่งล่าง - หน้ากรองประวัติการรักษา] =============================== -->
-<!-- =============================================================================================================================== -->
+<!--<div class="card-container bottom-full-box"></div>-->
 <!-- 📦 กล่องรวมขนาดใหญ่ด้านล่าง (Full Width Container) -->
-<div class="card-container bottom-full-box">
-    <h2>📊 ประวัติการรักษา รายละเอียดและการคำนวณสิทธิ์การรักษาอย่างละเอียด</h2>
+<div id="table-box-placeholder" style="width: 100%; margin-top: 20px;"></div>
+
+
+
+
+
+
+
+  <script>
+// async function loadComponent(placeholderId, filename) {
+// ฟังก์ชันระบบทำหน้าที่ดึงโค้ด HTML จากไฟล์อื่นมาแทรกในกล่อง placeholder
+//#region    
+        // ฟังก์ชันระบบทำหน้าที่ดึงโค้ด HTML จากไฟล์อื่นมาแทรกในกล่อง placeholder
+        async function loadComponent(placeholderId, filename) {
+            try {
+                const response = await fetch(filename);
+                if (!response.ok) throw new Error(`โหลดไฟล์ ${filename} ไม่สำเร็จ`);
+                const htmlContent = await response.text();
+                document.getElementById(placeholderId).innerHTML = htmlContent;
+                console.log(`📦 เชื่อมต่อไฟล์ ${filename} สำเร็จ`);
+            } catch (error) {
+                console.error(`🚨 ระบบพังที่ส่วนย่อย:`, error.message);
+                document.getElementById(placeholderId).innerHTML = 
+                    `<p style="color:red;">ไม่สามารถโหลดส่วนนี้ได้: ${error.message}</p>`;
+            }
+        }
+//#endregion    
+
+//document.addEventListener("DOMContentLoaded", async () => {
+//#region    
+        // สั่งให้ระบบทำงานร่วมกันทันทีเมื่อเปิดหน้าเว็บหลักสำเร็จ
+        document.addEventListener("DOMContentLoaded", async () => {
     
-    <div class="responsive-table-wrapper">
-       <table class="custom-claim-table">
-            <thead>
+            // สั่งเบราว์เซอร์ดาวน์โหลด HTML ย่อยมาแปะหน้าจอให้ครบสมบูรณ์ก่อน 100%
+        await loadComponent('search-box-placeholder', 'searchinformation.html');
+        await loadComponent('treatment-box-placeholder', 'recordtreatment.html');
+        await loadComponent('table-box-placeholder', 'insuranceclaimhistory.html');
 
-                <!-- แถวที่ 1: หัวข้อปกติจะควบลงล่าง (rowspan) ส่วนกลุ่มประกันจะควบออกข้าง (colspan) -->
-                <tr>
-                    <th rowspan="2">เลขเคส ID</th>
-                    <th rowspan="2">เวลาและวันที่เข้ารักษา</th>
-                    <th rowspan="2">ขั้นตอนการรักษา</th>
-                    <th rowspan="2">อาการป่วย</th>
-                    <th rowspan="2">สถานที่รักษา</th>
-                    
-                    <!-- ส่วนหัวควบกลุ่มประกัน -->
-                    <th colspan="3" class="th-group-pp">ยอดวงเงินค่ารักษาประกัน PP</th>
-                    <th colspan="8" class="th-group-slk slk-column">ยอดวงเงินค่ารักษาประกัน SLK</th>
+             // 2. ปลุกสั่งปฏิทิน Flatpickr ทั้งหมดในระบบ (ทั้งฟอร์มหลักฝั่งขวา และ ช่องโมดอลฝั่งล่าง)
+        flatpickr("#manualDate", { dateFormat: "d/m/Y", defaultDate: "today", allowInput: true });
+        flatpickr("#manualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, defaultDate: new Date(), allowInput: true });
+        flatpickr("#mdManualDate", { dateFormat: "d/m/Y", allowInput: true });
+        flatpickr("#mdManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
+        flatpickr("#ocManualDate", { dateFormat: "d/m/Y", allowInput: true });
+        flatpickr("#ocManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
         
-                    <th rowspan="2">ผลการรักษา</th>
-                    <th rowspan="2">เอกสารที่ต้องแนบ</th>
-                    <th rowspan="2">หมายเหตุ</th>
-                    <th rowspan="2">เวลาและวันที่บันทึกข้อมูล</th>
-                    <th rowspan="2">แอดมินที่บันทึกข้อมูล</th>     
-                    <!-- ✅ เพิ่มคอลัมน์ใหม่ขวาสุด -->
-                    <th rowspan="2" style="background-color: #f1f3f5; color: #333;">แก้ไขข้อมูล</th>     
-                </tr>
+            console.log("🎮 โครงสร้างชิ้นงาน HTML ประกอบร่างรวมศูนย์สำเร็จ!");
+
+        try {
+//ฝั่งซ้าย
+                // ใช้เทคนิคดูดสคริปต์เข้าหน่วยความจำชั่วคราว (Dynamic Script Injection) เพื่อแก้ปัญหาระบบหาฟังก์ชันไม่เจอ
+                const scriptLeft = document.createElement('script');
+                scriptLeft.src = 'searchinformation.js';
+                scriptLeft.onload = () => {
+                    console.log("📡 ไฟล์ searchinformation.js เชื่อมต่อสำเร็จ!");
+                    if (typeof initSearchBoxEvents === 'function') {
+                        initSearchBoxEvents(); // ปลุกปุ่มค้นหากล่องฝั่งซ้ายให้ลืมตาทำงานทันที
+                    }
+                };
+                document.body.appendChild(scriptLeft);
+
+
+//ฝั่งขวา
+                const scriptRight = document.createElement('script');
+                    scriptRight.src = 'recordtreatment.js';
+                    scriptRight.onload = () => {
+                        console.log("📡 ไฟล์ recordtreatment.js เชื่อมต่อฝั่งขวาสำเร็จ!");
+                        if (typeof initHospitalEvents === 'function') {
+                            initHospitalEvents(); // ปลุกให้ปุ่มเลือกคลินิกฝั่งขวาทำงานและดักจับเมาส์ได้ทันที
+                        }
+                        if (typeof setThaiDateTime === 'function') { 
+                            setThaiDateTime(); 
+                        }
+                        if (typeof fetchNextCaseId === 'function') { 
+                            fetchNextCaseId(); 
+                        }
+                    };
+                document.body.appendChild(scriptRight);
+
+            } catch (scriptErr) {
+                console.error("🚨 ระบบเชื่อมสคริปต์ย่อยฝั่งซ้ายขัดข้อง:", scriptErr.message);
+            }
+
+ //ฝั่งล่าง
+                const scriptBottom = document.createElement('script');
+                    scriptBottom.src = 'insuranceclaimhistory.js';
+                    scriptBottom.onload = () => {
+                        console.log("📡 ไฟล์ insuranceclaimhistory.js เชื่อมต่อสำเร็จ!");
+                        if (typeof initHistoryModalEvents === 'function') {
+                            initHistoryModalEvents(); // ปลุกระบบบันทึกป๊อปอัปให้เริ่มดักจับเมาส์ทันที
+                        }
+                    };
+                    document.body.appendChild(scriptBottom);
+
+                
+            // สั่งเปิดใช้ Flatpickr
+            flatpickr("#manualDate", { dateFormat: "d/m/Y", defaultDate: "today", allowInput: true });
+            flatpickr("#manualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, defaultDate: new Date(), allowInput: true });
+            flatpickr("#mdManualDate", { dateFormat: "d/m/Y", allowInput: true });
+            flatpickr("#mdManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
+            flatpickr("#ocManualDate", { dateFormat: "d/m/Y", allowInput: true });
+            flatpickr("#ocManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
+
+// ===============================================================================
+// ✅ ✅ [จุดที่ต้องนำโค้ดมาวางแทรกตรงนี้] 
+// ย้ายมานอนรันตรงนี้ เพื่อให้มั่นใจว่าหลังบ้านโหลดปุ่ม hospitalSelect มาแปะบนจอเสร็จแล้ว 100%
+// ==============================================================================
 
 
 
 
-
-                <!-- แถวที่ 2: จะเหลือเฉพาะช่องหัวข้อย่อยของประกัน PP และ SLK เท่านั้น ไม่เบี้ยวแน่นอน -->      
-                <tr>
-                    <!-- ภายใต้กลุ่มประกัน PP (3 ช่อง) -->
-                    <th class="th-sub-pp">ทำฟัน หักวงเงิน OPD</th>
-                    <th class="th-sub-pp">PP OPD</th>
-                    <th class="th-sub-pp">PP IPD</th>
-                    
-
-
-
-                    <!-- ภายใต้กลุ่มประกัน SLK (8 ช่อง) -->
-                    <th class="th-sub-slk slk-column">SL OPD (THB)</th>
-                    <th class="th-sub-slk slk-column">SL IPD (THB)</th>
-                    <th class="th-sub-slk slk-column">SL OPD (LKR)</th>
-                    <th class="th-sub-slk slk-column">SL IPD (LKR)</th>
-                    <th class="th-sub-slk slk-column">ส่วนเกินวงเงินค่ารักษา (THB)</th>
-                    <th class="th-sub-slk slk-column">ส่วนเกินวงเงินค่ารักษา (LKR)</th>
-                    <th class="th-sub-slk slk-column">เรทค่าเงินที่ประกันคิดให้ (THB/LKR)</th>
-                    <th class="th-sub-slk slk-column">เรทค่าเงินปัจจุบัน (THB/LKR)</th>
-                </tr>
-            </thead>
-            <tbody id="tableBodyResult">
-                <!-- ตัวอย่างแถวแสดงผลข้อมูล (มีทั้งหมด 17 คอลัมน์ รองรับ 17 แท็ก td ตรงล็อกเป๊ะๆ) -->
-                <tr>
-                    <td class="text-center font-bold">-</td>
-                    <td class="text-center">-</td>
-                    <td class="text-center">-</td>
-                    <td class="text-left">-</td>
-                    <td class="text-left">-</td>
-                    <td class="text-left">-</td>
-                    <td class="text-left">-</td>
-
-                    <!-- ฝั่ง PP (3 ช่อง) -->
-                    <td class="text-right">-</td>
-                    <td class="text-right">-</td>
-                    <td class="text-right">-</td>
-
-                    <!-- ฝั่ง SLK (8 ช่อง) -->
-                    <td class="text-right">-</td>
-                    <td class="text-right">-</td>
-                    <td class="text-right">-</td>
-                    <td class="text-right">-</td>
-                    <td class="text-right">-</td>
-                    <td class="text-right">-</td>
-                    <td class="text-center">-</td>
-                    <td class="text-center">-</td>
-
-                    <!-- ส่วนท้าย (3 ช่อง) -->
-                    <td class="text-center">-</td>
-                    <td class="text-center">-</td>
-                    <td class="text-center">-</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-<!-- =============================================================================================================================== -->
-<!-- =================================== 📋 [ส่วนท้ายเรื่อง: เริ่มต้นโครงสร้างกล่องฝั่งล่าง - หน้ากรองประวัติการรักษา] =============================== -->
-<!-- =============================================================================================================================== -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- ------ ------------------------------------------------------------------------------------------------------------------ -->
-<!-- ------ 🎛️ [คำสั่งควบคุมส่วนที่ 1: ระบบออโต้ตั้งเวลาและโหลดเลข เคส ID ล่วงหน้าจากกล่องที่ 2]         ---- -->
-<!-- ------------------------------------------------------------------------------------------------------------------------ -->
+});
+//#endregion    
+</script>
 
 <script>
-    let currentEditingRowIndex = -1; 
-
-
-const API_BASE_URL = "https://073n76kt-3000.asse.devtunnels.ms";
-
-
-
-function setThaiDateTime() {
-    const now = new Date();
-    
-    const day = now.getDate();
-    const monthShort = now.toLocaleDateString('th-TH', { month: 'short' });
-    const thaiYear = now.getFullYear() + 543; 
-    
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    
-    const formattedDateTimeStr = `${day} ${monthShort} ${thaiYear} ${hours}:${minutes} น.`;
-
-    // 🎯 หยอดค่าลงช่องอินพุตเดิมสำหรับส่งไปหลังบ้าน
-    const autoInput = document.getElementById('headerDateTimeValue');
-    if (autoInput) autoInput.value = formattedDateTimeStr;
-
-    // 🎯 หยอดเฉพาะตัวเลขข้อความวันเวลาลงในกล่องใหม่ฝั่งขวาของหัวข้อ (แยก 2 บรรทัดอัตโนมัติ)
-    const headerValueSpan = document.getElementById('headerDateTimeValue');
-    if (headerValueSpan) headerValueSpan.innerText = formattedDateTimeStr;
-}
-
-            // 1. 🎯 สร้างคลังข้อมูลรายชื่อคลินิกและระยะทางอ้างอิงจับคู่กันไว้
-                const hospitalDistanceMap = {
-                    "รอยัล อังกอร์": "1.7 กม.",               
-                    "จัสมิน คลินิก": "1.4 กม.",
-                    "เทวิน ข้างฮุยเกียร์": "1 กม.",
-                    "คลินิกโซน 3": "4.2 กม.",
-                    "คลินิก สุวิสา": "1  กม.",
-                    "คลินิกไทยช่าง (ท้ายคลัง)": "3.2 กม.",
-                    "คลินิกวงเทพ": "2.5 กม.",
-                    "คลินิกโอเคทินนา": "2.6 กม.",
-                    "คลินิกอิลิแก้นต์": "2.3 กม.",
-                    "คลินิกกาแล็คซี่": "2.7 กม.",
-                    "Durdans hospital": "300 ม.",
-                    "Clinic Dr. Menghong": "1.5 กม.",
-                    "Akea Thmey Clinic": "3.3 กม.",
-                    "Dermall Dental Clinic": "1.4 กม.",
-                    "king hospital": "4.9 กม.",
-                    "Nawaloka Hospital": "2.9 กม.",
-                    "TPR DENTAL CARE": "1.7 กม.",
-                    "คลินิกทำฟันอื่นๆ PP": "2.0 กม.",
-                    "อื่นๆ กรุงเทพและปริมณฑล": "ภาคกลาง",
-                    "อื่นๆ ต่างจังหวัด": "ตามภูมิลำเนา"
-                };
-
-
-
-            // 2. 🎯 ดักจับคำสั่งควบคุมเมื่อผู้ใช้งานเลือกหรือเปลี่ยนรายชื่อสถานพยาบาล
-                document.getElementById('hospitalSelect').addEventListener('change', (e) => {
-                    const hospitalName = e.target.value;
-                    const distanceInput = document.getElementById('distanceInput');
-                    const mapFrame = document.getElementById('hospitalMapFrame');
-
-                // ตรวจสอบว่าผู้ใช้เลือกชื่อโรงพยาบาลจริง (ไม่ใช่ข้อความเลือกเริ่มต้น)
-            if (hospitalName && hospitalDistanceMap[hospitalName]) {
-
-                // 🚀 แสดงระยะทางอ้างอิงลงในช่องอินพุตอัตโนมัติ
-                distanceInput.value = hospitalDistanceMap[hospitalName];
-
-            // เติมฟังก์ชันแผนที่เดิมของคุณให้ขนานไปด้วยกัน
-            if (mapFrame) {
-                    mapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(hospitalName)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-                }
-
-                } else {
-                // ถ้าย้อนกลับไปเลือกค่าว่าง หรือไม่พบข้อมูลในระบบ ให้ล้างช่องเป็นค่าว่างเปล่า
-                distanceInput.value = "-";
-    }
-    });
-
-
-
-    async function fetchNextCaseId() {
-                try {
-                    const res = await fetch(`${API_BASE_URL}/api/next-caseid`);
-                    const data = await res.json();
-                    if (data.success) {
-                        document.getElementById('caseId').value = data.nextId;
-
-                } else {
-                    // 🎯 ถ้าหลังบ้านตอบกลับมาว่าไม่สำเร็จให้โชว์ข้อความเตือน
-                    document.getElementById('caseId').value = "ข้อผิดพลาดจากเซิร์ฟเวอร์";
-                }
-                } catch (e) {
-                    // 🎯 ถ้าเซิร์ฟเวอร์ล่มหรือติดต่อไม่ได้เลย ให้โชว์ข้อความนี้
-                    console.error("ดูสาเหตุบั๊กในความจำเบราว์เซอร์:", e);
-                    document.getElementById('caseId').value = "เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว";
-            }
-}
-
-                fetchNextCaseId(); 
-    
-
-
-
-
-
-// ------------------------------------------------------------------------------------------------------------------------- //
-// 🎛️ [คำสั่งควบคุมส่วนที่ 2: คำสั่งรับข้อความและเคาะไปดึงค่าพนักงานจากกล่องที่ 2]                                                       //
-// ------------------------------------------------------------------------------------------------------------------------- //
-    document.getElementById('searchBtn').addEventListener('click', performSearch);
-    document.getElementById('keywordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
-
-
-
 // =======================================================================
 // 🔐 [ระบบควบคุมซ่อน-แสดง คอลัมน์ประกัน SLK อัตโนมัติตามสถานที่ทำงาน]
 // =======================================================================
@@ -814,277 +163,8 @@ const workLocation = (typeof data !== 'undefined' && data && data.employee) ? (d
 const slkElements = document.querySelectorAll('.slk-column'); // ค้นหาหัวตารางและช่อง SLK ทั้งหมด
 
 
-
-
-
-
-
-
-
-// ================================================================================================================================================================== //
-// =============  ส่วนบน  ==================== โค้ดฟังชั่นปรับตรรกะในที่เวลาคลิกแล้วจะกรองเอาแถวของเคสนั้นๆมาแสดง หากมีแถวเดียวก็ไม่ต้องลง =========================================== //
-// =================================================================================================================================================================== //
-function renderHistoryTable(historyData) {
-    const tableBody = document.getElementById('tableBodyResult');
-    if (!tableBody) return;
-    tableBody.innerHTML = '';
-
-    if (!historyData || historyData.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="21" class="text-center" style="font-weight:bold; padding:25px; background:#f8f9fa;">ℹ️ พนักงานคนนี้ยังไม่มีประวัติการรักษา</td></tr>`;
-        return;
-    }
-
-    const groupedCases = {};
-    historyData.forEach(item => {
-        const id = item.CaseIdNew;
-        if (!groupedCases[id]) groupedCases[id] = [];
-        groupedCases[id].push(item);
-    });
-
-    Object.keys(groupedCases).forEach(caseId => {
-        const timelines = groupedCases[caseId];
-        
-        // แถวหน้าด่านยึดข้อมูลอัปเดตสถานะล่าสุด (ตัวสุดท้ายของอาร์เรย์) เสมอ
-        const latestEvent = timelines[timelines.length - 1]; 
-        
-        // 🎯 ปรับปรุงใหม่: ล็อกความสามารถให้ทุกเคส ID สามารถคลิกเปลี่ยนสไลด์เปิด-ปิดได้เหมือนกันทั้งหมด 100%
-        const hasMultipleEvents = timelines.length > 1;
-
-        let badgeStyle = latestEvent.statusText && latestEvent.statusText.includes("รักษาเสร็จ") 
-            ? "background-color: #d1e7dd; color: #0f5132; padding: 4px 8px; border-radius: 4px;" 
-            : "background-color: #fff3cd; color: #664d03; padding: 4px 8px; border-radius: 4px;";
-
-        const parentTr = document.createElement('tr');
-        parentTr.className = 'parent-row';
-        // 🎯 บังคับให้เมาส์เปลี่ยนเป็นรูปมือชี้ (Pointer) สำหรับทุกล็อกแถวเพื่อบอกแอดมินว่า "ทุกเคสกดคลิกขยายได้นะ"
-        parentTr.style.cursor = 'pointer';
-        
-        // 🎯 พ่นลูกศร ▼ ให้ปรากฏอยู่ข้างเลขเคส ID ในทุกช่องแถวหลักไม่มีข้อยกเว้น
-        parentTr.innerHTML = `
-            <td class="text-center font-bold">
-                <div class="case-cell"><span class="txt-case-id">${caseId}</span><span class="toggle-arrow" style="margin-left:5px;">▼</span></div>
-            </td>
-            <td class="text-center">${latestEvent.treatmentDateTime || '-'}</td>
-            <td class="text-center"><span style="${badgeStyle}">${latestEvent.statusText || 'รอดำเนินการ'}</span></td>
-            <td class="text-left" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${latestEvent.symptoms || '-'}</td>
-            <td class="text-left">${latestEvent.hospital || '-'}</td>
-            <td class="text-right" style="background:#f9fff9;">${latestEvent.DentalOPD || '0'}</td>
-            <td class="text-right" style="background:#f9fff9;">${latestEvent.PPUsageOPD || '0'}</td>
-            <td class="text-right" style="background:#f9fff9;">${latestEvent.PPUsageIPD || '0'}</td>
-            <td class="text-right slk-column" style="background:#fffdf0;">${latestEvent.SLKUsageOpdThB || '0'}</td>
-            <td class="text-right slk-column" style="background:#fffdf0;">${latestEvent.SLKUsageIpdThB || '0'}</td>
-            <td class="text-right slk-column" style="background:#fffdf0;">${latestEvent.SLKUsageOpdLkr || '0'}</td>
-            <td class="text-right slk-column" style="background:#fffdf0;">${latestEvent.SLKUsageIpdLkr || '0'}</td>
-            <td class="text-right slk-column" style="color:red; background:#fffdf0;">${latestEvent.OverLimitCreditInsThB || '0'}</td>
-            <td class="text-right slk-column" style="color:red; background:#fffdf0;">${latestEvent.OverLimitCreditInsLkr || '0'}</td>
-            <td class="text-center slk-column" style="background:#fffdf0;">${latestEvent.ExchangeRatesIns || '1'}</td>
-            <td class="text-center slk-column" style="background:#fffdf0;">${latestEvent.ExchangeRatesInt || '1'}</td>
-            <td class="text-left">${latestEvent.ClinicianReportedOutcomes || '-'}</td>
-            <td class="text-left">${latestEvent.DocumentsAttached || '-'}</td>
-            <td class="text-left">${latestEvent.notes || '-'}</td>
-            <td class="text-center">${latestEvent.autoDateTime || '-'}</td>
-            <td class="text-center">${latestEvent.adminName || '-'}</td>
-            <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- คลิกเพื่อดูไทม์ไลน์ -</td>
-        `;
-        tableBody.appendChild(parentTr);
-
-        const childRowsArray = [];
-        
-        // 🎯 กางประวัติไทม์ไลน์ย่อยออกมาตามปกติ (หากเป็นเคสเดี่ยว ก็จะวนลูปรันสร้างออกมาแค่ 1 แถวอย่างถูกต้อง)
-        timelines.forEach((event) => {
-            const childTr = document.createElement('tr');
-            childTr.className = `child-row-of-${caseId}`;
-            childTr.style.display = 'none'; 
-            childTr.style.backgroundColor = '#f4f7f6'; 
-
-            childTr.innerHTML = `
-                <td class="text-center font-bold" style="color:#0b5ed7; background:#eef1f6;">${caseId}</td>
-                <td class="text-center" style="font-size:12px; color:#555;">${event.treatmentDateTime || '-'}</td>
-                <td class="text-center" style="font-size:12px; color:#555;">${event.statusText || '-'}</td>
-                <td class="text-left" style="white-space:normal !important; max-width:200px;">${event.symptoms || '-'}</td>
-                <td class="text-left">${event.hospital || '-'}</td>
-                <td class="text-right" style="background:#edf7ed;">${event.DentalOPD || '0'}</td>
-                <td class="text-right" style="background:#edf7ed;">${event.PPUsageOPD || '0'}</td>
-                <td class="text-right" style="background:#edf7ed;">${event.PPUsageIPD || '0'}</td>
-                <td class="text-right slk-column" style="background:#fffbe6;">${event.SLKUsageOpdThB || '0'}</td>
-                <td class="text-right slk-column" style="background:#fffbe6;">${event.SLKUsageIpdThB || '0'}</td>
-                <td class="text-right slk-column" style="background:#fffbe6;">${event.SLKUsageOpdLkr || '0'}</td>
-                <td class="text-right slk-column" style="background:#fffbe6;">${event.SLKUsageIpdLkr || '0'}</td>
-                <td class="text-right slk-column" style="color:red; background:#fffbe6;">${event.OverLimitCreditInsThB || '0'}</td>
-                <td class="text-right slk-column" style="color:red; background:#fffbe6;">${event.OverLimitCreditInsLkr || '0'}</td>
-                <td class="text-center slk-column" style="background:#fffbe6;">${event.ExchangeRatesIns || '1'}</td>
-                <td class="text-center slk-column" style="background:#fffbe6;">${event.ExchangeRatesInt || '1'}</td>
-                <td class="text-left">${event.ClinicianReportedOutcomes || '-'}</td>
-                <td class="text-left">${event.DocumentsAttached || '-'}</td>
-                <td class="text-left">${event.notes || '-'}</td>
-                <td class="text-center" style="font-size:12px;">${event.autoDateTime || '-'}</td>
-                <td class="text-center" style="font-size:12px;">${event.adminName || '-'}</td>
-                <td class="text-center" style="background:#fff;">
-                    <button type="button" class="btn-edit-minimal" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${window.btoa(unescape(encodeURIComponent(JSON.stringify(event))))}')))); populateDataToForm(decodedData);">✏️ แก้ไข</button>
-                    <button type="button" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(${event.targetRowNumber}, '${caseId}')">🗑️ ลบ</button>
-                </td>
-            `;
-            tableBody.appendChild(childTr);
-            childRowsArray.push(childTr);
-        });
-
-        // 🎯 สั่งฝังแถวเว้นช่องไฟสีขาวและแนบกล่องปุ่มยาวสีเขียวเข้าประกบท้ายขบวนให้ทุกเคสอย่างเสมอภาค
-        const spacerTr = document.createElement('tr');
-        spacerTr.className = `child-row-of-${caseId}-spacer`;
-        spacerTr.style.display = 'none'; 
-        
-        spacerTr.innerHTML = `
-            <td colspan="21" style="height: 45px !important; background-color: #ffffff !important; border: none !important; padding: 8px 15px !important; text-align: left;">
-                <button type="button" style="padding: 6px 20px; background-color: #198754; color: white; border: none; border-radius: 5px; font-size: 12.5px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${window.btoa(unescape(encodeURIComponent(JSON.stringify(latestEvent))))}')))); populateOutcomeToModal(decodedData);">
-                    🏥 อัปเดตผลการรักษา
-                </button>
-            </td>
-        `;
-        tableBody.appendChild(spacerTr);
-        childRowsArray.push(spacerTr);
-
-        // ระบบคลิกสลับหน้าจอ (Toggle) ทำงานสแตนด์บายได้ทุกแถวอย่างเสรี
-        parentTr.addEventListener('click', (e) => {
-            if (e.target.classList.contains('btn-edit-minimal') || e.target.tagName === 'BUTTON') return;
-            const isCurrentlyOpen = parentTr.classList.contains('is-open');
-
-            if (!isCurrentlyOpen) {
-                parentTr.classList.add('is-open');
-                childRowsArray.forEach(row => row.style.display = '');
-                const txtCaseId = parentTr.querySelector('.txt-case-id');
-                if (txtCaseId) txtCaseId.style.display = 'none';
-
-                Array.from(parentTr.children).forEach((td, idx) => {
-                    if (idx > 0 && idx < 21) td.style.opacity = '0'; 
-                });
-                const arrow = parentTr.querySelector('.toggle-arrow');
-                if (arrow) arrow.innerText = '▲';
-            } else {
-                parentTr.classList.remove('is-open');
-                childRowsArray.forEach(row => row.style.display = 'none');
-                const txtCaseId = parentTr.querySelector('.txt-case-id');
-                if (txtCaseId) txtCaseId.style.display = '';
-                Array.from(parentTr.children).forEach((td) => { td.style.opacity = '1'; });
-                const arrow = parentTr.querySelector('.toggle-arrow');
-                if (arrow) arrow.innerText = '▼';
-            }
-        });
-    });
-
-    const hiddenWorkLocationEl = document.getElementById('hiddenWorkLocation');
-    const workLocation = hiddenWorkLocationEl ? hiddenWorkLocationEl.value : '';
-    const slkElements = document.querySelectorAll('.slk-column');
-
-    if (workLocation.toUpperCase().includes('SL')) {
-        slkElements.forEach(el => el.style.display = '');
-    } else {
-        slkElements.forEach(el => el.style.display = 'none');
-    }
-}
-
-// ================================================================================================================================================================== //
-// ============= ส่วนล่าง  ==================== โค้ดฟังชั่นปรับตรรกะในที่เวลาคลิกแล้วจะกรองเอาแถวของเคสนั้นๆมาแสดง หากมีแถวเดียวก็ไม่ต้องลง =========================================== //
-// =================================================================================================================================================================== //
-
-
-
-
-
-
-
-// =========================================================================================
-// 🎯 [พัฒนาต่อ] ฟังก์ชันสั่งลบข้อมูลแถวประวัติพนักงานบน Google Sheets 
-// =========================================================================================
-async function executeDeleteRow(targetRowNumber, caseId) {
-    // 1. ตรวจสอบความปลอดภัย ป้องกันการกดพลาดด้วยการดักกล่องยืนยันถึง 2 ชั้น
-    if (!targetRowNumber || isNaN(parseInt(targetRowNumber)) || parseInt(targetRowNumber) < 2) {
-        alert("❌ ไม่สามารถดำเนินการได้: พิกัดตำแหน่งแถวบนแผ่นงานไม่ถูกต้อง");
-        return;
-    }
-
-    const firstConfirm = confirm(`⚠️ คุณแน่ใจใช่หรือไม่ว่าต้องการลบข้อมูลประวัติของ เคส ID: ${caseId}?`);
-    if (!firstConfirm) return;
-
-    const secondConfirm = confirm(`🚨 แจ้งเตือนขั้นเด็ดขาด!\nการลบข้อมูลนี้จะลบแถวที่ ${targetRowNumber} ออกจาก Google Sheets ทันทีและไม่สามารถกู้คืนได้\n\nยืนยันกด "ตกลง (OK)" เพื่อลบข้อมูลถาวร...`);
-    if (!secondConfirm) return;
-
-    // 2. เริ่มส่งสัญญาณข้ามท่อ API ไปบอกฝั่งหลังบ้านให้สั่งตัดลบแถวออกจากชีต
-    try {
-        const payload = {
-            sheetRowIndex: parseInt(targetRowNumber),
-            CaseIdNew: caseId,
-            adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
-            autoDateTime: document.getElementById('headerDateTimeValue')?.innerText || new Date().toLocaleString('th-TH')
-        };
-
-        const response = await fetch(`${API_BASE_URL}/api/delete-treatment`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        const result = await response.json();
-
-
-
-//--------------------------------------------------------------------------------------
-
-       if (response.ok && result.success) {
-            alert(`🎉 ลบข้อมูลแถวที่ ${targetRowNumber} (เคส ID: ${caseId}) สำเร็จและส่งประวัติลงฐานข้อมูล Sheets เรียบร้อย!`);
-            
-            // 🎯 ดึงทุกแถวในตารางสรุปด้านล่างมาสแกนตรวจสอบ
-            const allTableRows = document.querySelectorAll('#tableBodyResult tr');
-            let deletedFromDOM = false;
-
-            allTableRows.forEach(row => {
-                // ค้นหาปุ่มลบที่มีอยู่ในบรรทัดนั้น ๆ
-                const deleteButton = row.querySelector('button[onclick*="executeDeleteRow"]');
-                if (deleteButton) {
-                    const onclickStr = deleteButton.getAttribute('onclick');
-                    
-                    // 🎯 เจาะพิกัดเด็ดขาด: เช็กว่าข้อความคำสั่งบนปุ่มลบระบุเลขแถวชีตจริงตรงกับ targetRowNumber ที่เพิ่งสั่งลบไปหรือไม่
-                    if (onclickStr.includes(`executeDeleteRow(${targetRowNumber},`) || 
-                        onclickStr.includes(`'${caseId}'`) && onclickStr.includes(`${targetRowNumber}`)) {
-                        
-                        row.remove(); // 💥 ระเบิดทำลายแถวดั้งเดิม (กรณีที่ 1) ทิ้งออกจากหน้าจอทันทีคาตา!
-                        deletedFromDOM = true;
-                        console.log(`🚨 [Live DOM Deletion - Case 1] ลบแถวดั้งเดิมพิกัดชีตที่ ${targetRowNumber} ออกสำเร็จ!`);
-                    }
-                }
-            });
-
-            // 🎯 แผนสำรอง (กรณีที่ 2): หากเป็นแถวเกิดใหม่สด ๆ ที่เพิ่งดีดงอกเพิ่มเข้ามาและดัชนียังไม่สลักเลขแถวชีตตรง ๆ
-            if (!deletedFromDOM) {
-                const freshRows = document.querySelectorAll(`.child-row-of-${caseId}`);
-                freshRows.forEach(row => {
-                    // ตรวจสแกนหาแถวไฮไลต์เรียลไทม์ หรือแถวที่มีเนื้อหาคำอธิบายสลับเป้าหมาย หากตรงกันให้สั่งทำลายทิ้งด้วย
-                    if (row.style.backgroundColor === 'rgb(237, 247, 237)' || 
-                        row.innerHTML.includes('(เพิ่มใหม่เข้าระบบแล้ว)') || 
-                        row.innerHTML.includes('executeDeleteRow(this.closest(\'tr\').rowIndex')) {
-                        
-                        row.remove(); // 💥 ทำลายแถวเกิดใหม่ (กรณีที่ 2) ทิ้งออกจากจอทันทีนุ่มนวล!
-                        console.log(`🚨 [Live DOM Deletion - Case 2] ลบแถวฉีดสดเรียลไทม์ออกสำเร็จ!`);
-                    }
-                });
-            }
-        }else {
-            alert('❌ เกิดข้อผิดพลาดจากเซิร์ฟเวอร์หลังบ้าน: ' + result.message);
-        }
-    } catch (err) {
-        console.error("Delete Click Error:", err);
-        alert('❌ ขัดข้องทางเทคนิคในการเชื่อมต่อ API ลบข้อมูลหลังบ้าน');
-    }
-}
-
-
-
-
-
-
-
-
-let currentDomRowIndex = -1;
-
+// function populateDataToForm(eventItem) {
+//#region
 // 🎯 แก้ไขปรับปรุงใหม่: สั่งเปิดหน้าต่างแบบฟอร์มป๊อปอัป Modal ให้ดีดเด้งกึ่งกลางจอเป๊ะๆ 100%
     function populateDataToForm(eventItem) {
 
@@ -1173,19 +253,10 @@ let currentDomRowIndex = -1;
     setMdInput('mdInpClinician', eventItem.ClinicianReportedOutcomes);
     setMdInput('mdInpDocs', eventItem.DocumentsAttached);
 }
+//#endregion
 
-
-
-
-
-
-
-
-
-
-
-
-
+// async function executeFormUpdate() {
+//#region
     async function executeFormUpdate() {
     const backupEmpName = document.getElementById('hiddenEmpName').value;
     const backupCompany = document.getElementById('hiddenCompany').value;
@@ -1258,611 +329,23 @@ let currentDomRowIndex = -1;
         } catch (e) { alert('❌ ขัดข้องในการติดต่อเชื่อมต่อ API หลังบ้าน'); }
     }
 }
+//#endregion
 
 
-    // 🎛️ [คำสั่งควบคุมส่วนที่ 3.1 ส่วนท้าย: คำสั่งในการเก็บพับข้อมูลไว้ในแถวเดียวเพื่อเก็บเลขเคสไว้ไปแก้ไขบันทึกผลและตรวจสอบ] 
 
-
-
-
-
-
-
-
-
-
-
-
-    async function performSearch() {
-        const keyword = document.getElementById('keywordInput').value;
-        const messageDiv = document.getElementById('message');
-        const resultsList = document.getElementById('resultsList');
-        const tableBody = document.getElementById('tableBodyResult');
-        
-        resultsList.innerHTML = '';
-        if (tableBody) tableBody.innerHTML = '';
-
-        if (!keyword.trim()) { 
-            messageDiv.innerText = 'กรุณากรอกคำที่ต้องการค้นหา'; 
-            messageDiv.style.color = 'red'; 
-            return; 
-        }
-        
-        messageDiv.innerText = 'กำลังค้นหาข้อมูล...'; 
-        messageDiv.style.color = 'black';
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/search`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ keyword })
-            });
-
-            const data = await response.json();
-
-            // 🎯 ปรับตรรกะเช็ควัตถุก้อนพนักงานตามแบบแผนใหม่
-            if (response.ok && data.success && data.employee) {
-                messageDiv.innerText = `พบข้อมูลพนักงานเรียบร้อยแล้ว`; 
-                messageDiv.style.color = 'green';
-
-                 const inputsToEnable = [
-                'manualDate', 'manualTime', 'hospitalSelect', 'symptomsInput', 'notesInput', 'submitBtn',
-                'inpDentalOPD', 'inpPPUsageOPD', 'inpPPUsageIPD', 'inpSLKUsageOpdThB', 'inpSLKUsageIpdThB', 
-                'inpSLKUsageOpdLkr', 'inpSLKUsageIpdLkr', 'inpOverLimitThB', 'inpOverLimitLkr', 
-                'inpExchangeRatesIns', 'inpExchangeRatesInt', 'inpClinician', 'inpDocs'
-               ];
-                inputsToEnable.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.disabled = false;
-                        if (id === 'submitBtn') el.style.backgroundColor = '#198754';
-                        else el.style.backgroundColor = '#ffffff';
-                        el.style.cursor = 'pointer';
-                    }
-                });
-
-                // หยอดค่าพนักงานเข้า Hidden Inputs ฝากไปใช้งานต่อตอนกดบันทึก
-                const emp = data.employee;
-                document.getElementById('hiddenEmpName').value = emp.colG || '-';
-                document.getElementById('hiddenCompany').value = emp.colB || '-';
-                document.getElementById('hiddenSize').value = emp.colD || '-';
-                document.getElementById('hiddenWorkLocation').value = emp.colJ || '-';
-                document.getElementById('hiddenInsuranceId').value = emp.colC || '-'; 
-
-                // =======================================================================
-                // 🔐 [ระบบควบคุมซ่อน-แสดง คอลัมน์ประกัน SLK อัตโนมัติตามสถานที่ทำงาน]
-                // =======================================================================
-                const workLocation = (data && data.employee) ? (data.employee.colJ || '') : '';
-                const slkElements = document.querySelectorAll('.slk-column');
-
-                // ตรวจสอบว่าในสถานที่ทำงานมีคำว่า "SL" หรือไม่ (แปลงเป็นตัวพิมพ์ใหญ่เพื่อความแม่นยำ)
-                if (workLocation.toUpperCase().includes('SL')) {
-                    // 🟢 กรณีเจอคำว่า SL -> ให้แสดงกลุ่มคอลัมน์ SLK ตามปกติ
-                    slkElements.forEach(el => {
-                        el.style.display = ''; 
-                    });
-                } else {
-                    // 🔴 กรณีเป็นพนักงาน PP หรืออื่นๆ ที่ไม่มีคำว่า SL -> สั่งซ่อนคอลัมน์ SLK ทิ้งทันที!
-                    slkElements.forEach(el => {
-                        el.style.display = 'none';
-                    });
-                }
-                // =======================================================================
-
-
-
-                // สร้างการ์ดข้อมูลพนักงานฝั่งซ้ายมือ
-                const card = document.createElement('div');
-                card.className = 'result-item';
-                card.innerHTML = `
-                    <p style="color: #28a745; font-weight: bold; font-size: 15px; margin: 0 0 10px 0;"> ผลลัพธ์:เจอ (แถวที่ ${emp.foundRow})</p>
-                    <div class="info-row"><span class="label-text">ชื่อ :</span><span class="value-text">${emp.colG}</span></div>
-                    <div class="info-row"><span class="label-text">บริษัท :</span><span class="value-text">${emp.colB}</span></div>
-                    <div class="info-row"><span class="label-text">รหัสพนักงาน :</span><span class="value-text">${emp.colE}</span></div>
-                    <div class="info-row"><span class="label-text">SIZE :</span><span class="value-text">${emp.colD}</span></div>
-                    <div class="info-row"><span class="label-text">InsuranceId :</span><span class="value-text">${emp.colC}</span></div>                                    
-                    <div class="info-row"><span class="label-text">สถานที่ทำงาน :</span><span class="value-text">${emp.colK}</span></div>
-                    <div class="info-row"><span class="label-text">วงเงิน OPD :</span><span class="value-text">${emp.colAV || '-'}</span></div>
-                    <div class="info-row"><span class="label-text">วงเงิน IPD :</span><span class="value-text">${emp.colAW || '-'}</span></div>
-                    <div class="info-row"><span class="label-text">วงเงิน OPD คงเหลือ :</span><span class="value-text">${emp.colBA || '-'}</span></div>
-                    <div class="info-row"><span class="label-text">วงเงิน IPD คงเหลือ :</span><span class="value-text">${emp.colBB || '-'}</span></div>
-                `;
-                resultsList.appendChild(card);
-
-                renderHistoryTable(data.history);
-       
-
-            } else {
-                messageDiv.innerText = data.message || 'ไม่พบข้อมูลในระบบ'; 
-                messageDiv.style.color = 'red';
-            }
-        } catch (error) { 
-            console.error(error);
-            messageDiv.innerText = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์'; 
-            messageDiv.style.color = 'red'; 
-        }
-    }
-
-    // ------------------------------------------------------------------------------------------------------------------------- //
-    // 🎛️ ระบบดักจับการบันทึกฟอร์มข้อมูลเคลมเข้ารักษา                                                                               //
-    // ------------------------------------------------------------------------------------------------------------------------- //
-      // ------------------------------------------------------------------------------------------------------------------------- //
-    // 🎛️ ระบบดักจับการบันทึกฟอร์มข้อมูลเคลมเข้ารักษา (เวอร์ชันซ่อมแซมสัญกรณ์วันเวลาหัวเว็บเรียบร้อย)                                    //
-    // ------------------------------------------------------------------------------------------------------------------------- //
-    document.getElementById('claimForm').addEventListener('submit', async (e) => {
-        e.preventDefault(); 
-
-        const symptoms = document.getElementById('symptomsInput').value;
-        const claimStatus = document.getElementById('claimStatus');
-
-        if (!symptoms.trim()) {
-            alert("⚠️ กรุณากรอกรายละเอียดอาการป่วยก่อนบันทึกข้อมูลครับ");
-            document.getElementById('symptomsInput').focus();
-            return;
-        }
-
-        claimStatus.innerText = 'กำลังบันทึกข้อมูลลงฐานข้อมูล...';
-        claimStatus.style.color = 'blue';
-
-        const manualDate = document.getElementById('manualDate').value;
-        const manualTime = document.getElementById('manualTime').value;
-        const treatmentDateTime = `${manualDate} ${manualTime}`.trim() || '-';
-
-        const payload = {
-            sheetRowIndex: currentEditingRowIndex, 
-            CaseIdNew: document.getElementById('caseId').value || '-',
-            autoDateTime: document.getElementById('headerDateTimeValue').innerText, 
-            adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
-            treatmentDateTime: treatmentDateTime,
-            company: document.getElementById('hiddenCompany').value,
-            workLocation: document.getElementById('hiddenWorkLocation').value,
-            hospital: document.getElementById('hospitalSelect').value,
-            symptoms: symptoms,
-            insuranceId: document.getElementById('hiddenInsuranceId').value,
-            size: document.getElementById('hiddenSize').value,
-            employeeName: document.getElementById('hiddenEmpName').value,
-            statusText: "แจ้งประกัน กำลังเข้ารับการรักษา",
-            notes: document.getElementById('notesInput').value
-        };
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/save-treatment`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-            
-            if (response.ok && result.success) {
-                claimStatus.innerText = `✅ ${result.message}`;
-                claimStatus.style.color = 'green';
-
-                alert(result.message);
-
-                payload.CaseIdNew = result.finalCaseId;
-                payload.sheetRowIndex = result.updatedRowIndex;
-
-                if (document.getElementById('hospitalSelect')) document.getElementById('hospitalSelect').value = ''; 
-                if (document.getElementById('distanceInput')) document.getElementById('distanceInput').value = '-'; 
-                if (document.getElementById('symptomsInput')) document.getElementById('symptomsInput').value = ''; 
-                if (document.getElementById('notesInput')) document.getElementById('notesInput').value = ''; 
-
-                // 🎯 [แก้ไขจุดบั๊กที่ 1]: สั่งรันฟังก์ชันกลางในการฟอร์แมตวันเวลาไทย เพื่อคงรูปเล่ม วัน เดือน ปี ไว้ให้เหมือนเดิม ไม่หดสั้นเหลือแค่เวลา
-                setThaiDateTime();
-
-                if (typeof injectNewRowToTableRealtime === "function") {
-                    injectNewRowToTableRealtime(payload);
-                }
-
-                if (typeof fetchNextCaseId === "function") {
-                    fetchNextCaseId();
-                }
-
-            } else {
-                claimStatus.innerText = `❌ ${result.message || 'บันทึกไม่สำเร็จ'}`;
-                claimStatus.style.color = 'red';
-            }
-        } catch (error) {
-            console.error(error);
-            claimStatus.innerText = '❌ เกิดข้อผิดพลาดร้ายแรงในการเชื่อมต่อเซิร์ฟเวอร์';
-            claimStatus.style.color = 'red';
-        }
-
-
-
-
-
-
-
-
-
-
-    // ------------------------------------------------------------------------------------------------------------------------- //
-    // ตั้งค่าให้ออกจากระบบเมื่อถึงเวลาที่ต้องการ                                                                             //
-    // ------------------------------------------------------------------------------------------------------------------------- //
-// 🎯 ตั้งค่าเวลาที่ต้องการให้ระบบรอ (หน่วยเป็นมิลลิวินาที: 1 วินาที = 1000)
-const INACTIVITY_LIMIT = 5 * 60 * 1000; // ⏳ ตัวอย่างนี้ตั้งไว้ที่ 5 นาที (ปรับตัวเลขได้ตามใจชอบ)
-
-let timeoutId;
-
-// 🚪 ฟังก์ชันสั่งออกจากระบบอัตโนมัติ
-function logoutUser() {
-    alert("🔒 คุณไม่มีการเคลื่อนไหวนานเกินไป ระบบจะทำการออกจากระบบเพื่อความปลอดภัยครับ");
-    
-    // 1. เคลียร์ชื่อพนักงานออกจากความจำเครื่องเบราว์เซอร์
-    sessionStorage.removeItem('loggedInAdminName');
-    
-    // 2. เด้งหน้าจอกลับไปยังหน้า index.html (หน้า Login)
-    window.location.href = 'index.html';
-}
-
-// 🔁 ฟังก์ชันรีเซ็ตเวลานับถอยหลังใหม่ทุกครั้งที่มีการขยับ
-function resetTimer() {
-    clearTimeout(timeoutId); // ล้างเวลานับถอยหลังเดิมทิ้ง
-    timeoutId = setTimeout(logoutUser, INACTIVITY_LIMIT); // เริ่มนับถอยหลังใหม่
-}
-
-// 👁️ ดักจับพฤติกรรมการขยับทุกรูปแบบบนหน้าเว็บ
-function setupInactivityTimer() {
-    window.onload = resetTimer;
-    window.onmousemove = resetTimer; // ขยับเมาส์
-    window.onmousedown = resetTimer; // คลิกเมาส์
-    window.ontouchstart = resetTimer;// แตะหน้าจอ (กรณีใช้มือถือ/แท็บเล็ต)
-    window.onclick = resetTimer;      // คลิกปุ่มต่างๆ
-    window.onkeypress = resetTimer;   // พิมพ์คีย์บอร์ด
-    window.addEventListener('scroll', resetTimer, true); // เลื่อนหน้าจอซ้ายขวาบนล่าง
-}
-
-// 🚀 เริ่มเปิดใช้งานระบบนับถอยหลังดักจับค่าว่าง
-setupInactivityTimer();
-
-
-
-
-});
-
-
-
-
-</script>
-
-
-
-
-
-<!-- ============================================================การแก้ไขข้อมูลย้อนหลัง============================================================== -->
-<!-- ============================================================================================================================================ -->
-<!-- ============================= [ส่วนบน] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับแก้ไขข้อมูลย้อนหลัง (Edit Custom Modal) ======================================= -->
-<!-- ============================================================================================================================================ -->
-<div id="editCaseModal">
-    <div>
-        <!-- ส่วนหัวของกล่องป๊อปอัป -->
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 15px;">
-            <h3 style="margin: 0; color: #ffc107; font-family: 'Segoe UI', Tahoma, sans-serif;">📝 ปรับปรุงและแก้ไขข้อมูลเคสย้อนหลัง</h3>
-            <span style="font-size: 24px; cursor: pointer; color: #aaa; font-weight: bold; line-height: 1;" onclick="document.getElementById('editCaseModal').style.setProperty('display', 'none', 'important');">&times;</span>
-        </div>
-
-        <!-- ฟอร์มกรอกข้อมูลปรับปรุงแก้ไขภายในป๊อปอัป -->
-        <form id="modalEditForm">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
-                <div>
-                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เคส ID :</label>
-                    <input type="text" id="mdCaseId" readonly style="background-color: #e9ecef; color: #495057; cursor: not-allowed;">
-                </div>
-                <div>
-                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">สถานพยาบาล :</label>
-                    <select id="mdHospitalSelect" required>
-                        <option value="รอยัล อังกอร์">รอยัล อังกอร์</option>
-                        <option value="จัสมิน คลินิก">จัสมิน คลินิก</option>
-                        <option value="เทวิน ข้างฮุยเกียร์">เทวิน ข้างฮุยเกียร์</option>
-                        <option value="คลินิกโซน 3">คลินิกโซน 3</option>
-                        <option value="คลินิก สุวิสา">คลินิก สุวิสา</option>
-                        <option value="คลินิกไทยช่าง (ท้ายคลัง)">คลินิกไทยช่าง (ท้ายคลัง)</option>
-                        <option value="คลินิกวงเทพ">คลินิกวงเทพ</option>
-                        <option value="คลินิกโอเคทินนา">คลินิกโอเคทินนา</option>
-                        <option value="อื่นๆ กรุงเทพและปริมณฑล">อื่นๆ กรุงเทพและปริมณฑล</option>
-                        <option value="อื่นๆ ต่างจังหวัด">อื่นๆ ต่างจังหวัด</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">วันที่เข้ารักษา :</label>
-                    <input type="text" id="mdManualDate" placeholder="📅 คลิกเลือกวันที่...">
-                </div>
-                <div>
-                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เวลาที่เข้ารักษา :</label>
-                    <input type="text" id="mdManualTime" placeholder="⏰ คลิกเลือกเวลา...">
-                </div>
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">อาการป่วย :<span style="color:red;">*</span></label>
-                <textarea id="mdSymptomsInput" required placeholder="ระบุอาการป่วยที่ต้องการปรับปรุงแก้ไข..." style="min-height: 70px;"></textarea>
-            </div>
-
-            <!-- โซนกรอกสิทธิ์ตัวเลขวงเงิน (แบ่งเป็น 3 คอลัมน์) -->
-            <p style="margin: 15px 0 8px 0; font-weight: bold; color: #198754; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">📊 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัย</p>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">
-                <div><label style="font-size:11px; font-weight:bold; color:#555;">ทำฟัน หักวงเงิน OPD</label><input type="number" id="mdInpDentalOPD" step="any" value="0"></div>
-                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP OPD</label><input type="number" id="mdInpPPUsageOPD" step="any" value="0"></div>
-                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP IPD</label><input type="number" id="mdInpPPUsageIPD" step="any" value="0"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (T)</label><input type="number" id="mdInpSLKUsageOpdThB" step="any" value="0"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (T)</label><input type="number" id="mdInpSLKUsageIpdThB" step="any" value="0"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (L)</label><input type="number" id="mdInpSLKUsageOpdLkr" step="any" value="0"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (L)</label><input type="number" id="mdInpSLKUsageIpdLkr" step="any" value="0"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">ส่วนเกินวงเงินค่ารักษา (T)</label><input type="number" id="mdInpOverLimitThB" step="any" value="0"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">ส่วนเกินวงเงินค่ารักษา (L)</label><input type="number" id="mdInpOverLimitLkr" step="any" value="0"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">เรทค่าเงินที่ประกันคิดให้</label><input type="number" id="mdInpExchangeRatesIns" value="1" step="0.01"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">เรทค่าเงินปัจจุบัน</label><input type="number" id="mdInpExchangeRatesInt" value="1" step="0.01"></div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
-                <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">ผลการรักษา</label><input type="text" id="mdInpClinician" placeholder="-"></div>
-                <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">เอกสารแนบ</label><input type="text" id="mdInpDocs" placeholder="-"></div>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">หมายเหตุเพิ่มเติม :</label>
-                <textarea id="mdNotesInput" placeholder="ข้อมูลอื่นๆ..." style="min-height: 50px;"></textarea>
-            </div>
-
-            <!-- ปุ่มกดยืนยันหรือยกเลิกการส่งค่าแก้ไขย้อนหลัง -->
-            <div style="display: flex; gap: 10px;">
-                <button type="button" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="document.getElementById('editCaseModal').style.setProperty('display', 'none', 'important');">❌ ยกเลิก</button>
-                <button type="submit" style="flex: 2; padding: 12px; background: #ffc107; color: #212529; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">💾 ยืนยันการอัปเดตแก้ไขทับบรรทัดเดิม</button>
-            </div>
-        </form>
-    </div>
-</div>
-<!-- ============================================================การแก้ไขข้อมูลย้อนหลัง=============================================================== -->
-<!-- ============================================================================================================================================= -->
-<!-- ============================= [ส่วนล่าง] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับแก้ไขข้อมูลย้อนหลัง (Edit Custom Modal) ======================================== -->
-<!-- ============================================================================================================================================= -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!----------------------------------------------------------------------------------------------------------------------------->
-<!-----------ส่วนหัว---------------- ส่วนการควบคุมป็อปอัปเพื่อแก้ไขข้อมูลและนำบันทึกลงแถวที่แก้ไข ------------------------------------------>
-<!----------------------------------------------------------------------------------------------------------------------------->
-
-<script>
     window.addEventListener('DOMContentLoaded', () => {
         // 1. ตั้งเวลาระบบและดึงข้อมูล Case ID เริ่มต้น
-        setThaiDateTime();
+     //   setThaiDateTime();
         if (typeof fetchNextCaseId === "function") {
             fetchNextCaseId();
         }
 
-        // 2. สั่งรันปฏิทินและนาฬิกาฝั่งฟอร์มหลัก
-        flatpickr("#manualDate", { dateFormat: "d/m/Y", allowInput: true, noCalendar: false });
-        flatpickr("#manualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
-
-        // =========================================================================================
-        // 🎯 ผูกอีเวนต์ปุ่มกดในป๊อปอัปหลังจากโครงสร้าง HTML ป๊อปอัปโหลดเสร็จสมบูรณ์ 100%
-        // =========================================================================================
-        const editFormEl = document.getElementById('modalEditForm');
-        if (editFormEl) {
-            editFormEl.addEventListener('submit', async (e) => {
-                e.preventDefault(); // บล็อกหน้าจอไม่ให้รีเฟรชทิ้ง
-
-                const symptoms = document.getElementById('mdSymptomsInput').value;
-                if (!symptoms.trim()) { 
-                    alert("⚠️ กรุณากรอกรายละเอียดอาการป่วยในป๊อปอัปด้วยครับ"); 
-                    document.getElementById('mdSymptomsInput').focus();
-                    return; 
-                }
-
-                // รวบรวมก้อนข้อมูล Payload ทั้งหมดจากช่องฟอร์มป๊อปอัป
-                const payload = {
-                    sheetRowIndex: currentEditingRowIndex, 
-                    CaseIdNew: document.getElementById('mdCaseId').value || '-',
-                    autoDateTime: document.getElementById('headerDateTimeValue').innerText, 
-                    adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin', 
-                    treatmentDateTime: `${document.getElementById('mdManualDate').value} ${document.getElementById('mdManualTime').value}`.trim() || '-',
-                    company: document.getElementById('hiddenCompany').value || 'CALL 365',
-                    workLocation: document.getElementById('hiddenWorkLocation').value || '-',
-                    hospital: document.getElementById('mdHospitalSelect').value,
-                    symptoms: symptoms,
-                    insuranceId: document.getElementById('hiddenInsuranceId').value || '-',
-                    size: document.getElementById('hiddenSize').value || 'M',
-                    employeeName: document.getElementById('hiddenEmpName').value || '-',
-                    statusText: "แก้ไขและปรับปรุงข้อมูลเคสการรักษา", 
-                    
-                    // ดึงยอดสิทธิ์วงเงินจากป๊อปอัป
-                    DentalOPD: document.getElementById('mdInpDentalOPD').value || '0',
-                    PPUsageOPD: document.getElementById('mdInpPPUsageOPD').value || '0',
-                    PPUsageIPD: document.getElementById('mdInpPPUsageIPD').value || '0',
-                    SLKUsageOpdThB: document.getElementById('mdInpSLKUsageOpdThB').value || '0',
-                    SLKUsageIpdThB: document.getElementById('mdInpSLKUsageIpdThB').value || '0',
-                    SLKUsageOpdLkr: document.getElementById('mdInpSLKUsageOpdLkr').value || '0',
-                    SLKUsageIpdLkr: document.getElementById('mdInpSLKUsageIpdLkr').value || '0',
-                    OverLimitCreditInsThB: document.getElementById('mdInpOverLimitThB').value || '0',
-                    OverLimitCreditInsLkr: document.getElementById('mdInpOverLimitLkr').value || '0',
-                    ExchangeRatesIns: document.getElementById('mdInpExchangeRatesIns').value || '1',
-                    ExchangeRatesInt: document.getElementById('mdInpExchangeRatesInt').value || '1',
-                    
-                    ClinicianReportedOutcomes: document.getElementById('mdInpClinician').value || '-',
-                    DocumentsAttached: document.getElementById('mdInpDocs').value || '-',
-                    notes: document.getElementById('mdNotesInput').value || '-'
-                };
-
-                // แสดงกล่องตรวจสอบความปลอดภัย Payload ก่อนปล่อยสัญญาณยิง
-                if (confirm(`🧪 [ระบบตรวจสอบ Payload ป๊อปอัปก่อนส่งจริง]\n\n• บรรทัดบนแผ่นชีต: แถวที่ ${payload.sheetRowIndex}\n• ยืนยันเคส ID: ${payload.CaseIdNew}\n• สถานพยาบาล: ${payload.hospital}\n\nกดปุ่ม "ตกลง (OK)" เพื่อส่งค่าไปอัปเดตหลังบ้านครับ`)) {
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/api/update-treatment`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        
-                        const result = await response.json();
-                        
-//------------------------------------------------------------------------------------------------------//
-
-if (response.ok && result.success) {
-            alert('🎉 บันทึกปรับปรุงแก้ไขข้อมูลและส่งแถวลง Google Sheets สำเร็จเรียบร้อย!');
-            
-            const editModal = document.getElementById('editCaseModal');
-            if (editModal) { editModal.style.setProperty('display', 'none', 'important'); }
-
-            // 🎯 เจาะเป้าหมายตรงตัว: วิ่งไปหาบรรทัดแถวบนหน้าจอเบราว์เซอร์จริงตามพิกัดตัวแปรกลางที่จำไว้
-            const targetRow = document.getElementById('tableBodyResult').parentNode.rows[currentDomRowIndex];
-            
-            if (targetRow) {
-                // ฟังก์ชันช่วยจัดระเบียบสัญกรณ์การเงินและเศษทศนิยม 2 ตำแหน่งให้สวยงามกลมกลืน
-                const fmt = (val) => {
-                    if (val === undefined || val === null || val === '') return '0.00';
-                    let num = parseFloat(String(val).replace(/,/g, '').replace(/\s+/g, '').trim());
-                    return isNaN(num) ? '0.00' : num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                };
-
-                // 🎯 ทำการฉีดพ่นค่าตัวเลขและคำอธิบายชุดใหม่เข้าไปสับเปลี่ยนในช่องเซลล์ตารางย่อยเดิมทันทีคาตา
-                const cells = targetRow.children;
-                if (cells.length >= 21) {
-                    cells[1].innerText = payload.treatmentDateTime || '-';         // ช่องวันที่/เวลา
-                    cells[2].innerText = payload.statusText || '-';                 // ช่องขั้นตอนการรักษา
-                    cells[3].innerText = payload.symptoms || '-';                   // ช่องอาการป่วย
-                    cells[4].innerText = payload.hospital || '-';                   // ช่องสถานพยาบาล
-                    cells[5].style.fontWeight = 'bold'; cells[5].innerText = fmt(payload.DentalOPD);     // ช่องทำฟัน OPD
-                    cells[6].style.fontWeight = 'bold'; cells[6].innerText = fmt(payload.PPUsageOPD);    // ช่อง PP OPD
-                    cells[7].style.fontWeight = 'bold'; cells[7].innerText = fmt(payload.PPUsageIPD);    // ช่อง PP IPD
-                    cells[8].style.fontWeight = 'bold'; cells[8].innerText = fmt(payload.SLKUsageOpdThB); // ช่อง SL OPD (THB)
-                    cells[9].style.fontWeight = 'bold'; cells[9].innerText = fmt(payload.SLKUsageIpdThB); // ช่อง SL IPD (THB)
-                    cells[10].style.fontWeight = 'bold'; cells[10].innerText = fmt(payload.SLKUsageOpdLkr); // ช่อง SL OPD (LKR)
-                    cells[11].style.fontWeight = 'bold'; cells[11].innerText = fmt(payload.SLKUsageIpdLkr); // ช่อง SL IPD (LKR)
-                    cells[12].style.fontWeight = 'bold'; cells[12].innerText = fmt(payload.OverLimitCreditInsThB); // ช่องส่วนเกิน (THB)
-                    cells[13].style.fontWeight = 'bold'; cells[13].innerText = fmt(payload.OverLimitCreditInsLkr); // ช่องส่วนเกิน (LKR)
-                    cells[14].innerText = payload.ExchangeRatesIns || '1';          // ช่องเรทประกัน (THB)
-                    cells[15].innerText = payload.ExchangeRatesInt || '1';          // ช่องเรทประกัน (LKR)
-                    cells[16].innerText = payload.ClinicianReportedOutcomes || '-';  // ช่องผลการรักษา
-                    cells[17].innerText = payload.DocumentsAttached || '-';          // ช่องเอกสารแนบ
-                    cells[18].innerText = payload.notes || '-';                      // ช่องหมายเหตุ
-                    cells[19].innerText = payload.autoDateTime || displayAutoTime;  // ช่องเวลาบันทึกออโต้
-                    cells[20].innerText = payload.adminName || '-';                  // ช่องชื่อแอดมิน
-                }
-
-                   // 🎯 บันทึกครอบค่าล่าสุดฝังคืนลงไปในปุ่มแก้ไขของบรรทัดนั้นด้วย
-                const editButton = targetRow.querySelector('.btn-edit-minimal');
-                if (editButton) {
-                    const safeJsonString = JSON.stringify({ ...payload, targetRowNumber: payload.sheetRowIndex });
-                    const safeEncodedBase64 = window.btoa(unescape(encodeURIComponent(safeJsonString)));
-                    editButton.setAttribute('onclick', `event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateDataToForm(decodedData);`);
-                }
-
-                // เปลี่ยนสีแถวเป้าหมายให้เป็นสีไฮไลต์สีเขียวอ่อนกระตุ้นสายตา
-                targetRow.style.backgroundColor = '#edf7ed';
-                console.log(`🎯 [Direct Row Update Success] สับเปลี่ยนค่าเงินในแถวหน้าจออันดับที่ ${currentDomRowIndex} สำเร็จเสร็จสิ้น!`);
-            }
-        }
-
-          } catch (error) { 
-               console.error("Update Error:", error);
-                alert('❌ ขัดข้องทางเทคนิคในการติดต่อเชื่อมต่อ API อัปเดตหลังบ้าน'); 
-            }
-        }
-     });
-    }
-
-        // =========================================================================================
-        // 🎯 1. ระบบดักจับการกดปุ่มส่งฟอร์มเพื่อบันทึก "อัปเดตผลการรักษา" เป็นบรรทัดใหม่ต่อท้ายล่างสุด
-        // =========================================================================================
-  const outcomeFormEl = document.getElementById('modalOutcomeForm');
-if (outcomeFormEl) {
-    outcomeFormEl.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const payload = {
-            sheetRowIndex: -1, 
-            CaseIdNew: document.getElementById('ocCaseId').value, // ดึงเลขเคส เช่น 812
-            autoDateTime: document.getElementById('headerDateTimeValue').innerText,
-            adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
-            treatmentDateTime: `${document.getElementById('ocManualDate').value} ${document.getElementById('ocManualTime').value}`.trim(),
-            company: document.getElementById('hiddenCompany').value || 'CALL 365',
-            workLocation: document.getElementById('hiddenWorkLocation').value || '-',
-            hospital: document.getElementById('ocHospital').value,
-            symptoms: document.getElementById('ocSymptoms').value,
-            insuranceId: document.getElementById('hiddenInsuranceId').value || '-',
-            size: document.getElementById('hiddenSize').value || 'M',
-            employeeName: document.getElementById('hiddenEmpName').value || '-',
-
-            // 🎯 แนบตัวแปรชี้ขาด ส่งสัญญาณบอกหลังบ้านว่านี่คือการเพิ่มประวัติเคสเก่า ห้ามเปลี่ยนเลขเคสเด็ดขาด!
-            isTimelineUpdate: true, 
-
-            statusText: (() => {
-                const selectedStatus = document.getElementById('ocStatusSelect').value;
-                if (selectedStatus === 'อื่นๆ') {
-                    const extraText = document.getElementById('ocStatusOtherInput').value.trim();
-                    return extraText ? `อื่นๆ - ${extraText}` : 'อื่นๆ';
-                }
-                return selectedStatus;
-            })(),
-            
-            DentalOPD: document.getElementById('ocInpDentalOPD').value || '0',
-            PPUsageOPD: document.getElementById('ocInpPPUsageOPD').value || '0',
-            PPUsageIPD: document.getElementById('ocInpPPUsageIPD').value || '0',
-            
-            // ดึงสิทธิ์ค่าเงิน SLK มาฝากส่งให้ครบถ้วนป้องกันการบันทึกสูญหาย
-            SLKUsageOpdThB: document.getElementById('ocInpSlkOpdThb')?.value || '0',
-            SLKUsageIpdThB: document.getElementById('ocInpSlkIpdThb')?.value || '0',
-            SLKUsageOpdLkr: document.getElementById('ocInpSlkOpdLkr')?.value || '0',
-            SLKUsageIpdLkr: document.getElementById('ocInpSlkIpdLkr')?.value || '0',
-            OverLimitCreditInsThB: document.getElementById('ocInpOverThb')?.value || '0',
-            OverLimitCreditInsLkr: document.getElementById('ocInpOverLkr')?.value || '0',
-            ExchangeRatesIns: document.getElementById('ocInpRateIns')?.value || '1',
-            ExchangeRatesInt: document.getElementById('ocInpRateInt')?.value || '1',
-
-            ClinicianReportedOutcomes: document.getElementById('ocInpClinician').value || '-',
-            DocumentsAttached: document.getElementById('ocInpDocs').value || '-',
-            notes: document.getElementById('ocNotesInput').value || '-'
-        };
-
-        if (confirm(`💾 ยืนยันการส่งอัปเดตผลการรักษาสำหรับ เคส ID: ${payload.CaseIdNew} ใช่หรือไม่?`)) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/save-treatment`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-
-                if (response.ok && result.success) {
-                    alert('🎉 อัปเดตผลการรักษาสำเร็จและส่งประวัติลงฐานข้อมูล Sheets เรียบร้อยตรงล็อก!');
-                    
-                    const outcomeModal = document.getElementById('outcomeUpdateModal');
-                    if (outcomeModal) { outcomeModal.style.display = 'none'; }
-
-                    payload.updatedRowIndex = result.updatedRowIndex;
-                    payload.sheetRowIndex = result.updatedRowIndex;
-
-                    // สั่งกระตุ้นให้ตารางรีโหลดข้อมูลแบบเรียลไทม์เพื่อดึงผลลัพธ์ล่าสุดมากางแสดงผล
-                    if (typeof performSearch === "function") {
-                        performSearch();
-                    }
-                } else { 
-                    alert('❌ เซิร์ฟเวอร์หลังบ้านปฏิเสธคำขอ: ' + result.message); 
-                }
-            } catch (err) { 
-                alert('❌ ขัดข้องทางเทคนิคในการเชื่อมต่อ API อัปเดตหลังบ้าน'); 
-            }
-        }
-    });
-}
-
-
+//#region
         // =========================================================================================
         // 🎯 2. ฟังก์ชันหยอดค่าข้อมูลประวัติพนักงานเดิม เข้าสู่หน้าต่างป๊อปอัปผลการรักษา (Populate Data)
         // =========================================================================================
         window.populateOutcomeToModal = function(eventItem) {
+            currentActiveCaseId = eventItem.CaseIdNew || ""; 
    
         const hiddenWorkLocationEl = document.getElementById('hiddenWorkLocation');
         const workLocation = hiddenWorkLocationEl ? hiddenWorkLocationEl.value : '';
@@ -1939,14 +422,13 @@ if (outcomeFormEl) {
                 flatpickr("#ocManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true }); 
             }
         };
+//#endregion
 
-    }); // ปิดครอบฟังก์ชันใหญ่ DOMContentLoaded (บรรทัด 1554 ของส่วนที่ 1) อย่างถูกต้องครบคู่สมบูรณ์
+}); // ปิดครอบฟังก์ชันใหญ่ DOMContentLoaded (บรรทัด 1554 ของส่วนที่ 1) อย่างถูกต้องครบคู่สมบูรณ์
+//#endregion
 
-
-
-
-
-
+//function toggleOcOtherInput(selectedValue) {
+//#region
 // 🎯 ฟังก์ชันช่วย เปิด/ซ่อน ช่องกรอกข้อความเสริมเมื่อเลือกขั้นตอนการรักษาเป็น "อื่นๆ"
 function toggleOcOtherInput(selectedValue) {
     const wrapper = document.getElementById('ocStatusOtherWrapper');
@@ -1963,13 +445,10 @@ function toggleOcOtherInput(selectedValue) {
         }
     }
 }
+//#endregion
 
-
-
-
-
-
-
+//function injectNewRowToTableRealtime(payloadData) {
+//#region
 // =========================================================================================
 // 🎯 [พัฒนาต่อ] ฟังก์ชันดึงประวัติมาดีดแทรกแถวใหม่ในตารางทันที โดยไม่มีการกะพริบปิด-เปิดหน้าต่าง
 // =========================================================================================
@@ -2143,10 +622,10 @@ function injectNewRowToTableRealtime(payloadData) {
 
     console.log(`🎉 [Live Scientific Injection Success] แก้ไขตำแหน่งไหลลงด้านล่างสุดเรียบร้อยแล้ว!`);
 }
+//#endregion
 
-
-
-
+//function openEditModal(eventItem, domIndex) {
+//#region
 // 🎯 จัดการโหมดแก้ไขป๊อปอัป Modal (กล่องเหลืองทอง)
 function openEditModal(eventItem, domIndex) {
     currentEditingRowIndex = eventItem.targetRowNumber || -1;
@@ -2192,235 +671,19 @@ function openEditModal(eventItem, domIndex) {
 function closeEditModal() {
     document.getElementById('editCaseModal').style.display = 'none';
 }
+//#endregion
 
-// 🎯 ส่งคำสั่งอัปเดตจากป๊อปอัป (กล่องเหลืองทอง)
-document.getElementById('modalEditForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const symptoms = document.getElementById('mdSymptomsInput').value;
-    if (!symptoms.trim()) { alert("กรุณากรอกอาการป่วย"); return; }
-
-    const payload = {
-        sheetRowIndex: currentEditingRowIndex,
-        CaseIdNew: document.getElementById('mdCaseId').value,
-        autoDateTime: document.getElementById('headerDateTimeValue').innerText,
-        adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
-        treatmentDateTime: `${document.getElementById('mdManualDate').value} ${document.getElementById('mdManualTime').value}`.trim(),
-        company: document.getElementById('hiddenCompany').value,
-        workLocation: document.getElementById('hiddenWorkLocation').value,
-        hospital: document.getElementById('mdHospitalSelect').value,
-        symptoms: symptoms,
-        insuranceId: document.getElementById('hiddenInsuranceId').value,
-        size: document.getElementById('hiddenSize').value,
-        employeeName: document.getElementById('hiddenEmpName').value,
-        statusText: document.getElementById('mdStatusText').value,
-        DentalOPD: document.getElementById('mdInpDentalOPD').value || '0',
-        PPUsageOPD: document.getElementById('mdInpPPUsageOPD').value || '0',
-        PPUsageIPD: document.getElementById('mdInpPPUsageIPD').value || '0',
-        SLKUsageOpdThB: document.getElementById('mdInpSLKUsageOpdThB').value || '0',
-        SLKUsageIpdThB: document.getElementById('mdInpSLKUsageIpdThB').value || '0',
-        SLKUsageOpdLkr: document.getElementById('mdInpSLKUsageOpdLkr').value || '0',
-        SLKUsageIpdLkr: document.getElementById('mdInpSLKUsageIpdLkr').value || '0',
-        OverLimitCreditInsThB: document.getElementById('mdInpOverLimitThB').value || '0',
-        OverLimitCreditInsLkr: document.getElementById('mdInpOverLimitLkr').value || '0',
-        ExchangeRatesIns: document.getElementById('mdInpExchangeRatesIns').value || '1',
-        ExchangeRatesInt: document.getElementById('mdInpExchangeRatesInt').value || '1',
-        ClinicianReportedOutcomes: document.getElementById('mdInpClinician').value || '-',
-        DocumentsAttached: document.getElementById('mdInpDocs').value || '-',
-        notes: document.getElementById('mdNotesInput').value || '-'
-    };
-
-    if (confirm("ยืนยันอัปเดตข้อมูลทับบรรทัดเดิมลง Google Sheets?")) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/update-treatment`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const result = await response.json();
-            if (response.ok && result.success) {
-                alert('🎉 บันทึกการอัปเดตเรียบร้อยแล้ว!');
-                closeEditModal();
-                performSearch(); // สั่งรีโหลดการแสดงผลตารางเพื่ออัปเดตตัวเลขใหม่ทันที
-            } else {
-                alert('❌ ปฏิเสธการบันทึก: ' + result.message);
-            }
-        } catch (err) {
-            alert('❌ ขัดข้องทางเทคนิคเครือข่าย');
-        }
+// document.addEventListener('submit', function (e) {
+// ดักจับการทำงานของฟอร์มในหน้าหลัก เพื่อไม่ให้หน้าเว็บรีเฟรชตัวเอง
+//#region  
+document.addEventListener('submit', function (e) {
+    if (e.target && e.target.id === 'claimForm') {
+        e.preventDefault(); // เบรกไม่ให้หน้าเว็บโหลดใหม่
+        alert('ระบบดักจับการบันทึกข้อมูลสำเร็จ! (รอเชื่อมต่อกับสคริปต์บันทึกตัวจริงของคุณ)');
     }
 });
+//#endregion  
 
-
-// ⏳ ระบบตรวจจับความเคลื่อนไหว สั่งออกจากระบบอัตโนมัติ (Inactivity Timeout)
-const INACTIVITY_LIMIT = 5 * 60 * 1000; 
-let timeoutId;
-function logoutUser() {
-    alert("🔒 ระบบตัดเซสชันการทำงานเนื่องจากไม่มีการเคลื่อนไหว เพื่อรักษาความปลอดภัย");
-    sessionStorage.removeItem('loggedInAdminName');
-    window.location.href = 'index.html';
-}
-function resetTimer() {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(logoutUser, INACTIVITY_LIMIT);
-}
-window.onload = resetTimer;
-window.onmousemove = resetTimer;
-window.onmousedown = resetTimer;
-window.onclick = resetTimer;
-window.onkeypress = resetTimer;
-
-window.addEventListener('DOMContentLoaded', () => {
-    setThaiDateTime();
-    fetchNextCaseId();
-    flatpickr("#manualDate", { dateFormat: "d/m/Y", defaultDate: "today", allowInput: true });
-    flatpickr("#manualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, defaultDate: new Date(), allowInput: true });
-    flatpickr("#mdManualDate", { dateFormat: "d/m/Y", allowInput: true });
-    flatpickr("#mdManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
-    flatpickr("#ocManualDate", { dateFormat: "d/m/Y", allowInput: true });
-    flatpickr("#ocManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
-});
 </script>
-
-
-
-<!-- ------------------------------------------------------------------------------------------------------------------------- -->
-<!-- ----------ส่วนท้าย---------------- ส่วนการควบคุมป็อปอัปเพื่อแก้ไขข้อมูลและนำบันทึกลงแถวที่แก้ไข -------------------------------------- -->
-<!-- ------------------------------------------------------------------------------------------------------------------------- -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- ============================================================ การอัปเดตผลการรักษา =============================================================== -->
-<!-- ============================================================================================================================================== -->
-<!-- ============================= [ส่วนบน] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับการอัปเดตผลการรักษา (Outcome Update Modal) ===================================== -->
-<!-- =============================================================================================================================================== -->
-
-<div id="outcomeUpdateModal" style="display: none; position: fixed !important; z-index: 99999 !important; left: 0; top: 0; width: 100vw !important; height: 100vh !important; background-color: rgba(0, 0, 0, 0.5) !important; align-items: center !important; justify-content: center !important;">
-    <div style="background-color: #ffffff !important; padding: 25px !important; border-radius: 12px !important; width: 95% !important; max-width: 1100px !important; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25) !important; max-height: 90vh !important; overflow-y: auto !important; border-top: 6px solid #198754 !important; animation: popupFadeIn 0.25s ease-out;">
-<!-- ส่วนหัวป๊อปอัปสีเขียวการแพทย์ -->
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 15px;">
-            <h3 style="margin: 0; color: #198754; font-family: 'Segoe UI', Tahoma, sans-serif;">📝 อัปเดตผลการรักษาและประวัติสรุปเคส</h3>
-            <span style="font-size: 24px; cursor: pointer; color: #aaa; font-weight: bold; line-height: 1;" onclick="document.getElementById('outcomeUpdateModal').style.setProperty('display', 'none', 'important');">&times;</span>
-        </div>
-
-        <form id="modalOutcomeForm">
-            <!-- โซนช่องหลัก: ล็อกให้เป็น Readonly ทึบทั้งหมดตามเงื่อนไข -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
-                <div>
-                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เคส ID :</label>
-                    <input type="text" id="ocCaseId" readonly style="background-color: #e9ecef !important; color: #495057; cursor: not-allowed;">
-                </div>
-                <div>
-                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">สถานพยาบาล :</label>
-                    <input type="text" id="ocHospital" readonly style="background-color: #e9ecef !important; color: #495057; cursor: not-allowed;">
-                </div>
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">อาการป่วย :</label>
-                <textarea id="ocSymptoms" readonly style="background-color: #e9ecef !important; color: #495057; cursor: not-allowed; min-height: 60px;"></textarea>
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">ขั้นตอนการรักษา <span style="color:red;">*</span></label>
-                <select id="ocStatusSelect" required style="width: 100% !important; padding: 8px !important; border: 1px solid #ced4da !important; border-radius: 6px !important; background-color: #ffffff !important;" onchange="toggleOcOtherInput(this.value)">
-                    <option value="" disabled selected>-- กรุณาคลิกเลือกสถานะขั้นตอนการรักษาปัจจุบัน --</option>
-                    <option value="แจ้งประกันแล้ว เข้ารับการรักษาอยู่">แจ้งประกันแล้ว เข้ารับการรักษาอยู่</option>
-                    <option value="รักษายังไม่หาย นอนดูอาการ">รักษายังไม่หาย นอนดูอาการ</option>
-                    <option value="รักษาตัวที่ฝั่งไทย บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP">รักษาตัวที่ฝั่งไทย บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP</option>
-                    <option value="รักษาตัวที่ฝั่ง PP บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP">รักษาตัวที่ฝั่ง PP บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP</option>
-                    <option value="รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย รอทำเรื่องเคลมบริษัทประกันเดินทาง SLK">รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย รอทำเรื่องเคลมบริษัทประกันเดินทาง SLK</option>
-                    <option value="รอนำส่งเอกสารไปเคลมประกันเดินทาง SLK">รอนำส่งเอกสารไปเคลมประกันเดินทาง SLK</option>
-                    <option value="ส่งเอกสารหรือบิลไปเคลมเงินประกันแล้วและรอรับเงิน SLK">ส่งเอกสารหรือบิลไปเคลมเงินประกันแล้วและรอรับเงิน SLK</option>
-                    <option value="ได้รับเงินแล้ว รอนำไปแลกและนำไปคืนประกัน SLK">ได้รับเงินแล้ว รอนำไปแลกและนำไปคืนประกัน SLK</option>
-                    <option value="รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย PP">รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย PP</option>
-                    <option value="อื่นๆ">อื่นๆ (โปรดระบุรายละเอียดเพิ่มเติม)</option>
-                </select>
-            </div>
-
-            <!-- 🎯 กล่องลับสำหรับพิมพ์ข้อความเสริมด้านหลัง (จะดีดกางออกเฉพาะตอนเลือก "อื่นๆ") -->
-            <div id="ocStatusOtherWrapper" style="display: none; margin-bottom: 15px; background-color: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px dashed #198754;">
-                <label style="font-size: 12px; font-weight: bold; color: #198754; display: block; margin-bottom: 4px;">ระบุรายละเอียดขั้นตอนการรักษาเพิ่มเติม :</label>
-                <input type="text" id="ocStatusOtherInput" placeholder="พิมพ์ข้อความเสริมต่อท้ายสถานะที่ต้องการระบุที่นี่...">
-            </div>
-
-
-
-            <!-- 🎯 ย้ายพิกัดปฏิทิน: ขยับชดเชยลงมาอยู่ใต้กล่องอาการป่วยตามสั่ง และเปลี่ยนชื่อหัวข้อ -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
-                <div>
-                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">วันที่บันทึกผลการรักษา :</label>
-                    <input type="text" id="ocManualDate" placeholder="📅 คลิกเลือกวันที่...">
-                </div>
-                <div>
-                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เวลาที่บันทึกผลการรักษา :</label>
-                    <input type="text" id="ocManualTime" placeholder="⏰ คลิกเลือกเวลา...">
-                </div>
-            </div>
-
-            <p style="margin: 15px 0 8px 0; font-weight: bold; color: #198754; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">📊 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัย</p>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">
-                <div><label style="font-size:11px; font-weight:bold; color:#555;">ทำฟัน หักวงเงิน OPD</label><input type="number" id="ocInpDentalOPD" step="any" value="0"></div>
-                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP OPD</label><input type="number" id="ocInpPPUsageOPD" step="any" value="0"></div>
-                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP IPD</label><input type="number" id="ocInpPPUsageIPD" step="any" value="0"></div>
-            </div>
-           
-            <div id="ocSlkFieldsWrapper" style="display: none; margin-top: 15px;">
-                <p style="margin: 10px 0 8px 0; font-weight: bold; color: #b48608; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">🧮 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัยเดินทาง SLK</p>
-                
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; background: #fffdf0; padding: 12px; border-radius: 6px; border: 1px solid #ffecb3;">
-                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (THB)</label><input type="number" id="ocInpSlkOpdThb" step="any" value="0"></div>
-                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (THB)</label><input type="number" id="ocInpSlkIpdThb" step="any" value="0"></div>
-                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (LKR)</label><input type="number" id="ocInpSlkOpdLkr" step="any" value="0"></div>
-                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (LKR)</label><input type="number" id="ocInpSlkIpdLkr" step="any" value="0"></div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: #fffdf0; padding: 12px; border-radius: 6px; border: 1px solid #ffecb3;">
-                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:red;">ส่วนเกินวงเงินค่ารักษา (THB)</label><input type="number" id="ocInpOverThb" step="any" value="0"></div>
-                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:red;">ส่วนเกินวงเงินค่ารักษา (LKR)</label><input type="number" id="ocInpOverLkr" step="any" value="0"></div>
-                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:#b48608;">เรทค่าเงินที่ประกันคิดให้ (THB/LKR)</label><input type="number" id="ocInpRateIns" value="1" step="any"></div>
-                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:#b48608;">เรทค่าเงินปัจจุบัน (THB/LKR)</label><input type="number" id="ocInpRateInt" value="1" step="any"></div>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
-                <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">ผลการรักษา <span style="color:red;">*</span></label><input type="text" id="ocInpClinician" required placeholder="พิมพ์สรุปผล เช่น อาการดีขึ้น กลับบ้านได้..."></div>
-                <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">เอกสารแนบ</label><input type="text" id="ocInpDocs" placeholder="ใบเสร็จ, ใบรับรองแพทย์..."></div>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">หมายเหตุเพิ่มเติม :</label>
-                <textarea id="ocNotesInput" placeholder="ระบุรายละเอียดอื่น ๆ..." style="min-height: 50px;"></textarea>
-            </div>
-
-            <div style="display: flex; gap: 10px;">
-                <button type="button" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="document.getElementById('outcomeUpdateModal').style.setProperty('display', 'none', 'important');">❌ ยกเลิก</button>
-                <button type="submit" style="flex: 2; padding: 12px; background: #198754; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">💾 ยืนยันการอัปเดตผลการรักษาลงระบบ</button>
-            </div>
-        </form>
-    </div>
-</div>
-<!-- ============================================================ การอัปเดตผลการรักษา =============================================================== -->
-<!-- ============================================================================================================================================== -->
-<!-- ============================= [ส่วนล่าง] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับการอัปเดตผลการรักษา (Outcome Update Modal) ===================================== -->
-<!-- =============================================================================================================================================== -->
-
-
-
-
-
-
-
-
-
 </body>
 </html>
