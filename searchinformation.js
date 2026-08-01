@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://073n76kt-3000.asse.devtunnels.ms";
+
 // function initSearchBoxEvents() {
 //#region
 function initSearchBoxEvents() {

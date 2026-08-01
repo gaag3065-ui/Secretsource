@@ -21,24 +21,27 @@
 <!-- =================================== 📦 [ส่วนท้าย: สิ้นสุดระบบรวมโครงสร้างหลักหน้าจอ] =============================================== -->
 <!-- =============================================================================================================================== -->
 
-<!-- 🎯 [สเต็ปแก้ไขด่วนระบบออนไลน์] จัดโครงสร้างรวมศูนย์เพื่อบล็อกไม่ให้หน้าเว็บเบี้ยว ซ้อน หรือขยับหลุดแนว -->
-<div style="max-width: 100%; margin: 0 auto; padding: 15px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-    
-    <!-- 📦 กล่องควบคุมโซนบน: บังคับแบ่งครึ่ง ซ้าย-ขวา เท่ากัน 100% บนระบบออนไลน์ -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; align-items: start; margin-bottom: 25px;">
-        
-        <!-- ฝั่งซ้าย: ค้นหาข้อมูลพนักงาน -->
-        <div id="search-box-placeholder" style="width: 100%; min-height: 450px;"></div>
-        
-        <!-- ฝั่งขวา: บันทึกข้อมูลการเข้ารักษา -->
-        <div id="treatment-box-placeholder" style="width: 100%; min-height: 450px;"></div>
-        
-    </div>
 
-    <!-- 📦 กล่องควบคุมโซนล่าง: ประวัติการรักษา (กางเต็มความกว้างขวางหน้าจอปกติ) -->
-    <div id="table-box-placeholder" style="width: 100%; margin-top: 25px; clear: both;"></div>
+
+<!-- = ส่วนหน้ารวม = -->
+<div class="flex-row-container">
+
+
+<!-- <div class="card-container left-box">-->
+<!-- = ส่วนหน้าค้นหาข้อมูลพนักงาน = -->
+<div id="search-box-placeholder" class="card-container left-box"></div>
+
+<!--<div class="card-container middle-box"></div>-->
+<!-- = ส่วนหน้าบันทึกข้อมูลเข้ารักษา = -->
+<div id="treatment-box-placeholder" style="flex: 1; min-width: 0;"></div>
+
 
 </div>
+
+<!--<div class="card-container bottom-full-box"></div>-->
+<!-- 📦 กล่องรวมขนาดใหญ่ด้านล่าง (Full Width Container) -->
+<div id="table-box-placeholder" style="width: 100%; margin-top: 20px;"></div>
+
 
 
 

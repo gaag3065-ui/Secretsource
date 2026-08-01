@@ -109,13 +109,13 @@ function initHospitalEvents() {
 //#region
    document.getElementById('claimForm').addEventListener('submit', async (e) => {
         e.preventDefault();
- // 1. ดักจับไอดีช่องอัปโหลดรูปภาพหลักฝั่งขวาให้แม่นยำ
-    const fileTarget = document.getElementById('imageUpload');
-    
-    // 🔒 ด่านตรวจรูปภาพ: บังคับให้แอดมินต้องอัปโหลดรูปภาพก่อนเท่านั้น
-    if (!fileTarget || fileTarget.files.length === 0) {
-        alert("🚨 ปฏิเสธการบันทึก: คุณยังไม่ได้อัปโหลดรูปภาพเพิ่มเติม! \nกรุณาแนบหลักฐานเข้าสู่ระบบก่อนครับ");
-       // ขยับสายตาพาแอดมินไปโฟกัสที่ปุ่มอัปโหลดทันที
+        
+         // 🔒 [ตัวล็อกกรณีที่ 1]: ตรวจเช็คการแนบรูปภาพก่อนเปิดเคสใหม่เข้าสู่ระบบ
+        const fileInput = document.getElementById('imageUpload');
+        if (!fileInput || fileInput.files.length === 0) {
+        alert("🚨 ปฏิเสธการบันทึก: คุณยังไม่ได้อัปโหลดรูปภาพเพิ่มเติม! \nกรุณาคลิกปุ่ม '📁 เลือกรูปภาพ...' เพื่อแนบหลักฐานเข้าสู่ระบบก่อนครับ");
+        
+        // ขยับสายตาพาแอดมินไปโฟกัสที่ปุ่มอัปโหลดทันที
         const uploadLabel = document.querySelector('label[for="imageUpload"]');
         if (uploadLabel) {
             uploadLabel.style.borderColor = "#dc3545";
