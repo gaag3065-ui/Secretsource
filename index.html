@@ -53,7 +53,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
     try {
         // ส่งข้อมูลไปยัง API หลังบ้าน
-        const response = await fetch(`${API_BASE_URL}/api/login`, {
+        const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include', // ✅ เพิ่มตรงนี้: เพื่อรองรับ credentials: true ที่เราตั้งค่าไว้ในเซิร์ฟเวอร์หลังบ้าน
