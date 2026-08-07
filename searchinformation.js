@@ -46,7 +46,7 @@ function initSearchBoxEvents() {
         messageDiv.style.color = 'black';
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/search`, {
+            const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ keyword })

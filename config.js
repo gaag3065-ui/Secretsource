@@ -1,0 +1,25 @@
+// ======================================================
+// Secretsource - Frontend Environment Configuration
+// ======================================================
+
+// ตรวจสอบว่าหน้าเว็บกำลังทำงานอยู่ในเครื่อง Local หรือไม่
+const IS_LOCAL =
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname === 'localhost';
+
+// Backend สำหรับการพัฒนาในเครื่อง
+const LOCAL_API_URL = 'http://127.0.0.1:3000';
+
+// Backend สำหรับเว็บไซต์จริง
+// ตอนนี้ยังใช้ค่าว่างไว้ก่อน จนกว่าเราจะจัดการ Production Backend
+const PRODUCTION_API_URL = '';
+
+// API หลักที่ทุกหน้าในระบบจะเรียกใช้
+window.APP_CONFIG = {
+    API_BASE_URL: IS_LOCAL ? LOCAL_API_URL : PRODUCTION_API_URL,
+    ENVIRONMENT: IS_LOCAL ? 'development' : 'production'
+};
+
+console.log(
+    `[APP CONFIG] Environment: ${window.APP_CONFIG.ENVIRONMENT}`
+);

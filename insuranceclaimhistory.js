@@ -307,7 +307,7 @@ function initHistoryModalEvents() {
                 // แสดงกล่องตรวจสอบความปลอดภัย Payload ก่อนปล่อยสัญญาณยิง
                 if (confirm(`🧪 [ระบบตรวจสอบ Payload ป๊อปอัปก่อนส่งจริง]\n\n• บรรทัดบนแผ่นชีต: แถวที่ ${payload.sheetRowIndex}\n• ยืนยันเคส ID: ${payload.CaseIdNew}\n• สถานพยาบาล: ${payload.hospital}\n\nกดปุ่ม "ตกลง (OK)" เพื่อส่งค่าไปอัปเดตหลังบ้านครับ`)) {
                     try {
-                        const response = await fetch(`${API_BASE_URL}/api/update-treatment`, {
+                        const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/update-treatment`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
@@ -441,7 +441,7 @@ if (response.ok && result.success) {
         const justNumberId = caseId.replace(/[^0-9]/g, ''); 
         const customFileName = `Closecase_${justNumberId}_${cleanEmpName}${originalExtension}`; 
 
-        const imgRes = await fetch(`${API_BASE_URL}/api/upload-drive`, {
+        const imgRes = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/upload-drive`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -515,7 +515,7 @@ if (response.ok && result.success) {
 
         if (confirm(`💾 ยืนยันการส่งอัปเดตผลการรักษาและรูปภาพหลักฐานสำหรับ เคส ID: ${payload.CaseIdNew} ใช่หรือไม่?`)) {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/save-treatment`, {
+                const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/save-treatment`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

@@ -1,5 +1,5 @@
 
-const API_BASE_URL = "https://073n76kt-3000.asse.devtunnels.ms";
+const API_BASE_URL = window.APP_CONFIG.API_BASE_URL;
 // อัปโหลดไฟล์
 // function updateFileName() {
 //#region
@@ -169,7 +169,7 @@ function initHospitalEvents() {
                 // 🎯 2. [จุดแก้ไขหลัก] ส่งแค่ชื่อพนักงานกับนามสกุลไฟล์ ไม่ต้องใส่ ${caseId}_ นำหน้าแล้วครับ
                 const customFileName = `Opencase ${justNumberId}_${cleanEmpName}${originalExtension}`;
 
-                const imgRes = await fetch(`${API_BASE_URL}/api/upload-drive`, {
+                const imgRes = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/upload-drive`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -231,7 +231,7 @@ function initHospitalEvents() {
         };
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/save-treatment`, {
+            const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/save-treatment`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -328,7 +328,7 @@ setupInactivityTimer();
 
     async function fetchNextCaseId() {
                 try {
-                    const res = await fetch(`${API_BASE_URL}/api/next-caseid`);
+                    const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/next-caseid`);
                     const data = await res.json();
                     if (data.success) {
                         document.getElementById('caseId').value = data.nextId;

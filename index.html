@@ -34,12 +34,12 @@
 </div>
 
 
-
+<script src="config.js"></script>
 <script>
 
    
 
-const API_BASE_URL = "https://073n76kt-3000.asse.devtunnels.ms";
+const API_BASE_URL = window.APP_CONFIG.API_BASE_URL;
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
