@@ -144,7 +144,35 @@ function initHospitalEvents() {
     // 📸 [จุดเพิ่มใหม่ที่ 1]: โดดไปรันสคริปต์ส่งรูปภาพเข้า Google Drive ก่อน
     // ========================================================
                 
-                const caseId = document.getElementById('caseId').value || 'NoID';
+// ========================================================
+// 🎫 จอง Case ID จริงจาก Backend ก่อนอัปโหลดรูป
+// ========================================================
+claimStatus.innerText = 'กำลังจองเลขเคส...';
+claimStatus.style.color = 'orange';
+
+const reserveRes = await fetch(
+    `${window.APP_CONFIG.API_BASE_URL}/api/reserve-case-id`
+);
+
+const reserveResult = await reserveRes.json();
+
+if (!reserveRes.ok || !reserveResult.success || !reserveResult.caseId) {
+    throw new Error(
+        reserveResult.message || 'ไม่สามารถจอง Case ID ได้'
+    );
+}
+
+const caseId = String(reserveResult.caseId);
+
+// แสดงเลขที่จองจริงบนหน้าจอทันที
+const caseIdInput = document.getElementById('caseId');
+
+if (caseIdInput) {
+    caseIdInput.value = caseId;
+}
+
+console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
+    
                 const empNameInput = document.getElementById('hiddenEmpName')?.value || document.getElementById('employeeName')?.value || 'Unknown';
 
                 // 🎯 1. ทำความสะอาดชื่อพนักงาน ลบช่องว่างเป็นขีดล่างตามปกติ
@@ -215,7 +243,7 @@ function initHospitalEvents() {
 
         const payload = {
             sheetRowIndex: currentEditingRowIndex, 
-            CaseIdNew: document.getElementById('caseId').value || '-',
+            CaseIdNew: caseId,
             autoDateTime: document.getElementById('headerDateTimeValue').innerText, 
             adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
             treatmentDateTime: treatmentDateTime,
