@@ -34,15 +34,41 @@
 </div>
 
 
-<script src="version.js"></script>
 
 <script>
-async function loadConfig() {
+function loadVersion() {
     return new Promise((resolve, reject) => {
 
         const script = document.createElement('script');
 
-        // โหลด config.js พร้อมเลข version
+        // บังคับโหลด version.js ใหม่ทุกครั้ง
+        // ป้องกัน Browser ใช้ version.js เก่าจาก Cache
+        script.src = `version.js?t=${Date.now()}`;
+
+        script.onload = () => {
+            console.log(
+                `🚀 version.js โหลดสำเร็จ | Version: ${window.APP_VERSION}`
+            );
+            resolve();
+        };
+
+        script.onerror = () => {
+            reject(
+                new Error('โหลด version.js ไม่สำเร็จ')
+            );
+        };
+
+        document.head.appendChild(script);
+    });
+}
+
+
+function loadConfig() {
+    return new Promise((resolve, reject) => {
+
+        const script = document.createElement('script');
+
+        // ใช้ Version ที่ GitHub Actions สร้างให้
         script.src = `config.js?v=${window.APP_VERSION}`;
 
         script.onload = () => {
@@ -65,12 +91,25 @@ async function loadConfig() {
 
 document.addEventListener('DOMContentLoaded', async () => {
 
-    const messageDiv = document.getElementById('message');
+    const messageDiv =
+        document.getElementById('message');
 
     try {
 
         // =====================================================
-        // 1. โหลด config.js ก่อน
+        // 1. โหลด Version ล่าสุดก่อน
+        // =====================================================
+        await loadVersion();
+
+        if (!window.APP_VERSION) {
+            throw new Error(
+                'ไม่พบ APP_VERSION จาก version.js'
+            );
+        }
+
+
+        // =====================================================
+        // 2. ใช้ Version ล่าสุดโหลด config.js
         // =====================================================
         await loadConfig();
 
@@ -92,7 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
         // =====================================================
-        // 2. หลัง config พร้อมแล้ว ค่อยเปิดระบบ Login
+        // 3. หลัง Config พร้อมแล้ว ค่อยเปิดระบบ Login
         // =====================================================
         const loginForm =
             document.getElementById('loginForm');
