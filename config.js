@@ -8,11 +8,11 @@ const IS_LOCAL =
     window.location.hostname === 'localhost';
 
 // Backend สำหรับการพัฒนาในเครื่อง
-const LOCAL_API_URL = 'http://127.0.0.1:3000';
+const LOCAL_API_URL = 'http://127.0.0.1:43127';
 
 // Backend สำหรับเว็บไซต์จริง
 // ตอนนี้ยังใช้ค่าว่างไว้ก่อน จนกว่าเราจะจัดการ Production Backend
-const PRODUCTION_API_URL = 'https://firewall-homeless-bomb-vertical.trycloudflare.com';
+const PRODUCTION_API_URL = 'https://routine-pond-parties-captain.trycloudflare.com';
 
 // API หลักที่ทุกหน้าในระบบจะเรียกใช้
 window.APP_CONFIG = {
