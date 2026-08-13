@@ -207,9 +207,13 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
                         fileData: base64String 
                     })
                 });
-
-
+                
                 const imgResult = await imgRes.json();
+                if (imgResult.needAuth && imgResult.authUrl) {
+                window.open(imgResult.authUrl, '_blank', 'noopener,noreferrer');
+                alert('กรุณายืนยันสิทธิ์ Google Drive ในแท็บใหม่ แล้วกลับมาอัปโหลดอีกครั้ง');
+                return;
+                }
                 
                 if (imgResult.success) {
                     driveFileUrl = imgResult.fileUrl;
@@ -358,6 +362,7 @@ setupInactivityTimer();
                 try {
                     const res = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/next-caseid`);
                     const data = await res.json();
+
                     if (data.success) {
                         document.getElementById('caseId').value = data.nextId;
 
