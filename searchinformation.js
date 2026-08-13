@@ -118,8 +118,8 @@ function initSearchBoxEvents() {
                     <div class="info-row"><span class="label-text">สถานที่ทำงาน :</span><span class="value-text">${emp.colK}</span></div>
                     <div class="info-row"><span class="label-text">วงเงิน OPD :</span><span class="value-text">${emp.colAV || '-'}</span></div>
                     <div class="info-row"><span class="label-text">วงเงิน IPD :</span><span class="value-text">${emp.colAW || '-'}</span></div>
-                    <div class="info-row"><span class="label-text">วงเงิน OPD คงเหลือ :</span><span class="value-text">${emp.colBB || '-'}</span></div>
-                    <div class="info-row"><span class="label-text">วงเงิน IPD คงเหลือ :</span><span class="value-text">${emp.colBA || '-'}</span></div>
+                    <div class="info-row"><span class="label-text">วงเงิน OPD คงเหลือ :</span><span class="value-text">${emp.colBA || '-'}</span></div>
+                    <div class="info-row"><span class="label-text">วงเงิน IPD คงเหลือ :</span><span class="value-text">${emp.colBB || '-'}</span></div>
                 `;
                 resultsList.appendChild(card);
 
