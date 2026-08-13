@@ -34,50 +34,177 @@
 </div>
 
 
-<script src="config.js"></script>
-<script>
-const API_BASE_URL = window.APP_CONFIG.API_BASE_URL;
+<script src="version.js"></script>
 
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
+<script>
+async function loadConfig() {
+    return new Promise((resolve, reject) => {
+
+        const script = document.createElement('script');
+
+        // โหลด config.js พร้อมเลข version
+        script.src = `config.js?v=${window.APP_VERSION}`;
+
+        script.onload = () => {
+            console.log(
+                `⚙️ config.js โหลดสำเร็จ | Version: ${window.APP_VERSION}`
+            );
+            resolve();
+        };
+
+        script.onerror = () => {
+            reject(
+                new Error('โหลด config.js ไม่สำเร็จ')
+            );
+        };
+
+        document.head.appendChild(script);
+    });
+}
+
+
+document.addEventListener('DOMContentLoaded', async () => {
+
     const messageDiv = document.getElementById('message');
-    
-    messageDiv.innerText = 'กำลังตรวจสอบข้อมูล...';
-    messageDiv.style.color = 'black';
 
     try {
-        // ส่งข้อมูลไปยัง API หลังบ้าน
-        const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include', // ✅ เพิ่มตรงนี้: เพื่อรองรับ credentials: true ที่เราตั้งค่าไว้ในเซิร์ฟเวอร์หลังบ้าน
-            body: JSON.stringify({ username, password })
-        });
 
-        const data = await response.json();
+        // =====================================================
+        // 1. โหลด config.js ก่อน
+        // =====================================================
+        await loadConfig();
 
-        if (response.ok && data.success) {
-            messageDiv.innerText = data.message;
-            messageDiv.style.color = 'green';
-            
-            sessionStorage.setItem('loggedInAdminName', data.user.name);
-
-            // ------------------ หน่วงเวลา 1 วินาทีแล้วกระโดดไปหน้าค้นหา ------------------ //
-            setTimeout(() => {
-                window.location.href = 'search.html';
-            }, 1000);
-            // ------------------------------------------------------------------------- //
-
-        } else {
-            messageDiv.innerText = data.message || 'ล็อกอินไม่สำเร็จ';
-            messageDiv.style.color = 'red';
+        if (
+            !window.APP_CONFIG ||
+            !window.APP_CONFIG.API_BASE_URL
+        ) {
+            throw new Error(
+                'ไม่พบ API_BASE_URL จาก config.js'
+            );
         }
+
+        const API_BASE_URL =
+            window.APP_CONFIG.API_BASE_URL;
+
+        console.log(
+            `🌐 API Backend: ${API_BASE_URL}`
+        );
+
+
+        // =====================================================
+        // 2. หลัง config พร้อมแล้ว ค่อยเปิดระบบ Login
+        // =====================================================
+        const loginForm =
+            document.getElementById('loginForm');
+
+        loginForm.addEventListener(
+            'submit',
+            async (e) => {
+
+                e.preventDefault();
+
+                const username =
+                    document.getElementById('username').value;
+
+                const password =
+                    document.getElementById('password').value;
+
+                messageDiv.innerText =
+                    'กำลังตรวจสอบข้อมูล...';
+
+                messageDiv.style.color =
+                    'black';
+
+                try {
+
+                    const response = await fetch(
+                        `${API_BASE_URL}/api/login`,
+                        {
+                            method: 'POST',
+
+                            headers: {
+                                'Content-Type':
+                                    'application/json'
+                            },
+
+                            credentials: 'include',
+
+                            body: JSON.stringify({
+                                username,
+                                password
+                            })
+                        }
+                    );
+
+                    const data =
+                        await response.json();
+
+                    if (
+                        response.ok &&
+                        data.success
+                    ) {
+
+                        messageDiv.innerText =
+                            data.message;
+
+                        messageDiv.style.color =
+                            'green';
+
+                        sessionStorage.setItem(
+                            'loggedInAdminName',
+                            data.user.name
+                        );
+
+                        setTimeout(() => {
+
+                            window.location.href =
+                                'search.html';
+
+                        }, 1000);
+
+                    } else {
+
+                        messageDiv.innerText =
+                            data.message ||
+                            'ล็อกอินไม่สำเร็จ';
+
+                        messageDiv.style.color =
+                            'red';
+                    }
+
+                } catch (error) {
+
+                    console.error(
+                        'Login Error:',
+                        error
+                    );
+
+                    messageDiv.innerText =
+                        'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+
+                    messageDiv.style.color =
+                        'red';
+                }
+            }
+        );
+
+
+        console.log(
+            `✅ ระบบ Login พร้อมใช้งาน | Version ${window.APP_VERSION}`
+        );
+
     } catch (error) {
-        messageDiv.innerText = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
-        messageDiv.style.color = 'red';
+
+        console.error(
+            'Startup Error:',
+            error
+        );
+
+        messageDiv.innerText =
+            `ระบบเริ่มต้นไม่สำเร็จ: ${error.message}`;
+
+        messageDiv.style.color =
+            'red';
     }
 });
 </script>

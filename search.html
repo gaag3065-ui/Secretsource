@@ -4,7 +4,7 @@
 
 
 <head>
- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+ <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css?v=20260813-01">
  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
 
 
@@ -45,108 +45,211 @@
 
 
 
+<script src="version.js"></script>
+
+<script>
+const APP_VERSION = window.APP_VERSION;
 
 
-<script src="config.js"></script>
-  <script>
-// async function loadComponent(placeholderId, filename) {
-// ฟังก์ชันระบบทำหน้าที่ดึงโค้ด HTML จากไฟล์อื่นมาแทรกในกล่อง placeholder
-//#region    
-        // ฟังก์ชันระบบทำหน้าที่ดึงโค้ด HTML จากไฟล์อื่นมาแทรกในกล่อง placeholder
-        async function loadComponent(placeholderId, filename) {
-            try {
-                const response = await fetch(filename);
-                if (!response.ok) throw new Error(`โหลดไฟล์ ${filename} ไม่สำเร็จ`);
-                const htmlContent = await response.text();
-                document.getElementById(placeholderId).innerHTML = htmlContent;
-                console.log(`📦 เชื่อมต่อไฟล์ ${filename} สำเร็จ`);
-            } catch (error) {
-                console.error(`🚨 ระบบพังที่ส่วนย่อย:`, error.message);
-                document.getElementById(placeholderId).innerHTML = 
-                    `<p style="color:red;">ไม่สามารถโหลดส่วนนี้ได้: ${error.message}</p>`;
-            }
+function loadScript(filename) {
+    return new Promise((resolve, reject) => {
+
+        const script =
+            document.createElement('script');
+
+        script.src =
+            `${filename}?v=${APP_VERSION}`;
+
+        script.onload = resolve;
+
+        script.onerror = () =>
+            reject(
+                new Error(
+                    `โหลด ${filename} ไม่สำเร็จ`
+                )
+            );
+
+        document.body.appendChild(script);
+    });
+}
+
+async function loadComponent(placeholderId, filename) {
+    try {
+        const response = await fetch(
+            `${filename}?v=${APP_VERSION}`,
+            { cache: 'no-store' }
+        );
+
+        if (!response.ok) {
+            throw new Error(`โหลดไฟล์ ${filename} ไม่สำเร็จ`);
         }
-//#endregion    
 
-//document.addEventListener("DOMContentLoaded", async () => {
-//#region    
-        // สั่งให้ระบบทำงานร่วมกันทันทีเมื่อเปิดหน้าเว็บหลักสำเร็จ
-        document.addEventListener("DOMContentLoaded", async () => {
-    
-            // สั่งเบราว์เซอร์ดาวน์โหลด HTML ย่อยมาแปะหน้าจอให้ครบสมบูรณ์ก่อน 100%
-        await loadComponent('search-box-placeholder', 'searchinformation.html');
-        await loadComponent('treatment-box-placeholder', 'recordtreatment.html');
-        await loadComponent('table-box-placeholder', 'insuranceclaimhistory.html');
+        const htmlContent = await response.text();
 
-             // 2. ปลุกสั่งปฏิทิน Flatpickr ทั้งหมดในระบบ (ทั้งฟอร์มหลักฝั่งขวา และ ช่องโมดอลฝั่งล่าง)
-        flatpickr("#manualDate", { dateFormat: "d/m/Y", defaultDate: "today", allowInput: true });
-        flatpickr("#manualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, defaultDate: new Date(), allowInput: true });
-        flatpickr("#mdManualDate", { dateFormat: "d/m/Y", allowInput: true });
-        flatpickr("#mdManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
-        flatpickr("#ocManualDate", { dateFormat: "d/m/Y", allowInput: true });
-        flatpickr("#ocManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
-        
-            console.log("🎮 โครงสร้างชิ้นงาน HTML ประกอบร่างรวมศูนย์สำเร็จ!");
+        document.getElementById(placeholderId).innerHTML =
+            htmlContent;
 
-        try {
-//ฝั่งซ้าย
-                // ใช้เทคนิคดูดสคริปต์เข้าหน่วยความจำชั่วคราว (Dynamic Script Injection) เพื่อแก้ปัญหาระบบหาฟังก์ชันไม่เจอ
-                const scriptLeft = document.createElement('script');
-                scriptLeft.src = 'searchinformation.js';
-                scriptLeft.onload = () => {
-                    console.log("📡 ไฟล์ searchinformation.js เชื่อมต่อสำเร็จ!");
-                    if (typeof initSearchBoxEvents === 'function') {
-                        initSearchBoxEvents(); // ปลุกปุ่มค้นหากล่องฝั่งซ้ายให้ลืมตาทำงานทันที
-                    }
-                };
-                document.body.appendChild(scriptLeft);
+    } catch (error) {
+
+        console.error(
+            `🚨 โหลด ${filename} ไม่สำเร็จ:`,
+            error
+        );
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+    try {
+
+        // =====================================================
+        // 1. โหลด Config ก่อนทุกอย่าง
+        // =====================================================
+        await loadScript('config.js');
+
+        if (!window.APP_CONFIG) {
+            throw new Error('ไม่พบ APP_CONFIG หลังโหลด config.js');
+        }
+
+        console.log(
+            `⚙️ Config พร้อมใช้งาน | Version: ${APP_VERSION}`
+        );
 
 
-//ฝั่งขวา
-                const scriptRight = document.createElement('script');
-                    scriptRight.src = 'recordtreatment.js';
-                    scriptRight.onload = () => {
-                        console.log("📡 ไฟล์ recordtreatment.js เชื่อมต่อฝั่งขวาสำเร็จ!");
-                        if (typeof initHospitalEvents === 'function') {
-                            initHospitalEvents(); // ปลุกให้ปุ่มเลือกคลินิกฝั่งขวาทำงานและดักจับเมาส์ได้ทันที
-                        }
-                        if (typeof setThaiDateTime === 'function') { 
-                            setThaiDateTime(); 
-                        }
-                        if (typeof fetchNextCaseId === 'function') { 
-                            fetchNextCaseId(); 
-                        }
-                    };
-                document.body.appendChild(scriptRight);
+        // =====================================================
+        // 2. โหลด HTML ย่อย
+        // =====================================================
+        await loadComponent(
+            'search-box-placeholder',
+            'searchinformation.html'
+        );
 
-            } catch (scriptErr) {
-                console.error("🚨 ระบบเชื่อมสคริปต์ย่อยฝั่งซ้ายขัดข้อง:", scriptErr.message);
-            }
+        await loadComponent(
+            'treatment-box-placeholder',
+            'recordtreatment.html'
+        );
 
- //ฝั่งล่าง
-                const scriptBottom = document.createElement('script');
-                    scriptBottom.src = 'insuranceclaimhistory.js';
-                    scriptBottom.onload = () => {
-                        console.log("📡 ไฟล์ insuranceclaimhistory.js เชื่อมต่อสำเร็จ!");
-                        if (typeof initHistoryModalEvents === 'function') {
-                            initHistoryModalEvents(); // ปลุกระบบบันทึกป๊อปอัปให้เริ่มดักจับเมาส์ทันที
-                        }
-                    };
-                    document.body.appendChild(scriptBottom);
+        await loadComponent(
+            'table-box-placeholder',
+            'insuranceclaimhistory.html'
+        );
 
-                
-            // สั่งเปิดใช้ Flatpickr
-            flatpickr("#manualDate", { dateFormat: "d/m/Y", defaultDate: "today", allowInput: true });
-            flatpickr("#manualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, defaultDate: new Date(), allowInput: true });
-            flatpickr("#mdManualDate", { dateFormat: "d/m/Y", allowInput: true });
-            flatpickr("#mdManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
-            flatpickr("#ocManualDate", { dateFormat: "d/m/Y", allowInput: true });
-            flatpickr("#ocManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
+        console.log(
+            "🎮 โครงสร้าง HTML ประกอบร่างรวมศูนย์สำเร็จ!"
+        );
 
 
+        // =====================================================
+        // 3. เปิดใช้งาน Flatpickr
+        // =====================================================
+        flatpickr("#manualDate", {
+            dateFormat: "d/m/Y",
+            defaultDate: "today",
+            allowInput: true
+        });
 
+        flatpickr("#manualTime", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true,
+            defaultDate: new Date(),
+            allowInput: true
+        });
+
+        flatpickr("#mdManualDate", {
+            dateFormat: "d/m/Y",
+            allowInput: true
+        });
+
+        flatpickr("#mdManualTime", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true,
+            allowInput: true
+        });
+
+        flatpickr("#ocManualDate", {
+            dateFormat: "d/m/Y",
+            allowInput: true
+        });
+
+        flatpickr("#ocManualTime", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true,
+            allowInput: true
+        });
+
+
+        // =====================================================
+        // 4. โหลด Script ฝั่งซ้าย
+        // =====================================================
+        await loadScript('searchinformation.js');
+
+        console.log(
+            "📡 searchinformation.js เชื่อมต่อสำเร็จ!"
+        );
+
+        if (typeof initSearchBoxEvents === 'function') {
+            initSearchBoxEvents();
+        }
+
+
+        // =====================================================
+        // 5. โหลด Script ฝั่งขวา
+        // =====================================================
+        await loadScript('recordtreatment.js');
+
+        console.log(
+            "📡 recordtreatment.js เชื่อมต่อสำเร็จ!"
+        );
+
+        if (typeof initHospitalEvents === 'function') {
+            initHospitalEvents();
+        }
+
+        if (typeof setThaiDateTime === 'function') {
+            setThaiDateTime();
+        }
+
+        if (typeof fetchNextCaseId === 'function') {
+            fetchNextCaseId();
+        }
+
+
+        // =====================================================
+        // 6. โหลด Script ฝั่งล่าง
+        // =====================================================
+        await loadScript('insuranceclaimhistory.js');
+
+        console.log(
+            "📡 insuranceclaimhistory.js เชื่อมต่อสำเร็จ!"
+        );
+
+        if (typeof initHistoryModalEvents === 'function') {
+            initHistoryModalEvents();
+        }
+
+
+        console.log(
+            `✅ Secretsource Frontend พร้อมใช้งาน | Version ${APP_VERSION}`
+        );
+
+    } catch (error) {
+
+        console.error(
+            "🚨 ระบบเริ่มต้นหน้าเว็บล้มเหลว:",
+            error
+        );
+ 
+        alert(
+            `ระบบโหลดหน้าเว็บไม่สมบูรณ์\n${error.message}`
+        );
+    }
 });
-//#endregion    
 </script>
 
 <script>
