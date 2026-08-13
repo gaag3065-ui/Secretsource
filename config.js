@@ -23,3 +23,30 @@ window.APP_CONFIG = {
 console.log(
     `[APP CONFIG] Environment: ${window.APP_CONFIG.ENVIRONMENT}`
 );
+
+//======= สร้างฟังก์ชันกลางสำหรับส่ง Token =======//
+window.authFetch = async function (url, options = {}) {
+    const token = sessionStorage.getItem('authToken');
+
+    if (!token) {
+        sessionStorage.clear();
+        window.location.replace('index.html');
+        throw new Error('กรุณาเข้าสู่ระบบ');
+    }
+
+    const headers = new Headers(options.headers || {});
+    headers.set('Authorization', `Bearer ${token}`);
+
+    const response = await fetch(url, {
+        ...options,
+        headers
+    });
+
+    if (response.status === 401) {
+        sessionStorage.clear();
+        window.location.replace('index.html');
+        throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+    }
+
+    return response;
+};

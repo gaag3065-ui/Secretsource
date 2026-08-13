@@ -111,6 +111,33 @@ document.addEventListener("DOMContentLoaded", async () => {
             throw new Error('ไม่พบ APP_CONFIG หลังโหลด config.js');
         }
 
+
+        const sessionResponse = await window.authFetch(
+            `${window.APP_CONFIG.API_BASE_URL}/api/session`,
+            {
+                method: 'GET',
+                cache: 'no-store'
+            }
+        );
+
+        if (!sessionResponse.ok) {
+            throw new Error('ไม่สามารถตรวจสอบสถานะการเข้าสู่ระบบได้');
+        }
+
+        const sessionData = await sessionResponse.json();
+
+        if (!sessionData.success || !sessionData.user) {
+            sessionStorage.clear();
+            window.location.replace('index.html');
+            return;
+        }
+
+        sessionStorage.setItem(
+            'loggedInAdminName',
+            sessionData.user.name || sessionData.user.username
+        );
+
+
         console.log(
             `⚙️ Config พร้อมใช้งาน | Version: ${APP_VERSION}`
         );
@@ -413,7 +440,7 @@ const slkElements = document.querySelectorAll('.slk-column'); // ค้นหา
                 `- หากไม่ถูกต้อง กด "ยกเลิก (Cancel)" เพื่อหยุดล็อกระบบไว้ก่อนครับ`)) {
         
         try {
-            const response = await fetch(`${API_BASE_URL}/api/update-treatment`, {
+            const response = await window.authFetch(`${API_BASE_URL}/api/update-treatment`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

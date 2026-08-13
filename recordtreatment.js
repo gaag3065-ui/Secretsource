@@ -150,7 +150,7 @@ function initHospitalEvents() {
 claimStatus.innerText = 'กำลังจองเลขเคส...';
 claimStatus.style.color = 'orange';
 
-const reserveRes = await fetch(
+const reserveRes = await window.authFetch(
     `${window.APP_CONFIG.API_BASE_URL}/api/reserve-case-id`
 );
 
@@ -197,7 +197,7 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
                 // 🎯 2. [จุดแก้ไขหลัก] ส่งแค่ชื่อพนักงานกับนามสกุลไฟล์ ไม่ต้องใส่ ${caseId}_ นำหน้าแล้วครับ
                 const customFileName = `Opencase ${justNumberId}_${cleanEmpName}${originalExtension}`;
 
-                const imgRes = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/upload-drive`, {
+                const imgRes = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/upload-drive`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -259,7 +259,7 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
         };
 
         try {
-            const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/save-treatment`, {
+            const response = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/save-treatment`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -356,7 +356,7 @@ setupInactivityTimer();
 
     async function fetchNextCaseId() {
                 try {
-                    const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/next-caseid`);
+                    const res = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/next-caseid`);
                     const data = await res.json();
                     if (data.success) {
                         document.getElementById('caseId').value = data.nextId;

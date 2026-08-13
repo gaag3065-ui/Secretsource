@@ -194,6 +194,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                             data.user.name
                         );
 
+                        if (!data.token) {
+                            throw new Error('เซิร์ฟเวอร์ไม่ได้ส่ง Token กลับมา');
+                        }
+                        sessionStorage.setItem('authToken', data.token);
+
+
                         setTimeout(() => {
 
                             window.location.href =
