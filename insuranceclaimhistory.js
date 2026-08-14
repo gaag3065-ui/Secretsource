@@ -252,7 +252,6 @@ function renderHistoryTable(historyData) {
 //#endregion
 
 //มัดรวมฟั่งชั่น .addEventListener('submit')
-
 //function initHistoryModalEvents() {
 //#region
 function initHistoryModalEvents() {
@@ -558,4 +557,38 @@ if (response.ok && result.success) {
 }
 //#endregion
 
+//window.executeDeleteRow = async function (sheetRowIndex, caseId) {
+//#region
+window.executeDeleteRow = async function (sheetRowIndex, caseId) {
+    if (!confirm(`ยืนยันการลบเคส ${caseId}?`)) return;
 
+    try {
+        const response = await window.authFetch(
+            `${window.APP_CONFIG.API_BASE_URL}/api/delete-treatment`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sheetRowIndex,
+                    CaseIdNew: caseId,
+                    autoDateTime: new Date().toISOString()
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'ลบข้อมูลไม่สำเร็จ');
+        }
+
+        alert('ลบข้อมูลสำเร็จ');
+        location.reload();
+    } catch (error) {
+        console.error('Delete Error:', error);
+        alert(error.message || 'ลบข้อมูลไม่สำเร็จ');
+    }
+};
+//#endregion

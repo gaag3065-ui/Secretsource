@@ -50,7 +50,8 @@
 <script>
 const APP_VERSION = window.APP_VERSION;
 
-
+//function loadScript(filename) {
+//#region
 function loadScript(filename) {
     return new Promise((resolve, reject) => {
 
@@ -72,7 +73,10 @@ function loadScript(filename) {
         document.body.appendChild(script);
     });
 }
+//#endregion
 
+//async function loadComponent(placeholderId, filename) {
+//#region
 async function loadComponent(placeholderId, filename) {
     try {
         const response = await fetch(
@@ -97,7 +101,10 @@ async function loadComponent(placeholderId, filename) {
         );
     }
 }
+//#endregion
 
+//document.addEventListener("DOMContentLoaded", async () => {
+//#region
 document.addEventListener("DOMContentLoaded", async () => {
 
     try {
@@ -277,7 +284,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         );
     }
 });
+//#endregion
 </script>
+
 
 <script>
 // =======================================================================
@@ -381,6 +390,7 @@ const slkElements = document.querySelectorAll('.slk-column'); // ค้นหา
 
 // async function executeFormUpdate() {
 //#region
+
     async function executeFormUpdate() {
     const backupEmpName = document.getElementById('hiddenEmpName').value;
     const backupCompany = document.getElementById('hiddenCompany').value;
@@ -454,10 +464,8 @@ const slkElements = document.querySelectorAll('.slk-column'); // ค้นหา
     }
 }
 //#endregion
-
-
-
-    window.addEventListener('DOMContentLoaded', () => {
+   
+window.addEventListener('DOMContentLoaded', () => {
         // 1. ตั้งเวลาระบบและดึงข้อมูล Case ID เริ่มต้น
      //   setThaiDateTime();
         if (typeof fetchNextCaseId === "function") {
@@ -807,6 +815,8 @@ document.addEventListener('submit', function (e) {
     }
 });
 //#endregion  
+
+
 
 </script>
 </body>
