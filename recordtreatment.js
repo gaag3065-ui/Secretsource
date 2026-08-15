@@ -1,4 +1,5 @@
 
+
 const API_BASE_URL = window.APP_CONFIG.API_BASE_URL;
 // อัปโหลดไฟล์
 // function updateFileName() {
@@ -443,5 +444,10 @@ InsuranceId : ${insuranceId}
     }
 }
 //#endregion
+
+if (typeof fetchNextCaseId === 'function') {
+    fetchNextCaseId();
+}
+
 
 

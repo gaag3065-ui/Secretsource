@@ -656,3 +656,114 @@
 }
 /* #endregion  */
 
+/* #region เพิ่มฟังก์ชันขยายรูป */
+.upload-image-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.upload-preview-thumbnail {
+    width: 150px;
+    height: 110px;
+    object-fit: cover;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 3px;
+    background: #fff;
+    cursor: zoom-in;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.upload-preview-thumbnail:hover {
+    border-color: #198754;
+    transform: translateY(-1px);
+}
+
+.image-viewer-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    background: rgba(0, 0, 0, 0.85);
+    cursor: zoom-out;
+}
+
+.image-viewer-full {
+    display: block;
+    max-width: 95vw;
+    max-height: 92vh;
+    object-fit: contain;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.45);
+}
+/* #endregion  */
+
+/* #region สำหรับปุ่มอัปโหลดทั้ง 3 ช่อง */
+.update-upload-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 12px 0;
+}
+
+.update-upload-card {
+    min-height: 155px;
+    padding: 12px;
+    border: 1px solid #d9e2e8;
+    border-radius: 8px;
+    background: #f8fafb;
+}
+
+.update-upload-card > label:first-child {
+    display: block;
+    margin-bottom: 9px;
+    color: #234;
+    font-weight: 600;
+}
+
+.update-upload-button {
+    display: inline-block;
+    padding: 7px 12px;
+    border: 1px solid #b8c2cc;
+    border-radius: 6px;
+    background: #fff;
+    color: #263238;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.update-upload-button:hover {
+    border-color: #198754;
+    color: #198754;
+    background: #f2fff8;
+}
+
+.update-upload-card .upload-preview-thumbnail {
+    width: 135px;
+    height: 95px;
+}
+
+@media (max-width: 850px) {
+    .update-upload-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.upload-required-error {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.18);
+}
+/* #endregion  */
+
+
+
+
+
+
+

@@ -2,6 +2,7 @@
 let currentEditingRowIndex = -1; 
 let currentDomRowIndex = -1;
 let currentActiveCaseId = "";
+let currentActiveEventItem = null;
 
 // 🎯 ฟังก์ชันจัดการอัปเดตชื่อไฟล์รูปภาพประจำหน้าจอโมดอลสีเขียว (ฝั่งล่าง)
 // function updateOcFileName() {
@@ -259,6 +260,729 @@ function renderHistoryTable(historyData) {
 // =================================================================================================================================================================== //
 //#endregion
 
+
+
+
+
+   
+//ล้างรูปเก่าทุกครั้งที่เปิดเคสใหม่ เพื่อป้องกันรูปจากเคสก่อนหน้าติดมาด้วย
+//function resetUpdateEvidenceFiles() {
+//#region
+function resetUpdateEvidenceFiles() {
+    const inputIds = [
+        'updateReceiptFile',
+        'medicalCertificateFile',
+        'closeCaseEvidenceFile'
+    ];
+
+    const previewIds = [
+        'updateReceiptPreview',
+        'medicalCertificatePreview',
+        'closeCaseEvidencePreview'
+    ];
+
+    inputIds.forEach((id) => {
+        const input = document.getElementById(id);
+        if (input) input.value = '';
+    });
+
+    previewIds.forEach((id) => {
+        const preview = document.getElementById(id);
+        if (preview) preview.replaceChildren();
+    });
+}
+//#endregion
+
+//เพิ่มฟังก์ชันสร้างชื่อไฟล์
+//function getSafeUpdateEmployeeName() {
+//function getImageExtension(file) {
+//function buildUpdateEvidenceName(prefix, file) {
+//#region
+function getSafeUpdateEmployeeName() {
+    const rawName =
+        currentActiveEventItem?.employeeName ||
+        currentActiveEventItem?.EmployeeName ||
+        currentActiveEventItem?.empName ||
+        document.getElementById('hiddenEmpName')?.value ||
+        'ไม่ทราบชื่อ';
+
+    return String(rawName)
+        .trim()
+        .replace(/\s+/g, '_')
+        .replace(/[\\/:*?"<>|]/g, '');
+}
+
+
+function getImageExtension(file) {
+    const extension = file.name.split('.').pop()?.toLowerCase();
+
+    if (['jpg', 'jpeg', 'png', 'webp'].includes(extension)) {
+        return extension === 'jpeg' ? 'jpg' : extension;
+    }
+
+    const mimeExtensions = {
+        'image/jpeg': 'jpg',
+        'image/png': 'png',
+        'image/webp': 'webp'
+    };
+
+    return mimeExtensions[file.type] || 'jpg';
+}
+
+function buildUpdateEvidenceName(prefix, file) {
+    const caseId = String(currentActiveCaseId || '').trim();
+    const employeeName = getSafeUpdateEmployeeName();
+    const extension = getImageExtension(file);
+
+    if (!caseId) {
+        throw new Error('ไม่พบเลขเคส ID');
+    }
+
+    return `${prefix}_${caseId}_${employeeName}.${extension}`;
+}
+//#endregion
+
+//เพิ่มฟังก์ชันอัปโหลดรูปไป Google Drive
+//async function uploadUpdateEvidence(file, prefix) {
+//#region
+async function uploadUpdateEvidence(file, prefix) {
+    if (!file) return '';
+
+    const fileName = buildUpdateEvidenceName(prefix, file);
+    const fileData = await fileToDataUrl(file);
+
+    const response = await window.authFetch(
+        `${window.APP_CONFIG.API_BASE_URL}/api/upload-drive`,
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                caseId: currentActiveCaseId,
+                fileName,
+                employeeName: getSafeUpdateEmployeeName(),
+                fileData
+            })
+        }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+        throw new Error(result.message || `อัปโหลด ${fileName} ไม่สำเร็จ`);
+    }
+
+    return result.fileUrl || '';
+}
+//#endregion
+
+//เพิ่มฟังก์ชันอัปโหลดทั้ง 3 รูปพร้อมกัน
+//window.uploadAllUpdateEvidence = async function () {
+//#region
+window.uploadAllUpdateEvidence = async function () {
+    const receiptFile =
+        document.getElementById('updateReceiptFile')?.files?.[0] || null;
+
+    const medicalFile =
+        document.getElementById('medicalCertificateFile')?.files?.[0] || null;
+
+    const closeFile =
+        document.getElementById('closeCaseEvidenceFile')?.files?.[0] || null;
+
+    const [receiptUrl, medicalCertificateUrl, closeCaseUrl] =
+        await Promise.all([
+            uploadUpdateEvidence(receiptFile, 'UpdateReceiptcase'),
+            uploadUpdateEvidence(medicalFile, 'MedicalCertificatecase'),
+            uploadUpdateEvidence(closeFile, 'Closecase')
+        ]);
+
+    return {
+        receiptUrl,
+        medicalCertificateUrl,
+        closeCaseUrl
+    };
+};
+//#endregion
+
+//window.toggleOcOtherInput = function (selectedValue) {
+//#region
+// 🎯 ฟังก์ชันช่วย เปิด/ซ่อน ช่องกรอกข้อความเสริมเมื่อเลือกขั้นตอนการรักษาเป็น "อื่นๆ"
+window.toggleOcOtherInput = function (selectedValue) {
+    const wrapper = document.getElementById('ocStatusOtherWrapper');
+    const otherInput = document.getElementById('ocStatusOtherInput');
+    if (wrapper && otherInput) {
+        if (selectedValue === 'อื่นๆ') {
+            wrapper.style.display = 'block';
+            otherInput.required = true; // บังคับให้ต้องพิมพ์ห้ามปล่อยว่าง
+            otherInput.focus();
+        } else {
+            wrapper.style.display = 'none';
+            otherInput.required = false;
+            otherInput.value = ''; // ล้างข้อความเก่าทิ้ง
+        }
+    }
+};
+//#endregion
+
+//ฟังก์ชันดึงประวัติมาดีดแทรกแถวใหม่ในตารางทันที โดยไม่มีการกะพริบปิด-เปิดหน้าต่าง 
+//ฟังก์ชันฉีดแถวสดเรียลไทม์ (แก้ไขจัดเรียงลำดับพิกัดให้ไหลลงสู่ด้านล่างตารางอย่างเสมอภาคและคงที่)
+//window.injectNewRowToTableRealtime = function (payloadData) {
+//#region
+window.injectNewRowToTableRealtime = function (payloadData) {
+    const tableBody = document.getElementById('tableBodyResult');
+    if (!tableBody || !payloadData) return;
+
+    if (tableBody.innerHTML.includes("ยังไม่มีประวัติ") || tableBody.innerHTML.includes("กรุณาค้นหา")) {
+        tableBody.innerHTML = '';
+    }
+
+    const caseId = payloadData.CaseIdNew;
+    const targetRowNo = payloadData.updatedRowIndex || payloadData.sheetRowIndex || -1;
+    const displayAutoTime = payloadData.autoDateTime || new Date().toLocaleString('th-TH');
+
+    const formatMoney = (val) => {
+        if (val === undefined || val === null || val === '') return '0.00';
+        let num = parseFloat(String(val).replace(/,/g, '').trim());
+        if (isNaN(num)) return '0.00';
+        return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    const mockEventItem = {
+        targetRowNumber: targetRowNo, 
+        CaseIdNew: caseId,
+        treatmentDateTime: payloadData.treatmentDateTime || '-',
+        statusText: payloadData.statusText || 'แจ้งประกัน กำลังเข้ารับการรักษา',
+        symptoms: payloadData.symptoms || '-',
+        workLocation: payloadData.workLocation || '-',
+        hospital: payloadData.hospital || '-',
+        DentalOPD: payloadData.DentalOPD || '0',
+        PPUsageOPD: payloadData.PPUsageOPD || '0',
+        PPUsageIPD: payloadData.PPUsageIPD || '0',
+        SLKUsageOpdThB: payloadData.SLKUsageOpdThB || '0',
+        SLKUsageIpdThB: payloadData.SLKUsageIpdThB || '0',
+        SLKUsageOpdLkr: payloadData.SLKUsageOpdLkr || '0',
+        SLKUsageIpdLkr: payloadData.SLKUsageIpdLkr || '0',
+        OverLimitCreditInsThB: payloadData.OverLimitCreditInsThB || '0',
+        OverLimitCreditInsLkr: payloadData.OverLimitCreditInsLkr || '0',
+        ExchangeRatesIns: payloadData.ExchangeRatesIns || '1',
+        ExchangeRatesInt: payloadData.ExchangeRatesInt || '1',
+        ClinicianReportedOutcomes: payloadData.ClinicianReportedOutcomes || '-',
+        DocumentsAttached: payloadData.documentsAttached || payloadData.DocumentsAttached || '-',
+        notes: payloadData.notes || '-',
+        autoDateTime: displayAutoTime,
+        adminName: payloadData.adminName || 'System Admin'
+    };
+
+    const safeJsonString = JSON.stringify(mockEventItem);
+    const safeEncodedBase64 = window.btoa(unescape(encodeURIComponent(safeJsonString)));
+
+    const parentTr = document.createElement('tr');
+    parentTr.className = 'parent-row';
+    parentTr.style.cursor = 'pointer';
+    parentTr.style.backgroundColor = '#edf7ed'; 
+
+    parentTr.innerHTML = `
+        <td class="text-center font-bold" style="color:#198754;">
+            <div class="case-cell"><span class="txt-case-id">${caseId}</span><span class="toggle-arrow" style="margin-left:5px;">▼</span></div>
+        </td>
+        <td class="text-center">${mockEventItem.treatmentDateTime}</td>
+        <td class="text-center"><span style="background-color: #fff3cd; color: #664d03; padding: 4px 8px; border-radius: 4px;">${mockEventItem.statusText}</span></td>
+        <td class="text-left" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${mockEventItem.symptoms || '-'}</td>
+        <td>${getDisplayWorkLocation(mockEventItem)}</td>
+        <td class="text-left">${mockEventItem.hospital || '-'}</td>
+        <td class="text-right" style="font-weight:bold;">${formatMoney(mockEventItem.DentalOPD)}</td>
+        <td class="text-right" style="font-weight:bold;">${formatMoney(mockEventItem.PPUsageOPD)}</td>
+        <td class="text-right" style="font-weight:bold;">${formatMoney(mockEventItem.PPUsageIPD)}</td>
+        <td class="text-right slk-column" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageOpdThB)}</td>
+        <td class="text-right slk-column" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageIpdThB)}</td>
+        <td class="text-right slk-column" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageOpdLkr)}</td>
+        <td class="text-right slk-column" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageIpdLkr)}</td>
+        <td class="text-right slk-column" style="color:red; font-weight:bold;">${formatMoney(mockEventItem.OverLimitCreditInsThB)}</td>
+        <td class="text-right slk-column" style="color:red; font-weight:bold;">${formatMoney(mockEventItem.OverLimitCreditInsLkr)}</td>
+        <td class="text-center slk-column">${mockEventItem.ExchangeRatesIns}</td>
+        <td class="text-center slk-column">${mockEventItem.ExchangeRatesInt}</td>
+        <td class="text-left">${mockEventItem.ClinicianReportedOutcomes}</td>
+        <td class="text-left">${mockEventItem.DocumentsAttached}</td>
+        <td class="text-left">${mockEventItem.notes}</td>
+        <td class="text-center">${mockEventItem.autoDateTime}</td>
+        <td class="text-center">${mockEventItem.adminName}</td>
+        <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- ไทม์ไลน์เรียลไทม์ -</td>
+    `;
+
+    const childTr = document.createElement('tr');
+    childTr.className = `child-row-of-${caseId}`;
+    childTr.style.display = 'none'; 
+    childTr.style.backgroundColor = '#f4f7f6'; 
+
+    childTr.innerHTML = `
+        <td class="text-center font-bold" style="color:#0b5ed7; background:#eef1f6;">${caseId}</td>
+        <td class="text-center" style="font-size:12px; color:#555;">${mockEventItem.treatmentDateTime}</td>
+        <td class="text-center" style="font-size:12px; color:#555;">${mockEventItem.statusText}</td>
+        <td class="text-left" style="white-space:normal !important; max-width:200px;">${mockEventItem.symptoms || '-'}</td>
+        <td>${getDisplayWorkLocation(mockEventItem)}</td>
+        <td class="text-left">${mockEventItem.hospital || '-'}</td>
+        <td class="text-right">${formatMoney(mockEventItem.DentalOPD)}</td>
+        <td class="text-right">${formatMoney(mockEventItem.PPUsageOPD)}</td>
+        <td class="text-right">${formatMoney(mockEventItem.PPUsageIPD)}</td>
+        <td class="text-right slk-column">${formatMoney(mockEventItem.SLKUsageOpdThB)}</td>
+        <td class="text-right slk-column">${formatMoney(mockEventItem.SLKUsageIpdThB)}</td>
+        <td class="text-right slk-column">${formatMoney(mockEventItem.SLKUsageOpdLkr)}</td>
+        <td class="text-right slk-column">${formatMoney(mockEventItem.SLKUsageIpdLkr)}</td>
+        <td class="text-right slk-column" style="color:red;">${formatMoney(mockEventItem.OverLimitCreditInsThB)}</td>
+        <td class="text-right slk-column" style="color:red;">${formatMoney(mockEventItem.OverLimitCreditInsLkr)}</td>
+        <td class="text-center slk-column">${mockEventItem.ExchangeRatesIns}</td>
+        <td class="text-center slk-column">${mockEventItem.ExchangeRatesInt}</td>
+        <td class="text-left">${mockEventItem.ClinicianReportedOutcomes}</td>
+        <td class="text-left">${mockEventItem.DocumentsAttached}</td>
+        <td class="text-left">${mockEventItem.notes}</td>
+        <td class="text-center" style="font-size:12px;">${mockEventItem.autoDateTime}</td>
+        <td class="text-center" style="font-size:12px;">${mockEventItem.adminName}</td>
+        <td class="text-center" style="background:#fff; white-space: nowrap;">
+            ${window.hasPermission?.('EditTreatment') === true ? `<button type="button" class="btn-edit-minimal" data-permission="EditTreatment" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateDataToForm(decodedData);">✏️ แก้ไข</button>` : ''}
+            ${window.hasPermission?.('DeleteTreatment') === true ? `<button type="button" data-permission="DeleteTreatment" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(${targetRowNo}, '${caseId}')">🗑️ ลบ</button>` : ''}
+        </td>
+    `;
+
+            if (payloadData.isTimelineUpdate === true) {
+            const existingParent = Array.from(
+                tableBody.querySelectorAll('.parent-row')
+            ).find((row) => {
+                const caseText = row.querySelector('.txt-case-id')
+                    ?.textContent?.trim();
+
+                return caseText === String(caseId).trim();
+            });
+
+            if (existingParent) {
+                const existingSpacer = Array.from(tableBody.children)
+                    .find((row) =>
+                        row.classList.contains(
+                            `child-row-of-${caseId}-spacer`
+                        )
+                    );
+
+                const isOpen = existingParent.classList.contains('is-open');
+                childTr.style.display = isOpen ? '' : 'none';
+
+                childTr.querySelectorAll('.slk-column').forEach((element) => {
+                    const location = String(
+                        payloadData.workLocation || ''
+                    ).toUpperCase();
+
+                    element.style.display =
+                        location.includes('SL') ? '' : 'none';
+                });
+
+                if (existingSpacer) {
+                    tableBody.insertBefore(childTr, existingSpacer);
+                } else {
+                    existingParent.insertAdjacentElement(
+                        'afterend',
+                        childTr
+                    );
+                }
+
+                existingParent.addEventListener('click', (event) => {
+                    if (
+                        event.target.closest('button') ||
+                        event.target.closest('a')
+                    ) {
+                        return;
+                    }
+
+                    setTimeout(() => {
+                        childTr.style.display =
+                            existingParent.classList.contains('is-open')
+                                ? ''
+                                : 'none';
+                    }, 0);
+                });
+
+                return;
+            }
+        }
+
+
+    const spacerTr = document.createElement('tr');
+    spacerTr.className = `child-row-of-${caseId}-spacer`;
+    spacerTr.style.display = 'none'; 
+    
+    spacerTr.innerHTML = `
+        <td colspan="23" style="height: 45px !important; background-color: #ffffff !important; border: none !important; padding: 8px 15px !important; text-align: left;">
+            <button type="button" style="padding: 6px 20px; background-color: #198754; color: white; border: none; border-radius: 5px; font-size: 12.5px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateOutcomeToModal(decodedData);">
+                🏥 อัปเดตผลการรักษา
+            </button>
+        </td>
+    `;
+
+    // 🎯 [แก้ไขจุดบั๊กที่ 2]: เปลี่ยนจากคำสั่ง insertBefore (แทรกบนสุด) มาใช้คำสั่ง appendChild (ต่อท้ายล่างสุด)
+    // เพื่อบังคับให้แถวเกิดใหม่ไหลลงล่างตารางอย่างเป็นระบบ สอดคล้องกับพิกัดข้อมูลก่อนและหลังรีเฟรชหน้าจอเด็ดขาด 100%
+    tableBody.appendChild(parentTr);
+    tableBody.appendChild(childTr);
+    tableBody.appendChild(spacerTr);
+
+    const childRowsArray = [childTr, spacerTr];
+
+    parentTr.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-edit-minimal') || e.target.tagName === 'BUTTON') return;
+        const isCurrentlyOpen = parentTr.classList.contains('is-open');
+
+        if (!isCurrentlyOpen) {
+            parentTr.classList.add('is-open');
+            childRowsArray.forEach(row => row.style.display = '');
+            const txtCaseId = parentTr.querySelector('.txt-case-id');
+            if (txtCaseId) txtCaseId.style.display = 'none';
+
+            Array.from(parentTr.children).forEach((td, idx) => {
+                if (idx > 0 && idx < 22) td.style.opacity = '0'; 
+            });
+            const arrow = parentTr.querySelector('.toggle-arrow');
+            if (arrow) arrow.innerText = '▲';
+        } else {
+            parentTr.classList.remove('is-open');
+            childRowsArray.forEach(row => row.style.display = 'none');
+            const txtCaseId = parentTr.querySelector('.txt-case-id');
+  if (txtCaseId) txtCaseId.style.display = '';
+            Array.from(parentTr.children).forEach((td) => { td.style.opacity = '1'; });
+            const arrow = parentTr.querySelector('.toggle-arrow');
+            if (arrow) arrow.innerText = '▼';
+        }
+    });
+
+    // 🔐 ระบบควบคุมการสแกนซ่อน-แสดงคอลัมน์ประกันกลุ่ม SLK อัตโนมัติตามสถานที่ทำงานของแถวเปิดสดใบใหม่
+    const workLocation = document.getElementById('hiddenWorkLocation')?.value || '';
+    const slkElements = parentTr.querySelectorAll('.slk-column');
+    slkElements.forEach(el => el.style.display = workLocation.toUpperCase().includes('SL') ? '' : 'none');
+    
+    // ทำซ้ำสำหรับช่อง slk-column ภายในแถวย่อยเพื่อควบคุมสิทธิ์หน้าจอให้เท่าเทียมกัน
+    const subSlkElements = childTr.querySelectorAll('.slk-column');
+    subSlkElements.forEach(el => el.style.display = workLocation.toUpperCase().includes('SL') ? '' : 'none');
+
+    console.log(`🎉 [Live Scientific Injection Success] แก้ไขตำแหน่งไหลลงด้านล่างสุดเรียบร้อยแล้ว!`);
+};
+//#endregion
+
+//ฟังก์ชันหยอดค่าข้อมูลประวัติพนักงานเดิม เข้าสู่หน้าต่างป๊อปอัปผลการรักษา (Populate Data)
+//window.populateOutcomeToModal = function(eventItem) {
+//#region
+        window.populateOutcomeToModal = function(eventItem) {
+            resetUpdateEvidenceFiles();
+            currentActiveEventItem = eventItem;
+            currentActiveCaseId = String(
+                eventItem.CaseIdNew ||
+                eventItem.caseId ||
+                ''
+            ).trim();
+   
+        const hiddenWorkLocationEl = document.getElementById('hiddenWorkLocation');
+        const workLocation = hiddenWorkLocationEl ? hiddenWorkLocationEl.value : '';
+        const slkWrapper = document.getElementById('ocSlkFieldsWrapper');
+
+        if (slkWrapper) {
+            if (workLocation.toUpperCase().includes('SL')) {
+                slkWrapper.style.display = 'block';
+            } else {
+                slkWrapper.style.display = 'none';
+            }
+        }
+
+
+                if (document.getElementById('ocStatusSelect')) {
+        document.getElementById('ocStatusSelect').value = ''; 
+        toggleOcOtherInput(''); 
+                  }
+
+            currentEditingRowIndex = eventItem.targetRowNumber || -1;
+            const modal = document.getElementById('outcomeUpdateModal');
+            if (modal) { modal.style.display = 'flex'; }
+
+            function setOcInput(id, value) {
+                const el = document.getElementById(id);
+                if (el) {
+                    let cleanValue = (value !== undefined && value !== null) ? String(value) : '';
+                    if (el.type === 'number') {
+                        cleanValue = cleanValue.replace(/,/g, '').replace(/\s+/g, '').trim();
+                    }
+                    el.value = cleanValue;
+                }
+            }
+
+            // ดีดค่าล็อก Readonly สีเทาขึ้นโมดอลป๊อปอัปสีเขียว
+            setOcInput('ocCaseId', eventItem.CaseIdNew);
+            setOcInput('ocHospital', eventItem.hospital);
+            setOcInput('ocSymptoms', eventItem.symptoms);
+
+            // ดีดค่าเงินเดิมขึ้นสแตนด์บายรอตรวจเช็คในฟอร์ม
+            setOcInput('ocInpDentalOPD', eventItem.DentalOPD);
+            setOcInput('ocInpPPUsageOPD', eventItem.PPUsageOPD);
+            setOcInput('ocInpPPUsageIPD', eventItem.PPUsageIPD);
+
+      
+            setOcInput('ocInpSlkOpdThb', eventItem.SLKUsageOpdThB);
+            setOcInput('ocInpSlkIpdThb', eventItem.SLKUsageIpdThB);
+            setOcInput('ocInpSlkOpdLkr', eventItem.SLKUsageOpdLkr);
+            setOcInput('ocInpSlkIpdLkr', eventItem.SLKUsageIpdLkr);
+            setOcInput('ocInpOverThb', eventItem.OverLimitCreditInsThB);
+            setOcInput('ocInpOverLkr', eventItem.OverLimitCreditInsLkr);
+            setOcInput('ocInpRateIns', eventItem.ExchangeRatesIns || '1');
+            setOcInput('ocInpRateInt', eventItem.ExchangeRatesInt || '1');
+                    
+
+            // แยกแกะส่วนวันที่และเวลาเพื่อจัดเตรียมเข้าช่อง Flatpickr ใต้กล่องอาการป่วย
+            const rawDateTime = String(eventItem.treatmentDateTime || '').trim();
+            const dateTimeParts = rawDateTime.split(' ');
+            
+            let cleanDate = dateTimeParts[0] || '';
+            let cleanTime = dateTimeParts[1] || '';
+            
+            cleanDate = cleanDate.replace(/,/g, '').trim();
+            cleanTime = cleanTime.replace(/,/g, '').trim();
+
+            setOcInput('ocManualDate', cleanDate);
+            setOcInput('ocManualTime', cleanTime);
+
+            // ปลุกสั่งปฏิทินและนาฬิกาของหน้าป๊อปอัปให้พร้อมเปิดสิทธิ์ผูกมัดรับค่า
+            if (!document.getElementById('ocManualDate')._flatpickr) { 
+                flatpickr("#ocManualDate", { dateFormat: "d/m/Y", allowInput: true }); 
+            }
+            if (!document.getElementById('ocManualTime')._flatpickr) { 
+                flatpickr("#ocManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true }); 
+            }
+        };
+//#endregion
+
+//ฟังก์ชันระบบแก้ไขข้อมูลย้อนหลังไปฝั่งล่าง
+//window.populateDataToForm = function (eventItem) {
+//window.closeEditModal = function () {
+//#region
+// 🎯 แก้ไขปรับปรุงใหม่: สั่งเปิดหน้าต่างแบบฟอร์มป๊อปอัป Modal ให้ดีดเด้งกึ่งกลางจอเป๊ะๆ 100%
+window.populateDataToForm = function (eventItem) {
+
+    //  สั่งให้ระบบค้นหาและจำพิกัดบรรทัดบนหน้าจอของปุ่มที่แอดมินเพิ่งคลิกเข้ามา
+    const allRows = document.querySelectorAll('#tableBodyResult tr');
+    allRows.forEach((row, idx) => {
+        // ดักหาแถวที่มีข้อมูลอาการป่วยและวันที่ตรวจตรงกันกับที่กดเข้ามา
+        if (row.innerHTML.includes(eventItem.symptoms) && row.innerHTML.includes(eventItem.treatmentDateTime)) {
+            currentDomRowIndex = row.rowIndex; // บันทึกพิกัดลำดับแถวหน้าจอจริงเก็บไว้ในตัวแปรกลาง
+        }
+    });
+
+    // 1. ล็อกเลขบรรทัดจริงเก็บเข้าตัวแปรกลางหลักหลังบ้าน (ยึดตามคำสั่งควบคุมขั้นตอนที่ 1)
+    currentEditingRowIndex = eventItem.targetRowNumber || -1;
+
+    // 2. สั่งปลุกหน้าต่างป๊อปอัปกล่องข้อความโครงสร้าง HTML ของเราให้เด้งแสดงผลกึ่งกลางหน้าจอทันที
+    const modal = document.getElementById('editCaseModal');
+    if (modal) {
+        modal.style.setProperty('display', 'flex', 'important'); 
+    }
+
+    // ฟังก์ชันย่อยสำหรับป้อนค่าเข้าช่องอินพุตภายในโมดอลป๊อปอัปอย่างปลอดภัย
+           function setMdInput(id, value) {
+            const el = document.getElementById(id);
+            if (el) {
+                let cleanValue = (value !== undefined && value !== null) ? String(value) : '';
+                
+                // 🎯 ปรับปรุงใหม่: ลบทั้งคอมม่า และลบช่องว่าง/เว้นวรรคทุกจุดทิ้งทันทีหากอินพุตเป็น type="number"
+                if (el.type === 'number') {
+                    cleanValue = cleanValue.replace(/,/g, '').replace(/\s+/g, '').trim();
+                }
+                
+                el.value = cleanValue;
+            }
+        }
+
+
+    // 3. หยอดป้อนค่าข้อมูลทั่วไปประจำเคสลงช่องกรอกในกล่องป๊อปอัป
+    setMdInput('mdCaseId', eventItem.CaseIdNew);
+    setMdInput('mdHospitalSelect', eventItem.hospital);
+    setMdInput('mdSymptomsInput', eventItem.symptoms);
+    setMdInput('mdNotesInput', eventItem.notes);
+
+    // 4. วิเคราะห์สับสยายแยกวันที่และเวลาออกจากกันให้สะอาด เพื่อล็อกช่อง Flatpickr เดี่ยวๆ
+    const rawDateTime = String(eventItem.treatmentDateTime || '').trim();
+    const dateTimeParts = rawDateTime.split(' ');
+    let cleanDate = dateTimeParts[0] || '';
+    let cleanTime = dateTimeParts[1] || '';
+    
+    // ล้างเครื่องหมายจุลภาคขยะ (,) ที่อาจจะหลงเหลือติดมาจากฐานข้อมูลชีต
+    cleanDate = cleanDate.replace(/,/g, '').trim();
+    cleanTime = cleanTime.replace(/,/g, '').trim();
+
+    setMdInput('mdManualDate', cleanDate);
+    setMdInput('mdManualTime', cleanTime);
+
+       // ✅ โค้ดชุดใหม่ที่ปลอดภัยกว่าเดิม (วางแทนที่จุดที่ลบออกได้เลยครับ)
+    const mdDateEl = document.getElementById('mdManualDate');
+    const mdTimeEl = document.getElementById('mdManualTime');
+
+    if (mdDateEl && !mdDateEl._flatpickr) {
+        flatpickr("#mdManualDate", { dateFormat: "d/m/Y", allowInput: true });
+    }
+    if (mdTimeEl && !mdTimeEl._flatpickr) {
+        flatpickr("#mdManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
+    }
+
+    if (mdDateEl && mdDateEl._flatpickr) mdDateEl._flatpickr.setDate(cleanDate, true);
+    if (mdTimeEl && mdTimeEl._flatpickr) mdTimeEl._flatpickr.setDate(cleanTime, true);
+
+
+    // 5. ดีดข้อมูลสิทธิ์ตัวเลขวงเงินต่างๆ กรอกลงตามล็อกช่องในป๊อปอัปครบทุกไอดี
+    setMdInput('mdInpDentalOPD', eventItem.DentalOPD);
+    setMdInput('mdInpPPUsageOPD', eventItem.PPUsageOPD);
+    setMdInput('mdInpPPUsageIPD', eventItem.PPUsageIPD);
+    setMdInput('mdInpSLKUsageOpdThB', eventItem.SLKUsageOpdThB);
+    setMdInput('mdInpSLKUsageIpdThB', eventItem.SLKUsageIpdThB);
+    setMdInput('mdInpSLKUsageOpdLkr', eventItem.SLKUsageOpdLkr);
+    setMdInput('mdInpSLKUsageIpdLkr', eventItem.SLKUsageIpdLkr);
+    setMdInput('mdInpOverLimitThB', eventItem.OverLimitCreditInsThB);
+    setMdInput('mdInpOverLimitLkr', eventItem.OverLimitCreditInsLkr);
+    setMdInput('mdInpExchangeRatesIns', eventItem.ExchangeRatesIns);
+    setMdInput('mdInpExchangeRatesInt', eventItem.ExchangeRatesInt);
+    
+    // บรรจุสิทธิ์ผลรักษาและเอกสารลงฟิลด์ป๊อปอัปเพื่อพร้อมอัปเดตย้อนหลัง
+    setMdInput('mdInpClinician', eventItem.ClinicianReportedOutcomes);
+    setMdInput('mdInpDocs', eventItem.DocumentsAttached);
+};
+
+window.closeEditModal = function () {
+    document.getElementById('editCaseModal').style.display = 'none';
+};
+//#endregion
+
+//งานแก้ไขและอัปเดตประวัติ
+//window.executeFormUpdate = async function () {
+//#region
+window.executeFormUpdate = async function () {
+    const backupEmpName = document.getElementById('hiddenEmpName').value;
+    const backupCompany = document.getElementById('hiddenCompany').value;
+    const backupInsuranceId = document.getElementById('hiddenInsuranceId').value;
+    const backupSize = document.getElementById('hiddenSize').value;
+    const backupLocation = document.getElementById('hiddenWorkLocation').value;
+    const symptoms = document.getElementById('symptomsInput').value;
+
+      if (!symptoms.trim()) { 
+        alert("กรุณากรอกอาการป่วย"); 
+        return; 
+    }
+
+    const claimStatus = document.getElementById('claimStatus');
+
+    const payload = {
+        sheetRowIndex: currentEditingRowIndex, // เลขแถวตรงเป้า (เช่น 717)
+        CaseIdNew: document.getElementById('caseId').value || '-',
+        autoDateTime: document.getElementById('headerDateTimeValue').innerText,
+        adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin', // ดึงชื่อแอดมินลงคอลัมน์ C
+        treatmentDateTime: `${document.getElementById('manualDate').value} ${document.getElementById('manualTime').value}`.trim() || '-',
+        company: backupCompany !== '-' ? backupCompany : 'CALL 365',
+        workLocation: backupLocation !== '-' ? backupLocation : '-',
+        hospital: document.getElementById('hospitalSelect').value,
+        symptoms: symptoms,
+        
+        // 🎯 ล็อกชื่อตัวแปรให้สะกดตรงเป้าหมายตามกระบวนการรับค่าของไฟล์เซิร์ฟเวอร์หลังบ้าน
+        insuranceId: backupInsuranceId !== '-' ? backupInsuranceId : '-', 
+        size: backupSize !== '-' ? backupSize : 'M', 
+        employeeName: backupEmpName !== '-' ? backupEmpName : 'อาเฟย ศิรินภา', 
+        
+        statusText: "แก้ไขและปรับปรุงข้อมูลเคสการรักษา", 
+        DentalOPD: document.getElementById('inpDentalOPD')?.value || '0',
+        PPUsageOPD: document.getElementById('inpPPUsageOPD')?.value || '0',
+        PPUsageIPD: document.getElementById('inpPPUsageIPD')?.value || '0',
+        SLKUsageOpdThB: document.getElementById('inpSLKUsageOpdThB')?.value || '0',
+        SLKUsageIpdThB: document.getElementById('inpSLKUsageIpdThB')?.value || '0',
+        SLKUsageOpdLkr: document.getElementById('inpSLKUsageOpdLkr')?.value || '0',
+        SLKUsageIpdLkr: document.getElementById('inpSLKUsageIpdLkr')?.value || '0',
+        OverLimitCreditInsThB: document.getElementById('inpOverLimitThB')?.value || '0',
+        OverLimitCreditInsLkr: document.getElementById('inpOverLimitLkr')?.value || '0',
+        ExchangeRatesIns: document.getElementById('inpExchangeRatesIns')?.value || '1',
+        ExchangeRatesInt: document.getElementById('inpExchangeRatesInt')?.value || '1',
+        ClinicianReportedOutcomes: document.getElementById('inpClinician')?.value || document.getElementById('inpOutcomes')?.value || '-',
+        DocumentsAttached: document.getElementById('inpDocs')?.value || document.getElementById('inpDocuments')?.value || '-',
+        notes: document.getElementById('notesInput').value || '-'
+    };
+
+    // 🚨 [กล่องระบบตรวจสอบขั้นตอนที่ 2] พิมพ์เปิดกะละมังข้อมูลออกมากางเช็คดูความปลอดภัยก่อนยิงส่งจริง
+    if (confirm(`🧪 [ระบบทดสอบขั้นตอนที่ 2 - ตรวจเช็คก้อนข้อมูล Payload ก่อนส่ง]\n\n` +
+                `• เลขบรรทัดที่ระบบกำลังจะวิ่งไปเขียนทับ: แถวที่ ${payload.sheetRowIndex}\n` +
+                `• ชื่อเจ้าหน้าที่ผู้บันทึกเคส: คุณ ${payload.adminName}\n` +
+                `• ชื่อโรงพยาบาลเป้าหมาย: ${payload.hospital}\n` +
+                `• อาการป่วยใหม่ที่กรอกแก้: ${payload.symptoms}\n\n` +
+                `กรุณาตรวจสอบว่าเลขบรรทัด และ ข้อมูลครบไหม?\n` +
+                `- หากถูกต้องครบถ้วน กดปุ่ม "ตกลง (OK)" เพื่อปล่อยสิทธิ์ให้ข้อมูลยิงไปหาหลังบ้าน\n` +
+                `- หากไม่ถูกต้อง กด "ยกเลิก (Cancel)" เพื่อหยุดล็อกระบบไว้ก่อนครับ`)) {
+        
+        try {
+            const response = await window.authFetch(`${API_BASE_URL}/api/update-treatment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (response.ok && result.success) {
+                alert('🎉 บันทึกปรับปรุงแก้ไขข้อมูลและส่งแถวลง Google Sheets สำเร็จเรียบร้อย!');
+
+            const editModal = document.getElementById('editCaseModal');
+
+            if (editModal) {
+                editModal.style.display = 'none';
+            }
+
+            if (typeof performSearch === 'function') {
+                await performSearch();
+            }
+
+            } else { alert('❌ เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: ' + result.message); }
+        } catch (e) { alert('❌ ขัดข้องในการติดต่อเชื่อมต่อ API หลังบ้าน'); }
+    }
+};
+//#endregion
+
+//window.openEditModal = function (eventItem, domIndex) {
+//#regionmodalOutcomeForm
+// 🎯 จัดการโหมดแก้ไขป๊อปอัป Modal (กล่องเหลืองทอง)
+window.openEditModal = function (eventItem, domIndex) {
+    currentEditingRowIndex = eventItem.targetRowNumber || -1;
+    currentDomRowIndex = domIndex;
+
+    const modal = document.getElementById('editCaseModal');
+    if (modal) modal.style.display = 'flex';
+
+    function setVal(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.value = (val !== undefined && val !== null) ? String(val).replace(/,/g, '').trim() : '';
+    }
+
+    setVal('mdCaseId', eventItem.CaseIdNew);
+    setVal('mdHospitalSelect', eventItem.hospital);
+    setVal('mdSymptomsInput', eventItem.symptoms);
+    setVal('mdStatusText', eventItem.statusText || 'รอดำเนินการ');
+    setVal('mdInpDentalOPD', eventItem.DentalOPD || '0');
+    setVal('mdInpPPUsageOPD', eventItem.PPUsageOPD || '0');
+    setVal('mdInpPPUsageIPD', eventItem.PPUsageIPD || '0');
+    setVal('mdInpSLKUsageOpdThB', eventItem.SLKUsageOpdThB || '0');
+    setVal('mdInpSLKUsageIpdThB', eventItem.SLKUsageIpdThB || '0');
+    setVal('mdInpSLKUsageOpdLkr', eventItem.SLKUsageOpdLkr || '0');
+    setVal('mdInpSLKUsageIpdLkr', eventItem.SLKUsageIpdLkr || '0');
+    setVal('mdInpOverLimitThB', eventItem.OverLimitCreditInsThB || '0');
+    setVal('mdInpOverLimitLkr', eventItem.OverLimitCreditInsLkr || '0');
+    setVal('mdInpExchangeRatesIns', eventItem.ExchangeRatesIns || '1');
+    setVal('mdInpExchangeRatesInt', eventItem.ExchangeRatesInt || '1');
+    setVal('mdInpClinician', eventItem.ClinicianReportedOutcomes || '-');
+    setVal('mdInpDocs', eventItem.documentsAttached || eventItem.DocumentsAttached || '-');
+    setVal('mdNotesInput', eventItem.notes || '-');
+
+    const rawDateTime = String(eventItem.treatmentDateTime || '').trim();
+    const parts = rawDateTime.split(' ');
+    setVal('mdManualDate', parts[0] || '');
+    setVal('mdManualTime', parts[1] || '');
+
+    const workLocation = document.getElementById('hiddenWorkLocation').value;
+    const modalSlk = document.querySelectorAll('#editCaseModal .slk-column');
+    modalSlk.forEach(el => el.style.display = workLocation.toUpperCase().includes('SL') ? '' : 'none');
+};
+//#endregion
+
+
 //มัดรวมฟั่งชั่น .addEventListener('submit')
 //function initHistoryModalEvents() {
 //#region
@@ -447,26 +1171,35 @@ if (response.ok && result.success) {
             document.getElementById('modalOutcomeForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
 
+                const closeCaseInput =
+                    document.getElementById('closeCaseEvidenceFile');
+
+                if (!closeCaseInput?.files?.length) {
+                    alert('กรุณาอัปโหลดรูปหลักฐานการปิดเคสก่อนยืนยัน');
+
+                    const closeCaseLabel = document.querySelector(
+                        'label[for="closeCaseEvidenceFile"]'
+                    );
+
+                    closeCaseLabel?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+
+                    closeCaseLabel?.classList.add('upload-required-error');
+
+                    setTimeout(() => {
+                        closeCaseLabel?.classList.remove('upload-required-error');
+                    }, 2500);
+
+                    return;
+                }
+
                 if (!window.hasPermission('UploadFiles')) {
                     alert('บัญชีนี้ไม่มีสิทธิ์อัปโหลดไฟล์');
                     return;
                 }
 
-                const fileInput = 
-                document.getElementById('ocImageUpload');
-                if (!fileInput || fileInput.files.length === 0) {
-            alert("🚨 ปฏิเสธการอัปเดต: คุณยังไม่ได้อัปโหลดรูปภาพปิดเคส! \nกรุณาคลิกปุ่ม '📁 เลือกรูปภาพปิดเคส...' เพื่อแนบหลักฐานการรักษาก่อนส่งข้อมูลลงฐานข้อมูลครับ");
-            
-            const ocUploadLabel = document.querySelector('label[for="ocImageUpload"]');
-            if (ocUploadLabel) {
-                ocUploadLabel.style.borderColor = "#dc3545";
-                ocUploadLabel.style.boxShadow = "0 0 0 0.2rem rgba(220, 53, 69, 0.25)";
-            }
-            return; // ⛔ ตัดสัญญาณหยุดทำงานทันที รูปไม่ขึ้นไดร์ฟ และข้อมูลไม่ลง Sheets 100%
-        }
-
-
-                
         // 1. ดึงข้อมูลพื้นฐานจากหน้าจอโมดอลสีเขียว
         const caseId = document.getElementById('ocCaseId').value;
         const empNameInput = document.getElementById('hiddenEmpName')?.value || document.getElementById('employeeName')?.value || 'Unknown';
@@ -477,62 +1210,25 @@ if (response.ok && result.success) {
         // 📸 [ระบบดักจับรูปภาพปิดเคส]: แปลงไฟล์ภาพและส่งขึ้น Google Drive ผ่าน API ตัวเดิมฝั่งขวา
         // ====================================================================================
        
-        let driveFileUrl = "-"; 
+                let evidenceUrls = {
+                receiptUrl: '',
+                medicalCertificateUrl: '',
+                closeCaseUrl: ''
+            };
 
-        if (fileInput && fileInput.files.length > 0) {
-       try {
-        console.log("📸 กำลังแปลงและอัปโหลดรูปภาพปิดเคสไปยัง Google Drive...");
-        
-        const getBase64 = (file) => new Promise((res, rej) => {
-            const r = new FileReader(); 
-            r.readAsDataURL(file);
-            r.onload = () => res(r.result); 
-            r.onerror = err => rej(err);
-        });
-
-        const file = fileInput.files[0]; // ดึงไฟล์ลำดับที่ 0 ให้ถูกต้องแม่นยำตามหลักสากล
-        const base64String = await getBase64(file);
-        const originalExtension = file.name.substring(file.name.lastIndexOf('.'));
-        
-        // 🎯 [จุดแก้ไขวิกฤต] ดึงจากตัวแปรกลางเครื่องชี้วัดโดยตรง หากไม่มีให้สกัดจากช่องหน้าจอสำรอง
-        const finalCaseStr = currentActiveCaseId || document.getElementById('ocCaseId').value || '0';
-        
-        // 🎯 สกัดเอาเฉพาะตัวเลขรหัสเคสออกมาเพียวๆ (ตัดคำว่า Case หรือขยะออกทั้งหมด)
-        const justNumberId = caseId.replace(/[^0-9]/g, ''); 
-        const customFileName = `Closecase_${justNumberId}_${cleanEmpName}${originalExtension}`; 
-
-        const imgRes = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/upload-drive`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                caseId: "caseId", 
-                fileName: customFileName, 
-                employeeName: empNameInput,
-                fileData: base64String 
-            })
-        });
-
-                const imgResult = await imgRes.json();
-                if (imgResult.needAuth && imgResult.authUrl) {
-                window.open(imgResult.authUrl, '_blank', 'noopener,noreferrer');
-                alert('กรุณายืนยันสิทธิ์ Google Drive ในแท็บใหม่ แล้วกลับมาอัปโหลดอีกครั้ง');
-                return;
-            }
-
-
-                if (imgResult.success) {
-                    driveFileUrl = imgResult.fileUrl;
-                    console.log("📸 อัปโหลดรูปภาพปิดเคสสำเร็จ ลิงก์ไฟล์คือ:", driveFileUrl);
-                } else {
-                    alert(`❌ อัปโหลดรูปภาพปิดเคสล้มเหลว: ${imgResult.message}`);
-                    return;
+            try {
+                if (typeof window.uploadAllUpdateEvidence !== 'function') {
+                    throw new Error('ไม่พบฟังก์ชันอัปโหลดหลักฐาน');
                 }
-            } catch (err) {
-                console.error("Upload to drive error (Outcome):", err);
-                alert("❌ ระบบขัดข้อง ไม่สามารถติดต่ออัปโหลดรูปภาพปิดเคสไปยัง Google Drive ได้");
+
+                evidenceUrls = await window.uploadAllUpdateEvidence();
+            } catch (error) {
+                console.error('Upload evidence error:', error);
+                alert(`❌ อัปโหลดรูปไม่สำเร็จ: ${error.message}`);
                 return;
             }
-        }
+
+            const driveFileUrl = evidenceUrls.closeCaseUrl || '-';
 
         const payload = {
             sheetRowIndex: -1, 
@@ -573,9 +1269,19 @@ if (response.ok && result.success) {
             OverLimitCreditInsLkr: document.getElementById('ocInpOverLkr')?.value || '0',
             ExchangeRatesIns: document.getElementById('ocInpRateIns')?.value || '1',
             ExchangeRatesInt: document.getElementById('ocInpRateInt')?.value || '1',
-
             ClinicianReportedOutcomes: document.getElementById('ocInpClinician').value || '-',
-            DocumentsAttached: driveFileUrl !== "-" ? driveFileUrl : (document.getElementById('ocInpDocs').value || '-'),
+            receiptImageUrl: evidenceUrls.receiptUrl || '',
+            medicalCertificateImageUrl:
+                evidenceUrls.medicalCertificateUrl || '',
+            closeCaseImageUrl: evidenceUrls.closeCaseUrl || '',
+
+            DocumentsAttached: [
+                evidenceUrls.receiptUrl,
+                evidenceUrls.medicalCertificateUrl,
+                evidenceUrls.closeCaseUrl
+            ].filter(Boolean).join('\n') ||
+            document.getElementById('ocInpDocs')?.value ||
+            '-',
             notes: document.getElementById('ocNotesInput').value || '-'
         };
 
@@ -602,9 +1308,12 @@ if (response.ok && result.success) {
                     payload.sheetRowIndex = result.updatedRowIndex;
 
                     // สั่งกระตุ้นให้ตารางดาวน์โหลดรีโหลดข้อมูลเรียลไทม์ใหม่ทันที
-                    if (typeof performSearch === "function") {
-                        performSearch();
+                    if (
+                        typeof window.injectNewRowToTableRealtime === 'function'
+                    ) {
+                        window.injectNewRowToTableRealtime(payload);
                     }
+
                 } else { 
                     alert('❌ เซิร์ฟเวอร์หลังบ้านปฏิเสธคำขอ: ' + result.message); 
                 }
@@ -617,6 +1326,9 @@ if (response.ok && result.success) {
 //#endregion
 }
 //#endregion
+
+
+
 
 //window.executeDeleteRow = async function (sheetRowIndex, caseId) {
 //#region

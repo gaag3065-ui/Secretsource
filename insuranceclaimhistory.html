@@ -228,20 +228,53 @@
             </div>
             
             <!-- 📸 [สเต็ปที่ 1 เพิ่มใหม่]: โซนอัปโหลดรูปภาพเพิ่มเติมประจำป๊อปอัปสีเขียวอัปเดตผลการรักษา -->
-            <div style="margin-bottom: 20px; text-align: left;">
-                <label style="display: block; font-weight: bold; margin-bottom: 6px; font-size: 13px; color: #333;">
-                    📸 รูปหลักฐานตัดวงเงินประกัน :
-                </label>
-                <div data-permission="UploadFiles" style="display: flex; gap: 10px; align-items: center;">
-                    <!-- ปุ่มกดเลือกไฟล์สำหรับป๊อปอัปสีเขียว เปลี่ยน ID และ Event ให้แยกเป็นสัดส่วน -->
-                    <label for="ocImageUpload" style="padding: 8px 16px; background-color: #f8f9fa; border: 1px solid #ced4da; color: #495057; border-radius: 4px; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;">
-                        📁 เลือกรูปภาพปิดเคส
+            <div class="update-upload-grid">
+
+                <div class="update-upload-card">
+                    <label>🧾 อัปโหลดใบเสร็จ</label>
+                    <label for="updateReceiptFile" class="update-upload-button">
+                        📁 เลือกรูปใบเสร็จ
                     </label>
-                    <input type="file" id="ocImageUpload" accept="image/*" style="display: none;" onchange="updateOcFileName()">
-                    
-                    <!-- ข้อความแสดงชื่อไฟล์ภาพเมื่อเลือกสำเร็จ -->
-                    <span id="ocFileNameDisplay" style="font-size: 13px; color: #6c757d; font-family: sans-serif;">ยังไม่ได้เลือกไฟล์</span>
+                    <input
+                        type="file"
+                        id="updateReceiptFile"
+                        accept="image/jpeg,image/png,image/webp"
+                        hidden
+                        onchange="previewSelectedImage(this, 'updateReceiptPreview')"
+                    >
+                    <div id="updateReceiptPreview" class="upload-image-preview"></div>
                 </div>
+
+                <div class="update-upload-card">
+                    <label>📄 อัปโหลดใบรับรองแพทย์</label>
+                    <label for="medicalCertificateFile" class="update-upload-button">
+                        📁 เลือกรูปใบรับรองแพทย์
+                    </label>
+                    <input
+                        type="file"
+                        id="medicalCertificateFile"
+                        accept="image/jpeg,image/png,image/webp"
+                        hidden
+                        onchange="previewSelectedImage(this, 'medicalCertificatePreview')"
+                    >
+                    <div id="medicalCertificatePreview" class="upload-image-preview"></div>
+                </div>
+
+                <div class="update-upload-card">
+                    <label>🔒 อัปโหลดหลักฐานการปิดเคส</label>
+                    <label for="closeCaseEvidenceFile" class="update-upload-button">
+                        📁 เลือกรูปหลักฐานปิดเคส
+                    </label>
+                    <input
+                        type="file"
+                        id="closeCaseEvidenceFile"
+                        accept="image/jpeg,image/png,image/webp"
+                        hidden
+                        onchange="previewSelectedImage(this, 'closeCaseEvidencePreview')"
+                    >
+                    <div id="closeCaseEvidencePreview" class="upload-image-preview"></div>
+                </div>
+
             </div>
             <!-- สิ้นสุดโซนอัปโหลดรูปภาพเพิ่มเติม -->
              
