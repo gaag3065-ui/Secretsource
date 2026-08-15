@@ -13,6 +13,23 @@
         button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
         button:hover { background: #0056b3; }
         #message { margin-top: 15px; text-align: center; font-weight: bold; }
+        .admin-entry {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.admin-entry-button {
+    width: auto;
+    padding: 2px 8px;
+    border: 1px solid #9ca3af;
+    border-radius: 3px;
+    background: #ffffff;
+    color: #4b5563;
+    font-size: 10px;
+    line-height: 1.3;
+    cursor: pointer;
+}
     </style>
 </head>
 <body>
@@ -28,9 +45,29 @@
             <label for="password">รหัสผ่าน:</label>
             <input type="password" id="password" required>
         </div>
-        <button type="submit">ล็อกอิน</button>
+                <button
+            type="submit"
+            name="loginArea"
+            value="user"
+        >
+            ล็อกอิน
+        </button>
     </form>
     <div id="message"></div>
+
+<div class="admin-entry">
+<button
+    type="submit"
+    form="loginForm"
+    name="loginArea"
+    value="admin"
+    id="adminLoginButton"
+    class="admin-entry-button"
+>
+    ผู้ดูแล
+</button>
+</div>
+
 </div>
 
 
@@ -142,6 +179,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 e.preventDefault();
 
+                const loginArea =
+                    e.submitter?.value === 'admin'
+                        ? 'admin'
+                        : 'user';
+
                 const username =
                     document.getElementById('username').value;
 
@@ -177,10 +219,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const data =
                         await response.json();
 
-                    if (
-                        response.ok &&
-                        data.success
-                    ) {
+                    if (response.ok && data.success) {
+
+                        const userRole = String(data.user?.role || '')
+                        .trim()
+                        .toUpperCase();
+
+                    if (loginArea === 'admin' && userRole !== 'ADMIN') {
+                        sessionStorage.clear();
+                        messageDiv.innerText =
+                            'บัญชีนี้ไม่มีสิทธิ์เข้าสู่หน้าผู้ดูแล';
+                        messageDiv.style.color = 'red';
+                        return;
+                    }
 
                         messageDiv.innerText =
                             data.message;
@@ -202,7 +253,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         setTimeout(() => {
 
                             window.location.href =
-                                'search.html';
+                            loginArea === 'admin'
+                                ? 'admin.html'
+                                : 'search.html';
 
                         }, 1000);
 

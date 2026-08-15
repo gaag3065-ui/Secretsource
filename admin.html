@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการสิทธิ์ผู้ใช้งาน</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            color: #1f2937;
+            background: #f3f4f6;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 28px;
+            background: #ffffff;
+            border-bottom: 1px solid #d1d5db;
+        }
+
+        .topbar h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .topbar-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .container {
+            width: min(1000px, calc(100% - 32px));
+            margin: 28px auto;
+        }
+
+        .panel {
+            padding: 24px;
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .panel-header {
+            margin-bottom: 22px;
+        }
+
+        .panel-header h2 {
+            margin: 0 0 6px;
+            font-size: 18px;
+        }
+
+        .panel-header p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .field {
+            margin-bottom: 22px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: 600;
+        }
+
+        .field select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #9ca3af;
+            border-radius: 5px;
+            background: #ffffff;
+            font-size: 14px;
+        }
+
+        .permission-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .permission-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+
+        .permission-item input {
+            width: 17px;
+            height: 17px;
+            margin-top: 2px;
+        }
+
+        .permission-title {
+            display: block;
+            margin-bottom: 3px;
+            font-weight: 600;
+        }
+
+        .permission-description {
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        .footer-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        button {
+            padding: 9px 16px;
+            border-radius: 5px;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+
+        .primary-button {
+            color: #ffffff;
+            background: #1d4ed8;
+        }
+
+        .secondary-button {
+            color: #374151;
+            background: #ffffff;
+            border-color: #9ca3af;
+        }
+
+        .status-message {
+            min-height: 20px;
+            margin-top: 14px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 700px) {
+            .permission-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="topbar">
+        <h1>ระบบจัดการสิทธิ์ผู้ใช้งาน</h1>
+
+        <div class="topbar-actions">
+            <button id="backButton" class="secondary-button">
+                กลับหน้าหลัก
+            </button>
+
+            <button id="logoutButton" class="secondary-button">
+                ออกจากระบบ
+            </button>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="panel">
+            <div class="panel-header">
+                <h2>กำหนดสิทธิ์สำหรับ STAFF</h2>
+                <p>ADMIN มีสิทธิ์ใช้งานทุกส่วนโดยอัตโนมัติ</p>
+            </div>
+
+            <div class="field">
+                <label for="staffUser">เลือกผู้ใช้งาน</label>
+
+                <select id="staffUser">
+                    <option value="">-- เลือกบัญชี STAFF --</option>
+                </select>
+            </div>
+
+            <div id="permissionList" class="permission-list">
+                <label class="permission-item">
+                    <input type="checkbox" value="SearchData">
+                    <span>
+                        <span class="permission-title">ค้นหาข้อมูล</span>
+                        <span class="permission-description">
+                            เข้าถึงข้อมูลพนักงานและผลการค้นหา
+                        </span>
+                    </span>
+                </label>
+
+                <label class="permission-item">
+                    <input type="checkbox" value="CreateTreatment">
+                    <span>
+                        <span class="permission-title">บันทึกการรักษา</span>
+                        <span class="permission-description">
+                            เพิ่มรายการรักษาใหม่
+                        </span>
+                    </span>
+                </label>
+
+                <label class="permission-item">
+                    <input type="checkbox" value="ViewHistory">
+                    <span>
+                        <span class="permission-title">ดูประวัติ</span>
+                        <span class="permission-description">
+                            เปิดดูประวัติการรักษา
+                        </span>
+                    </span>
+                </label>
+
+                <label class="permission-item">
+                    <input type="checkbox" value="EditTreatment">
+                    <span>
+                        <span class="permission-title">แก้ไขข้อมูล</span>
+                        <span class="permission-description">
+                            แก้ไขรายการรักษาที่บันทึกไว้
+                        </span>
+                    </span>
+                </label>
+
+                <label class="permission-item">
+                    <input type="checkbox" value="DeleteTreatment">
+                    <span>
+                        <span class="permission-title">ลบข้อมูล</span>
+                        <span class="permission-description">
+                            ลบรายการรักษาออกจากระบบ
+                        </span>
+                    </span>
+                </label>
+
+                <label class="permission-item">
+                    <input type="checkbox" value="UploadFiles">
+                    <span>
+                        <span class="permission-title">อัปโหลดไฟล์</span>
+                        <span class="permission-description">
+                            อัปโหลดหลักฐานไปยัง Google Drive
+                        </span>
+                    </span>
+                </label>
+            </div>
+
+            <div class="footer-actions">
+                <button id="clearButton" class="secondary-button">
+                    ล้างที่เลือก
+                </button>
+
+                <button id="saveButton" class="primary-button">
+                    บันทึกสิทธิ์
+                </button>
+            </div>
+
+            <div id="statusMessage" class="status-message"></div>
+        </section>
+    </main>
+
+    <script src="config.js"></script>
+
+<script>
+    const staffSelect =
+        document.getElementById('staffUser');
+
+    const permissionList =
+        document.getElementById('permissionList');
+
+    const statusMessage =
+        document.getElementById('statusMessage');
+
+    const usersByUsername = new Map();
+
+    function showStatus(message, type = '') {
+        statusMessage.textContent = message;
+
+        statusMessage.style.color =
+            type === 'error'
+                ? '#b91c1c'
+                : type === 'success'
+                    ? '#166534'
+                    : '#4b5563';
+    }
+
+    function renderPermissionCatalog(catalog) {
+        permissionList.innerHTML = '';
+
+        for (const permission of catalog) {
+            const item = document.createElement('label');
+            item.className = 'permission-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = permission.key;
+            checkbox.disabled = true;
+
+            const textBox = document.createElement('span');
+
+            const title = document.createElement('span');
+            title.className = 'permission-title';
+            title.textContent = permission.title;
+
+            const description = document.createElement('span');
+            description.className = 'permission-description';
+            description.textContent = permission.description;
+
+            textBox.append(title, description);
+            item.append(checkbox, textBox);
+            permissionList.appendChild(item);
+        }
+    }
+
+    function displaySelectedUserPermissions() {
+        const username = staffSelect.value;
+        const user = usersByUsername.get(username);
+
+        document
+            .querySelectorAll('#permissionList input')
+            .forEach(checkbox => {
+                checkbox.disabled = !user;
+                checkbox.checked =
+                    Boolean(user?.permissions?.[checkbox.value]);
+            });
+
+        showStatus(
+            user
+                ? `กำลังแก้ไขสิทธิ์ของ ${user.name || user.username}`
+                : 'กรุณาเลือกบัญชี STAFF'
+        );
+    }
+
+    async function loadAdminData() {
+        try {
+            showStatus('กำลังโหลดข้อมูล...');
+
+            const sessionResponse = await window.authFetch(
+                `${window.APP_CONFIG.API_BASE_URL}/api/session`,
+                { cache: 'no-store' }
+            );
+
+            const sessionData = await sessionResponse.json();
+
+            if (
+                !sessionResponse.ok ||
+                String(sessionData.user?.role || '')
+                    .toUpperCase() !== 'ADMIN'
+            ) {
+                throw new Error('FORBIDDEN');
+            }
+
+            const usersResponse = await window.authFetch(
+                `${window.APP_CONFIG.API_BASE_URL}/api/admin/users`,
+                { cache: 'no-store' }
+            );
+
+            const usersData = await usersResponse.json();
+
+            if (!usersResponse.ok || !usersData.success) {
+                throw new Error(
+                    usersData.message || 'โหลดข้อมูลไม่สำเร็จ'
+                );
+            }
+
+            renderPermissionCatalog(usersData.catalog);
+
+            usersByUsername.clear();
+
+            staffSelect.innerHTML =
+                '<option value="">-- เลือกบัญชี STAFF --</option>';
+
+            for (const user of usersData.users) {
+                usersByUsername.set(user.username, user);
+
+                const option = document.createElement('option');
+                option.value = user.username;
+                option.textContent =
+                    user.name
+                        ? `${user.name} (${user.username})`
+                        : user.username;
+
+                staffSelect.appendChild(option);
+            }
+
+            showStatus(
+                usersData.users.length
+                    ? 'กรุณาเลือกบัญชี STAFF'
+                    : 'ยังไม่พบบัญชีที่มี Role เป็น STAFF'
+            );
+        } catch (error) {
+            if (error.message === 'FORBIDDEN') {
+                sessionStorage.clear();
+                window.location.replace('index.html');
+                return;
+            }
+
+            console.error(error);
+            showStatus(
+                'ไม่สามารถโหลดข้อมูลผู้ใช้งานได้',
+                'error'
+            );
+        }
+    }
+
+    staffSelect.addEventListener(
+        'change',
+        displaySelectedUserPermissions
+    );
+
+    document.getElementById('clearButton')
+        .addEventListener('click', () => {
+            document
+                .querySelectorAll('#permissionList input:not(:disabled)')
+                .forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+        });
+
+    document.getElementById('backButton')
+        .addEventListener('click', () => {
+            window.location.href = 'search.html';
+        });
+
+    document.getElementById('logoutButton')
+        .addEventListener('click', () => {
+            sessionStorage.clear();
+            window.location.replace('index.html');
+        });
+
+// =========== [ ทำให้ปุ่ม “บันทึกสิทธิ์” ใช้งานได้ ] ======== //
+document.getElementById('saveButton')
+    .addEventListener('click', async () => {
+        const username = staffSelect.value;
+        const saveButton =
+            document.getElementById('saveButton');
+
+        if (!username) {
+            showStatus(
+                'กรุณาเลือกบัญชี STAFF ก่อน',
+                'error'
+            );
+            return;
+        }
+
+        const permissions = {};
+
+        document
+            .querySelectorAll('#permissionList input')
+            .forEach(checkbox => {
+                permissions[checkbox.value] =
+                    checkbox.checked;
+            });
+
+        try {
+            saveButton.disabled = true;
+            showStatus('กำลังบันทึกสิทธิ์...');
+
+            const response = await window.authFetch(
+                `${window.APP_CONFIG.API_BASE_URL}/api/admin/users/permissions`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username,
+                        permissions
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(
+                    data.message || 'บันทึกไม่สำเร็จ'
+                );
+            }
+
+            const selectedUser =
+                usersByUsername.get(username);
+
+            if (selectedUser) {
+                selectedUser.permissions =
+                    data.permissions;
+                    displaySelectedUserPermissions();
+            }
+
+            showStatus(
+                'บันทึกสิทธิ์เรียบร้อย',
+                'success'
+            );
+        } catch (error) {
+            console.error(error);
+
+            showStatus(
+                error.message || 'ไม่สามารถบันทึกสิทธิ์ได้',
+                'error'
+            );
+        } finally {
+            saveButton.disabled = false;
+        }
+    });
+// =========== [ ทำให้ปุ่ม “บันทึกสิทธิ์” ใช้งานได้ ] ======== //
+
+    document.addEventListener(
+        'DOMContentLoaded',
+        loadAdminData
+    );
+</script>
+</body>
+</html>

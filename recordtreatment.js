@@ -109,6 +109,11 @@ function initHospitalEvents() {
 //#region
    document.getElementById('claimForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        if (!window.hasPermission('UploadFiles')) {
+            alert('บัญชีนี้ไม่มีสิทธิ์อัปโหลดไฟล์');
+            return;
+        }
         
          // 🔒 [ตัวล็อกกรณีที่ 1]: ตรวจเช็คการแนบรูปภาพก่อนเปิดเคสใหม่เข้าสู่ระบบ
         const fileInput = document.getElementById('imageUpload');

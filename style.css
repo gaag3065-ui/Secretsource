@@ -340,3 +340,319 @@
 /* ========================================================================================= */
 /* 🎯 [เพิ่มใหม่] สไตล์จัดระเบียบหน้าต่างแบบฟอร์มป๊อปอัปให้อยู่กึ่งกลางหน้าจอเป๊ะๆ 100% */
 /* ========================================================================================= */
+
+
+/* #region สร้างแถบกรองวันที่และปุ่มกรองขั้นสูง */
+/*-----------------------------สร้างแถบกรองวันที่และปุ่มกรองขั้นสูง-------------------------------------*/
+.history-filter-toolbar {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 0 12px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.history-date-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.history-date-group label {
+    color: #374151;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.history-date-input {
+    width: 150px;
+    height: 38px;
+    padding: 0 11px;
+    border: 1px solid #9ca3af;
+    border-radius: 5px;
+    background: #ffffff;
+    color: #1f2937;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.history-date-input:focus {
+    border-color: #0f766e;
+    outline: 3px solid rgba(15, 118, 110, 0.12);
+}
+
+.history-filter-button,
+.history-report-button {
+    height: 38px;
+    padding: 0 17px;
+    border: none;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.history-filter-button {
+    color: #ffffff;
+    background: #0f766e;
+    box-shadow: 0 2px 5px rgba(15, 118, 110, 0.22);
+}
+
+.history-filter-button:hover {
+    background: #115e59;
+}
+
+.history-report-button {
+    color: #ffffff;
+    background: #1d4ed8;
+}
+
+.history-report-button:hover {
+    background: #1e40af;
+}
+
+.history-filter-summary {
+    min-height: 18px;
+    margin-bottom: 12px;
+    color: #6b7280;
+    font-size: 12px;
+}
+/*-----------------------------สร้างแถบกรองวันที่และปุ่มกรองขั้นสูง-------------------------------------*/
+/* #endregion */
+
+/* #region หน้าต่างกรองประวัติขั้นสูง */
+
+/*-----------------------------สร้างหน้าต่าง “กรองประวัติขั้นสูง-------------------------------------*/
+.history-filter-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(17, 24, 39, 0.58);
+}
+
+.history-filter-modal.is-open {
+    display: flex;
+}
+
+.history-filter-dialog {
+    width: min(680px, 100%);
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #ffffff;
+    border-top: 5px solid #0f766e;
+    border-radius: 9px;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+}
+
+.history-filter-dialog-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 20px 22px 16px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.history-filter-dialog-header h3 {
+    margin: 0 0 5px;
+    color: #0f766e;
+    font-size: 18px;
+}
+
+.history-filter-dialog-header p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.history-filter-close {
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    font-size: 26px;
+    cursor: pointer;
+}
+
+.history-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding: 20px 22px;
+}
+
+.history-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.history-filter-field-full {
+    grid-column: 1 / -1;
+}
+
+.history-filter-field label {
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.history-filter-field select {
+    width: 100%;
+    height: 40px;
+    padding: 0 10px;
+    border: 1px solid #9ca3af;
+    border-radius: 5px;
+    background: #ffffff;
+    color: #1f2937;
+}
+
+.history-filter-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 15px 22px 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.history-filter-reset,
+.history-filter-apply {
+    min-height: 39px;
+    padding: 0 17px;
+    border-radius: 5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.history-filter-reset {
+    border: 1px solid #9ca3af;
+    background: #ffffff;
+    color: #374151;
+}
+
+.history-filter-apply {
+    border: none;
+    background: #0f766e;
+    color: #ffffff;
+}
+
+@media (max-width: 600px) {
+    .history-filter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .history-filter-field-full {
+        grid-column: auto;
+    }
+}
+/*-----------------------------สร้างหน้าต่าง “กรองประวัติขั้นสูง-------------------------------------*/
+/* #endregion */
+
+/* #region แสดงประวัติทั้งหมดแบบแถวตรง ไม่พับข้อมูล */
+.flat-history-row td {
+    vertical-align: top;
+}
+
+.flat-history-actions {
+    white-space: nowrap;
+}
+
+.flat-history-delete {
+    margin-left: 5px;
+    padding: 2px 7px;
+    border: 1px solid #dc2626;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #dc2626;
+    font-size: 11px;
+    cursor: pointer;
+}
+/* #endregion  */
+
+/* #region แก้ใหม่ให้เลขเคสเดียวมารวมกัน */
+.grouped-parent-row {
+    background: #ffffff;
+}
+
+.grouped-child-row {
+    background: #f8fafc;
+}
+
+.history-case-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 2px 4px;
+    border: none;
+    background: transparent;
+    color: #1f2937;
+    cursor: pointer;
+}
+
+.history-case-toggle:disabled {
+    cursor: default;
+}
+
+.history-case-employee {
+    margin-top: 4px;
+    color: #4b5563;
+    font-size: 11px;
+}
+
+.history-area-badge {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #dcfce7;
+    font-size: 10px;
+}
+
+.history-child-label {
+    padding-left: 18px !important;
+    color: #64748b;
+    font-size: 11px;
+}
+/* #endregion  */
+
+/* #region สร้างแถบหัวเว็บและย้ายปุ่ม Logout ขึ้นด้านบน */
+.main-topbar {
+    position: relative;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 54px;
+    padding: 10px 18px;
+    background: #ffffff;
+    border-bottom: 1px solid #d1d5db;
+}
+
+.main-topbar h1 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.main-topbar-button {
+    min-height: 32px;
+    padding: 0 14px;
+    border: 1px solid #9ca3af;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #374151;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.main-topbar-button:hover {
+    background: #f3f4f6;
+    border-color: #6b7280;
+}
+/* #endregion  */
+

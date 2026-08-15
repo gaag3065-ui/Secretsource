@@ -50,3 +50,32 @@ window.authFetch = async function (url, options = {}) {
 
     return response;
 };
+
+window.requirePagePermission = async function (
+    permissionKey
+) {
+    const response = await window.authFetch(
+        `${window.APP_CONFIG.API_BASE_URL}/api/session`,
+        {
+            method: 'GET',
+            cache: 'no-store'
+        }
+    );
+
+    const data = await response.json();
+
+    if (
+        !response.ok ||
+        !data.success ||
+        data.permissions?.[permissionKey] !== true
+    ) {
+        alert('บัญชีนี้ไม่มีสิทธิ์เข้าถึงหน้านี้');
+        window.location.replace('search.html');
+        throw new Error('PERMISSION_DENIED');
+    }
+
+    window.USER_PERMISSIONS =
+        data.permissions || {};
+
+    return data;
+};

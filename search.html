@@ -17,6 +17,19 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+<header class="main-topbar">
+    <h1>จัดการงานประกัน</h1>
+
+    <button
+        type="button"
+        id="mainLogoutButton"
+        class="main-topbar-button"
+    >
+        ออกจากระบบ
+    </button>
+</header>
+
 <!-- =============================================================================================================================== -->
 <!-- =================================== 📦 [ส่วนท้าย: สิ้นสุดระบบรวมโครงสร้างหลักหน้าจอ] =============================================== -->
 <!-- =============================================================================================================================== -->
@@ -103,6 +116,32 @@ async function loadComponent(placeholderId, filename) {
 }
 //#endregion
 
+//window.isSlkWorkLocation = function (value) {
+//#region
+window.isSlkWorkLocation = function (value) {
+    const text =
+        String(value || '')
+            .trim()
+            .toUpperCase();
+
+    return (
+        text.includes('SLK') ||
+        text.includes('SL') ||
+        text.includes('SRI LANKA') ||
+        text.includes('ศรีลังกา')
+    );
+};
+
+window.setSlkColumnsVisibility = function (show) {
+    document
+        .querySelectorAll('.slk-column')
+        .forEach(element => {
+            element.style.display =
+                show ? '' : 'none';
+        });
+};
+//#endregion
+
 //document.addEventListener("DOMContentLoaded", async () => {
 //#region
 document.addEventListener("DOMContentLoaded", async () => {
@@ -139,6 +178,54 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
+            window.USER_PERMISSIONS =
+                sessionData.permissions || {};
+
+            window.hasPermission = function (permissionKey) {
+                return window.USER_PERMISSIONS[permissionKey] === true;
+            };
+
+            function applyPermissionVisibility(root = document) {
+                root
+                    .querySelectorAll('[data-permission]')
+                    .forEach(element => {
+                        const permissionKey =
+                            element.dataset.permission;
+
+                        element.hidden =
+                            !window.hasPermission(permissionKey);
+                    });
+            }
+
+// =========== [โหลดเฉพาะส่วนที่ได้รับอนุญาต] ========== //
+            async function loadPermittedComponent(
+                permissionKey,
+                placeholderId,
+                filename
+            ) {
+                if (window.hasPermission(permissionKey)) {
+                    await loadComponent(placeholderId, filename);
+                    return true;
+                }
+
+                document.getElementById(placeholderId).innerHTML = `
+                    <div style="
+                        padding: 24px;
+                        border: 1px solid #d1d5db;
+                        border-radius: 6px;
+                        background: #f9fafb;
+                        color: #6b7280;
+                        text-align: center;
+                    ">
+                        บัญชีนี้ไม่มีสิทธิ์เข้าถึงส่วนนี้
+                    </div>
+                `;
+
+                return false;
+            }
+// =========== [โหลดเฉพาะส่วนที่ได้รับอนุญาต] ========== //
+
+
         sessionStorage.setItem(
             'loggedInAdminName',
             sessionData.user.name || sessionData.user.username
@@ -153,20 +240,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         // =====================================================
         // 2. โหลด HTML ย่อย
         // =====================================================
-        await loadComponent(
-            'search-box-placeholder',
-            'searchinformation.html'
-        );
+            const canSearch = await loadPermittedComponent(
+                'SearchData',
+                'search-box-placeholder',
+                'searchinformation.html'
+            );
 
-        await loadComponent(
-            'treatment-box-placeholder',
-            'recordtreatment.html'
-        );
+            const canCreate = await loadPermittedComponent(
+                'CreateTreatment',
+                'treatment-box-placeholder',
+                'recordtreatment.html'
+            );
 
-        await loadComponent(
-            'table-box-placeholder',
-            'insuranceclaimhistory.html'
-        );
+            const canViewHistory = await loadPermittedComponent(
+                'ViewHistory',
+                'table-box-placeholder',
+                'insuranceclaimhistory.html'
+            );
 
         console.log(
             "🎮 โครงสร้าง HTML ประกอบร่างรวมศูนย์สำเร็จ!"
@@ -221,51 +311,93 @@ document.addEventListener("DOMContentLoaded", async () => {
         // =====================================================
         // 4. โหลด Script ฝั่งซ้าย
         // =====================================================
-        await loadScript('searchinformation.js');
+            if (canSearch) {
+                await loadScript('searchinformation.js');
 
-        console.log(
-            "📡 searchinformation.js เชื่อมต่อสำเร็จ!"
-        );
-
-        if (typeof initSearchBoxEvents === 'function') {
-            initSearchBoxEvents();
-        }
+                if (typeof initSearchBoxEvents === 'function') {
+                    initSearchBoxEvents();
+                }
+            }
 
 
         // =====================================================
         // 5. โหลด Script ฝั่งขวา
         // =====================================================
-        await loadScript('recordtreatment.js');
+                if (canCreate) {
+                await loadScript('recordtreatment.js');
 
-        console.log(
-            "📡 recordtreatment.js เชื่อมต่อสำเร็จ!"
-        );
+                if (typeof initHospitalEvents === 'function') {
+                    initHospitalEvents();
+                }
 
-        if (typeof initHospitalEvents === 'function') {
-            initHospitalEvents();
-        }
+                if (typeof setThaiDateTime === 'function') {
+                    setThaiDateTime();
+                }
 
-        if (typeof setThaiDateTime === 'function') {
-            setThaiDateTime();
-        }
-
-        if (typeof fetchNextCaseId === 'function') {
-            fetchNextCaseId();
-        }
+                if (typeof fetchNextCaseId === 'function') {
+                    fetchNextCaseId();
+                }
+            }
 
 
         // =====================================================
         // 6. โหลด Script ฝั่งล่าง
         // =====================================================
-        await loadScript('insuranceclaimhistory.js');
+            if (canViewHistory) {
+                await loadScript('insuranceclaimhistory.js');
+                const mainLogoutButton =
+                    document.getElementById(
+                        'mainLogoutButton'
+                    );
 
-        console.log(
-            "📡 insuranceclaimhistory.js เชื่อมต่อสำเร็จ!"
-        );
+                if (mainLogoutButton) {
+                    mainLogoutButton.addEventListener(
+                        'click',
+                        () => {
+                            const confirmed = confirm(
+                                'คุณต้องการออกจากระบบใช่หรือไม่?'
+                            );
 
-        if (typeof initHistoryModalEvents === 'function') {
-            initHistoryModalEvents();
-        }
+                            if (!confirmed) return;
+
+                            sessionStorage.clear();
+                            window.location.replace('index.html');
+                        }
+                    );
+                }
+
+                if (typeof initHistoryModalEvents === 'function') {
+                    initHistoryModalEvents();
+                }
+
+                if (typeof applyPermissionVisibility === 'function') {
+                    applyPermissionVisibility();
+                }
+
+                if (typeof initHistoryFilterDates === 'function') {
+                    initHistoryFilterDates();
+                }
+
+                if (typeof initAdvancedHistoryFilterEvents === 'function') {
+                    initAdvancedHistoryFilterEvents();
+                }
+
+                if (
+                    typeof initHistoryFilterApplyEvent
+                    === 'function'
+                ) {
+                    initHistoryFilterApplyEvent();
+                }
+
+                if (
+                    typeof initHistoryReportEvent
+                    === 'function'
+                ) {
+                    initHistoryReportEvent();
+                }
+
+
+            }
 
 
         console.log(
@@ -292,9 +424,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 // =======================================================================
 // 🔐 [ระบบควบคุมซ่อน-แสดง คอลัมน์ประกัน SLK อัตโนมัติตามสถานที่ทำงาน]
 // =======================================================================
-const workLocation = (typeof data !== 'undefined' && data && data.employee) ? (data.employee.colJ || '') : '';
-const slkElements = document.querySelectorAll('.slk-column'); // ค้นหาหัวตารางและช่อง SLK ทั้งหมด
-
 
 // function populateDataToForm(eventItem) {
 //#region
@@ -610,6 +739,7 @@ function injectNewRowToTableRealtime(payloadData) {
         treatmentDateTime: payloadData.treatmentDateTime || '-',
         statusText: payloadData.statusText || 'แจ้งประกัน กำลังเข้ารับการรักษา',
         symptoms: payloadData.symptoms || '-',
+        workLocation: payloadData.workLocation || '-',
         hospital: payloadData.hospital || '-',
         DentalOPD: payloadData.DentalOPD || '0',
         PPUsageOPD: payloadData.PPUsageOPD || '0',
@@ -643,8 +773,9 @@ function injectNewRowToTableRealtime(payloadData) {
         </td>
         <td class="text-center">${mockEventItem.treatmentDateTime}</td>
         <td class="text-center"><span style="background-color: #fff3cd; color: #664d03; padding: 4px 8px; border-radius: 4px;">${mockEventItem.statusText}</span></td>
-        <td class="text-left" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${mockEventItem.symptoms}</td>
-        <td class="text-left">${mockEventItem.hospital}</td>
+        <td class="text-left" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${mockEventItem.symptoms || '-'}</td>
+        <td>${getDisplayWorkLocation(mockEventItem)}</td>
+        <td class="text-left">${mockEventItem.hospital || '-'}</td>
         <td class="text-right" style="font-weight:bold;">${formatMoney(mockEventItem.DentalOPD)}</td>
         <td class="text-right" style="font-weight:bold;">${formatMoney(mockEventItem.PPUsageOPD)}</td>
         <td class="text-right" style="font-weight:bold;">${formatMoney(mockEventItem.PPUsageIPD)}</td>
@@ -673,8 +804,9 @@ function injectNewRowToTableRealtime(payloadData) {
         <td class="text-center font-bold" style="color:#0b5ed7; background:#eef1f6;">${caseId}</td>
         <td class="text-center" style="font-size:12px; color:#555;">${mockEventItem.treatmentDateTime}</td>
         <td class="text-center" style="font-size:12px; color:#555;">${mockEventItem.statusText}</td>
-        <td class="text-left" style="white-space:normal !important; max-width:200px;">${mockEventItem.symptoms}</td>
-        <td class="text-left">${mockEventItem.hospital}</td>
+        <td class="text-left" style="white-space:normal !important; max-width:200px;">${mockEventItem.symptoms || '-'}</td>
+        <td>${getDisplayWorkLocation(mockEventItem)}</td>
+        <td class="text-left">${mockEventItem.hospital || '-'}</td>
         <td class="text-right">${formatMoney(mockEventItem.DentalOPD)}</td>
         <td class="text-right">${formatMoney(mockEventItem.PPUsageOPD)}</td>
         <td class="text-right">${formatMoney(mockEventItem.PPUsageIPD)}</td>
@@ -692,8 +824,8 @@ function injectNewRowToTableRealtime(payloadData) {
         <td class="text-center" style="font-size:12px;">${mockEventItem.autoDateTime}</td>
         <td class="text-center" style="font-size:12px;">${mockEventItem.adminName}</td>
         <td class="text-center" style="background:#fff; white-space: nowrap;">
-            <button type="button" class="btn-edit-minimal" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateDataToForm(decodedData);">✏️ แก้ไข</button>
-            <button type="button" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(${targetRowNo}, '${caseId}')">🗑️ ลบ</button>
+            ${window.hasPermission?.('EditTreatment') === true ? `<button type="button" class="btn-edit-minimal" data-permission="EditTreatment" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateDataToForm(decodedData);">✏️ แก้ไข</button>` : ''}
+            ${window.hasPermission?.('DeleteTreatment') === true ? `<button type="button" data-permission="DeleteTreatment" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(${targetRowNo}, '${caseId}')">🗑️ ลบ</button>` : ''}
         </td>
     `;
 
@@ -702,7 +834,7 @@ function injectNewRowToTableRealtime(payloadData) {
     spacerTr.style.display = 'none'; 
     
     spacerTr.innerHTML = `
-        <td colspan="22" style="height: 45px !important; background-color: #ffffff !important; border: none !important; padding: 8px 15px !important; text-align: left;">
+        <td colspan="23" style="height: 45px !important; background-color: #ffffff !important; border: none !important; padding: 8px 15px !important; text-align: left;">
             <button type="button" style="padding: 6px 20px; background-color: #198754; color: white; border: none; border-radius: 5px; font-size: 12.5px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateOutcomeToModal(decodedData);">
                 🏥 อัปเดตผลการรักษา
             </button>

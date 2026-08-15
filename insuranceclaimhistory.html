@@ -3,6 +3,55 @@
 <div class="card-container bottom-full-box">
     <h2>📊 ประวัติการรักษา รายละเอียดและการคำนวณสิทธิ์การรักษาอย่างละเอียด</h2>
     
+
+    <!-- ================== สร้างแถบกรองวันที่และปุ่มกรองขั้นสูง ================= -->
+<div class="history-filter-toolbar">
+    <div class="history-date-group">
+        <label for="historyStartDate">เริ่มต้น</label>
+        <input
+            type="text"
+            id="historyStartDate"
+            class="history-date-input"
+            placeholder="เลือกวันที่"
+            readonly
+        >
+    </div>
+
+    <div class="history-date-group">
+        <label for="historyEndDate">สิ้นสุด</label>
+        <input
+            type="text"
+            id="historyEndDate"
+            class="history-date-input"
+            placeholder="เลือกวันที่"
+            readonly
+        >
+    </div>
+
+    <button
+        type="button"
+        id="advancedHistoryFilterButton"
+        class="history-filter-button"
+    >
+        ⚙️ กรองประวัติ
+    </button>
+
+    <button
+        type="button"
+        id="createHistoryReportButton"
+        class="history-report-button"
+        hidden
+    >
+        📊 สร้างรายงาน
+    </button>
+</div>
+
+<div id="historyFilterSummary" class="history-filter-summary">
+    ยังไม่ได้เลือกเงื่อนไขการกรอง
+</div>
+    <!-- ================== สร้างแถบกรองวันที่และปุ่มกรองขั้นสูง ================= -->
+
+
     <div class="responsive-table-wrapper">
        <table class="custom-claim-table">
             <thead>
@@ -13,6 +62,7 @@
                     <th rowspan="2">เวลาและวันที่เข้ารักษา</th>
                     <th rowspan="2">ขั้นตอนการรักษา</th>
                     <th rowspan="2">อาการป่วย</th>
+                    <th rowspan="2">สถานที่ทำงาน</th>
                     <th rowspan="2">สถานที่รักษา</th>
                     
                     <!-- ส่วนหัวควบกลุ่มประกัน -->
@@ -81,12 +131,7 @@
         </table>
     </div>
 </div>
-<!-- 🚨 ปุ่มเมนูออกจากระบบสีแดงขนาดใหญ่ด้านล่างสุดของหน้าจอ -->
-<div style="width: 100%; display: flex; justify-content: center; margin-top: 30px; margin-bottom: 20px; padding: 0 15px;">
-    <button type="button" onclick="manualLogout()" style="width: 100%; max-width: 400px; padding: 14px; background-color: #dc3545; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(220, 53, 69, 0.2); transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
-        🔒 ออกจากระบบบริหารจัดการ (Logout)
-    </button>
-</div>
+
 
 
 <!-- ============================================================ การอัปเดตผลการรักษา =============================================================== -->
@@ -187,7 +232,7 @@
                 <label style="display: block; font-weight: bold; margin-bottom: 6px; font-size: 13px; color: #333;">
                     📸 รูปหลักฐานตัดวงเงินประกัน :
                 </label>
-                <div style="display: flex; gap: 10px; align-items: center;">
+                <div data-permission="UploadFiles" style="display: flex; gap: 10px; align-items: center;">
                     <!-- ปุ่มกดเลือกไฟล์สำหรับป๊อปอัปสีเขียว เปลี่ยน ID และ Event ให้แยกเป็นสัดส่วน -->
                     <label for="ocImageUpload" style="padding: 8px 16px; background-color: #f8f9fa; border: 1px solid #ced4da; color: #495057; border-radius: 4px; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;">
                         📁 เลือกรูปภาพปิดเคส
@@ -317,4 +362,109 @@
 <!-- ============================================================================================================================================= -->
 <!-- ============================= [ส่วนล่าง] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับแก้ไขข้อมูลย้อนหลัง (Edit Custom Modal) ======================================== -->
 <!-- ============================================================================================================================================= -->
+
+
+
+
+
+
+<!-- ================================ สร้างแถบกรองวันที่และปุ่มกรองขั้นสูง ============================ -->
+<div id="historyFilterModal" class="history-filter-modal">
+    <div class="history-filter-dialog">
+        <div class="history-filter-dialog-header">
+            <div>
+                <h3>🔎 กรองประวัติการรักษา</h3>
+                <p>ช่องที่ไม่เลือกจะไม่ถูกนำมาเป็นเงื่อนไข</p>
+            </div>
+
+            <button
+                type="button"
+                id="closeHistoryFilterButton"
+                class="history-filter-close"
+            >
+                &times;
+            </button>
+        </div>
+
+        <div class="history-filter-grid">
+            <div class="history-filter-field">
+                <label for="historyPeriodPreset">
+                    ช่วงเวลาแบบด่วน
+                </label>
+
+                <select id="historyPeriodPreset">
+                    <option value="">กำหนดจากวันที่ด้านนอก</option>
+                    <option value="all">ประวัติทั้งหมด</option>
+                    <option value="thisMonth">เดือนนี้</option>
+                    <option value="thisYear">ปีนี้</option>
+                </select>
+            </div>
+
+            <div class="history-filter-field">
+                <label for="historyAreaFilter">
+                    พื้นที่/ประเภทประกัน
+                </label>
+
+                <select id="historyAreaFilter">
+                    <option value="">ทั้งหมด</option>
+                    <option value="PP">PP</option>
+                    <option value="SLK">SLK</option>
+                </select>
+            </div>
+
+            <div class="history-filter-field">
+                <label for="historyTreatmentResultFilter">
+                    ผลการรักษา
+                </label>
+
+                <select id="historyTreatmentResultFilter">
+                    <option value="">ทั้งหมด</option>
+                </select>
+            </div>
+
+            <div class="history-filter-field">
+                <label for="historyDocumentFilter">
+                    เอกสารแนบ
+                </label>
+
+                <select id="historyDocumentFilter">
+                    <option value="">ทั้งหมด</option>
+                    <option value="hasDocument">มีเอกสารแนบ</option>
+                    <option value="noDocument">ไม่มีเอกสารแนบ</option>
+                </select>
+            </div>
+
+            <div class="history-filter-field history-filter-field-full">
+                <label for="historyHospitalFilter">
+                    คลินิกหรือสถานพยาบาล
+                </label>
+
+                <select id="historyHospitalFilter">
+                    <option value="">ทั้งหมด</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="history-filter-dialog-footer">
+            <button
+                type="button"
+                id="resetHistoryFilterButton"
+                class="history-filter-reset"
+            >
+                ล้างเงื่อนไข
+            </button>
+
+            <button
+                type="button"
+                id="applyHistoryFilterButton"
+                class="history-filter-apply"
+            >
+                แสดงประวัติตามเงื่อนไข
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ================================ สร้างแถบกรองวันที่และปุ่มกรองขั้นสูง ============================ -->
+
 

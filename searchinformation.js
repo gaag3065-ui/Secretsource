@@ -83,27 +83,18 @@ function initSearchBoxEvents() {
                 document.getElementById('hiddenEmpName').value = emp.colG || '-';
                 document.getElementById('hiddenCompany').value = emp.colB || '-';
                 document.getElementById('hiddenSize').value = emp.colD || '-';
-                document.getElementById('hiddenWorkLocation').value = emp.colJ || '-';
+                document.getElementById('hiddenWorkLocation').value = emp.colK || '-';
                 document.getElementById('hiddenInsuranceId').value = emp.colC || '-'; 
 
                 // =======================================================================
                 // 🔐 [ระบบควบคุมซ่อน-แสดง คอลัมน์ประกัน SLK อัตโนมัติตามสถานที่ทำงาน]
                 // =======================================================================
-                const workLocation = (data && data.employee) ? (data.employee.colJ || '') : '';
-                const slkElements = document.querySelectorAll('.slk-column');
-
-                // ตรวจสอบว่าในสถานที่ทำงานมีคำว่า "SL" หรือไม่ (แปลงเป็นตัวพิมพ์ใหญ่เพื่อความแม่นยำ)
-                if (workLocation.toUpperCase().includes('SL')) {
-                    // 🟢 กรณีเจอคำว่า SL -> ให้แสดงกลุ่มคอลัมน์ SLK ตามปกติ
-                    slkElements.forEach(el => {
-                        el.style.display = ''; 
-                    });
-                } else {
-                    // 🔴 กรณีเป็นพนักงาน PP หรืออื่นๆ ที่ไม่มีคำว่า SL -> สั่งซ่อนคอลัมน์ SLK ทิ้งทันที!
-                    slkElements.forEach(el => {
-                        el.style.display = 'none';
-                    });
-                }
+                const workLocation =
+                            data?.employee?.colK || '';
+                            window.setSlkColumnsVisibility(
+                            window.isSlkWorkLocation(workLocation)
+                        );
+                
 
                 // สร้างการ์ดข้อมูลพนักงานฝั่งซ้ายมือ
                 const card = document.createElement('div');
@@ -124,6 +115,9 @@ function initSearchBoxEvents() {
                 resultsList.appendChild(card);
 
                 renderHistoryTable(data.history);
+                window.setSlkColumnsVisibility(
+                window.isSlkWorkLocation(emp.colK)
+                 );
        
 
             } else {

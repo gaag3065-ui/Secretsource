@@ -89,12 +89,19 @@ function manualLogout() {
 // =============  ส่วนบน  ==================== โค้ดฟังชั่นปรับตรรกะในที่เวลาคลิกแล้วจะกรองเอาแถวของเคสนั้นๆมาแสดง หากมีแถวเดียวก็ไม่ต้องลง =========================================== //
 // =================================================================================================================================================================== //
 function renderHistoryTable(historyData) {
+
+        window.historyDisplayMode = 'individual';
+        window.currentIndividualHistory =
+        Array.isArray(historyData)
+            ? [...historyData]
+            : [];
+
     const tableBody = document.getElementById('tableBodyResult');
     if (!tableBody) return;
     tableBody.innerHTML = '';
 
     if (!historyData || historyData.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="21" class="text-center" style="font-weight:bold; padding:25px; background:#f8f9fa;">ℹ️ พนักงานคนนี้ยังไม่มีประวัติการรักษา</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="23" class="text-center" style="font-weight:bold; padding:25px; background:#f8f9fa;">ℹ️ พนักงานคนนี้ยังไม่มีประวัติการรักษา</td></tr>`;
         return;
     }
 
@@ -131,6 +138,7 @@ function renderHistoryTable(historyData) {
             <td class="text-center">${latestEvent.treatmentDateTime || '-'}</td>
             <td class="text-center"><span style="${badgeStyle}">${latestEvent.statusText || 'รอดำเนินการ'}</span></td>
             <td class="text-left" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${latestEvent.symptoms || '-'}</td>
+            <td class="text-left">${getDisplayWorkLocation(latestEvent)}</td>
             <td class="text-left">${latestEvent.hospital || '-'}</td>
             <td class="text-right" style="background:#f9fff9;">${latestEvent.DentalOPD || '0'}</td>
             <td class="text-right" style="background:#f9fff9;">${latestEvent.PPUsageOPD || '0'}</td>
@@ -166,6 +174,7 @@ function renderHistoryTable(historyData) {
                 <td class="text-center" style="font-size:12px; color:#555;">${event.treatmentDateTime || '-'}</td>
                 <td class="text-center" style="font-size:12px; color:#555;">${event.statusText || '-'}</td>
                 <td class="text-left" style="white-space:normal !important; max-width:200px;">${event.symptoms || '-'}</td>
+                <td class="text-center">${getDisplayWorkLocation(event)}</td>
                 <td class="text-left">${event.hospital || '-'}</td>
                 <td class="text-right" style="background:#edf7ed;">${event.DentalOPD || '0'}</td>
                 <td class="text-right" style="background:#edf7ed;">${event.PPUsageOPD || '0'}</td>
@@ -184,8 +193,8 @@ function renderHistoryTable(historyData) {
                 <td class="text-center" style="font-size:12px;">${event.autoDateTime || '-'}</td>
                 <td class="text-center" style="font-size:12px;">${event.adminName || '-'}</td>
                 <td class="text-center" style="background:#fff;">
-                    <button type="button" class="btn-edit-minimal" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${window.btoa(unescape(encodeURIComponent(JSON.stringify(event))))}')))); populateDataToForm(decodedData);">✏️ แก้ไข</button>
-                    <button type="button" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(${event.targetRowNumber}, '${caseId}')">🗑️ ลบ</button>
+                    ${window.hasPermission?.('EditTreatment') === true ? `<button type="button" class="btn-edit-minimal" data-permission="EditTreatment" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${window.btoa(unescape(encodeURIComponent(JSON.stringify(event))))}')))); populateDataToForm(decodedData);">✏️ แก้ไข</button>` : ''}
+                    ${window.hasPermission?.('DeleteTreatment') === true ? `<button type="button" data-permission="DeleteTreatment" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(${event.targetRowNumber}, '${caseId}')">🗑️ ลบ</button>` : ''}
                 </td>
             `;
             tableBody.appendChild(childTr);
@@ -198,7 +207,7 @@ function renderHistoryTable(historyData) {
         spacerTr.style.display = 'none'; 
         
         spacerTr.innerHTML = `
-            <td colspan="21" style="height: 45px !important; background-color: #ffffff !important; border: none !important; padding: 8px 15px !important; text-align: left;">
+            <td colspan="23" style="height: 45px !important; background-color: #ffffff !important; border: none !important; padding: 8px 15px !important; text-align: left;">
                 <button type="button" style="padding: 6px 20px; background-color: #198754; color: white; border: none; border-radius: 5px; font-size: 12.5px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${window.btoa(unescape(encodeURIComponent(JSON.stringify(latestEvent))))}')))); populateOutcomeToModal(decodedData);">
                     🏥 อัปเดตผลการรักษา
                 </button>
@@ -235,15 +244,14 @@ function renderHistoryTable(historyData) {
         });
     });
 
-    const hiddenWorkLocationEl = document.getElementById('hiddenWorkLocation');
-    const workLocation = hiddenWorkLocationEl ? hiddenWorkLocationEl.value : '';
-    const slkElements = document.querySelectorAll('.slk-column');
 
-    if (workLocation.toUpperCase().includes('SL')) {
-        slkElements.forEach(el => el.style.display = '');
-    } else {
-        slkElements.forEach(el => el.style.display = 'none');
-    }
+                const workLocation =
+                    document.getElementById('hiddenWorkLocation')?.value || '';
+
+                window.setSlkColumnsVisibility(
+                    window.isSlkWorkLocation(workLocation)
+                );
+
 }
 
 // ================================================================================================================================================================== //
@@ -335,27 +343,74 @@ if (response.ok && result.success) {
 
                 // 🎯 ทำการฉีดพ่นค่าตัวเลขและคำอธิบายชุดใหม่เข้าไปสับเปลี่ยนในช่องเซลล์ตารางย่อยเดิมทันทีคาตา
                 const cells = targetRow.children;
-                if (cells.length >= 21) {
-                    cells[1].innerText = payload.treatmentDateTime || '-';         // ช่องวันที่/เวลา
-                    cells[2].innerText = payload.statusText || '-';                 // ช่องขั้นตอนการรักษา
-                    cells[3].innerText = payload.symptoms || '-';                   // ช่องอาการป่วย
-                    cells[4].innerText = payload.hospital || '-';                   // ช่องสถานพยาบาล
-                    cells[5].style.fontWeight = 'bold'; cells[5].innerText = fmt(payload.DentalOPD);     // ช่องทำฟัน OPD
-                    cells[6].style.fontWeight = 'bold'; cells[6].innerText = fmt(payload.PPUsageOPD);    // ช่อง PP OPD
-                    cells[7].style.fontWeight = 'bold'; cells[7].innerText = fmt(payload.PPUsageIPD);    // ช่อง PP IPD
-                    cells[8].style.fontWeight = 'bold'; cells[8].innerText = fmt(payload.SLKUsageOpdThB); // ช่อง SL OPD (THB)
-                    cells[9].style.fontWeight = 'bold'; cells[9].innerText = fmt(payload.SLKUsageIpdThB); // ช่อง SL IPD (THB)
-                    cells[10].style.fontWeight = 'bold'; cells[10].innerText = fmt(payload.SLKUsageOpdLkr); // ช่อง SL OPD (LKR)
-                    cells[11].style.fontWeight = 'bold'; cells[11].innerText = fmt(payload.SLKUsageIpdLkr); // ช่อง SL IPD (LKR)
-                    cells[12].style.fontWeight = 'bold'; cells[12].innerText = fmt(payload.OverLimitCreditInsThB); // ช่องส่วนเกิน (THB)
-                    cells[13].style.fontWeight = 'bold'; cells[13].innerText = fmt(payload.OverLimitCreditInsLkr); // ช่องส่วนเกิน (LKR)
-                    cells[14].innerText = payload.ExchangeRatesIns || '1';          // ช่องเรทประกัน (THB)
-                    cells[15].innerText = payload.ExchangeRatesInt || '1';          // ช่องเรทประกัน (LKR)
-                    cells[16].innerText = payload.ClinicianReportedOutcomes || '-';  // ช่องผลการรักษา
-                    cells[17].innerText = payload.DocumentsAttached || '-';          // ช่องเอกสารแนบ
-                    cells[18].innerText = payload.notes || '-';                      // ช่องหมายเหตุ
-                    cells[19].innerText = payload.autoDateTime || displayAutoTime;  // ช่องเวลาบันทึกออโต้
-                    cells[20].innerText = payload.adminName || '-';                  // ช่องชื่อแอดมิน
+
+                if (cells.length >= 22) {
+                    cells[1].innerText =
+                        payload.treatmentDateTime || '-';
+
+                    cells[2].innerText =
+                        payload.statusText || '-';
+
+                    cells[3].innerText =
+                        payload.symptoms || '-';
+
+                    cells[4].innerText =
+                        payload.workLocation || '-';
+
+                    cells[5].innerText =
+                        payload.hospital || '-';
+
+                    cells[6].innerText =
+                        fmt(payload.DentalOPD);
+
+                    cells[7].innerText =
+                        fmt(payload.PPUsageOPD);
+
+                    cells[8].innerText =
+                        fmt(payload.PPUsageIPD);
+
+                    cells[9].innerText =
+                        fmt(payload.SLKUsageOpdThB);
+
+                    cells[10].innerText =
+                        fmt(payload.SLKUsageIpdThB);
+
+                    cells[11].innerText =
+                        fmt(payload.SLKUsageOpdLkr);
+
+                    cells[12].innerText =
+                        fmt(payload.SLKUsageIpdLkr);
+
+                    cells[13].innerText =
+                        fmt(payload.OverLimitCreditInsThB);
+
+                    cells[14].innerText =
+                        fmt(payload.OverLimitCreditInsLkr);
+
+                    cells[15].innerText =
+                        payload.ExchangeRatesIns || '1';
+
+                    cells[16].innerText =
+                        payload.ExchangeRatesInt || '1';
+
+                    cells[17].innerText =
+                        payload.ClinicianReportedOutcomes || '-';
+
+                    cells[18].innerText =
+                        payload.DocumentsAttached || '-';
+
+                    cells[19].innerText =
+                        payload.notes || '-';
+
+                    cells[20].innerText =
+                        payload.autoDateTime || displayAutoTime;
+
+                    cells[21].innerText =
+                        payload.adminName || '-';
+
+                    for (let index = 6; index <= 14; index++) {
+                        cells[index].style.fontWeight = 'bold';
+                    }
                 }
 
                    // 🎯 บันทึกครอบค่าล่าสุดฝังคืนลงไปในปุ่มแก้ไขของบรรทัดนั้นด้วย
@@ -392,8 +447,14 @@ if (response.ok && result.success) {
             document.getElementById('modalOutcomeForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
 
-  const fileInput = document.getElementById('ocImageUpload');
-        if (!fileInput || fileInput.files.length === 0) {
+                if (!window.hasPermission('UploadFiles')) {
+                    alert('บัญชีนี้ไม่มีสิทธิ์อัปโหลดไฟล์');
+                    return;
+                }
+
+                const fileInput = 
+                document.getElementById('ocImageUpload');
+                if (!fileInput || fileInput.files.length === 0) {
             alert("🚨 ปฏิเสธการอัปเดต: คุณยังไม่ได้อัปโหลดรูปภาพปิดเคส! \nกรุณาคลิกปุ่ม '📁 เลือกรูปภาพปิดเคส...' เพื่อแนบหลักฐานการรักษาก่อนส่งข้อมูลลงฐานข้อมูลครับ");
             
             const ocUploadLabel = document.querySelector('label[for="ocImageUpload"]');
@@ -559,8 +620,15 @@ if (response.ok && result.success) {
 
 //window.executeDeleteRow = async function (sheetRowIndex, caseId) {
 //#region
-window.executeDeleteRow = async function (sheetRowIndex, caseId) {
-    if (!confirm(`ยืนยันการลบเคส ${caseId}?`)) return;
+async function executeDeleteRow(
+    sheetRowIndex,
+    caseId
+) {
+    const confirmed = confirm(
+        `ยืนยันการลบรายการ Case ID ${caseId} ใช่หรือไม่?`
+    );
+
+    if (!confirmed) return false;
 
     try {
         const response = await window.authFetch(
@@ -568,12 +636,379 @@ window.executeDeleteRow = async function (sheetRowIndex, caseId) {
             {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type':
+                        'application/json'
                 },
                 body: JSON.stringify({
                     sheetRowIndex,
                     CaseIdNew: caseId,
-                    autoDateTime: new Date().toISOString()
+                    autoDateTime:
+                        new Date().toISOString()
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(
+                result.message ||
+                'ไม่สามารถลบรายการได้'
+            );
+        }
+
+        if (
+            window.historyDisplayMode ===
+            'filtered'
+        ) {
+            window.currentFilteredHistory =
+                (
+                    window.currentFilteredHistory ||
+                    []
+                ).filter(item =>
+                    Number(item.targetRowNumber) !==
+                    Number(sheetRowIndex)
+                );
+
+            renderFlatHistoryTable(
+                window.currentFilteredHistory
+            );
+
+            const summary =
+                document.getElementById(
+                    'historyFilterSummary'
+                );
+
+            if (summary) {
+                summary.textContent =
+                    `พบประวัติทั้งหมด ${window.currentFilteredHistory.length} รายการ`;
+            }
+
+            const reportButton =
+                document.getElementById(
+                    'createHistoryReportButton'
+                );
+
+            if (reportButton) {
+                reportButton.hidden =
+                    window.currentFilteredHistory.length === 0 ||
+                    !window.hasPermission(
+                        'ExportHistoryReport'
+                    );
+            }
+        } else {
+            window.currentIndividualHistory =
+                (
+                    window.currentIndividualHistory ||
+                    []
+                ).filter(item =>
+                    Number(item.targetRowNumber) !==
+                    Number(sheetRowIndex)
+                );
+
+            renderHistoryTable(
+                window.currentIndividualHistory
+            );
+        }
+
+        return true;
+    } catch (error) {
+        console.error(error);
+
+        alert(
+            error.message ||
+            'เกิดข้อผิดพลาดในการลบรายการ'
+        );
+
+        return false;
+    }
+}
+//#endregion
+
+//ทำให้ช่องวันที่เปิดปฏิทินได้
+//function initHistoryFilterDates() {
+//#region
+function initHistoryFilterDates() {
+    const startInput =
+        document.getElementById('historyStartDate');
+
+    const endInput =
+        document.getElementById('historyEndDate');
+
+    if (!startInput || !endInput) return;
+
+    if (startInput._flatpickr) {
+        startInput._flatpickr.destroy();
+    }
+
+    if (endInput._flatpickr) {
+        endInput._flatpickr.destroy();
+    }
+
+    const endPicker = flatpickr(endInput, {
+        dateFormat: 'Y-m-d',
+        altInput: true,
+        altFormat: 'd/m/Y',
+        allowInput: false,
+        maxDate: 'today'
+    });
+
+    const startPicker = flatpickr(startInput, {
+        dateFormat: 'Y-m-d',
+        altInput: true,
+        altFormat: 'd/m/Y',
+        allowInput: false,
+        maxDate: 'today',
+
+        onChange(selectedDates) {
+            const selectedDate =
+                selectedDates[0] || null;
+
+            endPicker.set(
+                'minDate',
+                selectedDate
+            );
+
+            if (
+                selectedDate &&
+                endPicker.selectedDates[0] &&
+                endPicker.selectedDates[0] < selectedDate
+            ) {
+                endPicker.clear();
+            }
+        }
+    });
+
+    endPicker.config.onChange.push(
+        function (selectedDates) {
+            const selectedDate =
+                selectedDates[0] || null;
+
+            startPicker.set(
+                'maxDate',
+                selectedDate || 'today'
+            );
+        }
+    );
+}
+//#endregion
+
+//ทำให้ Modal เปิด–ปิด และเลือกเดือนนี้/ปีนี้ได้
+//function initAdvancedHistoryFilterEvents() {
+//#region
+function initAdvancedHistoryFilterEvents() {
+    const modal =
+        document.getElementById('historyFilterModal');
+
+    const openButton =
+        document.getElementById(
+            'advancedHistoryFilterButton'
+        );
+
+    const closeButton =
+        document.getElementById(
+            'closeHistoryFilterButton'
+        );
+
+    const resetButton =
+        document.getElementById(
+            'resetHistoryFilterButton'
+        );
+
+    const periodPreset =
+        document.getElementById(
+            'historyPeriodPreset'
+        );
+
+    const startInput =
+        document.getElementById('historyStartDate');
+
+    const endInput =
+        document.getElementById('historyEndDate');
+
+    if (
+        !modal ||
+        !openButton ||
+        !startInput ||
+        !endInput
+    ) {
+        return;
+    }
+
+async function openModal() {
+    modal.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+
+    await loadHistoryFilterOptions();
+}
+
+    function closeModal() {
+        modal.classList.remove('is-open');
+        document.body.style.overflow = '';
+    }
+
+    function clearAllFilters() {
+        startInput._flatpickr?.clear();
+        endInput._flatpickr?.clear();
+
+        document.getElementById(
+            'historyPeriodPreset'
+        ).value = '';
+
+        document.getElementById(
+            'historyAreaFilter'
+        ).value = '';
+
+        document.getElementById(
+            'historyTreatmentResultFilter'
+        ).value = '';
+
+        document.getElementById(
+            'historyDocumentFilter'
+        ).value = '';
+
+        document.getElementById(
+            'historyHospitalFilter'
+        ).value = '';
+    }
+
+    openButton.addEventListener(
+        'click',
+        openModal
+    );
+
+    closeButton.addEventListener(
+        'click',
+        closeModal
+    );
+
+    resetButton.addEventListener(
+        'click',
+        clearAllFilters
+    );
+
+    modal.addEventListener('click', event => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    document.addEventListener('keydown', event => {
+        if (
+            event.key === 'Escape' &&
+            modal.classList.contains('is-open')
+        ) {
+            closeModal();
+        }
+    });
+
+    periodPreset.addEventListener('change', () => {
+        const preset = periodPreset.value;
+        const today = new Date();
+
+        if (preset === 'all' || preset === '') {
+            startInput._flatpickr?.clear();
+            endInput._flatpickr?.clear();
+            return;
+        }
+
+        let startDate;
+
+        if (preset === 'thisMonth') {
+            startDate = new Date(
+                today.getFullYear(),
+                today.getMonth(),
+                1
+            );
+        }
+
+        if (preset === 'thisYear') {
+            startDate = new Date(
+                today.getFullYear(),
+                0,
+                1
+            );
+        }
+
+        if (startDate) {
+            startInput._flatpickr?.setDate(
+                startDate,
+                true
+            );
+
+            endInput._flatpickr?.setDate(
+                today,
+                true
+            );
+        }
+    });
+
+    window.closeHistoryFilterModal =
+        closeModal;
+}
+//#endregion
+
+//เชื่อมปุ่มกรองกับ API หลังบ้าน
+//window.currentFilteredHistory = [];
+//#region
+window.currentFilteredHistory = [];
+
+function updateFilterSelectOptions(
+    selectId,
+    values,
+    allLabel
+) {
+    const select =
+        document.getElementById(selectId);
+
+    if (!select) return;
+
+    const currentValue = select.value;
+
+    select.replaceChildren();
+
+    const allOption =
+        document.createElement('option');
+
+    allOption.value = '';
+    allOption.textContent = allLabel;
+    select.appendChild(allOption);
+
+    for (const value of values || []) {
+        const option =
+            document.createElement('option');
+
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+    }
+
+    if (
+        [...select.options]
+            .some(option =>
+                option.value === currentValue
+            )
+    ) {
+        select.value = currentValue;
+    }
+}
+
+let historyFilterOptionsLoaded = false;
+
+async function loadHistoryFilterOptions() {
+    if (historyFilterOptionsLoaded) return;
+
+    try {
+        const response = await window.authFetch(
+            `${window.APP_CONFIG.API_BASE_URL}/api/history/all`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type':
+                        'application/json'
+                },
+                body: JSON.stringify({
+                    optionsOnly: true
                 })
             }
         );
@@ -581,14 +1016,636 @@ window.executeDeleteRow = async function (sheetRowIndex, caseId) {
         const data = await response.json();
 
         if (!response.ok || !data.success) {
-            throw new Error(data.message || 'ลบข้อมูลไม่สำเร็จ');
+            throw new Error(
+                data.message ||
+                'โหลดตัวเลือกไม่สำเร็จ'
+            );
         }
 
-        alert('ลบข้อมูลสำเร็จ');
-        location.reload();
+        updateFilterSelectOptions(
+            'historyTreatmentResultFilter',
+            data.options?.treatmentResults || [],
+            'ทั้งหมด'
+        );
+
+        updateFilterSelectOptions(
+            'historyHospitalFilter',
+            data.options?.hospitals || [],
+            'ทั้งหมด'
+        );
+
+        historyFilterOptionsLoaded = true;
     } catch (error) {
-        console.error('Delete Error:', error);
-        alert(error.message || 'ลบข้อมูลไม่สำเร็จ');
+        console.error(
+            'Load filter options error:',
+            error
+        );
     }
-};
+}
+
+
+async function loadFilteredAllHistory() {
+    const applyButton =
+        document.getElementById(
+            'applyHistoryFilterButton'
+        );
+
+    const reportButton =
+        document.getElementById(
+            'createHistoryReportButton'
+        );
+
+    const summary =
+        document.getElementById(
+            'historyFilterSummary'
+        );
+
+    const filters = {
+        startDate:
+            document.getElementById(
+                'historyStartDate'
+            ).value || '',
+
+        endDate:
+            document.getElementById(
+                'historyEndDate'
+            ).value || '',
+
+        area:
+            document.getElementById(
+                'historyAreaFilter'
+            ).value || '',
+
+        treatmentResult:
+            document.getElementById(
+                'historyTreatmentResultFilter'
+            ).value || '',
+
+        documentStatus:
+            document.getElementById(
+                'historyDocumentFilter'
+            ).value || '',
+
+        hospital:
+            document.getElementById(
+                'historyHospitalFilter'
+            ).value || ''
+    };
+
+    try {
+        applyButton.disabled = true;
+        applyButton.textContent =
+            'กำลังโหลดข้อมูล...';
+
+        summary.textContent =
+            'กำลังค้นหาประวัติตามเงื่อนไข...';
+
+        const response = await window.authFetch(
+            `${window.APP_CONFIG.API_BASE_URL}/api/history/all`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type':
+                        'application/json'
+                },
+                body: JSON.stringify(filters)
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                'ไม่สามารถโหลดประวัติได้'
+            );
+        }
+
+        window.currentFilteredHistory =
+            data.history || [];
+
+        updateFilterSelectOptions(
+            'historyTreatmentResultFilter',
+            data.options?.treatmentResults,
+            'ทั้งหมด'
+        );
+
+        updateFilterSelectOptions(
+            'historyHospitalFilter',
+            data.options?.hospitals,
+            'ทั้งหมด'
+        );
+
+        summary.textContent =
+            `พบประวัติทั้งหมด ${data.total} รายการ`;
+
+        reportButton.hidden =
+            data.total === 0 ||
+            !window.hasPermission(
+                'ExportHistoryReport'
+            );
+
+        if (
+            typeof renderFlatHistoryTable
+            === 'function'
+        ) {
+            renderFlatHistoryTable(
+                window.currentFilteredHistory
+            );
+            window.setSlkColumnsVisibility(
+                filters.area !== 'PP'
+            );
+        }
+
+        window.closeHistoryFilterModal?.();
+    } catch (error) {
+        console.error(error);
+
+        summary.textContent =
+            error.message ||
+            'เกิดข้อผิดพลาดในการกรองข้อมูล';
+
+        reportButton.hidden = true;
+    } finally {
+        applyButton.disabled = false;
+        applyButton.textContent =
+            'แสดงประวัติตามเงื่อนไข';
+    }
+}
+
+function initHistoryFilterApplyEvent() {
+    const applyButton =
+        document.getElementById(
+            'applyHistoryFilterButton'
+        );
+
+    if (!applyButton) return;
+
+    applyButton.addEventListener(
+        'click',
+        loadFilteredAllHistory
+    );
+}
 //#endregion
+
+
+//แสดงประวัติทั้งหมดแบบแถวตรง ไม่พับข้อมูล
+//function createHistoryTableCell(value,className = '') {
+//#region
+function createHistoryTableCell(
+    value,
+    className = ''
+) {
+    const cell = document.createElement('td');
+
+    cell.textContent =
+        value === undefined ||
+        value === null ||
+        value === ''
+            ? '-'
+            : String(value);
+
+    if (className) {
+        cell.className = className;
+    }
+
+    return cell;
+}
+
+function createHistoryActionCell(item) {
+    const actionCell =
+        document.createElement('td');
+
+    actionCell.className =
+        'flat-history-actions';
+
+    if (window.hasPermission('EditTreatment')) {
+        const editButton =
+            document.createElement('button');
+
+        editButton.type = 'button';
+        editButton.textContent = '✏️ แก้ไข';
+        editButton.className = 'btn-edit-minimal';
+
+        editButton.addEventListener(
+            'click',
+            () => populateDataToForm(item)
+        );
+
+        actionCell.appendChild(editButton);
+    }
+
+    if (window.hasPermission('DeleteTreatment')) {
+        const deleteButton =
+            document.createElement('button');
+
+        deleteButton.type = 'button';
+        deleteButton.textContent = '🗑️ ลบ';
+        deleteButton.className =
+            'flat-history-delete';
+
+        deleteButton.addEventListener(
+            'click',
+            async () => {
+                await executeDeleteRow(
+                    item.targetRowNumber,
+                    item.CaseIdNew
+                );
+
+            }
+        );
+
+        actionCell.appendChild(deleteButton);
+    }
+
+    if (!actionCell.children.length) {
+        actionCell.textContent = '-';
+    }
+
+    return actionCell;
+}
+
+function appendHistoryDataCells(row, item) {
+    const values = [
+        { value: item.treatmentDateTime },
+        { value: item.statusText },
+        { value: item.symptoms },
+        { value: getDisplayWorkLocation(item) },
+        { value: item.hospital },
+
+        { value: item.DentalOPD },
+        { value: item.PPUsageOPD },
+        { value: item.PPUsageIPD },
+
+        {
+            value: item.SLKUsageOpdThB,
+            className: 'slk-column'
+        },
+        {
+            value: item.SLKUsageIpdThB,
+            className: 'slk-column'
+        },
+        {
+            value: item.SLKUsageOpdLkr,
+            className: 'slk-column'
+        },
+        {
+            value: item.SLKUsageIpdLkr,
+            className: 'slk-column'
+        },
+        {
+            value: item.OverLimitCreditInsThB,
+            className: 'slk-column'
+        },
+        {
+            value: item.OverLimitCreditInsLkr,
+            className: 'slk-column'
+        },
+        {
+            value: item.ExchangeRatesIns,
+            className: 'slk-column'
+        },
+        {
+            value: item.ExchangeRatesInt,
+            className: 'slk-column'
+        },
+
+        {
+            value: item.ClinicianReportedOutcomes
+        },
+        {
+            value: item.DocumentsAttached
+        },
+        { value: item.notes },
+        { value: item.autoDateTime },
+        { value: item.adminName }
+    ];
+
+    for (const itemValue of values) {
+        row.appendChild(
+            createHistoryTableCell(
+                itemValue.value,
+                itemValue.className || ''
+            )
+        );
+    }
+
+    row.appendChild(
+        createHistoryActionCell(item)
+    );
+}
+
+function renderFlatHistoryTable(history) {
+    window.historyDisplayMode = 'filtered';
+    const tableBody =
+        document.getElementById('tableBodyResult');
+
+    if (!tableBody) return;
+
+    tableBody.replaceChildren();
+
+    if (!Array.isArray(history) || !history.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+
+        cell.colSpan = 23;
+        cell.textContent =
+            'ไม่พบประวัติตามเงื่อนไขที่เลือก';
+
+        cell.style.padding = '28px';
+        cell.style.textAlign = 'center';
+
+        row.appendChild(cell);
+        tableBody.appendChild(row);
+        return;
+    }
+
+    const caseGroups = new Map();
+
+    for (const item of history) {
+        const caseId =
+            String(item.CaseIdNew || '-').trim();
+
+        if (!caseGroups.has(caseId)) {
+            caseGroups.set(caseId, []);
+        }
+
+        caseGroups.get(caseId).push(item);
+    }
+
+    const fragment =
+        document.createDocumentFragment();
+
+    for (const [caseId, events] of caseGroups) {
+        events.sort(
+            (a, b) =>
+                Number(a.targetRowNumber) -
+                Number(b.targetRowNumber)
+        );
+
+        const latestEvent =
+            events[events.length - 1];
+
+        const parentRow =
+            document.createElement('tr');
+
+        parentRow.className =
+            'flat-history-row grouped-parent-row';
+
+        const caseCell =
+            document.createElement('td');
+
+        const caseButton =
+            document.createElement('button');
+
+        caseButton.type = 'button';
+        caseButton.className =
+            'history-case-toggle';
+
+        const arrow =
+            document.createElement('span');
+
+        arrow.textContent =
+            events.length > 1 ? '▶' : '•';
+
+        const caseText =
+            document.createElement('strong');
+
+        caseText.textContent = caseId;
+
+        caseButton.append(arrow, caseText);
+
+        const employee =
+            document.createElement('div');
+
+        employee.className =
+            'history-case-employee';
+
+        employee.textContent =
+            latestEvent.employeeName || '-';
+
+        const area =
+            document.createElement('span');
+
+        area.className = 'history-area-badge';
+        area.textContent =
+            latestEvent.area || 'ไม่ระบุพื้นที่';
+
+        caseCell.append(
+            caseButton,
+            employee,
+            area
+        );
+
+        parentRow.appendChild(caseCell);
+
+        appendHistoryDataCells(
+            parentRow,
+            latestEvent
+        );
+
+        fragment.appendChild(parentRow);
+
+        const childRows = [];
+
+        for (
+            let index = 0;
+            index < events.length - 1;
+            index++
+        ) {
+            const eventItem = events[index];
+
+            const childRow =
+                document.createElement('tr');
+
+            childRow.className =
+                'grouped-child-row';
+
+            childRow.hidden = true;
+
+            const childCaseCell =
+                document.createElement('td');
+
+            childCaseCell.textContent =
+                `↳ รายการก่อนหน้า ${index + 1}`;
+
+            childCaseCell.className =
+                'history-child-label';
+
+            childRow.appendChild(childCaseCell);
+
+            appendHistoryDataCells(
+                childRow,
+                eventItem
+            );
+
+            childRows.push(childRow);
+            fragment.appendChild(childRow);
+        }
+
+        if (childRows.length) {
+            caseButton.addEventListener(
+                'click',
+                () => {
+                    const shouldOpen =
+                        childRows[0].hidden;
+
+                    for (const childRow of childRows) {
+                        childRow.hidden =
+                            !shouldOpen;
+                    }
+
+                    arrow.textContent =
+                        shouldOpen ? '▼' : '▶';
+                }
+            );
+        } else {
+            caseButton.disabled = true;
+        }
+    }
+
+    tableBody.appendChild(fragment);
+}
+//#endregion
+
+//เชื่อมปุ่ม “สร้างรายงาน” ให้ดาวน์โหลด Excel
+//async function downloadFilteredHistoryReport() {
+//#region
+async function downloadFilteredHistoryReport() {
+    const reportButton =
+        document.getElementById(
+            'createHistoryReportButton'
+        );
+
+    const history =
+        window.currentFilteredHistory || [];
+
+    if (!history.length) {
+        alert('ยังไม่มีข้อมูลสำหรับสร้างรายงาน');
+        return;
+    }
+
+    const rowNumbers = history
+        .map(item =>
+            Number(item.targetRowNumber)
+        )
+        .filter(number =>
+            Number.isInteger(number) &&
+            number >= 3
+        );
+
+    if (!rowNumbers.length) {
+        alert('ไม่พบรายการสำหรับสร้างรายงาน');
+        return;
+    }
+
+    try {
+        reportButton.disabled = true;
+        reportButton.textContent =
+            '⏳ กำลังสร้างรายงาน...';
+
+        const response = await window.authFetch(
+            `${window.APP_CONFIG.API_BASE_URL}/api/history/export`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type':
+                        'application/json'
+                },
+                body: JSON.stringify({
+                    rowNumbers
+                })
+            }
+        );
+
+        if (!response.ok) {
+            let message =
+                'ไม่สามารถสร้างรายงานได้';
+
+            try {
+                const errorData =
+                    await response.json();
+
+                message =
+                    errorData.message || message;
+            } catch {
+                // ใช้ข้อความเดิม
+            }
+
+            throw new Error(message);
+        }
+
+        const fileBlob =
+            await response.blob();
+
+        const downloadUrl =
+            URL.createObjectURL(fileBlob);
+
+        const link =
+            document.createElement('a');
+
+        const today =
+            new Date()
+                .toISOString()
+                .slice(0, 10);
+
+        link.href = downloadUrl;
+        link.download =
+            `history-report-${today}.xlsx`;
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+        console.error(error);
+
+        alert(
+            error.message ||
+            'เกิดข้อผิดพลาดในการดาวน์โหลดรายงาน'
+        );
+    } finally {
+        reportButton.disabled = false;
+        reportButton.textContent =
+            '📊 สร้างรายงาน';
+    }
+}
+
+function initHistoryReportEvent() {
+    const reportButton =
+        document.getElementById(
+            'createHistoryReportButton'
+        );
+
+    if (!reportButton) return;
+
+    reportButton.addEventListener(
+        'click',
+        downloadFilteredHistoryReport
+    );
+}
+//#endregion
+
+
+//เพิ่มฟังก์ชันแสดงสถานที่ทำงาน
+//function getDisplayWorkLocation(item) {
+//#region
+function getDisplayWorkLocation(item) {
+    const workLocation =
+        String(item?.workLocation || '').trim();
+
+    if (
+        workLocation &&
+        workLocation !== '-'
+    ) {
+        return workLocation;
+    }
+
+    const area =
+        String(item?.area || '').trim();
+
+    return area || '-';
+}
+//#endregion
+
