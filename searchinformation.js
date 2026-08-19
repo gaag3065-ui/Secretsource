@@ -78,13 +78,26 @@ function initSearchBoxEvents() {
                     }
                 });
 
-                // หยอดค่าพนักงานเข้า Hidden Inputs ฝากไปใช้งานต่อตอนกดบันทึก ไปยังฝั่ง recordtreatment
-                const emp = data.employee;
-                document.getElementById('hiddenEmpName').value = emp.colG || '-';
-                document.getElementById('hiddenCompany').value = emp.colB || '-';
-                document.getElementById('hiddenSize').value = emp.colD || '-';
-                document.getElementById('hiddenWorkLocation').value = emp.colK || '-';
-                document.getElementById('hiddenInsuranceId').value = emp.colC || '-'; 
+                    const emp = data.employee;
+
+                    const hiddenEmployeeValues = {
+                        hiddenEmpName: emp.colG || '-',
+                        hiddenCompany: emp.colB || '-',
+                        hiddenSize: emp.colD || '-',
+                        hiddenWorkLocation: emp.colK || '-',
+                        hiddenInsuranceId: emp.colC || '-'
+                    };
+
+                    Object.entries(hiddenEmployeeValues).forEach(
+                        ([elementId, value]) => {
+                            const element =
+                                document.getElementById(elementId);
+
+                            if (element) {
+                                element.value = value;
+                            }
+                        }
+                    );
 
                 // =======================================================================
                 // 🔐 [ระบบควบคุมซ่อน-แสดง คอลัมน์ประกัน SLK อัตโนมัติตามสถานที่ทำงาน]
@@ -114,7 +127,9 @@ function initSearchBoxEvents() {
                 `;
                 resultsList.appendChild(card);
 
-                renderHistoryTable(data.history);
+                if (typeof window.renderHistoryTable === 'function') {
+                    window.renderHistoryTable(data.history || []);
+                }
                 window.setSlkColumnsVisibility(
                 window.isSlkWorkLocation(emp.colK)
                  );

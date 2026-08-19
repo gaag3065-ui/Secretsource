@@ -12,7 +12,7 @@ const LOCAL_API_URL = 'http://127.0.0.1:43127';
 
 // Backend สำหรับเว็บไซต์จริง
 // ตอนนี้ยังใช้ค่าว่างไว้ก่อน จนกว่าเราจะจัดการ Production Backend
-const PRODUCTION_API_URL = 'https://circular-patrol-review-jose.trycloudflare.com';
+const PRODUCTION_API_URL = 'https://immigrants-corpus-carey-occasionally.trycloudflare.com';
 
 // API หลักที่ทุกหน้าในระบบจะเรียกใช้
 window.APP_CONFIG = {
@@ -70,7 +70,7 @@ window.requirePagePermission = async function (
         data.permissions?.[permissionKey] !== true
     ) {
         alert('บัญชีนี้ไม่มีสิทธิ์เข้าถึงหน้านี้');
-        window.location.replace('search.html');
+        window.location.replace('portal.html');
         throw new Error('PERMISSION_DENIED');
     }
 

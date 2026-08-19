@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>GA Operations Management Portal</title>
+
+    <link rel="stylesheet" href="portal.css">
+</head>
+
+<body>
+    <header class="portal-header">
+        <div>
+            <span class="portal-eyebrow">
+                GENERAL AFFAIRS
+            </span>
+
+            <h1>GA Operations Management Portal</h1>
+
+            <p>
+                Centralized access to General Affairs operations
+                and employee support services
+            </p>
+        </div>
+
+        <button id="portalLogoutButton" type="button">
+            Sign Out
+        </button>
+    </header>
+
+    <main class="portal-main">
+        <section class="portal-introduction">
+            <h2>Operations & Services</h2>
+
+            <p>
+                Select a service area to continue.
+            </p>
+        </section>
+
+        <section class="service-grid">
+
+            <button
+                type="button"
+                class="service-card service-card-primary"
+                data-page="search.html"
+            >
+                <span class="service-icon">🛡️</span>
+                <span class="service-title">
+                    Insurance Administration
+                </span>
+                <span class="service-description">
+                    Manage employee insurance cases and treatment records
+                </span>
+            </button>
+
+            <button
+                type="button"
+                class="service-card"
+                data-page="accommodation.html"
+            >
+                <span class="service-icon">🏢</span>
+                <span class="service-title">
+                    Employee Accommodation Management
+                </span>
+                <span class="service-description">
+                    Manage employee rooms and accommodation records
+                </span>
+            </button>
+
+            <button
+                type="button"
+                class="service-card"
+                data-page="fitness.html"
+            >
+                <span class="service-icon">🏋️</span>
+                <span class="service-title">
+                    Fitness & Wellness Support
+                </span>
+                <span class="service-description">
+                    Coordinate exercise and employee wellness programs
+                </span>
+            </button>
+
+            <button
+                type="button"
+                class="service-card"
+                data-page="assets.html"
+            >
+                <span class="service-icon">📦</span>
+                <span class="service-title">
+                    Asset Management
+                </span>
+                <span class="service-description">
+                    Track organizational assets and assignments
+                </span>
+            </button>
+
+            <button
+                type="button"
+                class="service-card"
+                data-page="transportation.html"
+            >
+                <span class="service-icon">🚌</span>
+                <span class="service-title">
+                    Employee Shuttle Services
+                </span>
+                <span class="service-description">
+                    Manage employee transportation and shuttle schedules
+                </span>
+            </button>
+
+            <button
+                type="button"
+                class="service-card"
+                data-page="work-schedule.html"
+            >
+                <span class="service-icon">📅</span>
+                <span class="service-title">
+                    Work Schedule Board
+                </span>
+                <span class="service-description">
+                    View and coordinate operational work schedules
+                </span>
+            </button>
+
+            <button
+                type="button"
+                class="service-card"
+                data-page="medication.html"
+            >
+                <span class="service-icon">💊</span>
+                <span class="service-title">
+                    Medication Request
+                </span>
+                <span class="service-description">
+                    Submit and manage employee medication requests
+                </span>
+            </button>
+
+        </section>
+    </main>
+
+    <script src="config.js"></script>
+    <script src="portal.js"></script>
+</body>
+</html>

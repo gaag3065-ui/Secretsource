@@ -21,13 +21,25 @@
 <header class="main-topbar">
     <h1>จัดการงานประกัน</h1>
 
+<div class="main-header-actions">
+    <button
+        type="button"
+        id="backToPortalButton"
+        class="header-action-button header-action-secondary"
+    >
+        <span aria-hidden="true">←</span>
+        กลับหน้าจัดการงาน GA
+    </button>
+
     <button
         type="button"
         id="mainLogoutButton"
-        class="main-topbar-button"
+        class="header-action-button header-action-danger"
     >
+        <span aria-hidden="true">↪</span>
         ออกจากระบบ
     </button>
+    </div>
 </header>
 
 <!-- =============================================================================================================================== -->
@@ -283,7 +295,33 @@ document.addEventListener("DOMContentLoaded", async () => {
             allowInput: true
         });
 
+            const mainLogoutButton =
+                    document.getElementById(
+                        'mainLogoutButton'
+                    );
 
+                    const backToPortalButton =
+                        document.getElementById('backToPortalButton');
+
+                    backToPortalButton?.addEventListener('click', () => {
+                        window.location.href = 'portal.html';
+                    });
+
+                if (mainLogoutButton) {
+                    mainLogoutButton.addEventListener(
+                        'click',
+                        () => {
+                            const confirmed = confirm(
+                                'คุณต้องการออกจากระบบใช่หรือไม่?'
+                            );
+
+                            if (!confirmed) return;
+
+                            sessionStorage.clear();
+                            window.location.replace('index.html');
+                        }
+                    );
+                }
         // =====================================================
         // 4. โหลด Script ฝั่งซ้าย
         // =====================================================
@@ -321,26 +359,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         // =====================================================
             if (canViewHistory) {
                 await loadScript('insuranceclaimhistory.js');
-                const mainLogoutButton =
-                    document.getElementById(
-                        'mainLogoutButton'
-                    );
-
-                if (mainLogoutButton) {
-                    mainLogoutButton.addEventListener(
-                        'click',
-                        () => {
-                            const confirmed = confirm(
-                                'คุณต้องการออกจากระบบใช่หรือไม่?'
-                            );
-
-                            if (!confirmed) return;
-
-                            sessionStorage.clear();
-                            window.location.replace('index.html');
-                        }
-                    );
-                }
 
                 if (typeof initHistoryModalEvents === 'function') {
                     initHistoryModalEvents();
