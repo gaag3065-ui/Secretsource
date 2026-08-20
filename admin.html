@@ -425,10 +425,9 @@
         });
 
     document.getElementById('logoutButton')
-        .addEventListener('click', () => {
-            sessionStorage.clear();
-            window.location.replace('index.html');
-        });
+    .addEventListener('click', async () => {
+        await window.performSecureLogout();
+    });
 
 // =========== [ ทำให้ปุ่ม “บันทึกสิทธิ์” ใช้งานได้ ] ======== //
 document.getElementById('saveButton')

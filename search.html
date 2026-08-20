@@ -309,16 +309,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 if (mainLogoutButton) {
                     mainLogoutButton.addEventListener(
-                        'click',
-                        () => {
+                    'click',
+                    async () => {
                             const confirmed = confirm(
                                 'คุณต้องการออกจากระบบใช่หรือไม่?'
                             );
 
                             if (!confirmed) return;
 
-                            sessionStorage.clear();
-                            window.location.replace('index.html');
+                            await window.performSecureLogout();
                         }
                     );
                 }

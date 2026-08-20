@@ -27,28 +27,20 @@ function updateOcFileName() {
 const INACTIVITY_LIMIT = 5 * 60 * 1000; 
 let timeoutId;
 
-// 🔒 สเต็ปที่ 1: ตรวจเช็คทันทีทุกครั้งที่หน้าเว็บเปิดขึ้นมา (Strict Guard)
-function enforceSecurityRouting() {
-    const loggedInUser = sessionStorage.getItem('loggedInAdminName');
 
-    if (!loggedInUser || loggedInUser.trim() === '') {
-        sessionStorage.clear();
-        window.location.replace('index.html'); // ใช้ .replace ป้องกันการกดปุ่ม Back กลับมาหน้าเดิม
-        return true;
-    }
-    return false;
-}
 
 // 🚪 ฟังก์ชันสั่งออกจากระบบถาวร
-function logoutUser() {
-    sessionStorage.clear(); // ล้างความจำระบบทั้งหมดออกเกลี้ยงเครื่อง
-    alert("🔒 คุณไม่มีการเคลื่อนไหวนานเกินไป ระบบได้ทำการออกจากระบบเพื่อความปลอดภัยเรียบร้อยแล้วครับ");
-    window.location.replace('index.html');
+async function logoutUser() {
+    alert(
+        'ไม่มีการใช้งานระบบเกินเวลาที่กำหนด ระบบจะออกจากระบบเพื่อความปลอดภัย'
+    );
+
+    await window.performSecureLogout();
 }
 
 // 🔁 รีเซ็ตเวลานับถอยหลังใหม่เมื่อขยับเมาส์
 function resetTimer() {
-    if (enforceSecurityRouting()) return; // หากระบบตรวจสอบพบว่าหลุดเซสชันแล้ว ให้ดีดออกทันที
+
     
     clearTimeout(timeoutId);
     timeoutId = setTimeout(logoutUser, INACTIVITY_LIMIT);
@@ -58,7 +50,7 @@ function resetTimer() {
 // 👁️ ดักจับพฤติกรรมการเคลื่อนไหวทั่วหน้าจอ
 function setupInactivityTimer() {
     // รันตรวจเช็คสิทธิ์หน้าจอชั้นแรกสุดก่อนเปิดระบบดักจับ
-    if (enforceSecurityRouting()) return;
+
 
     window.onload = resetTimer;
     window.onmousemove = resetTimer;
@@ -76,11 +68,14 @@ setupInactivityTimer();
 
 
 // 🚪 ฟังก์ชันเสริมสำหรับปุ่มกดออกจากระบบสีแดงด้านล่าง (Manual Logout)
-function manualLogout() {
-    if (confirm("🚪 คุณต้องการออกจากระบบบริหารจัดการพนักงานใช่หรือไม่?")) {
-        sessionStorage.clear();
-        window.location.replace('index.html');
-    }
+async function manualLogout() {
+    const confirmed = confirm(
+        'คุณต้องการออกจากระบบใช่หรือไม่?'
+    );
+
+    if (!confirmed) return;
+
+    await window.performSecureLogout();
 }
 //#endregion
 

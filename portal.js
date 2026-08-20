@@ -1,10 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const token = sessionStorage.getItem('authToken');
 
-    if (!token) {
-        window.location.replace('index.html');
-        return;
-    }
 
     let sessionUser = {};
     let permissions = {};
@@ -89,14 +84,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document
         .getElementById('portalLogoutButton')
-        ?.addEventListener('click', () => {
+        ?.addEventListener('click', async () => {
             const confirmed = confirm(
                 'Are you sure you want to sign out?'
             );
 
             if (!confirmed) return;
 
-            sessionStorage.clear();
-            window.location.replace('index.html');
+           await window.performSecureLogout();
         });
 });

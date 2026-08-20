@@ -1,6 +1,7 @@
 
 
 const API_BASE_URL = window.APP_CONFIG.API_BASE_URL;
+
 // อัปโหลดไฟล์
 // function updateFileName() {
 //#region
@@ -327,14 +328,12 @@ const INACTIVITY_LIMIT = 5 * 60 * 1000; // ⏳ ตัวอย่างนี้
 let timeoutId;
 
 // 🚪 ฟังก์ชันสั่งออกจากระบบอัตโนมัติ
-function logoutUser() {
-    alert("🔒 คุณไม่มีการเคลื่อนไหวนานเกินไป ระบบจะทำการออกจากระบบเพื่อความปลอดภัยครับ");
-    
-    // 1. เคลียร์ชื่อพนักงานออกจากความจำเครื่องเบราว์เซอร์
-    sessionStorage.removeItem('loggedInAdminName');
-    
-    // 2. เด้งหน้าจอกลับไปยังหน้า index.html (หน้า Login)
-    window.location.href = 'index.html';
+async function logoutUser() {
+    alert(
+        'ไม่มีการใช้งานระบบเกินเวลาที่กำหนด ระบบจะออกจากระบบเพื่อความปลอดภัย'
+    );
+
+    await window.performSecureLogout();
 }
 
 // 🔁 ฟังก์ชันรีเซ็ตเวลานับถอยหลังใหม่ทุกครั้งที่มีการขยับ

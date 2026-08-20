@@ -4,12 +4,7 @@ const accommodationState = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const token = sessionStorage.getItem('authToken');
-
-    if (!token) {
-        window.location.replace('index.html');
-        return;
-    }
+ 
 
 //ป้องกัน STAFF พิมพ์ URL เข้า accommodation.html โดยตรง
 //try {const response = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/auth/session);
