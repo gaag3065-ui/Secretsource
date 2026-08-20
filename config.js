@@ -30,6 +30,13 @@ console.log(
 //window.getCsrfToken = function () {
 //#region
 window.getCsrfToken = function () {
+
+    const storedToken =
+    sessionStorage.getItem('csrfToken');
+
+    if (storedToken) {
+        return storedToken;
+    }
     const cookieNames = [
         '__Host-ga_csrf',
         'ga_csrf'

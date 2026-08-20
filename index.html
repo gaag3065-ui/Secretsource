@@ -587,6 +587,17 @@ mfaForm.addEventListener(
                 );
             }
 
+            if (!data.csrfToken) {
+            throw new Error(
+                'เซิร์ฟเวอร์ไม่ได้ส่ง CSRF Token'
+            );
+            }
+
+            sessionStorage.setItem(
+                'csrfToken',
+                data.csrfToken
+            );
+
             const userRole =
                 String(data.user?.role || '')
                     .trim()
@@ -750,6 +761,17 @@ recoveryForm.addEventListener(
                     'Recovery Code ไม่ถูกต้อง'
                 );
             }
+
+                if (!data.csrfToken) {
+        throw new Error(
+            'เซิร์ฟเวอร์ไม่ได้ส่ง CSRF Token'
+        );
+        }
+
+        sessionStorage.setItem(
+            'csrfToken',
+            data.csrfToken
+        );
 
             alert(
                 `Recovery Code ถูกใช้แล้ว เหลือ ${data.recoveryCodesRemaining} รหัส`
