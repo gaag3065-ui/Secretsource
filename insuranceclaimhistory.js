@@ -24,7 +24,7 @@ function updateOcFileName() {
 
 //const INACTIVITY_LIMIT = 5 * 60 * 1000; 
 //#region
-const INACTIVITY_LIMIT = 5 * 60 * 1000; 
+const INACTIVITY_LIMIT = 60 * 60 * 1000; 
 let timeoutId;
 
 
