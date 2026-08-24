@@ -2842,9 +2842,31 @@ async function calculateAssetFileChecksum(file) {
 }
 // #endregion
 
+
+// #region จัดการหน่วยความจำ URL ของไฟล์แนบทรัพย์สิน
+const assetAttachmentObjectUrls = new Set();
+
+function registerAssetAttachmentObjectUrl(blob) {
+    const objectUrl = URL.createObjectURL(blob);
+    assetAttachmentObjectUrls.add(objectUrl);
+    return objectUrl;
+}
+
+function releaseAssetAttachmentObjectUrls() {
+    assetAttachmentObjectUrls.forEach((objectUrl) => {
+        URL.revokeObjectURL(objectUrl);
+    });
+
+    assetAttachmentObjectUrls.clear();
+}
+// #endregion
+
+
+
 //โหลดและแสดงรูปภาพหรือเอกสารของทรัพย์สิน
 // #region async function loadAssetAttachments(assetId) {
 async function loadAssetAttachments(assetId) {
+    releaseAssetAttachmentObjectUrls();
     const list =
         document.getElementById('assetAttachmentList');
     const empty =
@@ -2893,6 +2915,7 @@ async function loadAssetAttachments(assetId) {
         total.textContent = '0 รายการ';
         empty.hidden = false;
         empty.textContent = error.message;
+        
     }
 }
 
@@ -2950,7 +2973,61 @@ function closeAssetImageLightbox() {
 
 // #endregion
 
-// #region สร้างการ์ดไฟล์แนบและเปิดรูปภายใน Lightbox
+
+// #region โหลดไฟล์แนบทรัพย์สินผ่าน API ที่ยืนยันตัวตน
+
+async function loadSecureAssetAttachmentUrl(attachment) {
+    const assetId =
+        String(attachment.asset_id || '').trim();
+
+    const attachmentId =
+        String(attachment.id || '').trim();
+
+    if (!assetId || !attachmentId) {
+        throw new Error(
+            'ข้อมูลอ้างอิงไฟล์แนบไม่ครบถ้วน'
+        );
+    }
+
+    const endpoint =
+        `${window.APP_CONFIG.API_BASE_URL}` +
+        `/api/assets/${encodeURIComponent(assetId)}` +
+        `/attachments/${encodeURIComponent(attachmentId)}` +
+        `/content`;
+
+    const response = await window.authFetch(
+        endpoint,
+        {
+            method: 'GET',
+            cache: 'no-store'
+        }
+    );
+
+    if (!response.ok) {
+        let message = 'ไม่สามารถโหลดไฟล์แนบได้';
+
+        try {
+            const errorData = await response.json();
+            message = errorData.message || message;
+        } catch (_) {
+            // ข้อมูลตอบกลับไม่ใช่ JSON
+        }
+
+        throw new Error(message);
+    }
+
+    const fileBlob = await response.blob();
+
+    if (!fileBlob.size) {
+        throw new Error('ไฟล์แนบไม่มีข้อมูล');
+    }
+
+    return registerAssetAttachmentObjectUrl(fileBlob);
+}
+
+// #endregion
+
+// #region สร้างการ์ดไฟล์แนบและเปิดรูปภายใน Lightbox อย่างปลอดภัย
 
 function createAssetAttachmentCard(attachment) {
     const card = document.createElement('article');
@@ -2963,11 +3040,6 @@ function createAssetAttachmentCard(attachment) {
         attachment.original_file_name ||
         attachment.file_name ||
         'ไฟล์แนบ';
-
-    const driveFileId =
-        attachment.storage_file_id ||
-        attachment.drive_file_id ||
-        '';
 
     const isImage = [
         'image/jpeg',
@@ -2982,26 +3054,60 @@ function createAssetAttachmentCard(attachment) {
     previewButton.className =
         'asset-attachment-preview-button';
 
-    if (isImage && driveFileId) {
-        const imageUrl =
-            `https://drive.google.com/thumbnail?id=${
-                encodeURIComponent(driveFileId)
-            }&sz=w1200`;
+    const name = document.createElement('strong');
+    name.textContent = fileName;
 
+    const type = document.createElement('small');
+    type.textContent =
+        attachment.attachment_type || 'OTHER';
+
+    if (isImage) {
         const image = document.createElement('img');
 
-        image.src = imageUrl;
         image.alt = fileName;
         image.loading = 'lazy';
 
-        previewButton.appendChild(image);
+        const loadingText =
+            document.createElement('span');
 
-        previewButton.addEventListener('click', () => {
-            openAssetImageLightbox(
-                imageUrl,
-                fileName
-            );
-        });
+        loadingText.className =
+            'asset-attachment-loading';
+
+        loadingText.textContent =
+            'กำลังโหลดรูป...';
+
+        previewButton.disabled = true;
+        previewButton.appendChild(loadingText);
+
+        loadSecureAssetAttachmentUrl(attachment)
+            .then((secureImageUrl) => {
+                previewButton.replaceChildren(image);
+                previewButton.disabled = false;
+
+                image.src = secureImageUrl;
+
+                previewButton.addEventListener(
+                    'click',
+                    () => {
+                        openAssetImageLightbox(
+                            secureImageUrl,
+                            fileName
+                        );
+                    }
+                );
+            })
+            .catch((error) => {
+                console.error(
+                    'Attachment preview error:',
+                    error
+                );
+
+                loadingText.textContent =
+                    'ไม่สามารถแสดงรูปได้';
+
+                previewButton.title =
+                    error.message;
+            });
     } else {
         const fileIcon =
             document.createElement('div');
@@ -3013,23 +3119,30 @@ function createAssetAttachmentCard(attachment) {
 
         previewButton.appendChild(fileIcon);
 
-        previewButton.addEventListener('click', () => {
-            if (attachment.file_url) {
-                window.open(
-                    attachment.file_url,
-                    '_blank',
-                    'noopener,noreferrer'
-                );
+        previewButton.addEventListener(
+            'click',
+            async () => {
+                previewButton.disabled = true;
+
+                try {
+                    const secureFileUrl =
+                        await loadSecureAssetAttachmentUrl(
+                            attachment
+                        );
+
+                    window.open(
+                        secureFileUrl,
+                        '_blank',
+                        'noopener,noreferrer'
+                    );
+                } catch (error) {
+                    alert(error.message);
+                } finally {
+                    previewButton.disabled = false;
+                }
             }
-        });
+        );
     }
-
-    const name = document.createElement('strong');
-    name.textContent = fileName;
-
-    const type = document.createElement('small');
-    type.textContent =
-        attachment.attachment_type || 'OTHER';
 
     card.append(
         previewButton,
@@ -3041,6 +3154,9 @@ function createAssetAttachmentCard(attachment) {
 }
 
 // #endregion
+
+
+
 
 // #endregion 
 
