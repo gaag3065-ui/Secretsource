@@ -106,11 +106,51 @@ function initHospitalEvents() {
 }
 //#endregion
 
+
+let isClaimSubmissionInProgress = false;
+
+
 //ฟังก์ชันดักจับปุ่มบันทึกข้อมูลและส่งฟอร์ม (claimForm Submit Listener)
-//document.getElementById('claimForm').addEventListener('submit', async (e) => {
-//#region
+//#region document.getElementById('claimForm').addEventListener('submit', async (e) => {
    document.getElementById('claimForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        if (isClaimSubmissionInProgress) {
+        return;
+        }
+
+        isClaimSubmissionInProgress = true;
+
+        const submitButton = e.currentTarget.querySelector(
+            'button[type="submit"], input[type="submit"]'
+        );
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.dataset.originalText =
+                submitButton.textContent || '';
+
+            submitButton.textContent = 'กำลังบันทึก...';
+        }try {
+
+
+        const submissionCaseId = String(
+            document.getElementById('caseId')?.value || ''
+        ).trim();
+
+        if (!submissionCaseId) {
+            isClaimSubmissionInProgress = false;
+
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent =
+                    submitButton.dataset.originalText ||
+                    'บันทึกข้อมูลเข้าสู่ระบบ';
+            }
+
+            alert('ไม่พบเลขเคส ID กรุณาลองใหม่');
+            return;
+        }
 
         if (!window.hasPermission('UploadFiles')) {
             alert('บัญชีนี้ไม่มีสิทธิ์อัปโหลดไฟล์');
@@ -158,7 +198,11 @@ claimStatus.innerText = 'กำลังจองเลขเคส...';
 claimStatus.style.color = 'orange';
 
 const reserveRes = await window.authFetch(
-    `${window.APP_CONFIG.API_BASE_URL}/api/reserve-case-id`
+    `${window.APP_CONFIG.API_BASE_URL}/api/reserve-case-id`,
+    {
+        method: 'POST',
+        cache: 'no-store'
+    }
 );
 
 const reserveResult = await reserveRes.json();
@@ -269,6 +313,7 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
             notes: document.getElementById('notesInput').value
         };
 
+
         try {
             const response = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/save-treatment`, {
                 method: 'POST',
@@ -314,8 +359,43 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
             console.error(error);
             claimStatus.innerText = '❌ เกิดข้อผิดพลาดร้ายแรงในการเชื่อมต่อเซิร์ฟเวอร์';
             claimStatus.style.color = 'red';
-        }
+        } finally {
+            isClaimSubmissionInProgress = false;
 
+            const submitButton =
+                document.getElementById('submitBtn');
+
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent =
+                    submitButton.dataset.originalText ||
+                    'บันทึกข้อมูลเข้าสู่ระบบ';
+            }
+        }
+        } catch (error) {
+            console.error('Claim submission error:', error);
+
+            const claimStatus =
+                document.getElementById('claimStatus');
+
+            if (claimStatus) {
+                claimStatus.innerText =
+                    `❌ ${error.message || 'ไม่สามารถบันทึกข้อมูลได้'}`;
+                claimStatus.style.color = 'red';
+            }
+        } finally {
+            isClaimSubmissionInProgress = false;
+
+            const submitButton =
+                document.getElementById('submitBtn');
+
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent =
+                    submitButton.dataset.originalText ||
+                    '🟢 บันทึกข้อมูลเข้าสู่ระบบ';
+            }
+        }
 
 //const INACTIVITY_LIMIT = 5 * 60 * 1000; // ⏳ ตัวอย่างนี้ตั้งไว้ที่ 5 นาที (ปรับตัวเลขได้ตามใจชอบ)
 //#region

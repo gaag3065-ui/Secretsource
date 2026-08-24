@@ -154,6 +154,15 @@ function renderHistoryTable(historyData) {
             <td class="text-center">${latestEvent.adminName || '-'}</td>
             <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- คลิกเพื่อดูไทม์ไลน์ -</td>
         `;
+        const parentEvidenceCell =
+            createEvidenceDocumentsCell(
+                latestEvent.DocumentsAttached
+            );
+
+        parentTr.children[18].replaceWith(
+            parentEvidenceCell
+        );
+
         tableBody.appendChild(parentTr);
 
         const childRowsArray = [];
@@ -1270,11 +1279,21 @@ if (response.ok && result.success) {
                 evidenceUrls.medicalCertificateUrl || '',
             closeCaseImageUrl: evidenceUrls.closeCaseUrl || '',
 
-            DocumentsAttached: [
-                evidenceUrls.receiptUrl,
-                evidenceUrls.medicalCertificateUrl,
-                evidenceUrls.closeCaseUrl
-            ].filter(Boolean).join('\n') ||
+        DocumentsAttached: [
+            evidenceUrls.receiptUrl
+                ? `RECEIPT|${evidenceUrls.receiptUrl}`
+                : '',
+
+            evidenceUrls.medicalCertificateUrl
+                ? `MEDICAL_CERTIFICATE|${evidenceUrls.medicalCertificateUrl}`
+                : '',
+
+            evidenceUrls.closeCaseUrl
+                ? `CLOSE_CASE|${evidenceUrls.closeCaseUrl}`
+                : ''
+        ]
+            .filter(Boolean)
+            .join('\n') ||
             document.getElementById('ocInpDocs')?.value ||
             '-',
             notes: document.getElementById('ocNotesInput').value || '-'
@@ -1972,6 +1991,208 @@ function createHistoryActionCell(item) {
     return actionCell;
 }
 
+//แก้หน้ากรองประวัติก่อน
+//#region function getDriveFileId(url) {
+function getDriveFileId(url) {
+    const text = String(url || '').trim();
+
+    const filePathMatch =
+        text.match(/\/file\/d\/([^/?#]+)/i);
+
+    if (filePathMatch) {
+        return filePathMatch[1];
+    }
+
+    const queryMatch =
+        text.match(/[?&]id=([^&#]+)/i);
+
+    return queryMatch
+        ? queryMatch[1]
+        : '';
+}
+
+function getEvidencePreviewUrl(url, size = 'w320') {
+    const fileId = getDriveFileId(url);
+
+    if (!fileId) {
+        return String(url || '').trim();
+    }
+
+    return (
+        'https://drive.google.com/thumbnail?id=' +
+        encodeURIComponent(fileId) +
+        '&sz=' +
+        encodeURIComponent(size)
+    );
+}
+
+// แยกเอกสารแนบออกเป็น ใบเสร็จ ใบรับรองแพทย์ และหลักฐานปิดเคส
+//#region parseEvidenceDocuments
+function parseEvidenceDocuments(rawValue) {
+    const slots = {
+        receipt: {
+            label: 'รูปใบเสร็จ',
+            url: ''
+        },
+        medical: {
+            label: 'ใบรับรองแพทย์',
+            url: ''
+        },
+        closeCase: {
+            label: 'รูปหลักฐานการปิดเคส',
+            url: ''
+        }
+    };
+
+    const rawText =
+        String(rawValue || '').trim();
+
+    if (!rawText || rawText === '-') {
+        return Object.values(slots);
+    }
+
+    const lines = rawText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+    const unlabeledUrls = [];
+
+    for (const line of lines) {
+        const labeledMatch = line.match(
+            /^(RECEIPT|MEDICAL_CERTIFICATE|CLOSE_CASE)\|(.+)$/i
+        );
+
+        if (labeledMatch) {
+            const type =
+                labeledMatch[1].toUpperCase();
+
+            const url =
+                labeledMatch[2].trim();
+
+            if (type === 'RECEIPT') {
+                slots.receipt.url = url;
+            } else if (
+                type === 'MEDICAL_CERTIFICATE'
+            ) {
+                slots.medical.url = url;
+            } else if (
+                type === 'CLOSE_CASE'
+            ) {
+                slots.closeCase.url = url;
+            }
+
+            continue;
+        }
+
+        const urls =
+            line.match(/https?:\/\/[^\s]+/gi) || [];
+
+        unlabeledUrls.push(...urls);
+    }
+
+    /*
+     * รองรับข้อมูลเก่าที่ยังไม่มีชื่อประเภทกำกับ
+     * โดยเรียงตามลำดับเดิม:
+     * ใบเสร็จ > ใบรับรองแพทย์ > หลักฐานปิดเคส
+     */
+    const emptySlots = [
+        slots.receipt,
+        slots.medical,
+        slots.closeCase
+    ].filter((slot) => !slot.url);
+
+    unlabeledUrls.forEach((url, index) => {
+        if (emptySlots[index]) {
+            emptySlots[index].url = url;
+        }
+    });
+
+    return Object.values(slots);
+}
+//#endregion
+
+function createEvidenceDocumentsCell(rawValue) {
+    const cell = document.createElement('td');
+    cell.className = 'history-evidence-cell';
+
+    const container = document.createElement('div');
+    container.className = 'history-evidence-grid';
+
+    const documents =
+        parseEvidenceDocuments(rawValue);
+
+    documents.forEach((documentItem) => {
+        const section = document.createElement('div');
+        section.className = 'history-evidence-item';
+
+        const title = document.createElement('div');
+        title.className = 'history-evidence-title';
+        title.textContent = documentItem.label;
+
+        section.appendChild(title);
+
+        if (!documentItem.url) {
+            const empty = document.createElement('div');
+            empty.className = 'history-evidence-empty';
+            empty.textContent = 'ไม่มีรูป';
+            section.appendChild(empty);
+        } else {
+            const previewButton =
+                document.createElement('button');
+
+            previewButton.type = 'button';
+            previewButton.className =
+                'history-evidence-preview';
+            previewButton.title =
+                `ขยายดู${documentItem.label}`;
+
+            const image = document.createElement('img');
+            image.src = getEvidencePreviewUrl(
+                documentItem.url,
+                'w320'
+            );
+            image.alt = documentItem.label;
+            image.loading = 'lazy';
+
+            image.addEventListener('error', () => {
+                image.style.display = 'none';
+                previewButton.textContent = 'เปิดดูรูป';
+            });
+
+            previewButton.appendChild(image);
+
+            previewButton.addEventListener(
+                'click',
+                (event) => {
+                    event.stopPropagation();
+
+                    const largeImageUrl =
+                        getEvidencePreviewUrl(
+                            documentItem.url,
+                            'w1600'
+                        );
+
+                    window.open(
+                        largeImageUrl,
+                        '_blank',
+                        'noopener,noreferrer'
+                    );
+                }
+            );
+
+            section.appendChild(previewButton);
+        }
+
+        container.appendChild(section);
+    });
+
+    cell.appendChild(container);
+    return cell;
+}
+//#endregion
+
+
 function appendHistoryDataCells(row, item) {
     const values = [
         { value: item.treatmentDateTime },
@@ -2021,14 +2242,24 @@ function appendHistoryDataCells(row, item) {
             value: item.ClinicianReportedOutcomes
         },
         {
-            value: item.DocumentsAttached
+            value: item.DocumentsAttached,
+            type: 'evidence'
         },
         { value: item.notes },
         { value: item.autoDateTime },
         { value: item.adminName }
     ];
 
-    for (const itemValue of values) {
+        for (const itemValue of values) {
+        if (itemValue.type === 'evidence') {
+            row.appendChild(
+                createEvidenceDocumentsCell(
+                    itemValue.value
+                )
+            );
+            continue;
+        }
+
         row.appendChild(
             createHistoryTableCell(
                 itemValue.value,
