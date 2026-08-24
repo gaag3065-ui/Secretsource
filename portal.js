@@ -59,7 +59,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const availablePages = [
                 'search.html',
-                'accommodation.html'
+                'accommodation.html',
+                'assets.html'
             ];
 
             if (availablePages.includes(targetPage)) {

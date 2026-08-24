@@ -126,6 +126,13 @@ window.requirePagePermission = async function (
 
     const data = await response.json();
 
+    if (data.csrfToken) {
+    sessionStorage.setItem(
+        'csrfToken',
+        data.csrfToken
+    );
+        }
+
     if (
         !response.ok ||
         !data.success ||

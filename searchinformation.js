@@ -25,124 +25,541 @@ function initSearchBoxEvents() {
 }
 //#endregion
 
-// async function performSearch() {
-//#region
-    async function performSearch() {
-        const keyword = document.getElementById('keywordInput').value;
-        const messageDiv = document.getElementById('message');
-        const resultsList = document.getElementById('resultsList');
-        const tableBody = document.getElementById('tableBodyResult');
-        
-        resultsList.innerHTML = '';
-        if (tableBody) tableBody.innerHTML = '';
 
-        if (!keyword.trim()) { 
-            messageDiv.innerText = 'กรุณากรอกคำที่ต้องการค้นหา'; 
-            messageDiv.style.color = 'red'; 
-            return; 
+
+// ล็อกหรือปลดล็อกฟอร์มเปิดเคส จนกว่าจะเลือกพนักงาน
+//#region setTreatmentFormLocked
+function setTreatmentFormLocked(locked) {
+    const claimForm = document.getElementById('claimForm');
+
+    if (!claimForm) return false;
+
+    claimForm
+        .querySelectorAll('input, select, textarea, button')
+        .forEach((element) => {
+            if (locked) {
+                if (!element.dataset.originalDisabled) {
+                    element.dataset.originalDisabled =
+                        element.disabled ? 'true' : 'false';
+                }
+
+                element.disabled = true;
+            } else {
+                element.disabled =
+                    element.dataset.originalDisabled === 'true';
+            }
+        });
+
+    claimForm.classList.toggle(
+        'employee-not-selected',
+        locked
+    );
+
+    return true;
+}
+//#endregion
+
+// ล็อกฟอร์มก่อนเลือกพนักงาน และเปิดช่องกรอกหลังเลือก โดยคงช่องระบบไว้
+//#region setTreatmentFormLocked
+function setTreatmentFormLocked(locked) {
+    const claimForm =
+        document.getElementById('claimForm');
+
+    if (!claimForm) return false;
+
+    const systemControlledIds = new Set([
+        'treatmentDate',
+        'treatmentTime',
+        'caseId'
+    ]);
+
+    claimForm
+        .querySelectorAll(
+            'input, select, textarea, button'
+        )
+        .forEach((element) => {
+            if (locked) {
+                element.disabled = true;
+                return;
+            }
+
+            element.disabled =
+                systemControlledIds.has(element.id);
+        });
+
+    claimForm.classList.toggle(
+        'employee-not-selected',
+        locked
+    );
+
+    return true;
+}
+//#endregion
+
+// คัดลอกข้อความ พร้อมแสดงผลบนปุ่มชั่วคราว
+//#region copyEmployeeValue
+async function copyEmployeeValue(value, button) {
+    const text = String(value ?? '').trim();
+
+    if (!text || text === '-') return;
+
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch (error) {
+        const temporaryInput =
+            document.createElement('textarea');
+
+        temporaryInput.value = text;
+        temporaryInput.style.position = 'fixed';
+        temporaryInput.style.opacity = '0';
+
+        document.body.appendChild(temporaryInput);
+        temporaryInput.select();
+        document.execCommand('copy');
+        temporaryInput.remove();
+    }
+
+    const originalText = button.textContent;
+
+    button.textContent = 'Copied';
+    button.classList.add('copied');
+
+    window.setTimeout(() => {
+        button.textContent = originalText;
+        button.classList.remove('copied');
+    }, 1200);
+}
+//#endregion
+
+
+// ค้นหาพนักงาน แสดงรายการย่อ และเลือกก่อนเปิดใช้งานฟอร์ม
+//#region performSearch
+async function performSearch() {
+    if (performSearch.isRunning) return;
+
+    const keywordInput =
+        document.getElementById('keywordInput');
+
+    const messageDiv =
+        document.getElementById('message');
+
+    const resultsList =
+        document.getElementById('resultsList');
+
+    const tableBody =
+        document.getElementById('tableBodyResult');
+
+    const keyword =
+        String(keywordInput?.value || '').trim();
+
+    resultsList.innerHTML = '';
+
+    if (tableBody) {
+        tableBody.innerHTML = '';
+    }
+
+    setTreatmentFormLocked(true);
+
+    if (
+        typeof window.renderHistoryTable ===
+        'function'
+    ) {
+        window.renderHistoryTable([]);
+    }
+
+    const hiddenInputIds = [
+        'hiddenEmpName',
+        'hiddenCompany',
+        'hiddenSize',
+        'hiddenWorkLocation',
+        'hiddenInsuranceId'
+    ];
+
+    hiddenInputIds.forEach((id) => {
+        const element = document.getElementById(id);
+
+        if (element) {
+            element.value = '';
         }
-        
-        messageDiv.innerText = 'กำลังค้นหาข้อมูล...'; 
-        messageDiv.style.color = 'black';
+    });
 
-        try {
-            const response = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/search`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ keyword })
-            });
+    if (!keyword) {
+        messageDiv.textContent =
+            'กรุณากรอกคำที่ต้องการค้นหา';
 
-            const data = await response.json();
+        messageDiv.style.color = 'red';
+        return;
+    }
 
-            // 🎯 ปรับตรรกะเช็ควัตถุก้อนพนักงานตามแบบแผนใหม่
-            if (response.ok && data.success && data.employee) {
-                messageDiv.innerText = `พบข้อมูลพนักงานเรียบร้อยแล้ว`; 
-                messageDiv.style.color = 'green';
+    performSearch.isRunning = true;
 
-                
+    messageDiv.textContent =
+        'กำลังค้นหาข้อมูล...';
 
-                // ตัวแปรที่วิ่งไปปลดล็อกให้ช่องเป็นสีขาว
-                 const inputsToEnable = [
-                'manualDate', 'manualTime', 'hospitalSelect', 'symptomsInput', 'notesInput', 'submitBtn',
-                'inpDentalOPD', 'inpPPUsageOPD', 'inpPPUsageIPD', 'inpSLKUsageOpdThB', 'inpSLKUsageIpdThB', 
-                'inpSLKUsageOpdLkr', 'inpSLKUsageIpdLkr', 'inpOverLimitThB', 'inpOverLimitLkr', 
-                'inpExchangeRatesIns', 'inpExchangeRatesInt', 'inpClinician', 'inpDocs'
-               ];
-                inputsToEnable.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.disabled = false;
-                        if (id === 'submitBtn') el.style.backgroundColor = '#198754';
-                        else el.style.backgroundColor = '#ffffff';
-                        el.style.cursor = 'pointer';
-                    }
-                });
+    messageDiv.style.color = '#4b5563';
 
-                    const emp = data.employee;
+    const searchButton =
+        document.querySelector(
+            '#employeeSearch button[type="submit"], ' +
+            '#searchForm button[type="submit"], ' +
+            '#keywordInput + button'
+        );
 
-                    const hiddenEmployeeValues = {
-                        hiddenEmpName: emp.colG || '-',
-                        hiddenCompany: emp.colB || '-',
-                        hiddenSize: emp.colD || '-',
-                        hiddenWorkLocation: emp.colK || '-',
-                        hiddenInsuranceId: emp.colC || '-'
-                    };
+    if (searchButton) {
+        searchButton.disabled = true;
+        searchButton.dataset.originalText =
+            searchButton.textContent;
 
-                    Object.entries(hiddenEmployeeValues).forEach(
-                        ([elementId, value]) => {
-                            const element =
-                                document.getElementById(elementId);
+        searchButton.textContent = 'กำลังค้นหา...';
+    }
 
-                            if (element) {
-                                element.value = value;
-                            }
-                        }
+    const escapeHtml = (value) =>
+        String(value ?? '-')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+
+    const createInformationRow = (
+        label,
+        value
+    ) => {
+        const displayValue =
+            String(value ?? '').trim() || '-';
+
+        return `
+            <div class="employee-detail-row">
+                <span class="employee-detail-label">
+                    ${escapeHtml(label)}
+                </span>
+
+                <span class="employee-detail-value">
+                    ${escapeHtml(displayValue)}
+                </span>
+
+                <button
+                    type="button"
+                    class="employee-copy-button"
+                    data-copy-value="${escapeHtml(displayValue)}"
+                    ${displayValue === '-' ? 'disabled' : ''}
+                >
+                    Copy
+                </button>
+            </div>
+        `;
+    };
+
+    const selectEmployee = (
+        employee,
+        selectedItem
+    ) => {
+        document
+            .querySelectorAll(
+                '#resultsList .employee-result-option'
+            )
+            .forEach((item) => {
+                item.classList.remove('selected');
+                item.setAttribute(
+                    'aria-selected',
+                    'false'
+                );
+
+                const details =
+                    item.querySelector(
+                        '.employee-expanded-details'
                     );
 
-                // =======================================================================
-                // 🔐 [ระบบควบคุมซ่อน-แสดง คอลัมน์ประกัน SLK อัตโนมัติตามสถานที่ทำงาน]
-                // =======================================================================
-                const workLocation =
-                            data?.employee?.colK || '';
-                            window.setSlkColumnsVisibility(
-                            window.isSlkWorkLocation(workLocation)
-                        );
-                
-
-                // สร้างการ์ดข้อมูลพนักงานฝั่งซ้ายมือ
-                const card = document.createElement('div');
-                card.className = 'result-item';
-                card.innerHTML = `
-                    <p style="color: #28a745; font-weight: bold; font-size: 15px; margin: 0 0 10px 0;"> ผลลัพธ์:เจอ (แถวที่ ${emp.foundRow})</p>
-                    <div class="info-row"><span class="label-text">ชื่อ :</span><span class="value-text">${emp.colG}</span></div>
-                    <div class="info-row"><span class="label-text">บริษัท :</span><span class="value-text">${emp.colB}</span></div>
-                    <div class="info-row"><span class="label-text">รหัสพนักงาน :</span><span class="value-text">${emp.colE}</span></div>
-                    <div class="info-row"><span class="label-text">SIZE :</span><span class="value-text">${emp.colD}</span></div>
-                    <div class="info-row"><span class="label-text">InsuranceId :</span><span class="value-text">${emp.colC}</span></div>                                    
-                    <div class="info-row"><span class="label-text">สถานที่ทำงาน :</span><span class="value-text">${emp.colK}</span></div>
-                    <div class="info-row"><span class="label-text">วงเงิน OPD :</span><span class="value-text">${emp.colAV || '-'}</span></div>
-                    <div class="info-row"><span class="label-text">วงเงิน IPD :</span><span class="value-text">${emp.colAW || '-'}</span></div>
-                    <div class="info-row"><span class="label-text">วงเงิน OPD คงเหลือ :</span><span class="value-text">${emp.colBA || '-'}</span></div>
-                    <div class="info-row"><span class="label-text">วงเงิน IPD คงเหลือ :</span><span class="value-text">${emp.colBB || '-'}</span></div>
-                `;
-                resultsList.appendChild(card);
-
-                if (typeof window.renderHistoryTable === 'function') {
-                    window.renderHistoryTable(data.history || []);
+                if (details) {
+                    details.hidden = true;
                 }
-                window.setSlkColumnsVisibility(
-                window.isSlkWorkLocation(emp.colK)
-                 );
-       
+            });
 
-            } else {
-                messageDiv.innerText = data.message || 'ไม่พบข้อมูลในระบบ'; 
-                messageDiv.style.color = 'red';
+        selectedItem.classList.add('selected');
+
+        selectedItem.setAttribute(
+            'aria-selected',
+            'true'
+        );
+
+        const selectedDetails =
+            selectedItem.querySelector(
+                '.employee-expanded-details'
+            );
+
+        if (selectedDetails) {
+            selectedDetails.hidden = false;
+        }
+
+        const hiddenEmployeeValues = {
+            hiddenEmpName: employee.colG || '-',
+            hiddenCompany: employee.colB || '-',
+            hiddenSize: employee.colD || '-',
+            hiddenWorkLocation: employee.colK || '-',
+            hiddenInsuranceId: employee.colC || '-'
+        };
+
+        Object.entries(hiddenEmployeeValues)
+            .forEach(([elementId, value]) => {
+                const element =
+                    document.getElementById(elementId);
+
+                if (element) {
+                    element.value = value;
+                }
+            });
+
+        setTreatmentFormLocked(false);
+
+        window.setSlkColumnsVisibility(
+            window.isSlkWorkLocation(employee.colK)
+        );
+
+        if (
+            typeof window.renderHistoryTable ===
+            'function'
+        ) {
+            window.renderHistoryTable(
+                Array.isArray(employee.history)
+                    ? employee.history
+                    : []
+            );
+        }
+
+        messageDiv.textContent =
+            `เลือก ${employee.colG || '-'} | ` +
+            `${employee.colE || '-'} | ` +
+            `${employee.colC || '-'}`;
+
+        messageDiv.style.color = '#15803d';
+    };
+
+    try {
+        const response = await window.authFetch(
+            `${window.APP_CONFIG.API_BASE_URL}/api/search`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type':
+                        'application/json'
+                },
+                body: JSON.stringify({ keyword })
             }
-        } catch (error) { 
-            console.error(error);
-            messageDiv.innerText = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์'; 
-            messageDiv.style.color = 'red'; 
+        );
+
+        const data = await response.json();
+
+        const employees =
+            Array.isArray(data.employees)
+                ? data.employees
+                : (
+                    data.employee
+                        ? [data.employee]
+                        : []
+                );
+
+        if (
+            !response.ok ||
+            !data.success ||
+            employees.length === 0
+        ) {
+            messageDiv.textContent =
+                data.message ||
+                'ไม่พบข้อมูลพนักงาน';
+
+            messageDiv.style.color = 'red';
+            return;
+        }
+
+        messageDiv.textContent =
+            `พบ ${employees.length} รายการ ` +
+            'กรุณาคลิกเลือกพนักงาน';
+
+        messageDiv.style.color = '#166534';
+
+        const instruction =
+            document.createElement('div');
+
+        instruction.className =
+            'employee-selection-instruction';
+
+        instruction.textContent =
+            'กรุณาคลิกเลือกพนักงาน';
+
+        resultsList.appendChild(instruction);
+
+        employees.forEach((employee) => {
+            const item =
+                document.createElement('div');
+
+            item.className =
+                'employee-result-option';
+
+            item.tabIndex = 0;
+            item.setAttribute('role', 'option');
+            item.setAttribute(
+                'aria-selected',
+                'false'
+            );
+
+            item.innerHTML = `
+                <div class="employee-summary-line">
+                    <span class="employee-summary-name">
+                        ${escapeHtml(employee.colG)}
+                    </span>
+
+                    <span class="employee-summary-divider">
+                        |
+                    </span>
+
+                    <span>
+                        ${escapeHtml(employee.colE)}
+                    </span>
+
+                    <span class="employee-summary-divider">
+                        |
+                    </span>
+
+                    <span>
+                        ${escapeHtml(employee.colC)}
+                    </span>
+
+                    <span class="employee-summary-arrow">
+                        ▾
+                    </span>
+                </div>
+
+                <div
+                    class="employee-expanded-details"
+                    hidden
+                >
+                    <p class="employee-found-row">
+                        ผลลัพธ์: เจอ
+                        (แถวที่ ${escapeHtml(employee.foundRow)})
+                    </p>
+
+                    ${createInformationRow(
+                        'ชื่อ',
+                        employee.colG
+                    )}
+
+                    ${createInformationRow(
+                        'บริษัท',
+                        employee.colB
+                    )}
+
+                    ${createInformationRow(
+                        'รหัสพนักงาน',
+                        employee.colE
+                    )}
+
+                    ${createInformationRow(
+                        'SIZE',
+                        employee.colD
+                    )}
+
+                    ${createInformationRow(
+                        'InsuranceId',
+                        employee.colC
+                    )}
+
+                    ${createInformationRow(
+                        'สถานที่ทำงาน',
+                        employee.colK
+                    )}
+
+                    ${createInformationRow(
+                        'วงเงิน OPD',
+                        employee.colAV
+                    )}
+
+                    ${createInformationRow(
+                        'วงเงิน IPD',
+                        employee.colAW
+                    )}
+
+                    ${createInformationRow(
+                        'วงเงิน OPD คงเหลือ',
+                        employee.colBA
+                    )}
+
+                    ${createInformationRow(
+                        'วงเงิน IPD คงเหลือ',
+                        employee.colBB
+                    )}
+                </div>
+            `;
+
+            const selectCurrentEmployee = () => {
+                selectEmployee(employee, item);
+            };
+
+            item.addEventListener(
+                'click',
+                (event) => {
+                    const copyButton =
+                        event.target.closest(
+                            '.employee-copy-button'
+                        );
+
+                    if (copyButton) {
+                        event.stopPropagation();
+
+                        copyEmployeeValue(
+                            copyButton.dataset.copyValue,
+                            copyButton
+                        );
+
+                        return;
+                    }
+
+                    selectCurrentEmployee();
+                }
+            );
+
+            item.addEventListener(
+                'keydown',
+                (event) => {
+                    if (
+                        event.key === 'Enter' ||
+                        event.key === ' '
+                    ) {
+                        event.preventDefault();
+                        selectCurrentEmployee();
+                    }
+                }
+            );
+
+            resultsList.appendChild(item);
+        });
+
+        /*
+         * ไม่เลือกอัตโนมัติแม้พบเพียงหนึ่งคน
+         * ผู้ใช้ต้องคลิกยืนยันพนักงานก่อนเสมอ
+         */
+        setTreatmentFormLocked(true);
+    } catch (error) {
+        console.error(
+            'Employee search error:',
+            error
+        );
+
+        messageDiv.textContent =
+            'เกิดข้อผิดพลาดในการค้นหาข้อมูล';
+
+        messageDiv.style.color = 'red';
+
+        setTreatmentFormLocked(true);
+    } finally {
+        performSearch.isRunning = false;
+
+        if (searchButton) {
+            searchButton.disabled = false;
+
+            searchButton.textContent =
+                searchButton.dataset.originalText ||
+                'ค้นหา';
         }
     }
+}
 //#endregion

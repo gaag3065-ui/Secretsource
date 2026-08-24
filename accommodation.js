@@ -59,8 +59,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document
         .getElementById('accommodationReportButton')
-        ?.addEventListener('click', () => {
-            openAccommodationReport();
+        ?.addEventListener('click', async () => {
+            await downloadAccommodationReports();
         });
 
     document
@@ -651,4 +651,89 @@ document.addEventListener('keydown', (event) => {
     }
 });
 //#endregion
+
+//#region downloadAccommodationReports — ดาวน์โหลดรายงานห้องพักแยกบริษัท
+async function downloadAccommodationReports() {
+    const button =
+        document.getElementById('accommodationReportButton');
+
+    try {
+        if (button?.disabled) return;
+
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'กำลังสร้างรายงาน...';
+        }
+
+        const response = await window.authFetch(
+            `${window.APP_CONFIG.API_BASE_URL}/api/accommodation/reports`,
+            {
+                method: 'GET',
+                cache: 'no-store'
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(
+                result.message || 'ไม่สามารถสร้างรายงานได้'
+            );
+        }
+
+        if (!Array.isArray(result.files) || !result.files.length) {
+            throw new Error('ไม่พบข้อมูลพนักงาน ON WORK สำหรับสร้างรายงาน');
+        }
+
+        for (const file of result.files) {
+            const binaryText = atob(file.contentBase64);
+            const bytes = new Uint8Array(binaryText.length);
+
+            for (let index = 0; index < binaryText.length; index += 1) {
+                bytes[index] = binaryText.charCodeAt(index);
+            }
+
+            const blob = new Blob(
+                [bytes],
+                {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
+            );
+
+            const fileUrl = URL.createObjectURL(blob);
+            const downloadLink = document.createElement('a');
+
+            downloadLink.href = fileUrl;
+            downloadLink.download = file.fileName;
+            downloadLink.style.display = 'none';
+
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            downloadLink.remove();
+
+            setTimeout(() => {
+                URL.revokeObjectURL(fileUrl);
+            }, 1000);
+
+            await new Promise(resolve => {
+                setTimeout(resolve, 350);
+            });
+        }
+
+        alert(
+            `สร้างรายงานสำเร็จ ${result.fileCount} ไฟล์\n` +
+            `ประจำเดือน ${result.reportMonth} ${result.reportYear}`
+        );
+    } catch (error) {
+        console.error('Download accommodation reports error:', error);
+        alert(`ไม่สามารถสร้างรายงานได้: ${error.message}`);
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'จัดทำรายงานส่งส่วนกลาง';
+        }
+    }
+}
+//#endregion downloadAccommodationReports
+
 
