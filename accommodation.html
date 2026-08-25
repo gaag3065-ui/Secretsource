@@ -40,6 +40,16 @@
         </div>
 
         <div class="header-actions">
+            <button type="button" id="createBuildingButton" class="button button-secondary">สร้างทะเบียนอาคาร</button>
+            <button type="button" id="roomMaintenanceButton" class="button button-secondary">Room Maintenance</button>
+            <button
+                type="button"
+                id="syncInsuranceButton"
+                class="button button-secondary"
+            >
+                ซิงก์ข้อมูลจาก Insurance
+            </button>
+
             <button
                 type="button"
                 id="accommodationReportButton"
@@ -59,6 +69,7 @@
     </header>
 
     <main class="page-main">
+        <div class="accommodation-shell">
         <section class="overview-section">
             <div class="section-heading">
                 <div>
@@ -123,7 +134,25 @@
                 class="floor-room-container"
             ></div>
         </section>
+        </div>
     </main>
+
+    <div id="managementModal" class="modal-overlay" hidden>
+        <section class="management-modal" role="dialog" aria-modal="true" aria-labelledby="managementModalTitle">
+            <div class="report-header">
+                <div><span class="section-label">ACCOMMODATION MANAGEMENT</span><h2 id="managementModalTitle">รายการ</h2></div>
+                <button type="button" id="closeManagementModalButton" class="modal-close-button" aria-label="ปิด">×</button>
+            </div>
+            <form id="managementForm" class="management-form"></form>
+        </section>
+    </div>
+
+    <div id="imagePreviewModal" class="modal-overlay" hidden>
+        <section class="image-preview-modal" role="dialog" aria-modal="true" aria-label="รูปหลักฐาน">
+            <button type="button" id="closeImagePreviewButton" class="modal-close-button" aria-label="ปิด">×</button>
+            <img id="imagePreviewElement" alt="รูปหลักฐานงานซ่อม">
+        </section>
+    </div>
 
     <div
         id="accommodationReportModal"
