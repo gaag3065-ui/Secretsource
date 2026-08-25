@@ -492,6 +492,25 @@ window.injectNewRowToTableRealtime = function (payloadData) {
         adminName: payloadData.adminName || 'System Admin'
     };
 
+    window.currentIndividualHistory =
+        Array.isArray(window.currentIndividualHistory)
+            ? window.currentIndividualHistory
+            : [];
+
+    const realtimeHistoryIndex =
+        window.currentIndividualHistory.findIndex(
+            (item) =>
+                Number(item.targetRowNumber) ===
+                Number(mockEventItem.targetRowNumber)
+        );
+
+    if (realtimeHistoryIndex >= 0) {
+        window.currentIndividualHistory[realtimeHistoryIndex] =
+            mockEventItem;
+    } else {
+        window.currentIndividualHistory.push(mockEventItem);
+    }
+
     const safeJsonString = JSON.stringify(mockEventItem);
     const safeEncodedBase64 = window.btoa(unescape(encodeURIComponent(safeJsonString)));
 
@@ -807,12 +826,175 @@ window.injectNewRowToTableRealtime = function (payloadData) {
         };
 //#endregion
 
+const EDIT_EVIDENCE_TYPES = {
+    'รูปหลักฐานการเปิดเคส': {
+        type: 'OPEN_CASE',
+        prefix: 'Opencase'
+    },
+    'รูปใบเสร็จ': {
+        type: 'RECEIPT',
+        prefix: 'UpdateReceiptcase'
+    },
+    'ใบรับรองแพทย์': {
+        type: 'MEDICAL_CERTIFICATE',
+        prefix: 'MedicalCertificatecase'
+    },
+    'รูปหลักฐานการปิดเคส': {
+        type: 'CLOSE_CASE',
+        prefix: 'Closecase'
+    }
+};
+
+function renderEditEvidenceEditor(eventItem) {
+    const editor =
+        document.getElementById('mdEvidenceEditor');
+
+    if (!editor) return;
+
+    currentActiveCaseId = String(
+        eventItem.CaseIdNew || ''
+    );
+    currentActiveEventItem = eventItem;
+
+    editor.dataset.originalStatus =
+        eventItem.statusText || '-';
+
+    const rawValue =
+        eventItem.documentsAttached ||
+        eventItem.DocumentsAttached ||
+        '-';
+
+    const hiddenInput =
+        document.getElementById('mdInpDocs');
+
+    if (hiddenInput) hiddenInput.value = rawValue;
+
+    const documents = parseEvidenceDocuments(
+        rawValue,
+        eventItem.statusText
+    );
+
+    editor.replaceChildren();
+
+    for (const documentItem of documents) {
+        const config =
+            EDIT_EVIDENCE_TYPES[documentItem.label];
+
+        const card = document.createElement('div');
+        card.className = 'edit-evidence-card';
+        card.dataset.evidenceType = config.type;
+        card.dataset.evidencePrefix = config.prefix;
+        card.dataset.currentUrl = documentItem.url || '';
+
+        const title = document.createElement('div');
+        title.className = 'edit-evidence-card-title';
+        title.textContent = documentItem.label;
+
+        const current = document.createElement(
+            documentItem.url ? 'button' : 'div'
+        );
+        current.className = 'edit-evidence-current';
+
+        if (documentItem.url) {
+            current.type = 'button';
+            const image = document.createElement('img');
+            image.src = getEvidencePreviewUrl(
+                documentItem.url,
+                'w320'
+            );
+            image.alt = documentItem.label;
+            current.appendChild(image);
+            current.addEventListener('click', () =>
+                openImageViewer(
+                    getEvidencePreviewUrl(
+                        documentItem.url,
+                        'w1600'
+                    ),
+                    documentItem.label
+                )
+            );
+        } else {
+            current.textContent = 'ยังไม่มีรูป';
+        }
+
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/jpeg,image/png,image/webp';
+        fileInput.className = 'edit-evidence-file';
+        fileInput.title = `เลือกรูปใหม่สำหรับ${documentItem.label}`;
+
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files?.[0];
+            if (!file) return;
+
+            const previewUrl = URL.createObjectURL(file);
+            current.replaceChildren();
+            const image = document.createElement('img');
+            image.src = previewUrl;
+            image.alt = file.name;
+            current.appendChild(image);
+        });
+
+        const removeLabel = document.createElement('label');
+        removeLabel.className = 'edit-evidence-remove';
+        const removeInput = document.createElement('input');
+        removeInput.type = 'checkbox';
+        removeInput.className = 'edit-evidence-remove-input';
+        removeInput.disabled = !documentItem.url;
+        removeLabel.append(removeInput, 'ลบรูปเดิม');
+
+        card.append(
+            title,
+            current,
+            fileInput,
+            removeLabel
+        );
+        editor.appendChild(card);
+    }
+}
+
+async function collectEditedEvidenceDocuments() {
+    const cards = document.querySelectorAll(
+        '#mdEvidenceEditor .edit-evidence-card'
+    );
+    const lines = [];
+
+    for (const card of cards) {
+        const file = card.querySelector(
+            '.edit-evidence-file'
+        )?.files?.[0];
+        const removeExisting = card.querySelector(
+            '.edit-evidence-remove-input'
+        )?.checked === true;
+        let url = removeExisting
+            ? ''
+            : card.dataset.currentUrl || '';
+
+        if (file) {
+            url = await uploadUpdateEvidence(
+                file,
+                card.dataset.evidencePrefix
+            );
+        }
+
+        if (url) {
+            lines.push(
+                `${card.dataset.evidenceType}|${url}`
+            );
+        }
+    }
+
+    return lines.join('\n') || '-';
+}
+
 //ฟังก์ชันระบบแก้ไขข้อมูลย้อนหลังไปฝั่งล่าง
 //window.populateDataToForm = function (eventItem) {
 //window.closeEditModal = function () {
 //#region
 // 🎯 แก้ไขปรับปรุงใหม่: สั่งเปิดหน้าต่างแบบฟอร์มป๊อปอัป Modal ให้ดีดเด้งกึ่งกลางจอเป๊ะๆ 100%
 window.populateDataToForm = function (eventItem) {
+
+    renderEditEvidenceEditor(eventItem);
 
     //  สั่งให้ระบบค้นหาและจำพิกัดบรรทัดบนหน้าจอของปุ่มที่แอดมินเพิ่งคลิกเข้ามา
     const allRows = document.querySelectorAll('#tableBodyResult tr');
@@ -996,6 +1178,7 @@ window.executeFormUpdate = async function () {
 //#regionmodalOutcomeForm
 // 🎯 จัดการโหมดแก้ไขป๊อปอัป Modal (กล่องเหลืองทอง)
 window.openEditModal = function (eventItem, domIndex) {
+    renderEditEvidenceEditor(eventItem);
     currentEditingRowIndex = eventItem.targetRowNumber || -1;
     currentDomRowIndex = domIndex;
 
@@ -1050,10 +1233,22 @@ function initHistoryModalEvents() {
                 e.preventDefault(); // บล็อกหน้าจอไม่ให้รีเฟรชทิ้ง
 
                 const symptoms = document.getElementById('mdSymptomsInput').value;
-                if (!symptoms.trim()) { 
+                if (!symptoms.trim()) {
                     alert("⚠️ กรุณากรอกรายละเอียดอาการป่วยในป๊อปอัปด้วยครับ"); 
                     document.getElementById('mdSymptomsInput').focus();
-                    return; 
+                    return;
+                }
+
+                let editedDocuments;
+
+                try {
+                    editedDocuments =
+                        await collectEditedEvidenceDocuments();
+                } catch (error) {
+                    alert(
+                        `อัปโหลดรูปสำหรับแก้ไขไม่สำเร็จ: ${error.message}`
+                    );
+                    return;
                 }
 
                 // รวบรวมก้อนข้อมูล Payload ทั้งหมดจากช่องฟอร์มป๊อปอัป
@@ -1070,7 +1265,9 @@ function initHistoryModalEvents() {
                     insuranceId: document.getElementById('hiddenInsuranceId').value || '-',
                     size: document.getElementById('hiddenSize').value || 'M',
                     employeeName: document.getElementById('hiddenEmpName').value || '-',
-                    statusText: "แก้ไขและปรับปรุงข้อมูลเคสการรักษา", 
+                    statusText:
+                        document.getElementById('mdEvidenceEditor')
+                            ?.dataset.originalStatus || '-',
                     
                     // ดึงยอดสิทธิ์วงเงินจากป๊อปอัป
                     DentalOPD: document.getElementById('mdInpDentalOPD').value || '0',
@@ -1086,7 +1283,9 @@ function initHistoryModalEvents() {
                     ExchangeRatesInt: document.getElementById('mdInpExchangeRatesInt').value || '1',
                     
                     ClinicianReportedOutcomes: document.getElementById('mdInpClinician').value || '-',
-                    DocumentsAttached: document.getElementById('mdInpDocs').value || '-',
+                    DocumentsAttached: editedDocuments,
+                    previousDocumentsAttached:
+                        document.getElementById('mdInpDocs').value || '-',
                     notes: document.getElementById('mdNotesInput').value || '-'
                 };
 
@@ -1105,6 +1304,12 @@ function initHistoryModalEvents() {
 
 if (response.ok && result.success) {
             alert('🎉 บันทึกปรับปรุงแก้ไขข้อมูลและส่งแถวลง Google Sheets สำเร็จเรียบร้อย!');
+
+            if (result.driveCleanupWarning) {
+                alert(
+                    `ข้อมูลแก้ไขสำเร็จ แต่มีคำเตือนเรื่องรูปบน Drive: ${result.driveCleanupWarning}`
+                );
+            }
             
             const editModal = document.getElementById('editCaseModal');
             if (editModal) { editModal.style.setProperty('display', 'none', 'important'); }
@@ -1175,8 +1380,12 @@ if (response.ok && result.success) {
                     cells[17].innerText =
                         payload.ClinicianReportedOutcomes || '-';
 
-                    cells[18].innerText =
-                        payload.DocumentsAttached || '-';
+                    cells[18].replaceWith(
+                        createEvidenceDocumentsCell(
+                            payload.DocumentsAttached,
+                            payload.statusText
+                        )
+                    );
 
                     cells[19].innerText =
                         payload.notes || '-';
@@ -1190,6 +1399,27 @@ if (response.ok && result.success) {
                     for (let index = 6; index <= 14; index++) {
                         cells[index].style.fontWeight = 'bold';
                     }
+                }
+
+                const historyIndex =
+                    (window.currentIndividualHistory || [])
+                        .findIndex(
+                            (item) =>
+                                Number(item.targetRowNumber) ===
+                                Number(payload.sheetRowIndex)
+                        );
+
+                if (historyIndex >= 0) {
+                    window.currentIndividualHistory[historyIndex] = {
+                        ...window.currentIndividualHistory[historyIndex],
+                        ...payload,
+                        targetRowNumber:
+                            Number(payload.sheetRowIndex)
+                    };
+
+                    renderHistoryTable(
+                        window.currentIndividualHistory
+                    );
                 }
 
                    // 🎯 บันทึกครอบค่าล่าสุดฝังคืนลงไปในปุ่มแก้ไขของบรรทัดนั้นด้วย
@@ -1434,6 +1664,12 @@ async function executeDeleteRow(
             );
         }
 
+        if (result.driveCleanupWarning) {
+            alert(
+                `ลบข้อมูลสำเร็จ แต่มีคำเตือนเรื่องรูปบน Drive: ${result.driveCleanupWarning}`
+            );
+        }
+
         if (
             window.historyDisplayMode ===
             'filtered'
@@ -1445,7 +1681,14 @@ async function executeDeleteRow(
                 ).filter(item =>
                     Number(item.targetRowNumber) !==
                     Number(sheetRowIndex)
-                );
+                ).map((item) => ({
+                    ...item,
+                    targetRowNumber:
+                        Number(item.targetRowNumber) >
+                        Number(sheetRowIndex)
+                            ? Number(item.targetRowNumber) - 1
+                            : Number(item.targetRowNumber)
+                }));
 
             renderFlatHistoryTable(
                 window.currentFilteredHistory
@@ -1481,7 +1724,14 @@ async function executeDeleteRow(
                 ).filter(item =>
                     Number(item.targetRowNumber) !==
                     Number(sheetRowIndex)
-                );
+                ).map((item) => ({
+                    ...item,
+                    targetRowNumber:
+                        Number(item.targetRowNumber) >
+                        Number(sheetRowIndex)
+                            ? Number(item.targetRowNumber) - 1
+                            : Number(item.targetRowNumber)
+                }));
 
             renderHistoryTable(
                 window.currentIndividualHistory

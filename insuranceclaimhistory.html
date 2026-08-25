@@ -203,7 +203,7 @@
             </div>
 
             <p style="margin: 15px 0 8px 0; font-weight: bold; color: #198754; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">📊 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัย</p>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">
+            <div class="edit-money-grid">
                 <div><label style="font-size:11px; font-weight:bold; color:#555;">ทำฟัน หักวงเงิน OPD</label><input type="number" id="ocInpDentalOPD" step="any" value="0"></div>
                 <div><label style="font-size:11px; font-weight:bold; color:#555;">PP OPD</label><input type="number" id="ocInpPPUsageOPD" step="any" value="0"></div>
                 <div><label style="font-size:11px; font-weight:bold; color:#555;">PP IPD</label><input type="number" id="ocInpPPUsageIPD" step="any" value="0"></div>
@@ -375,7 +375,11 @@
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
                 <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">ผลการรักษา</label><input type="text" id="mdInpClinician" placeholder="-"></div>
-                <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">เอกสารแนบ</label><input type="text" id="mdInpDocs" placeholder="-"></div>
+                <div>
+                    <label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">เอกสารแนบ</label>
+                    <input type="hidden" id="mdInpDocs" value="-">
+                    <div id="mdEvidenceEditor" class="edit-evidence-editor"></div>
+                </div>
             </div>
 
             <div style="margin-bottom: 20px;">

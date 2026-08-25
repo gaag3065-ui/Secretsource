@@ -857,6 +857,85 @@
     grid-template-columns: repeat(4, minmax(68px, 1fr));
 }
 
+.edit-money-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: #f8f9fa;
+}
+
+.edit-money-grid > div,
+.edit-money-grid input {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.edit-evidence-editor {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+    gap: 8px;
+}
+
+.edit-evidence-card {
+    min-width: 0;
+    padding: 7px;
+    border: 1px solid #d8e3df;
+    border-radius: 7px;
+    background: #f8fbfa;
+}
+
+.edit-evidence-card-title {
+    min-height: 30px;
+    color: #28574d;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.edit-evidence-current {
+    display: grid;
+    width: 100%;
+    height: 76px;
+    place-items: center;
+    margin-bottom: 6px;
+    padding: 2px;
+    border: 1px dashed #cbd9d5;
+    border-radius: 5px;
+    background: #fff;
+    color: #87938f;
+    font-size: 10px;
+    overflow: hidden;
+}
+
+button.edit-evidence-current {
+    cursor: zoom-in;
+}
+
+.edit-evidence-current img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.edit-evidence-file {
+    width: 100%;
+    font-size: 9px;
+}
+
+.edit-evidence-remove {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    margin-top: 5px;
+    color: #b42318;
+    font-size: 9px;
+}
+
 #claimForm input:disabled,
 #claimForm textarea:disabled {
     cursor: text !important;
