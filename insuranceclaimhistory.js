@@ -154,9 +154,14 @@ function renderHistoryTable(historyData) {
             <td class="text-center">${latestEvent.adminName || '-'}</td>
             <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- คลิกเพื่อดูไทม์ไลน์ -</td>
         `;
+        const combinedCaseEvidence =
+            combineCaseEvidenceDocuments(timelines);
+
         const parentEvidenceCell =
             createEvidenceDocumentsCell(
-                latestEvent.DocumentsAttached
+                combinedCaseEvidence,
+                latestEvent.statusText,
+                true
             );
 
         parentTr.children[18].replaceWith(
@@ -202,6 +207,15 @@ function renderHistoryTable(historyData) {
                     ${window.hasPermission?.('DeleteTreatment') === true ? `<button type="button" data-permission="DeleteTreatment" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(${event.targetRowNumber}, '${caseId}')">🗑️ ลบ</button>` : ''}
                 </td>
             `;
+            const childEvidenceCell =
+                createEvidenceDocumentsCell(
+                    event.DocumentsAttached,
+                    event.statusText
+                );
+
+            childTr.children[18].replaceWith(
+                childEvidenceCell
+            );
             tableBody.appendChild(childTr);
             childRowsArray.push(childTr);
         });
@@ -514,6 +528,14 @@ window.injectNewRowToTableRealtime = function (payloadData) {
         <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- ไทม์ไลน์เรียลไทม์ -</td>
     `;
 
+    parentTr.children[18].replaceWith(
+        createEvidenceDocumentsCell(
+            mockEventItem.DocumentsAttached,
+            mockEventItem.statusText,
+            true
+        )
+    );
+
     const childTr = document.createElement('tr');
     childTr.className = `child-row-of-${caseId}`;
     childTr.style.display = 'none'; 
@@ -548,6 +570,13 @@ window.injectNewRowToTableRealtime = function (payloadData) {
         </td>
     `;
 
+    childTr.children[18].replaceWith(
+        createEvidenceDocumentsCell(
+            mockEventItem.DocumentsAttached,
+            mockEventItem.statusText
+        )
+    );
+
             if (payloadData.isTimelineUpdate === true) {
             const existingParent = Array.from(
                 tableBody.querySelectorAll('.parent-row')
@@ -559,6 +588,28 @@ window.injectNewRowToTableRealtime = function (payloadData) {
             });
 
             if (existingParent) {
+                const existingEvidenceCell =
+                    existingParent.children[18];
+
+                const combinedEvidence =
+                    combineCaseEvidenceDocuments([
+                        {
+                            DocumentsAttached:
+                                existingEvidenceCell?.dataset
+                                    ?.evidenceRaw || '-',
+                            statusText: 'สรุปหลักฐานทั้งเคส'
+                        },
+                        mockEventItem
+                    ]);
+
+                existingEvidenceCell?.replaceWith(
+                    createEvidenceDocumentsCell(
+                        combinedEvidence,
+                        'สรุปหลักฐานทั้งเคส',
+                        true
+                    )
+                );
+
                 const existingSpacer = Array.from(tableBody.children)
                     .find((row) =>
                         row.classList.contains(
@@ -2026,10 +2077,18 @@ function getEvidencePreviewUrl(url, size = 'w320') {
     );
 }
 
-// แยกเอกสารแนบออกเป็น ใบเสร็จ ใบรับรองแพทย์ และหลักฐานปิดเคส
+// แยกเอกสารแนบออกเป็นหลักฐานเปิดเคส ใบเสร็จ ใบรับรองแพทย์ และหลักฐานปิดเคส
 //#region parseEvidenceDocuments
-function parseEvidenceDocuments(rawValue) {
+function parseEvidenceDocuments(
+    rawValue,
+    statusText = '',
+    showCompleteCase = false
+) {
     const slots = {
+        openCase: {
+            label: 'รูปหลักฐานการเปิดเคส',
+            url: ''
+        },
         receipt: {
             label: 'รูปใบเสร็จ',
             url: ''
@@ -2047,8 +2106,23 @@ function parseEvidenceDocuments(rawValue) {
     const rawText =
         String(rawValue || '').trim();
 
+    const isOpeningEvent =
+        /แจ้งประกัน|เปิดเคส/i.test(
+            String(statusText || '')
+        );
+
     if (!rawText || rawText === '-') {
-        return Object.values(slots);
+        if (showCompleteCase) {
+            return Object.values(slots);
+        }
+
+        return isOpeningEvent
+            ? [slots.openCase]
+            : [
+                slots.receipt,
+                slots.medical,
+                slots.closeCase
+            ];
     }
 
     const lines = rawText
@@ -2060,7 +2134,7 @@ function parseEvidenceDocuments(rawValue) {
 
     for (const line of lines) {
         const labeledMatch = line.match(
-            /^(RECEIPT|MEDICAL_CERTIFICATE|CLOSE_CASE)\|(.+)$/i
+            /^(OPEN_CASE|RECEIPT|MEDICAL_CERTIFICATE|CLOSE_CASE)\|(.+)$/i
         );
 
         if (labeledMatch) {
@@ -2070,7 +2144,9 @@ function parseEvidenceDocuments(rawValue) {
             const url =
                 labeledMatch[2].trim();
 
-            if (type === 'RECEIPT') {
+            if (type === 'OPEN_CASE') {
+                slots.openCase.url = url;
+            } else if (type === 'RECEIPT') {
                 slots.receipt.url = url;
             } else if (
                 type === 'MEDICAL_CERTIFICATE'
@@ -2093,14 +2169,18 @@ function parseEvidenceDocuments(rawValue) {
 
     /*
      * รองรับข้อมูลเก่าที่ยังไม่มีชื่อประเภทกำกับ
-     * โดยเรียงตามลำดับเดิม:
-     * ใบเสร็จ > ใบรับรองแพทย์ > หลักฐานปิดเคส
+     * URL เดี่ยวจากข้อมูลเปิดเคสรุ่นเดิมให้เป็นหลักฐานเปิดเคส
+     * ส่วนข้อมูลหลาย URL รุ่นเดิมเรียงเป็น ใบเสร็จ > ใบรับรองแพทย์ > หลักฐานปิดเคส
      */
-    const emptySlots = [
-        slots.receipt,
-        slots.medical,
-        slots.closeCase
-    ].filter((slot) => !slot.url);
+    const emptySlots = (
+        unlabeledUrls.length === 1
+            ? [slots.openCase]
+            : [
+                slots.receipt,
+                slots.medical,
+                slots.closeCase
+            ]
+    ).filter((slot) => !slot.url);
 
     unlabeledUrls.forEach((url, index) => {
         if (emptySlots[index]) {
@@ -2108,19 +2188,121 @@ function parseEvidenceDocuments(rawValue) {
         }
     });
 
-    return Object.values(slots);
+    const hasOpeningEvidence =
+        Boolean(slots.openCase.url);
+
+    const hasTreatmentEvidence = [
+        slots.receipt,
+        slots.medical,
+        slots.closeCase
+    ].some((slot) => Boolean(slot.url));
+
+    if (showCompleteCase) {
+        return Object.values(slots);
+    }
+
+    if (
+        isOpeningEvent ||
+        (hasOpeningEvidence && !hasTreatmentEvidence)
+    ) {
+        return [slots.openCase];
+    }
+
+    return [
+        slots.receipt,
+        slots.medical,
+        slots.closeCase
+    ];
 }
 //#endregion
 
-function createEvidenceDocumentsCell(rawValue) {
+function combineCaseEvidenceDocuments(timelines) {
+    const combined = new Map();
+
+    for (const event of timelines || []) {
+        const documents = parseEvidenceDocuments(
+            event.DocumentsAttached,
+            event.statusText,
+            true
+        );
+
+        for (const documentItem of documents) {
+            if (documentItem.url) {
+                combined.set(
+                    documentItem.label,
+                    documentItem.url
+                );
+            }
+        }
+    }
+
+    const labels = [
+        ['รูปหลักฐานการเปิดเคส', 'OPEN_CASE'],
+        ['รูปใบเสร็จ', 'RECEIPT'],
+        ['ใบรับรองแพทย์', 'MEDICAL_CERTIFICATE'],
+        ['รูปหลักฐานการปิดเคส', 'CLOSE_CASE']
+    ];
+
+    return labels
+        .filter(([label]) => combined.has(label))
+        .map(
+            ([label, type]) =>
+                `${type}|${combined.get(label)}`
+        )
+        .join('\n');
+}
+
+function createEvidenceDocumentsCell(
+    rawValue,
+    statusText = '',
+    showCompleteCase = false
+) {
     const cell = document.createElement('td');
     cell.className = 'history-evidence-cell';
+    cell.dataset.evidenceRaw =
+        String(rawValue || '-');
 
     const container = document.createElement('div');
     container.className = 'history-evidence-grid';
 
-    const documents =
-        parseEvidenceDocuments(rawValue);
+    const parsedDocuments =
+        parseEvidenceDocuments(
+            rawValue,
+            statusText,
+            showCompleteCase
+        );
+
+    let documents = parsedDocuments;
+
+    if (showCompleteCase) {
+        const documentsByLabel = new Map(
+            parsedDocuments.map((item) => [
+                item.label,
+                item
+            ])
+        );
+
+        documents = [
+            'รูปหลักฐานการเปิดเคส',
+            'รูปใบเสร็จ',
+            'ใบรับรองแพทย์',
+            'รูปหลักฐานการปิดเคส'
+        ].map(
+            (label) =>
+                documentsByLabel.get(label) || {
+                    label,
+                    url: ''
+                }
+        );
+    }
+
+    container.classList.add(
+        documents.length === 4
+            ? 'complete-case'
+            : documents.length === 3
+                ? 'treatment-update'
+                : 'open-case'
+    );
 
     documents.forEach((documentItem) => {
         const section = document.createElement('div');
@@ -2173,10 +2355,9 @@ function createEvidenceDocumentsCell(rawValue) {
                             'w1600'
                         );
 
-                    window.open(
+                    openImageViewer(
                         largeImageUrl,
-                        '_blank',
-                        'noopener,noreferrer'
+                        documentItem.label
                     );
                 }
             );
@@ -2254,7 +2435,8 @@ function appendHistoryDataCells(row, item) {
         if (itemValue.type === 'evidence') {
             row.appendChild(
                 createEvidenceDocumentsCell(
-                    itemValue.value
+                    itemValue.value,
+                    item.statusText
                 )
             );
             continue;

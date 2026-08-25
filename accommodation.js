@@ -5,7 +5,8 @@ const accommodationState = {
     unmatchedEmployees: [],
     selectedWorkArea: '',
     selectedBuilding: null,
-    refreshTimer: null
+    refreshTimer: null,
+    refreshInProgress: false
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -62,12 +63,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.location.href = 'portal.html';
         });
 
-    document
-        .getElementById('syncInsuranceButton')
-        ?.addEventListener('click', async () => {
-            await syncInsuranceAccommodationData();
-        });
-
     document.getElementById('roomMaintenanceButton')
         ?.addEventListener('click', openMaintenanceOverview);
     document.getElementById('createBuildingButton')
@@ -117,12 +112,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (event.target.id === 'imagePreviewModal') closeImagePreview();
         });
 
+    await syncInsuranceAccommodationData({ silent: true, reload: false });
     await loadAccommodationData();
     accommodationState.refreshTimer = window.setInterval(
-        () => loadAccommodationData({ silent: true }),
-        5000
+        refreshAccommodationRealtime,
+        15000
     );
 });
+
+async function refreshAccommodationRealtime() {
+    if (accommodationState.refreshInProgress || document.hidden) return;
+    accommodationState.refreshInProgress = true;
+    try {
+        await syncInsuranceAccommodationData({ silent: true, reload: false });
+        await loadAccommodationData({ silent: true });
+    } finally {
+        accommodationState.refreshInProgress = false;
+    }
+}
 
 async function loadAccommodationData(options = {}) {
     const buildingGrid =
@@ -192,15 +199,8 @@ async function loadAccommodationData(options = {}) {
     }
 }
 
-async function syncInsuranceAccommodationData() {
-    const button = document.getElementById('syncInsuranceButton');
-
+async function syncInsuranceAccommodationData(options = {}) {
     try {
-        if (button) {
-            button.disabled = true;
-            button.textContent = 'กำลังซิงก์...';
-        }
-
         const response = await window.authFetch(
             `${window.APP_CONFIG.API_BASE_URL}/api/accommodation-management/sync-insurance`,
             { method: 'POST' }
@@ -211,21 +211,18 @@ async function syncInsuranceAccommodationData() {
             throw new Error(result.message || 'ซิงก์ข้อมูลไม่สำเร็จ');
         }
 
-        alert(
-            `ซิงก์พนักงาน ${result.employeeCount} คน\n` +
-            `จับคู่ห้องแล้ว ${result.matchedCount} คน\n` +
-            `รอตรวจสอบ ${result.unmatchedCount} คน`
-        );
+        if (!options.silent) {
+            alert(
+                `ซิงก์พนักงาน ${result.employeeCount} คน\n` +
+                `จับคู่ห้องแล้ว ${result.matchedCount} คน\n` +
+                `รอตรวจสอบ ${result.unmatchedCount} คน`
+            );
+        }
 
-        await loadAccommodationData();
+        if (options.reload !== false) await loadAccommodationData({ silent: true });
     } catch (error) {
         console.error('Accommodation sync error:', error);
-        alert(`ไม่สามารถซิงก์ข้อมูลได้: ${error.message}`);
-    } finally {
-        if (button) {
-            button.disabled = false;
-            button.textContent = 'ซิงก์ข้อมูลจาก Insurance';
-        }
+        if (!options.silent) alert(`ไม่สามารถซิงก์ข้อมูลได้: ${error.message}`);
     }
 }
 
@@ -521,22 +518,25 @@ function renderRegisteredBuildingDetails(building, options = {}) {
         await loadAccommodationData({ silent: true });
     });
     overview.querySelector('[data-action="additional"]')?.addEventListener('click', () => alert('เตรียมช่องสำหรับรายละเอียดเพิ่มเติมแล้ว โดยจะกำหนดชนิดข้อมูลเมื่อได้รับข้อกำหนดจากผู้ใช้'));
-    overview.querySelector('[data-verify-contract]')?.addEventListener('click', async event => {
+    overview.querySelectorAll('[data-verify-contract]').forEach(button => button.addEventListener('click', async event => {
         if (!confirm('ยืนยันว่าตรวจข้อความกับสัญญาต้นฉบับแล้วทุกช่อง?')) return;
         await accommodationRequest(`/contracts/${event.currentTarget.dataset.verifyContract}/verification`, { method: 'POST', body: JSON.stringify({ decision: 'VERIFIED' }) });
         await loadAccommodationData({ silent: true });
-    });
-    overview.querySelector('[data-reject-contract]')?.addEventListener('click', async event => {
+    }));
+    overview.querySelectorAll('[data-reject-contract]').forEach(button => button.addEventListener('click', async event => {
         if (!confirm('ปฏิเสธร่างสัญญานี้?')) return;
         await accommodationRequest(`/contracts/${event.currentTarget.dataset.rejectContract}/verification`, { method: 'POST', body: JSON.stringify({ decision: 'REJECTED' }) });
         await loadAccommodationData({ silent: true });
-    });
-    overview.querySelector('[data-edit-contract]')?.addEventListener('click', () => openContractForm(building, (building.contracts || [])[0]));
-    overview.querySelector('[data-delete-contract]')?.addEventListener('click', async event => {
+    }));
+    overview.querySelectorAll('[data-edit-contract]').forEach(button => button.addEventListener('click', event => {
+        const contract = (building.contracts || []).find(item => item.id === event.currentTarget.dataset.editContract);
+        openContractForm(building, contract);
+    }));
+    overview.querySelectorAll('[data-delete-contract]').forEach(button => button.addEventListener('click', async event => {
         if (!confirm('ยืนยันยกเลิกสัญญานี้? ระบบจะเก็บประวัติไว้และไม่ลบถาวร')) return;
         await accommodationRequest(`/contracts/${event.currentTarget.dataset.deleteContract}`, { method: 'DELETE' });
         await loadAccommodationData({ silent: true });
-    });
+    }));
     overview.querySelectorAll('[data-edit-expense]').forEach(button => {
         const expense = (building.expenses || []).find(item => item.id === button.dataset.editExpense);
         button.addEventListener('click', () => openExpenseForm(building, expense));
@@ -628,10 +628,11 @@ function renderContractPanel(contracts) {
     if (!contracts.length) {
         return `<section class="contract-panel"><h3>สรุปสัญญาเช่า</h3><p>ยังไม่มีข้อมูลสัญญาที่ผ่านการตรวจสอบ จึงยังไม่นำผล OCR มาแสดงเป็นข้อเท็จจริง</p><span class="review-badge">รอตรวจสอบโดยบุคคล</span></section>`;
     }
-    const contract = contracts[0];
-    return `<section class="contract-panel">
+    return contracts.map(contract => `<section class="contract-panel">
         <h3>สรุปสัญญาเช่า <span class="review-badge">${escapeHtml(contract.verificationStatus)}</span></h3>
         <div class="contract-grid">
+            <span>บริษัท: <b>${escapeHtml(contract.tenantCompanyCode || '-')}</b></span>
+            <span>ยูนิต: <b>${escapeHtml(contract.unitReference || '-')}</b></span>
             <span>ผู้ให้เช่า: <b>${escapeHtml(contract.lessorName || '-')}</b></span>
             <span>ผู้เช่า: <b>${escapeHtml(contract.lesseeName || '-')}</b></span>
             <span>ผู้ลงนาม: <b>${escapeHtml(contract.signerName || '-')}</b></span>
@@ -649,7 +650,7 @@ function renderContractPanel(contracts) {
             <button type="button" class="mini-button" data-delete-contract="${escapeHtml(contract.id)}">ยกเลิกสัญญา</button>
             ${contract.verificationStatus === 'REVIEW_REQUIRED' ? `<button type="button" class="mini-button" data-verify-contract="${escapeHtml(contract.id)}">ยืนยันว่าตรวจต้นฉบับแล้ว</button><button type="button" class="mini-button" data-reject-contract="${escapeHtml(contract.id)}">ปฏิเสธร่าง</button>` : ''}
         </div>
-    </section>`;
+    </section>`).join('');
 }
 
 function renderBuildingAlerts(alerts) {
@@ -679,7 +680,11 @@ function openManagementModal(title, fields, onSubmit) {
         event.preventDefault();
         const submit = form.querySelector('[type="submit"]');
         if (submit) submit.disabled = true;
-        try { await onSubmit(Object.fromEntries(new FormData(form).entries())); closeManagementModal(); await loadAccommodationData({ silent: true }); }
+        try {
+            await onSubmit(Object.fromEntries(new FormData(form).entries()));
+            closeManagementModal();
+            await loadAccommodationData({ silent: true });
+        }
         catch (error) { alert(error.message); }
         finally { if (submit) submit.disabled = false; }
     };
@@ -702,6 +707,9 @@ async function accommodationRequest(path, options = {}) {
     });
     const result = await response.json();
     if (!response.ok || !result.success) throw new Error(result.message || 'บันทึกข้อมูลไม่สำเร็จ');
+    if (String(options.method || 'GET').toUpperCase() !== 'GET') {
+        await syncInsuranceAccommodationData({ silent: true, reload: false });
+    }
     return result;
 }
 

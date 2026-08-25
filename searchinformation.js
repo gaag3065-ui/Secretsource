@@ -250,6 +250,36 @@ async function performSearch() {
         `;
     };
 
+    const getEmploymentStatus = (value) => {
+        const rawStatus = String(value ?? '').trim();
+        const normalizedStatus = rawStatus.toLowerCase();
+
+        if (
+            normalizedStatus === 'on work' ||
+            normalizedStatus === 'onwork'
+        ) {
+            return {
+                label: 'on work',
+                className: 'on-work'
+            };
+        }
+
+        if (
+            normalizedStatus === 'resigned' ||
+            normalizedStatus === 'ลาออก'
+        ) {
+            return {
+                label: 'resigned',
+                className: 'resigned'
+            };
+        }
+
+        return {
+            label: rawStatus || 'ไม่ระบุสถานะ',
+            className: 'unknown'
+        };
+    };
+
     const selectEmployee = (
         employee,
         selectedItem
@@ -389,6 +419,9 @@ async function performSearch() {
         resultsList.appendChild(instruction);
 
         employees.forEach((employee) => {
+            const employmentStatus =
+                getEmploymentStatus(employee.colI);
+
             const item =
                 document.createElement('div');
 
@@ -424,6 +457,12 @@ async function performSearch() {
                         ${escapeHtml(employee.colC)}
                     </span>
 
+                    <span
+                        class="employee-status-badge ${employmentStatus.className}"
+                    >
+                        ${escapeHtml(employmentStatus.label)}
+                    </span>
+
                     <span class="employee-summary-arrow">
                         ▾
                     </span>
@@ -437,6 +476,11 @@ async function performSearch() {
                         ผลลัพธ์: เจอ
                         (แถวที่ ${escapeHtml(employee.foundRow)})
                     </p>
+
+                    ${createInformationRow(
+                        'สถานะปัจจุบัน',
+                        employmentStatus.label
+                    )}
 
                     ${createInformationRow(
                         'ชื่อ',

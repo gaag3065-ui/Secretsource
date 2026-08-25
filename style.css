@@ -87,10 +87,10 @@
             background-color: #ffffff; 
         }
         
-        input[readonly] { 
-            background-color: #e9ecef; 
-            color: #495057; 
-            cursor: not-allowed; 
+        input[readonly] {
+            background-color: #e9ecef;
+            color: #495057;
+            cursor: text;
         }
         
         /* ล็อกขนาดความสูงขั้นต่ำของช่องกรอกใหญ่ทั้งอาการป่วยและหมายเหตุ */
@@ -844,8 +844,59 @@
 
 .history-evidence-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(92px, 1fr));
+    grid-template-columns: minmax(92px, 110px);
+    justify-content: center;
     gap: 7px;
+}
+
+.history-evidence-grid.treatment-update {
+    grid-template-columns: repeat(3, minmax(72px, 1fr));
+}
+
+.history-evidence-grid.complete-case {
+    grid-template-columns: repeat(4, minmax(68px, 1fr));
+}
+
+#claimForm input:disabled,
+#claimForm textarea:disabled {
+    cursor: text !important;
+}
+
+#claimForm select:disabled,
+#claimForm button:disabled,
+#claimForm input[type="file"]:disabled {
+    cursor: default !important;
+}
+
+.employee-status-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 3px 9px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.employee-status-badge.on-work {
+    border-color: #93c5fd;
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.employee-status-badge.resigned {
+    border-color: #fca5a5;
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.employee-status-badge.unknown {
+    border-color: #d1d5db;
+    background: #f3f4f6;
+    color: #4b5563;
 }
 
 .history-evidence-item {

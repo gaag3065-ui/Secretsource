@@ -229,6 +229,8 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
                 // 🎯 1. ทำความสะอาดชื่อพนักงาน ลบช่องว่างเป็นขีดล่างตามปกติ
                 const cleanEmpName = empNameInput.trim().replace(/\s+/g, '_'); 
 
+            let driveFileUrl = '';
+
             if (fileInput && fileInput.files.length > 0) {
             try {
                 const getBase64 = (file) => new Promise((res, rej) => {
@@ -310,6 +312,9 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
             size: document.getElementById('hiddenSize').value,
             employeeName: document.getElementById('hiddenEmpName').value,
             statusText: "แจ้งประกัน กำลังเข้ารับการรักษา",
+            DocumentsAttached: driveFileUrl
+                ? `OPEN_CASE|${driveFileUrl}`
+                : '-',
             notes: document.getElementById('notesInput').value
         };
 
