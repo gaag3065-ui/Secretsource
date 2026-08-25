@@ -13,10 +13,7 @@ const LOCAL_API_URL = 'http://127.0.0.1:43127';
 // Backend สำหรับเว็บไซต์จริง
 // ตอนนี้ยังใช้ค่าว่างไว้ก่อน จนกว่าเราจะจัดการ Production Backend
 const PRODUCTION_API_URL = 'https://remove-liabilities-vol-consensus.trycloudflare.com';
-// ทดสอบๆๆๆๆๆๆ
-// ทดสอบๆๆๆๆๆๆ22222
-// ทดสอบๆๆๆๆๆๆ33333
-// ทดสอบๆๆๆๆๆๆ444444
+////ทดสอบกลับ 06337
 
 // API หลักที่ทุกหน้าในระบบจะเรียกใช้
 window.APP_CONFIG = {
