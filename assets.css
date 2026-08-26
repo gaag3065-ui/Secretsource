@@ -1302,6 +1302,58 @@ body.asset-modal-open {
     }
 }
 
+/* Barcode scanner */
+.asset-scanner-panel {
+    width: min(100%, 620px);
+}
+
+.asset-scanner-viewport {
+    position: relative;
+    overflow: hidden;
+    min-height: 280px;
+    border-radius: 16px;
+    background: #0f172a;
+}
+
+.asset-scanner-viewport video {
+    display: block;
+    width: 100%;
+    min-height: 280px;
+    max-height: 58vh;
+    object-fit: cover;
+}
+
+.asset-scanner-guide {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: min(78%, 420px);
+    height: 132px;
+    border: 3px solid #5eead4;
+    border-radius: 14px;
+    box-shadow: 0 0 0 999px rgb(15 23 42 / 42%);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.asset-scanner-manual {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: end;
+    margin-top: 18px;
+}
+
+@media (max-width: 600px) {
+    .asset-scanner-viewport,
+    .asset-scanner-viewport video {
+        min-height: 230px;
+    }
+
+    .asset-scanner-manual {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* #endregion */
 
 /* #region หน้าต่างขยายรูปภาพทรัพย์สิน */
