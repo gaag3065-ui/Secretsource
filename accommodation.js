@@ -112,7 +112,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (event.target.id === 'imagePreviewModal') closeImagePreview();
         });
 
-    await syncInsuranceAccommodationData({ silent: true, reload: false });
     await loadAccommodationData();
     accommodationState.refreshTimer = window.setInterval(
         refreshAccommodationRealtime,
@@ -124,7 +123,6 @@ async function refreshAccommodationRealtime() {
     if (accommodationState.refreshInProgress || document.hidden) return;
     accommodationState.refreshInProgress = true;
     try {
-        await syncInsuranceAccommodationData({ silent: true, reload: false });
         await loadAccommodationData({ silent: true });
     } finally {
         accommodationState.refreshInProgress = false;
