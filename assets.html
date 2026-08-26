@@ -1545,6 +1545,89 @@
 </div>
 <!-- #endregion -->
 
+<!-- #region Barcode scanner -->
+<div
+    id="assetScannerModal"
+    class="asset-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="assetScannerModalTitle"
+    hidden
+>
+    <div
+        class="asset-modal-backdrop"
+        data-close-asset-scanner
+    ></div>
+
+    <section class="asset-modal-panel asset-scanner-panel">
+        <header class="asset-modal-header">
+            <div>
+                <span class="asset-eyebrow">ASSET SCANNER</span>
+                <h2 id="assetScannerModalTitle">สแกน Barcode / QR Code</h2>
+            </div>
+
+            <button
+                id="closeAssetScannerButton"
+                class="asset-modal-close"
+                type="button"
+                aria-label="ปิดเครื่องสแกน"
+            >
+                ×
+            </button>
+        </header>
+
+        <div class="asset-modal-body">
+            <div id="assetScannerViewport" class="asset-scanner-viewport">
+                <video
+                    id="assetScannerVideo"
+                    playsinline
+                    muted
+                    aria-label="ภาพจากกล้องสำหรับสแกนรหัส"
+                ></video>
+                <div class="asset-scanner-guide" aria-hidden="true"></div>
+            </div>
+
+            <p
+                id="assetScannerMessage"
+                class="asset-form-message"
+                role="status"
+                aria-live="polite"
+            >
+                กำลังเตรียมกล้อง…
+            </p>
+
+            <form id="assetScannerManualForm" class="asset-scanner-manual">
+                <label class="asset-field" for="assetScannerManualInput">
+                    <span>หรือกรอกรหัสด้วยตนเอง</span>
+                    <input
+                        id="assetScannerManualInput"
+                        type="text"
+                        maxlength="150"
+                        autocomplete="off"
+                        inputmode="text"
+                        placeholder="Barcode, QR Code หรือรหัสทรัพย์สิน"
+                    >
+                </label>
+
+                <button class="asset-primary-button" type="submit">
+                    ค้นหารหัสนี้
+                </button>
+            </form>
+        </div>
+
+        <footer class="asset-modal-footer">
+            <button
+                id="cancelAssetScannerButton"
+                class="asset-secondary-button"
+                type="button"
+            >
+                ยกเลิก
+            </button>
+        </footer>
+    </section>
+</div>
+<!-- #endregion -->
+
 
     <script src="version.js"></script>
     <script src="config.js"></script>

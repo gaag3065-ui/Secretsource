@@ -15,6 +15,12 @@ const assetState = {
         workAreas: []
     },
     currentAsset: null,
+    scanner: {
+        stream: null,
+        detector: null,
+        frameRequest: null,
+        active: false
+    },
 
     audit: {
         assetId: null,
@@ -321,9 +327,36 @@ document
 
     document
         .getElementById('scanAssetButton')
-        ?.addEventListener('click', () => {
-            alert('ขั้นต่อไปจะเชื่อมระบบสแกน Barcode และ QR Code');
-        });
+        ?.addEventListener('click', openAssetScanner);
+
+    document
+        .getElementById('closeAssetScannerButton')
+        ?.addEventListener('click', closeAssetScanner);
+
+    document
+        .getElementById('cancelAssetScannerButton')
+        ?.addEventListener('click', closeAssetScanner);
+
+    document
+        .querySelector('[data-close-asset-scanner]')
+        ?.addEventListener('click', closeAssetScanner);
+
+    document
+        .getElementById('assetScannerManualForm')
+        ?.addEventListener('submit', submitManualAssetCode);
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) closeAssetScanner();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (
+            event.key === 'Escape' &&
+            !document.getElementById('assetScannerModal')?.hidden
+        ) {
+            closeAssetScanner();
+        }
+    });
 
     document
     .getElementById('newAssetLocation')
@@ -427,6 +460,213 @@ document.addEventListener('keydown', (event) => {
 // #endregion
 
 
+}
+
+async function openAssetScanner() {
+    const modal = document.getElementById('assetScannerModal');
+    const manualInput =
+        document.getElementById('assetScannerManualInput');
+
+    if (!modal) return;
+
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('asset-modal-open');
+    if (manualInput) manualInput.value = '';
+
+    if (
+        !window.isSecureContext ||
+        !navigator.mediaDevices?.getUserMedia
+    ) {
+        setAssetScannerMessage(
+            'อุปกรณ์นี้เปิดกล้องจากหน้าเว็บไม่ได้ กรุณากรอกรหัสด้านล่าง',
+            'error'
+        );
+        manualInput?.focus();
+        return;
+    }
+
+    if (!('BarcodeDetector' in window)) {
+        setAssetScannerMessage(
+            'เบราว์เซอร์นี้ยังไม่รองรับการอ่านรหัสอัตโนมัติ กรุณากรอกรหัสด้านล่าง',
+            'error'
+        );
+        manualInput?.focus();
+        return;
+    }
+
+    setAssetScannerMessage('กำลังขอสิทธิ์ใช้งานกล้อง…', 'loading');
+
+    try {
+        const supportedFormats =
+            await window.BarcodeDetector.getSupportedFormats();
+        const preferredFormats = [
+            'qr_code',
+            'code_128',
+            'code_39',
+            'ean_13',
+            'ean_8',
+            'upc_a',
+            'upc_e',
+            'itf',
+            'data_matrix'
+        ].filter((format) => supportedFormats.includes(format));
+
+        assetState.scanner.detector =
+            new window.BarcodeDetector(
+                preferredFormats.length
+                    ? { formats: preferredFormats }
+                    : undefined
+            );
+
+        assetState.scanner.stream =
+            await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: {
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            });
+
+        const video = document.getElementById('assetScannerVideo');
+        video.srcObject = assetState.scanner.stream;
+        await video.play();
+
+        assetState.scanner.active = true;
+        setAssetScannerMessage(
+            'วางรหัสให้อยู่ในกรอบ ระบบจะค้นหาให้อัตโนมัติ',
+            'success'
+        );
+        scanAssetVideoFrame();
+    } catch (error) {
+        console.error('Asset scanner error:', error);
+        stopAssetScannerCamera();
+        setAssetScannerMessage(
+            getAssetScannerErrorMessage(error),
+            'error'
+        );
+        manualInput?.focus();
+    }
+}
+
+async function scanAssetVideoFrame() {
+    if (!assetState.scanner.active) return;
+
+    const video = document.getElementById('assetScannerVideo');
+
+    try {
+        if (video?.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+            const results =
+                await assetState.scanner.detector.detect(video);
+            const value = String(results?.[0]?.rawValue || '').trim();
+
+            if (value) {
+                assetState.scanner.active = false;
+                applyScannedAssetCode(value);
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('Asset barcode detection error:', error);
+    }
+
+    assetState.scanner.frameRequest =
+        window.setTimeout(scanAssetVideoFrame, 250);
+}
+
+function submitManualAssetCode(event) {
+    event.preventDefault();
+
+    const value = String(
+        document.getElementById('assetScannerManualInput')?.value || ''
+    ).trim();
+
+    if (!value) {
+        setAssetScannerMessage(
+            'กรุณากรอกรหัสก่อนค้นหา',
+            'error'
+        );
+        return;
+    }
+
+    applyScannedAssetCode(value);
+}
+
+function applyScannedAssetCode(value) {
+    const searchInput = document.getElementById('assetSearchInput');
+
+    if (!searchInput) return;
+
+    searchInput.value = value.slice(0, 150);
+    closeAssetScanner();
+    assetState.page = 1;
+    document.getElementById('assetSearchForm')?.requestSubmit();
+}
+
+function closeAssetScanner() {
+    const modal = document.getElementById('assetScannerModal');
+
+    stopAssetScannerCamera();
+
+    if (!modal || modal.hidden) return;
+
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+
+    if (!document.querySelector('.asset-modal:not([hidden])')) {
+        document.body.classList.remove('asset-modal-open');
+    }
+
+    document.getElementById('scanAssetButton')?.focus();
+}
+
+function stopAssetScannerCamera() {
+    assetState.scanner.active = false;
+
+    if (assetState.scanner.frameRequest !== null) {
+        window.clearTimeout(assetState.scanner.frameRequest);
+        assetState.scanner.frameRequest = null;
+    }
+
+    assetState.scanner.stream
+        ?.getTracks()
+        .forEach((track) => track.stop());
+
+    assetState.scanner.stream = null;
+    assetState.scanner.detector = null;
+
+    const video = document.getElementById('assetScannerVideo');
+
+    if (video) {
+        video.pause();
+        video.srcObject = null;
+    }
+}
+
+function setAssetScannerMessage(message, status = '') {
+    const element = document.getElementById('assetScannerMessage');
+
+    if (!element) return;
+
+    element.textContent = message;
+    element.dataset.status = status;
+}
+
+function getAssetScannerErrorMessage(error) {
+    if (error?.name === 'NotAllowedError') {
+        return 'ไม่ได้รับสิทธิ์ใช้กล้อง กรุณาอนุญาตกล้องหรือกรอกรหัสด้านล่าง';
+    }
+
+    if (error?.name === 'NotFoundError') {
+        return 'ไม่พบกล้องบนอุปกรณ์นี้ กรุณากรอกรหัสด้านล่าง';
+    }
+
+    if (error?.name === 'NotReadableError') {
+        return 'กล้องกำลังถูกใช้งานโดยแอปอื่น กรุณาปิดแอปนั้นแล้วลองใหม่';
+    }
+
+    return 'เปิดเครื่องสแกนไม่สำเร็จ กรุณากรอกรหัสด้านล่าง';
 }
 
 function applyAssetPermissions() {
