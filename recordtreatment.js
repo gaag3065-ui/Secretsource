@@ -311,7 +311,7 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
             insuranceId: document.getElementById('hiddenInsuranceId').value,
             size: document.getElementById('hiddenSize').value,
             employeeName: document.getElementById('hiddenEmpName').value,
-            statusText: "แจ้งประกัน กำลังเข้ารับการรักษา",
+            statusText: "เปิดเคสและแจ้งประกันแล้ว รอเข้ารับการรักษา",
             DocumentsAttached: driveFileUrl
                 ? `OPEN_CASE|${driveFileUrl}`
                 : '-',
@@ -350,6 +350,13 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
 
                 if (typeof injectNewRowToTableRealtime === "function") {
                     injectNewRowToTableRealtime(payload);
+                }
+
+                if (
+                    typeof window.refreshContinuitySummary ===
+                    'function'
+                ) {
+                    await window.refreshContinuitySummary();
                 }
 
                 if (typeof fetchNextCaseId === "function") {

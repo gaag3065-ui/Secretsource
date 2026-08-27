@@ -58,24 +58,23 @@
 
 
 
-<!-- = ส่วนหน้ารวม = -->
-<div class="flex-row-container">
+<div class="insurance-workspace-layout">
+    <div class="employee-sidebar-track">
+        <aside id="search-box-placeholder" class="card-container left-box employee-fixed-sidebar"></aside>
+    </div>
 
+    <main class="insurance-main-content">
+        <div
+            id="continuity-care-placeholder"
+            class="continuity-placeholder"
+        ></div>
 
-<!-- <div class="card-container left-box">-->
-<!-- = ส่วนหน้าค้นหาข้อมูลพนักงาน = -->
-<div id="search-box-placeholder" class="card-container left-box"></div>
+        <div id="treatment-box-placeholder" class="treatment-inline-panel"></div>
 
-<!--<div class="card-container middle-box"></div>-->
-<!-- = ส่วนหน้าบันทึกข้อมูลเข้ารักษา = -->
-<div id="treatment-box-placeholder" style="flex: 1; min-width: 0;"></div>
+    </main>
 
-
+    <div id="table-box-placeholder" class="history-main-panel"></div>
 </div>
-
-<!--<div class="card-container bottom-full-box"></div>-->
-<!-- 📦 กล่องรวมขนาดใหญ่ด้านล่าง (Full Width Container) -->
-<div id="table-box-placeholder" style="width: 100%; margin-top: 20px;"></div>
 
 
 
@@ -238,6 +237,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         // =====================================================
         // 2. โหลด HTML ย่อย
         // =====================================================
+            const canViewContinuity = await loadPermittedComponent(
+                'ViewAllHistory',
+                'continuity-care-placeholder',
+                'continuitycare.html'
+            );
+
             const canSearch = await loadPermittedComponent(
                 'SearchData',
                 'search-box-placeholder',
@@ -256,9 +261,41 @@ document.addEventListener("DOMContentLoaded", async () => {
                 'insuranceclaimhistory.html'
             );
 
+            const continuityTreatmentSlot =
+                document.getElementById('continuityTreatmentSlot');
+            const treatmentBoxPlaceholder =
+                document.getElementById('treatment-box-placeholder');
+
+            const workspaceLayout =
+                document.querySelector('.insurance-workspace-layout');
+            const insuranceMainContent =
+                document.querySelector('.insurance-main-content');
+            const continuityStickySummary =
+                document.querySelector('.continuity-sticky-summary');
+
+            if (
+                workspaceLayout &&
+                insuranceMainContent &&
+                continuityStickySummary
+            ) {
+                workspaceLayout.insertBefore(
+                    continuityStickySummary,
+                    insuranceMainContent
+                );
+            }
+
+            if (continuityTreatmentSlot && treatmentBoxPlaceholder) {
+                continuityTreatmentSlot.appendChild(treatmentBoxPlaceholder);
+            }
+
         console.log(
             "🎮 โครงสร้าง HTML ประกอบร่างรวมศูนย์สำเร็จ!"
         );
+
+            if (canViewContinuity) {
+                await loadScript('continuitycare.js');
+                await window.refreshContinuitySummary();
+            }
 
 
         // =====================================================

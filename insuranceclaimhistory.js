@@ -84,6 +84,28 @@ async function manualLogout() {
 // ================================================================================================================================================================== //
 // =============  ส่วนบน  ==================== โค้ดฟังชั่นปรับตรรกะในที่เวลาคลิกแล้วจะกรองเอาแถวของเคสนั้นๆมาแสดง หากมีแถวเดียวก็ไม่ต้องลง =========================================== //
 // =================================================================================================================================================================== //
+function getTreatmentStatusBadgeStyle(statusText) {
+    const value = String(statusText || '');
+
+    if (/ปิดเคส|เอกสารและบัญชีครบถ้วน/i.test(value)) {
+        return 'background-color:#dcfce7;color:#166534;padding:4px 8px;border-radius:4px;';
+    }
+
+    if (/รักษาเสร็จ|บิล|เอกสาร|เคลม|เงินคืน|เคลียร์บัญชี|สำรองจ่าย/i.test(value)) {
+        return 'background-color:#ffedd5;color:#9a3412;padding:4px 8px;border-radius:4px;';
+    }
+
+    if (/ติดตาม|นัด|กลับบ้าน|รักษาต่อ|หัตถการ/i.test(value)) {
+        return 'background-color:#ede9fe;color:#5b21b6;padding:4px 8px;border-radius:4px;';
+    }
+
+    if (/ระหว่าง|กำลัง|นอน|เฝ้าดู|รอผลตรวจ|แผนการรักษา/i.test(value)) {
+        return 'background-color:#dbeafe;color:#1e40af;padding:4px 8px;border-radius:4px;';
+    }
+
+    return 'background-color:#fef3c7;color:#92400e;padding:4px 8px;border-radius:4px;';
+}
+
 function renderHistoryTable(historyData) {
 
         window.historyDisplayMode = 'individual';
@@ -117,9 +139,8 @@ function renderHistoryTable(historyData) {
         // 🎯 ปรับปรุงใหม่: ล็อกความสามารถให้ทุกเคส ID สามารถคลิกเปลี่ยนสไลด์เปิด-ปิดได้เหมือนกันทั้งหมด 100%
         const hasMultipleEvents = timelines.length > 1;
 
-        let badgeStyle = latestEvent.statusText && latestEvent.statusText.includes("รักษาเสร็จ") 
-            ? "background-color: #d1e7dd; color: #0f5132; padding: 4px 8px; border-radius: 4px;" 
-            : "background-color: #fff3cd; color: #664d03; padding: 4px 8px; border-radius: 4px;";
+        const badgeStyle =
+            getTreatmentStatusBadgeStyle(latestEvent.statusText);
 
         const parentTr = document.createElement('tr');
         parentTr.className = 'parent-row';
@@ -470,7 +491,9 @@ window.injectNewRowToTableRealtime = function (payloadData) {
         targetRowNumber: targetRowNo, 
         CaseIdNew: caseId,
         treatmentDateTime: payloadData.treatmentDateTime || '-',
-        statusText: payloadData.statusText || 'แจ้งประกัน กำลังเข้ารับการรักษา',
+        statusText:
+            payloadData.statusText ||
+            'เปิดเคสและแจ้งประกันแล้ว รอเข้ารับการรักษา',
         symptoms: payloadData.symptoms || '-',
         workLocation: payloadData.workLocation || '-',
         hospital: payloadData.hospital || '-',
@@ -524,7 +547,7 @@ window.injectNewRowToTableRealtime = function (payloadData) {
             <div class="case-cell"><span class="txt-case-id">${caseId}</span><span class="toggle-arrow" style="margin-left:5px;">▼</span></div>
         </td>
         <td class="text-center">${mockEventItem.treatmentDateTime}</td>
-        <td class="text-center"><span style="background-color: #fff3cd; color: #664d03; padding: 4px 8px; border-radius: 4px;">${mockEventItem.statusText}</span></td>
+        <td class="text-center"><span style="${getTreatmentStatusBadgeStyle(mockEventItem.statusText)}">${mockEventItem.statusText}</span></td>
         <td class="text-left" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${mockEventItem.symptoms || '-'}</td>
         <td>${getDisplayWorkLocation(mockEventItem)}</td>
         <td class="text-left">${mockEventItem.hospital || '-'}</td>
@@ -740,7 +763,53 @@ window.injectNewRowToTableRealtime = function (payloadData) {
 //ฟังก์ชันหยอดค่าข้อมูลประวัติพนักงานเดิม เข้าสู่หน้าต่างป๊อปอัปผลการรักษา (Populate Data)
 //window.populateOutcomeToModal = function(eventItem) {
 //#region
-        window.populateOutcomeToModal = function(eventItem) {
+        function setOutcomeModalLayout(modal, inline) {
+            if (!modal) return;
+
+            const container = modal.firstElementChild;
+            const modalStyles = inline
+                ? {
+                    position: 'static',
+                    zIndex: 'auto',
+                    left: 'auto',
+                    top: 'auto',
+                    width: '100%',
+                    height: 'auto',
+                    backgroundColor: 'transparent',
+                    alignItems: 'stretch',
+                    justifyContent: 'flex-start'
+                }
+                : {
+                    position: 'fixed',
+                    zIndex: '99999',
+                    left: '0',
+                    top: '0',
+                    width: '100vw',
+                    height: '100vh',
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                };
+
+            Object.entries(modalStyles).forEach(([property, value]) => {
+                modal.style.setProperty(
+                    property.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`),
+                    value,
+                    'important'
+                );
+            });
+
+            if (container) {
+                container.style.setProperty('width', inline ? '100%' : '95%', 'important');
+                container.style.setProperty('max-width', inline ? 'none' : '1100px', 'important');
+                container.style.setProperty('max-height', inline ? 'none' : '90vh', 'important');
+                container.style.setProperty('box-shadow', inline ? 'none' : '0 8px 30px rgba(0, 0, 0, 0.25)', 'important');
+            }
+        }
+
+        window.setOutcomeModalLayout = setOutcomeModalLayout;
+
+        window.populateOutcomeToModal = function(eventItem, options = {}) {
             resetUpdateEvidenceFiles();
             currentActiveEventItem = eventItem;
             currentActiveCaseId = String(
@@ -750,7 +819,9 @@ window.injectNewRowToTableRealtime = function (payloadData) {
             ).trim();
    
         const hiddenWorkLocationEl = document.getElementById('hiddenWorkLocation');
-        const workLocation = hiddenWorkLocationEl ? hiddenWorkLocationEl.value : '';
+        const workLocation =
+            eventItem.workLocation ||
+            (hiddenWorkLocationEl ? hiddenWorkLocationEl.value : '');
         const slkWrapper = document.getElementById('ocSlkFieldsWrapper');
 
         if (slkWrapper) {
@@ -769,7 +840,22 @@ window.injectNewRowToTableRealtime = function (payloadData) {
 
             currentEditingRowIndex = eventItem.targetRowNumber || -1;
             const modal = document.getElementById('outcomeUpdateModal');
-            if (modal) { modal.style.display = 'flex'; }
+            const modalHome = document.getElementById('outcomeUpdateModalHome');
+            const inlineTarget = options.inlineTarget;
+
+            if (modal) {
+                if (inlineTarget instanceof HTMLElement) {
+                    inlineTarget.appendChild(modal);
+                    modal.classList.add('continuity-inline-update');
+                    setOutcomeModalLayout(modal, true);
+                    modal.style.setProperty('display', 'block', 'important');
+                } else {
+                    if (modalHome) modalHome.after(modal);
+                    modal.classList.remove('continuity-inline-update');
+                    setOutcomeModalLayout(modal, false);
+                    modal.style.setProperty('display', 'flex', 'important');
+                }
+            }
 
             function setOcInput(id, value) {
                 const el = document.getElementById(id);
@@ -1487,7 +1573,11 @@ if (response.ok && result.success) {
 
         // 1. ดึงข้อมูลพื้นฐานจากหน้าจอโมดอลสีเขียว
         const caseId = document.getElementById('ocCaseId').value;
-        const empNameInput = document.getElementById('hiddenEmpName')?.value || document.getElementById('employeeName')?.value || 'Unknown';
+        const empNameInput =
+            currentActiveEventItem?.employeeName ||
+            document.getElementById('hiddenEmpName')?.value ||
+            document.getElementById('employeeName')?.value ||
+            'Unknown';
         const cleanEmpName = empNameInput.trim().replace(/\s+/g, '_');
 
         
@@ -1521,13 +1611,28 @@ if (response.ok && result.success) {
             autoDateTime: document.getElementById('headerDateTimeValue').innerText,
             adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin',
             treatmentDateTime: `${document.getElementById('ocManualDate').value} ${document.getElementById('ocManualTime').value}`.trim(),
-            company: document.getElementById('hiddenCompany').value || 'CALL 365',
-            workLocation: document.getElementById('hiddenWorkLocation').value || '-',
+            company:
+                currentActiveEventItem?.company ||
+                document.getElementById('hiddenCompany').value ||
+                'CALL 365',
+            workLocation:
+                currentActiveEventItem?.workLocation ||
+                document.getElementById('hiddenWorkLocation').value ||
+                '-',
             hospital: document.getElementById('ocHospital').value,
             symptoms: document.getElementById('ocSymptoms').value,
-            insuranceId: document.getElementById('hiddenInsuranceId').value || '-',
-            size: document.getElementById('hiddenSize').value || 'M',
-            employeeName: document.getElementById('hiddenEmpName').value || '-',
+            insuranceId:
+                currentActiveEventItem?.insuranceId ||
+                document.getElementById('hiddenInsuranceId').value ||
+                '-',
+            size:
+                currentActiveEventItem?.size ||
+                document.getElementById('hiddenSize').value ||
+                'M',
+            employeeName:
+                currentActiveEventItem?.employeeName ||
+                document.getElementById('hiddenEmpName').value ||
+                '-',
 
             // 🎯 แนบตัวแปรชี้ขาด ส่งสัญญาณบอกหลังบ้านว่านี่คือการเพิ่มประวัติเคสเก่า ห้ามเปลี่ยนเลขเคสเด็ดขาด!
             isTimelineUpdate: true, 
@@ -1603,13 +1708,19 @@ if (response.ok && result.success) {
                     payload.sheetRowIndex = result.updatedRowIndex;
 
                     // สั่งกระตุ้นให้ตารางดาวน์โหลดรีโหลดข้อมูลเรียลไทม์ใหม่ทันที
+                if (
+                    typeof window.injectNewRowToTableRealtime === 'function'
+                ) {
+                    window.injectNewRowToTableRealtime(payload);
+                }
+
                     if (
-                        typeof window.injectNewRowToTableRealtime === 'function'
+                        typeof window.refreshContinuitySummary === 'function'
                     ) {
-                        window.injectNewRowToTableRealtime(payload);
+                        await window.refreshContinuitySummary();
                     }
 
-                } else { 
+                } else {
                     alert('❌ เซิร์ฟเวอร์หลังบ้านปฏิเสธคำขอ: ' + result.message); 
                 }
             } catch (err) { 
