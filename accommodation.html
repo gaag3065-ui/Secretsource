@@ -25,6 +25,7 @@
 </head>
 
 <body>
+    <div class="top-dock">
     <header class="page-header">
         <div class="header-title">
             <span class="header-eyebrow">
@@ -59,39 +60,34 @@
             </button>
         </div>
     </header>
+    <div class="top-controls">
+        <section class="room-search-section" aria-labelledby="roomSearchTitle">
+            <div class="room-search-heading">
+                <div><span class="section-label">ค้นหาและจัดการห้อง</span><h2 id="roomSearchTitle">ค้นหาหมายเลขห้อง</h2></div>
+                <label class="room-search-control"><span class="sr-only">หมายเลขห้อง</span><input id="roomSearchInput" type="search" placeholder="พิมพ์หมายเลขหรือชื่อห้อง เช่น 101" autocomplete="off"></label>
+            </div>
+            <div id="roomSearchResults" class="room-search-results" aria-live="polite">พิมพ์หมายเลขห้องเพื่อค้นหา</div>
+        </section>
+    </div>
+    </div>
 
     <main class="page-main">
+
         <div class="accommodation-shell">
-        <section class="overview-section">
-            <div class="section-heading">
-                <div>
-                    <span class="section-label">
-                        WORK AREA OVERVIEW
-                    </span>
-
-                    <h2>Accommodation Directory</h2>
-                </div>
-
-                <div id="employeeSummary" class="summary-box">
-                    Loading employee data...
-                </div>
+        <section class="dashboard-summary-section dashboard-summary-sidebar" aria-labelledby="dashboardSummaryTitle">
+            <div class="summary-sidebar-heading">
+                <span class="section-label">ภาพรวมที่พักพนักงาน</span>
+                <h2 id="dashboardSummaryTitle">สรุปข้อมูลที่พักทั้งหมด</h2>
             </div>
+            <div id="employeeSummary" class="dashboard-kpis">กำลังโหลดข้อมูล...</div>
+        </section>
 
-            <nav
-                id="workAreaNavigation"
-                class="work-area-navigation"
-                aria-label="Work areas"
-            ></nav>
-
-            <div
-                id="buildingGrid"
-                class="building-grid"
-                aria-live="polite"
-            >
-                <div class="loading-state">
-                    Loading accommodation information...
-                </div>
+        <section class="building-catalog-section" aria-labelledby="buildingCatalogTitle">
+            <div class="catalog-heading">
+                <span class="section-label">ALL ACCOMMODATION</span>
+                <h2 id="buildingCatalogTitle">ตึกพักทั้งหมด</h2>
             </div>
+            <div id="workAreaNavigation" class="building-catalog" aria-label="ตึกพักทั้งหมด"></div>
         </section>
 
         <section

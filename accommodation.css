@@ -10,6 +10,7 @@
     --muted: #64747d;
     --danger: #b84343;
     --shadow: 0 10px 28px rgba(22, 56, 74, 0.09);
+    --top-dock-height: 188px;
 }
 
 * {
@@ -33,7 +34,8 @@ button {
     align-items: center;
     justify-content: space-between;
     gap: 30px;
-    padding: 28px max(4vw, 28px);
+    min-height: 72px;
+    padding: 10px max(2vw, 22px);
     background:
         linear-gradient(120deg, #102f40, #155b6c 65%, #0f766e);
     color: #ffffff;
@@ -42,7 +44,7 @@ button {
 .header-eyebrow,
 .section-label {
     display: block;
-    margin-bottom: 7px;
+    margin-bottom: 4px;
     color: #78d6cd;
     font-size: 11px;
     font-weight: 700;
@@ -51,12 +53,12 @@ button {
 
 .header-title h1 {
     margin: 0;
-    font-size: clamp(25px, 3vw, 37px);
+    font-size: clamp(21px, 2vw, 29px);
     font-weight: 650;
 }
 
 .header-title p {
-    margin: 8px 0 0;
+    margin: 3px 0 0;
     color: #d8eaee;
     font-size: 14px;
 }
@@ -106,9 +108,11 @@ button {
 }
 
 .page-main {
-    width: min(1400px, calc(100% - 36px));
-    margin: 0 auto;
-    padding: 32px 0 60px;
+    position: fixed;
+    inset: var(--top-dock-height) 0 0;
+    width: 100%;
+    padding: 12px;
+    overflow: hidden;
 }
 
 .overview-section,
@@ -505,14 +509,68 @@ button {
 /* #endregion */
 
 /* #region accommodation workspace */
-.accommodation-shell { display:grid; grid-template-columns:310px minmax(0,1fr); gap:22px; align-items:start; }
-.accommodation-shell .overview-section { position:sticky; top:16px; max-height:calc(100vh - 32px); overflow:auto; }
+.top-dock { position:fixed; inset:0 0 auto; z-index:100; height:var(--top-dock-height); background:var(--background); box-shadow:0 5px 18px rgba(22,56,74,.12); }
+.top-controls { height:116px; padding:8px 12px 10px 304px; }
+.dashboard-summary-section { display:flex; align-items:center; justify-content:space-between; gap:16px; min-width:0; margin:0; padding:10px 14px; border:1px solid var(--border); border-radius:10px; background:#fff; box-shadow:var(--shadow); }
+.dashboard-summary-section h2,.room-search-section h2 { margin:0; font-size:17px; }
+.dashboard-kpis { display:grid; grid-template-columns:repeat(5,minmax(105px,1fr)); gap:10px; flex:1; max-width:900px; }
+.dashboard-kpi { padding:8px 9px; border-radius:8px; background:var(--teal-light); color:#31515a; font-size:10px; }
+.dashboard-kpi b { display:block; margin-bottom:1px; color:var(--teal); font-size:18px; }
+.area-overview-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); align-items:start; gap:16px; margin-bottom:18px; }
+.area-summary-card { padding:18px; border:1px solid var(--border); border-radius:12px; background:#fff; color:var(--text); text-align:left; cursor:pointer; box-shadow:var(--shadow); transition:160ms ease; }
+.area-summary-card:hover,.area-summary-card.is-active { border-color:var(--teal); transform:translateY(-2px); }
+.area-summary-card.is-active { box-shadow:inset 0 0 0 2px var(--teal),var(--shadow); }
+.area-summary-title { display:flex; justify-content:space-between; gap:12px; margin-bottom:12px; font-size:19px; font-weight:750; }
+.area-building-list { display:grid; gap:0; margin:0; padding:0; list-style:none; color:#52656e; font-size:11px; }
+.area-building-list li { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:7px 0; border-top:1px solid #edf1f3; }
+.area-building-list li:first-child { border-top:0; }
+.area-building-list li b { min-width:145px; margin-right:auto; color:var(--text); }
+.area-building-list li span + span::before { margin-right:6px; color:#a2b0b6; content:"|"; }
+.area-building-list strong { color:var(--navy); }
+.room-search-section { display:flex; min-width:0; min-height:0; margin:0; padding:10px 14px; overflow:hidden; flex-direction:column; border:1px solid var(--border); border-radius:10px; background:#fff; box-shadow:var(--shadow); }
+.room-search-heading { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.room-search-control { flex:1; width:auto; }
+.room-search-control input { width:100%; padding:9px 11px; border:1px solid #b9cbd2; border-radius:8px; font:inherit; }
+.room-search-results { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:6px; min-height:0; max-height:54px; margin-top:6px; overflow:auto; color:var(--muted); font-size:11px; }
+.top-controls .room-search-result { padding:8px 10px; }
+.top-controls .room-search-result p { margin-bottom:5px; }
+.top-controls .room-search-result .room-occupants { margin:5px 0; padding:6px 8px; }
+.top-controls .room-search-result-compact { display:grid; align-items:center; grid-template-columns:minmax(100px,.5fr) minmax(220px,1fr) minmax(220px,1.2fr) auto; gap:10px; }
+.top-controls .room-search-result-compact strong,.top-controls .room-search-result-compact p,.top-controls .room-search-result-compact .room-occupants { min-width:0; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.top-controls .room-search-result-compact .room-occupants { padding:0; background:transparent; }
+.room-search-result { padding:13px; border:1px solid var(--border); border-radius:9px; color:var(--text); }
+.room-search-result strong { display:block; margin-bottom:5px; }
+.room-search-result p { margin:0 0 9px; color:var(--muted); font-size:12px; }
+.room-occupants { display:grid; gap:4px; margin:8px 0 11px; padding:9px 10px; border-radius:7px; background:#f4f8f9; font-size:12px; }
+.room-vacant { color:var(--teal); font-weight:700; }
+.room-result-actions { display:flex; flex-wrap:wrap; gap:6px; }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.accommodation-shell { display:grid; grid-template-columns:280px minmax(360px,1fr) minmax(420px,36vw); gap:12px; height:100%; min-height:0; align-items:stretch; }
+.accommodation-shell > * { min-width:0; min-height:0; }
+.dashboard-summary-sidebar { height:100%; padding:16px; overflow:auto; flex-direction:column; align-items:stretch; justify-content:flex-start; }
+.summary-sidebar-heading { padding-bottom:13px; border-bottom:1px solid var(--border); }
+.dashboard-summary-sidebar .dashboard-kpis { display:grid; width:100%; max-width:none; margin-top:12px; grid-template-columns:1fr; gap:9px; }
+.dashboard-summary-sidebar .dashboard-kpi { display:grid; min-height:72px; padding:12px 13px; align-content:center; grid-template-columns:1fr; }
+.dashboard-summary-sidebar .dashboard-kpi b { font-size:24px; }
+.accommodation-shell .overview-section { height:100%; padding:16px; overflow:auto; }
 .accommodation-shell .overview-section .section-heading { display:block; }
 .accommodation-shell .overview-section .summary-box { margin-top:14px; min-width:0; }
 .accommodation-shell .overview-section .building-grid { grid-template-columns:1fr; }
 .accommodation-shell .overview-section .building-graphic { display:none; }
 .accommodation-shell .overview-section .building-card-content { padding:14px; }
-.accommodation-shell .building-detail-section { margin-top:0; min-height:520px; }
+.building-catalog-section { height:100%; padding:16px; overflow:hidden; border:1px solid var(--border); border-radius:13px; background:#fff; box-shadow:var(--shadow); }
+.catalog-heading { padding-bottom:12px; border-bottom:1px solid var(--border); }
+.catalog-heading h2 { margin:0; font-size:20px; }
+.building-catalog { height:calc(100% - 61px); padding-top:10px; overflow:auto; }
+.catalog-area + .catalog-area { margin-top:18px; }
+.catalog-area-title { position:sticky; top:0; z-index:2; display:flex; justify-content:space-between; margin:0 0 8px; padding:8px 10px; border-radius:7px; background:var(--navy); color:#fff; font-size:14px; }
+.catalog-building-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:8px; }
+.catalog-building-card { padding:11px 12px; border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--text); text-align:left; cursor:pointer; }
+.catalog-building-card:hover,.catalog-building-card:focus-visible { border-color:var(--teal); box-shadow:0 5px 14px rgba(22,56,74,.1); outline:0; }
+.catalog-building-card b { display:block; margin-bottom:6px; color:var(--navy); }
+.catalog-building-card span { display:block; color:var(--muted); font-size:11px; line-height:1.55; }
+.accommodation-shell .building-detail-section { height:100%; min-height:0; margin:0; padding:16px; overflow:auto; }
+.accommodation-shell .building-detail-section[hidden] { display:block; visibility:hidden; }
 .building-toolbar,.building-kpis { display:flex; flex-wrap:wrap; gap:9px; margin:16px 0; }
 .building-kpis article { flex:1 1 135px; padding:13px; border:1px solid var(--border); border-radius:8px; background:#f8fbfc; }
 .building-kpis b { display:block; margin-top:4px; font-size:20px; color:var(--navy); }
@@ -544,7 +602,9 @@ button {
 .management-form input[type="checkbox"] { width:auto; padding:0; }
 .management-form textarea { min-height:90px; resize:vertical; }
 .management-form .form-actions { grid-column:1/-1; display:flex; justify-content:flex-end; gap:8px; }
-@media (max-width:1000px) { .accommodation-shell { grid-template-columns:1fr; } .accommodation-shell .overview-section { position:static; max-height:none; } }
+@media (max-width:1200px) { :root { --top-dock-height:210px; } .top-controls { height:138px; padding-left:264px; } .dashboard-summary-section,.room-search-section { min-height:0; } .accommodation-shell { grid-template-columns:240px minmax(340px,1fr) minmax(360px,42vw); } }
+@media (max-width:900px) { body { overflow:auto; } .top-dock { position:static; height:auto; } .top-controls { height:auto; padding:8px 12px 10px; } .page-main { position:static; padding:12px; overflow:visible; } .dashboard-summary-section { align-items:flex-start; flex-direction:column; } .dashboard-summary-sidebar .dashboard-kpis { grid-template-columns:repeat(2,1fr); } .dashboard-kpis { width:100%; } .accommodation-shell { grid-template-columns:1fr; height:auto; } .dashboard-summary-sidebar,.accommodation-shell .overview-section,.building-catalog-section,.accommodation-shell .building-detail-section { height:auto; max-height:none; overflow:visible; } .building-catalog { height:auto; max-height:none; } .accommodation-shell .building-detail-section[hidden] { display:none; } }
+@media (max-width:680px) { .dashboard-kpis { grid-template-columns:repeat(2,1fr); } .room-search-heading { align-items:stretch; flex-direction:column; } .room-search-control { width:100%; } }
 @media (max-width:680px) { .contract-grid,.management-form { grid-template-columns:1fr; } .management-form label.full,.management-form .form-actions { grid-column:1; } }
 /* #endregion accommodation workspace */
 
