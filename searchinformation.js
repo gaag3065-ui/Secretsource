@@ -607,3 +607,5 @@ async function performSearch() {
     }
 }
 //#endregion
+
+window.performSearch = performSearch;

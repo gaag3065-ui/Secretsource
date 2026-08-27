@@ -219,6 +219,17 @@ textarea {
         min-width: 0;
     }
 
+    .treatment-field-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    .treatment-field-grid .treatment-field,
+    .treatment-field-grid .treatment-field-hospital,
+    .treatment-field-grid .treatment-field-long {
+        grid-column: 1 !important;
+    }
+
     .claim-row {
         width: 100% !important;
         display: flex !important;

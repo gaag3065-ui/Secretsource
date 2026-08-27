@@ -139,6 +139,7 @@
 <!-- ============================= [ส่วนบน] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับการอัปเดตผลการรักษา (Outcome Update Modal) ===================================== -->
 <!-- =============================================================================================================================================== -->
 
+<div id="outcomeUpdateModalHome"></div>
 <div id="outcomeUpdateModal" style="display: none; position: fixed !important; z-index: 99999 !important; left: 0; top: 0; width: 100vw !important; height: 100vh !important; background-color: rgba(0, 0, 0, 0.5) !important; align-items: center !important; justify-content: center !important;">
     <div style="background-color: #ffffff !important; padding: 25px !important; border-radius: 12px !important; width: 95% !important; max-width: 1100px !important; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25) !important; max-height: 90vh !important; overflow-y: auto !important; border-top: 6px solid #198754 !important; animation: popupFadeIn 0.25s ease-out;">
 <!-- ส่วนหัวป๊อปอัปสีเขียวการแพทย์ -->
@@ -169,15 +170,31 @@
                 <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">ขั้นตอนการรักษา <span style="color:red;">*</span></label>
                 <select id="ocStatusSelect" required style="width: 100% !important; padding: 8px !important; border: 1px solid #ced4da !important; border-radius: 6px !important; background-color: #ffffff !important;" onchange="toggleOcOtherInput(this.value)">
                     <option value="" disabled selected>-- กรุณาคลิกเลือกสถานะขั้นตอนการรักษาปัจจุบัน --</option>
-                    <option value="แจ้งประกันแล้ว เข้ารับการรักษาอยู่">แจ้งประกันแล้ว เข้ารับการรักษาอยู่</option>
-                    <option value="รักษายังไม่หาย นอนดูอาการ">รักษายังไม่หาย นอนดูอาการ</option>
-                    <option value="รักษาตัวที่ฝั่งไทย บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP">รักษาตัวที่ฝั่งไทย บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP</option>
-                    <option value="รักษาตัวที่ฝั่ง PP บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP">รักษาตัวที่ฝั่ง PP บันทึกค่าใช้จ่ายแล้วรอส่งบิลไปเคลมกับประกัน PP</option>
-                    <option value="รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย รอทำเรื่องเคลมบริษัทประกันเดินทาง SLK">รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย รอทำเรื่องเคลมบริษัทประกันเดินทาง SLK</option>
-                    <option value="รอนำส่งเอกสารไปเคลมประกันเดินทาง SLK">รอนำส่งเอกสารไปเคลมประกันเดินทาง SLK</option>
-                    <option value="ส่งเอกสารหรือบิลไปเคลมเงินประกันแล้วและรอรับเงิน SLK">ส่งเอกสารหรือบิลไปเคลมเงินประกันแล้วและรอรับเงิน SLK</option>
-                    <option value="ได้รับเงินแล้ว รอนำไปแลกและนำไปคืนประกัน SLK">ได้รับเงินแล้ว รอนำไปแลกและนำไปคืนประกัน SLK</option>
-                    <option value="รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย PP">รักษาเสร็จ ประกันจ่ายค่ารักษาเรียบร้อย PP</option>
+                    <optgroup label="Pending / Awaiting Action">
+                        <option value="เปิดเคสและแจ้งประกันแล้ว รอเข้ารับการรักษา">เปิดเคสและแจ้งประกันแล้ว รอเข้ารับการรักษา</option>
+                        <option value="รอประกันยืนยันสิทธิ์หรืออนุมัติการรักษา">รอประกันยืนยันสิทธิ์หรืออนุมัติการรักษา</option>
+                        <option value="รอนัดหมายหรือรอเข้าพบแพทย์">รอนัดหมายหรือรอเข้าพบแพทย์</option>
+                    </optgroup>
+                    <optgroup label="Active / Open Case">
+                        <option value="เข้ารับการรักษาแล้ว อยู่ระหว่างการตรวจหรือรักษา">เข้ารับการรักษาแล้ว อยู่ระหว่างการตรวจหรือรักษา</option>
+                        <option value="นอนโรงพยาบาลหรือเฝ้าดูอาการ">นอนโรงพยาบาลหรือเฝ้าดูอาการ</option>
+                        <option value="รอผลตรวจหรือแผนการรักษา">รอผลตรวจหรือแผนการรักษา</option>
+                    </optgroup>
+                    <optgroup label="In Progress / Follow-up">
+                        <option value="กลับบ้านแล้ว รอติดตามอาการ">กลับบ้านแล้ว รอติดตามอาการ</option>
+                        <option value="แพทย์นัดตรวจติดตาม">แพทย์นัดตรวจติดตาม</option>
+                        <option value="รอรักษาต่อหรือทำหัตถการเพิ่มเติม">รอรักษาต่อหรือทำหัตถการเพิ่มเติม</option>
+                    </optgroup>
+                    <optgroup label="Discharged / Billing Pending / Awaiting Payment">
+                        <option value="รักษาเสร็จ รอเอกสารหรือบิลตัวจริง">รักษาเสร็จ รอเอกสารหรือบิลตัวจริง</option>
+                        <option value="รักษาเสร็จ รอประกันยืนยันยอดชำระ">รักษาเสร็จ รอประกันยืนยันยอดชำระ</option>
+                        <option value="ผู้ป่วยสำรองจ่าย รอนำส่งเอกสารเคลม">ผู้ป่วยสำรองจ่าย รอนำส่งเอกสารเคลม</option>
+                        <option value="ส่งเอกสารเคลมแล้ว รอรับเงินคืน">ส่งเอกสารเคลมแล้ว รอรับเงินคืน</option>
+                        <option value="ได้รับเงินคืนแล้ว รอเคลียร์บัญชีหรือส่งคืน">ได้รับเงินคืนแล้ว รอเคลียร์บัญชีหรือส่งคืน</option>
+                    </optgroup>
+                    <optgroup label="Closed Case">
+                        <option value="ปิดเคส เอกสารและบัญชีครบถ้วน">ปิดเคส เอกสารและบัญชีครบถ้วน</option>
+                    </optgroup>
                     <option value="อื่นๆ">อื่นๆ (โปรดระบุรายละเอียดเพิ่มเติม)</option>
                 </select>
             </div>

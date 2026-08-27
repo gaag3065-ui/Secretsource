@@ -1,6 +1,6 @@
 
         /* 🏥 ปรับโครงสร้างหลักแบบ Flexbox ให้ขยายความสูงกล่องเท่ากันอัตโนมัติ */
-        body { 
+        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             background: #f4f7f6; 
             margin: 0; 
@@ -10,6 +10,49 @@
             align-items: stretch; /* 🎯 สั่งให้กล่องซ้ายและขวามีความสูงเท่ากันเสมอ */
             justify-content: flex-start;
             gap: 20px;
+        }
+
+        .insurance-workspace-layout {
+            display: grid;
+            grid-template-columns: minmax(340px, 390px) minmax(0, 1fr);
+            align-items: start;
+            gap: 20px;
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            isolation: isolate;
+        }
+
+        .employee-sidebar-track {
+            grid-column: 1;
+            grid-row: 1 / span 2;
+            min-width: 0;
+            height: 100%;
+        }
+
+        .employee-sidebar-track > .employee-fixed-sidebar {
+            position: sticky;
+            z-index: 30;
+            top: 76px;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: calc(100vh - 96px);
+            max-height: calc(100vh - 96px);
+            min-width: 0;
+            padding: 18px;
+            overflow: auto;
+            box-sizing: border-box;
+            flex: none !important;
+        }
+
+        .insurance-main-content {
+            grid-column: 2;
+            grid-row: 2;
+            width: 100%;
+            min-width: 0;
+            margin-left: 0;
+            box-sizing: border-box;
+            overflow: clip;
         }
 
         /* 📦 รูปแบบกล่องดีไซน์มาตรฐานแพลตฟอร์มให้มีมิติพิมพ์เดียวกัน */
@@ -36,6 +79,354 @@
             max-width: 100%; /* ล็อกขนาดความกว้างรวมของคู่บนให้พอดีกรอบ */
             box-sizing: border-box;
             padding: 0 10px; /* เพิ่มระยะขอบเล็กน้อยไม่ให้ชิดขอบจอเกินไป */
+        }
+
+        .continuity-placeholder {
+            width: 100%;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .continuity-card {
+            width: 100%;
+            padding: 24px;
+            border-top: 6px solid #0f766e;
+            border-radius: 12px;
+            box-sizing: border-box;
+            background: #ffffff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
+
+        .continuity-sticky-summary {
+            grid-column: 2;
+            grid-row: 1;
+            position: sticky;
+            z-index: 20;
+            top: 74px;
+            width: 100%;
+            padding: 20px 24px 16px;
+            border-top: 6px solid #0f766e;
+            border-radius: 12px;
+            box-sizing: border-box;
+            background: #ffffff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
+
+        .continuity-heading {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .continuity-eyebrow {
+            display: block;
+            margin-bottom: 4px;
+            color: #0f766e;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+        }
+
+        .continuity-heading h2 {
+            margin: 0 0 5px;
+            padding: 0;
+            border: 0;
+        }
+
+        .continuity-heading p,
+        .continuity-status {
+            margin: 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .continuity-total {
+            min-width: 110px;
+            padding: 10px 16px;
+            border-radius: 10px;
+            text-align: right;
+            background: #f0fdfa;
+        }
+
+        .continuity-total span,
+        .continuity-metric span {
+            display: block;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .continuity-total strong {
+            color: #0f766e;
+            font-size: 28px;
+        }
+
+        .continuity-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .continuity-area-filters {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .continuity-area-filters > span {
+            color: #475569;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .continuity-area-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .continuity-area-button {
+            padding: 7px 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 999px;
+            background: #fff;
+            color: #334155;
+            font: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .continuity-area-button:hover,
+        .continuity-area-button:focus-visible,
+        .continuity-area-button.selected {
+            border-color: #0f766e;
+            background: #0f766e;
+            color: #fff;
+            outline: none;
+        }
+
+        .continuity-metric {
+            width: 100%;
+            min-height: 118px;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-left: 5px solid #94a3b8;
+            border-radius: 10px;
+            box-sizing: border-box;
+            background: #ffffff;
+            color: inherit;
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .continuity-metric:hover,
+        .continuity-metric:focus-visible,
+        .continuity-metric.selected {
+            transform: none;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+            outline: 3px solid rgba(15, 118, 110, 0.18);
+        }
+
+        .continuity-metric strong {
+            display: block;
+            margin: 8px 0 4px;
+            color: #0f172a;
+            font-size: 30px;
+        }
+
+        .continuity-metric small {
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        .continuity-pending { border-left-color: #f59e0b; }
+        .continuity-active { border-left-color: #2563eb; }
+        .continuity-followup { border-left-color: #8b5cf6; }
+        .continuity-billing { border-left-color: #ea580c; }
+        .continuity-closed { border-left-color: #16a34a; }
+
+        .continuity-treatment-slot {
+            width: 100% !important;
+            max-width: none !important;
+            margin-top: 16px;
+        }
+
+        .treatment-inline-panel {
+            width: 100% !important;
+            max-width: none !important;
+        }
+
+        .continuity-treatment-slot .middle-box,
+        .continuity-treatment-slot .card-container {
+            width: 100% !important;
+            max-width: none !important;
+            padding: 18px !important;
+            border: 1px solid #dbe5e1;
+            border-top: 5px solid #20c997;
+            box-shadow: none;
+        }
+
+        .history-main-panel {
+            grid-column: 1 / -1;
+            grid-row: 3;
+            width: 100%;
+            margin-top: 20px;
+            min-width: 0;
+        }
+
+        .continuity-status {
+            margin-top: 12px;
+            text-align: right;
+        }
+
+        .continuity-status[data-status="error"] {
+            color: #b91c1c;
+        }
+
+        .continuity-case-panel {
+            margin-top: 18px;
+            padding: 18px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .continuity-case-panel-heading,
+        .continuity-case-item-heading {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .continuity-case-panel-heading h3 { margin: 0; }
+        .continuity-case-panel-heading p { margin: 4px 0 0; color: #64748b; font-size: 13px; }
+        .continuity-close-button { border: 0; background: transparent; font-size: 28px; cursor: pointer; }
+
+        .continuity-case-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            max-height: 620px;
+            margin-top: 16px;
+            overflow: auto;
+        }
+
+        .continuity-case-item { align-self: start; padding: 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+        .continuity-case-item-heading strong { color: #0f172a; font-size: 16px; }
+        .continuity-waiting { flex: 0 0 auto; padding: 3px 8px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 11px; font-weight: 700; }
+        .continuity-waiting.overdue { background: #fff7ed; color: #c2410c; }
+        .continuity-case-details { display: grid; grid-template-columns: 125px minmax(0, 1fr); gap: 7px 10px; margin: 14px 0; font-size: 13px; }
+        .continuity-case-details dt { color: #64748b; }
+        .continuity-case-details dd { margin: 0; color: #1e293b; overflow-wrap: anywhere; }
+        .continuity-update-button { width: 100%; padding: 9px 12px; border: 0; border-radius: 8px; background: #0f766e; color: #fff; font-weight: 700; cursor: pointer; }
+        .continuity-update-button:hover { background: #115e59; }
+        .continuity-inline-form-host { grid-column: 1 / -1; margin-top: 14px; }
+
+        #outcomeUpdateModal.continuity-inline-update {
+            position: static !important;
+            z-index: auto !important;
+            width: 100% !important;
+            height: auto !important;
+            background: transparent !important;
+            overflow: visible !important;
+        }
+
+        #outcomeUpdateModal.continuity-inline-update > div {
+            width: 100% !important;
+            max-width: none !important;
+            max-height: none !important;
+            padding: 14px !important;
+            box-shadow: none !important;
+            border: 1px solid #a7f3d0 !important;
+            border-top: 5px solid #198754 !important;
+            box-sizing: border-box;
+        }
+
+        #outcomeUpdateModal.continuity-inline-update form > div[style*="display: grid"],
+        #outcomeUpdateModal.continuity-inline-update .edit-money-grid,
+        #outcomeUpdateModal.continuity-inline-update .update-upload-grid {
+            grid-template-columns: 1fr !important;
+        }
+
+        #outcomeUpdateModal.continuity-inline-update h3 {
+            font-size: 16px !important;
+        }
+        .continuity-empty { grid-column: 1 / -1; padding: 28px; text-align: center; color: #64748b; }
+        .continuity-error { color: #b91c1c; }
+
+        @media (max-width: 1100px) {
+            .insurance-workspace-layout {
+                grid-template-columns: minmax(290px, 320px) minmax(0, 1fr);
+                gap: 14px;
+            }
+            .continuity-summary-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .continuity-case-list { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 620px) {
+            .continuity-heading {
+                flex-direction: column;
+            }
+
+            .continuity-total {
+                width: 100%;
+                text-align: left;
+                box-sizing: border-box;
+            }
+
+            .continuity-summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .insurance-workspace-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .employee-sidebar-track {
+                grid-column: 1;
+                grid-row: auto;
+                height: auto;
+            }
+
+            .employee-sidebar-track > .employee-fixed-sidebar {
+                position: static;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto;
+                max-height: 55vh;
+                margin-bottom: 16px;
+            }
+
+            .insurance-main-content {
+                grid-column: 1;
+                grid-row: auto;
+                width: 100%;
+                margin-left: 0;
+            }
+
+            .continuity-sticky-summary {
+                grid-column: 1;
+                grid-row: auto;
+                position: static;
+            }
+
+            .history-main-panel {
+                grid-column: 1;
+                grid-row: auto;
+            }
         }
 
 
@@ -141,12 +532,63 @@
             align-items: flex-start; 
         }
         
-        .claim-label { 
-            font-weight: bold; 
-            color: #343a40; 
-            width: 180px; 
-            flex-shrink: 0; 
-            font-size: 15px; 
+        .claim-label {
+            font-weight: bold;
+            color: #343a40;
+            width: 180px;
+            flex-shrink: 0;
+            font-size: 15px;
+        }
+
+        /* จัดแบบฟอร์มเปิดเคสให้ใช้พื้นที่ตามสัดส่วน แทนช่องยาวเต็มแถว */
+        .treatment-field-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .treatment-field-grid .treatment-field {
+            grid-column: span 2;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 7px;
+            min-width: 0;
+            margin: 0;
+        }
+
+        .treatment-field-grid .treatment-field-hospital,
+        .treatment-field-grid .treatment-field-long {
+            grid-column: span 3;
+        }
+
+        .treatment-field-grid .claim-label,
+        .treatment-field-grid .value-text {
+            width: 100%;
+            min-width: 0;
+            flex: none;
+            box-sizing: border-box;
+        }
+
+        .treatment-field-grid textarea {
+            min-height: 82px;
+        }
+
+        @media (max-width: 1280px) {
+            .treatment-field-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-auto-flow: dense;
+            }
+
+            .treatment-field-grid .treatment-field,
+            .treatment-field-grid .treatment-field-long {
+                grid-column: span 1;
+            }
+
+            .treatment-field-grid .treatment-field-hospital {
+                grid-column: 1 / -1;
+            }
         }
         
         .required { color: #dc3545; margin-left: 4px; }
@@ -621,7 +1063,8 @@
 
 /* #region สร้างแถบหัวเว็บและย้ายปุ่ม Logout ขึ้นด้านบน */
 .main-topbar {
-    position: relative;
+    position: sticky;
+    top: 0;
     z-index: 100;
     display: flex;
     align-items: center;

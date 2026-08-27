@@ -24,8 +24,9 @@
         <input type="hidden" id="hiddenSize">
         <input type="hidden" id="hiddenWorkLocation">
         
+        <div class="treatment-field-grid">
         <!-- ช่องระบุวันที่เข้ารับการรักษา -->
-        <div class="claim-row">
+        <div class="claim-row treatment-field treatment-field-compact">
             <span class="claim-label">ระบุวันที่เข้ารับการรักษา :</span>
             <div class="value-text">
                 <input type="text" id="manualDate" placeholder="📅 คลิกเลือกวันที่เข้ารักษา..." disabled style="background-color: #e9ecef; cursor: text;">
@@ -33,7 +34,7 @@
         </div>
 
         <!-- ช่องระบุเวลาที่เข้ารับการรักษา -->
-        <div class="claim-row">
+        <div class="claim-row treatment-field treatment-field-compact">
             <span class="claim-label">ระบุเวลาที่เข้ารับการรักษา :</span>
             <div class="value-text">
                 <input type="text" id="manualTime" placeholder="⏰ คลิกเลือกเวลาที่เข้ารักษา..." disabled style="background-color: #e9ecef; cursor: text;">
@@ -41,7 +42,7 @@
         </div>
 
         <!-- ช่องที่ 3: เคส ID -->
-        <div class="claim-row">
+        <div class="claim-row treatment-field treatment-field-compact">
             <span class="claim-label">เคส ID :</span>
             <div class="value-text">
                 <input type="text" id="caseId" readonly placeholder="กำลังคำนวณเลขเคสถัดไป...">
@@ -49,7 +50,7 @@
         </div>
 
         <!-- ช่องที่ 4: คลินิกหรือสถานพยาบาล -->
-        <div class="claim-row">
+        <div class="claim-row treatment-field treatment-field-hospital">
             <span class="claim-label">คลินิกหรือสถานพยาบาล :<span class="required">*</span></span>
             <div class="value-text">
                 <select id="hospitalSelect" required disabled style="background-color: #e9ecef; cursor: default;">
@@ -79,7 +80,7 @@
         </div>
 
         <!-- ช่องที่ 5: ระยะทาง -->
-        <div class="claim-row">
+        <div class="claim-row treatment-field treatment-field-compact">
             <span class="claim-label">ระยะทางอ้างอิง :</span>
             <div class="value-text">
                 <input type="text" id="distanceInput" readonly placeholder="ระยะทาง google map">
@@ -87,7 +88,7 @@
         </div>
 
         <!-- ช่องที่ 6: อาการป่วย -->
-        <div class="claim-row align-top">
+        <div class="claim-row align-top treatment-field treatment-field-long">
             <span class="claim-label">อาการป่วย :<span class="required">*</span></span>
             <div class="value-text">
                 <textarea id="symptomsInput" required placeholder="กรอกรายละเอียดอาการป่วยอย่างละเอียด..." disabled style="background-color: #e9ecef; cursor: text;"></textarea>
@@ -97,11 +98,12 @@
         
 
         <!-- ช่องที่ 7: หมายเหตุ -->
-        <div class="claim-row align-top">
+        <div class="claim-row align-top treatment-field treatment-field-long">
             <span class="claim-label">หมายเหตุเพิ่มเติม :</span>
             <div class="value-text">
                 <textarea id="notesInput" placeholder="ระบุข้อมูลเพิ่มเติมอื่นๆ (ถ้ามี)..." disabled style="background-color: #e9ecef; cursor: text;"></textarea>
             </div>
+        </div>
         </div>
 
 
