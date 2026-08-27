@@ -6,8 +6,40 @@ const accommodationState = {
     selectedWorkArea: '',
     selectedBuilding: null,
     refreshTimer: null,
-    refreshInProgress: false
+    refreshInProgress: false,
+    returnOverlay: null
 };
+
+const accommodationOverlayIds = [
+    'managementModal',
+    'imagePreviewModal',
+    'accommodationReportModal'
+];
+
+function showExclusiveOverlay(id, options = {}) {
+    const current = accommodationOverlayIds.find(overlayId =>
+        overlayId !== id && !document.getElementById(overlayId)?.hasAttribute('hidden')
+    );
+    accommodationState.returnOverlay = options.returnToPrevious ? current || null : null;
+    accommodationOverlayIds.forEach(overlayId => {
+        document.getElementById(overlayId)?.toggleAttribute('hidden', overlayId !== id);
+    });
+    document.body.style.overflow = 'hidden';
+}
+
+function closeExclusiveOverlay(id) {
+    document.getElementById(id)?.setAttribute('hidden', '');
+    const returnId = accommodationState.returnOverlay;
+    accommodationState.returnOverlay = null;
+    if (returnId && document.getElementById(returnId)) {
+        showExclusiveOverlay(returnId);
+        return;
+    }
+    const stillOpen = accommodationOverlayIds.some(overlayId =>
+        !document.getElementById(overlayId)?.hasAttribute('hidden')
+    );
+    document.body.style.overflow = stillOpen ? 'hidden' : '';
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
  
@@ -67,6 +99,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         ?.addEventListener('click', openMaintenanceOverview);
     document.getElementById('createBuildingButton')
         ?.addEventListener('click', openBuildingStructureForm);
+    document.getElementById('roomSearchInput')
+        ?.addEventListener('input', renderRoomSearchResults);
 
     document
         .getElementById('accommodationReportButton')
@@ -115,7 +149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadAccommodationData();
     accommodationState.refreshTimer = window.setInterval(
         refreshAccommodationRealtime,
-        15000
+        5000
     );
 });
 
@@ -174,6 +208,7 @@ async function loadAccommodationData(options = {}) {
         renderEmployeeSummary();
         renderWorkAreaNavigation(workAreas);
         renderBuildingCards();
+        renderRoomSearchResults();
         if (accommodationState.selectedBuilding) {
             const refreshed = accommodationState.sites
                 .flatMap(site => site.buildings || [])
@@ -233,67 +268,142 @@ function renderEmployeeSummary() {
     const dashboard = accommodationState.summary;
 
     if (dashboard) {
-        summary.textContent =
-            `${dashboard.employeeCount.toLocaleString()} Employees · ` +
-            `${dashboard.registeredRoomCount.toLocaleString()} Rooms · ` +
-            `${dashboard.vacantRoomCount.toLocaleString()} Vacant · ` +
-            `${dashboard.unmatchedEmployeeCount.toLocaleString()} Unmatched · ` +
-            `${Number(dashboard.alertCount || 0).toLocaleString()} Alerts`;
+        const sourceVacantRoomCount = accommodationState.sites.reduce(
+            (siteTotal, site) => siteTotal + (site.buildings || []).reduce(
+                (buildingTotal, building) => buildingTotal + getBuildingSourceMetrics(building, site.code).vacantRoomCount,
+                0
+            ),
+            0
+        );
+        const items = [
+            ['พนักงานทั้งหมด', dashboard.employeeCount],
+            ['ห้องที่ขึ้นทะเบียน', dashboard.registeredRoomCount],
+            ['ห้องว่าง', sourceVacantRoomCount],
+            ['ยังไม่จับคู่ห้อง', dashboard.unmatchedEmployeeCount],
+            ['รายการที่ต้องตรวจสอบ', dashboard.alertCount || 0]
+        ];
+        summary.innerHTML = items.map(([label, value]) =>
+            `<article class="dashboard-kpi"><b>${Number(value || 0).toLocaleString()}</b>${label}</article>`
+        ).join('');
         return;
     }
 
-    summary.textContent =
-        `${accommodationState.records.length.toLocaleString()} Employees`;
+    summary.innerHTML = `<article class="dashboard-kpi"><b>${accommodationState.records.length.toLocaleString()}</b>พนักงานทั้งหมด</article>`;
 }
 
 function renderWorkAreaNavigation(workAreas) {
-    const navigation =
-        document.getElementById('workAreaNavigation');
+    const navigation = document.getElementById('workAreaNavigation');
 
     if (!navigation) return;
 
     navigation.replaceChildren();
 
     workAreas.forEach((area) => {
-        const count =
-            accommodationState.records.filter(
-                item => item.workArea === area
-            ).length;
+        const employees = accommodationState.records.filter(item => item.workArea === area);
+        const count = employees.length;
+        const site = accommodationState.sites.find(item => item.code === area);
+        const buildings = new Map();
 
-        const button = document.createElement('button');
-
-        button.type = 'button';
-        button.className = 'area-button';
-        button.textContent =
-            `${area} (${count.toLocaleString()})`;
-
-        if (
-            area ===
-            accommodationState.selectedWorkArea
-        ) {
-            button.classList.add('is-active');
-        }
-
-        button.addEventListener('click', () => {
-            accommodationState.selectedWorkArea = area;
-
-            navigation
-                .querySelectorAll('.area-button')
-                .forEach(item =>
-                    item.classList.remove('is-active')
-                );
-
-            button.classList.add('is-active');
-
-            document
-                .getElementById('buildingDetailSection')
-                ?.setAttribute('hidden', '');
-
-            renderBuildingCards();
+        (site?.buildings || []).forEach(building => {
+            const normalized = normalizeBuildingName(building.name);
+            buildings.set(normalized, { name: building.name, building, employees: [] });
+        });
+        employees.forEach(employee => {
+            const key = normalizeBuildingName(employee.building) || '__unspecified__';
+            if (!buildings.has(key)) buildings.set(key, {
+                name: employee.building || 'ไม่ระบุตึก',
+                building: null,
+                employees: []
+            });
+            buildings.get(key).employees.push(employee);
         });
 
-        navigation.appendChild(button);
+        const areaSection = document.createElement('section');
+        areaSection.className = 'catalog-area';
+        areaSection.innerHTML = `<h3 class="catalog-area-title"><span>${escapeHtml(area)}</span><span>${count.toLocaleString()} คน</span></h3>`;
+        const list = document.createElement('div');
+        list.className = 'catalog-building-list';
+
+        Array.from(buildings.values())
+            .sort((a, b) => a.name.localeCompare(b.name, 'th', { numeric: true }))
+            .forEach(item => {
+                const source = item.building
+                    ? getBuildingSourceMetrics(item.building, area)
+                    : { employeeCount: item.employees.length, vacantRoomCount: null };
+                const roomCount = item.building
+                    ? (item.building.summary.declaredRooms ?? item.building.summary.registeredRooms)
+                    : new Set(item.employees.map(employee => `${employee.floor}::${employee.room}`)).size;
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'catalog-building-card';
+                card.innerHTML = `<b>${escapeHtml(item.name)}</b><span>ห้องทั้งหมด ${roomCount ?? '-'} · พนักงาน ${source.employeeCount} คน · ห้องว่าง ${source.vacantRoomCount ?? '-'}</span>`;
+                card.addEventListener('click', () => {
+                    accommodationState.selectedWorkArea = area;
+                    renderBuildingCards();
+                    if (item.building) renderRegisteredBuildingDetails(item.building, { scroll: false });
+                    else renderBuildingDetails(item.name, item.employees);
+                });
+                list.appendChild(card);
+            });
+
+        areaSection.appendChild(list);
+        navigation.appendChild(areaSection);
     });
+}
+
+function normalizeBuildingName(value) {
+    return String(value || '')
+        .normalize('NFKC')
+        .toLocaleLowerCase('th')
+        .replace(/^\s*(?:ตึก|อาคาร|building)\s*/u, '')
+        .replace(/[^\p{L}\p{N}]/gu, '');
+}
+
+function normalizeLocationPart(value) {
+    return String(value || '')
+        .normalize('NFKC')
+        .toLocaleLowerCase('th')
+        .replace(/^\s*(?:ชั้น|ห้อง|floor|room)\s*/u, '')
+        .replace(/[^\p{L}\p{N}]/gu, '');
+}
+
+function getBuildingSourceMetrics(building, areaCode = accommodationState.selectedWorkArea) {
+    const registeredRoomKeys = new Set();
+    const rentableRoomKeys = new Set();
+    const roomsByCode = new Map();
+    (building.floors || []).forEach(floor => (floor.rooms || []).forEach(room => {
+        const floorKey = normalizeLocationPart(floor.name || floor.code);
+        const roomKey = normalizeLocationPart(room.name || room.code);
+        const key = `${floorKey}::${roomKey}`;
+        registeredRoomKeys.add(key);
+        if (!['INACTIVE', 'COMMON_AREA', 'MAINTENANCE', 'RESERVED'].includes(room.status)) rentableRoomKeys.add(key);
+        if (!roomsByCode.has(roomKey)) roomsByCode.set(roomKey, []);
+        roomsByCode.get(roomKey).push(key);
+    }));
+
+    const employees = accommodationState.records.filter(employee =>
+        employee.workArea === areaCode &&
+        normalizeBuildingName(employee.building) === normalizeBuildingName(building.name)
+    );
+    const occupiedRoomKeys = new Set();
+    let unmatchedEmployeeCount = 0;
+    employees.forEach(employee => {
+        const floorRoomKey = `${normalizeLocationPart(employee.floor)}::${normalizeLocationPart(employee.room)}`;
+        if (registeredRoomKeys.has(floorRoomKey)) {
+            occupiedRoomKeys.add(floorRoomKey);
+            return;
+        }
+        const sameCodeRooms = roomsByCode.get(normalizeLocationPart(employee.room)) || [];
+        if (sameCodeRooms.length === 1) occupiedRoomKeys.add(sameCodeRooms[0]);
+        else unmatchedEmployeeCount += 1;
+    });
+
+    return {
+        employeeCount: employees.length,
+        occupiedRoomCount: occupiedRoomKeys.size,
+        vacantRoomCount: Math.max(rentableRoomKeys.size - Array.from(occupiedRoomKeys).filter(key => rentableRoomKeys.has(key)).length, 0),
+        unmatchedEmployeeCount
+    };
 }
 
 function renderBuildingCards() {
@@ -419,6 +529,7 @@ function renderBuildingCards() {
 function renderRegisteredBuildingCards(container, buildings) {
     buildings.forEach((building) => {
         const summary = building.summary;
+        const source = getBuildingSourceMetrics(building);
         const card = document.createElement('article');
         card.className = 'building-card';
         card.tabIndex = 0;
@@ -440,9 +551,10 @@ function renderRegisteredBuildingCards(container, buildings) {
                     <span>ห้องทั้งหมด <b>${declared}</b></span>
                     <span>มีผู้พัก <b>${summary.occupiedRooms}</b></span>
                     <span>ห้องว่าง <b>${summary.vacantRooms}</b></span>
-                    <span>ผู้พัก <b>${summary.people}</b></span>
+                    <span>พนักงานต้นทาง <b>${source.employeeCount}</b></span>
                     <span>เตียงว่าง <b>${summary.availableBeds}</b></span>
                 </div>
+                ${source.employeeCount !== summary.people ? `<div class="registration-warning">ในทะเบียนห้องจับคู่แล้ว ${summary.people} คน · รอตรวจสอบ ${Math.abs(source.employeeCount - summary.people)} คน</div>` : ''}
                 ${summary.unregisteredRooms > 0 ? `
                     <div class="registration-warning">
                         ยังไม่ได้ลงทะเบียน ${summary.unregisteredRooms} ห้อง
@@ -686,16 +798,14 @@ function openManagementModal(title, fields, onSubmit) {
         catch (error) { alert(error.message); }
         finally { if (submit) submit.disabled = false; }
     };
-    modal.removeAttribute('hidden');
-    document.body.style.overflow = 'hidden';
+    showExclusiveOverlay('managementModal');
 }
 
 function closeManagementModal() {
     document.querySelectorAll('.maintenance-thumbnail img').forEach(image => {
         if (image.src.startsWith('blob:')) URL.revokeObjectURL(image.src);
     });
-    document.getElementById('managementModal')?.setAttribute('hidden', '');
-    document.body.style.overflow = '';
+    closeExclusiveOverlay('managementModal');
 }
 
 async function accommodationRequest(path, options = {}) {
@@ -705,16 +815,77 @@ async function accommodationRequest(path, options = {}) {
     });
     const result = await response.json();
     if (!response.ok || !result.success) throw new Error(result.message || 'บันทึกข้อมูลไม่สำเร็จ');
-    if (String(options.method || 'GET').toUpperCase() !== 'GET') {
-        await syncInsuranceAccommodationData({ silent: true, reload: false });
-    }
     return result;
 }
 
 function allRegisteredRooms() {
     return accommodationState.sites.flatMap(site => (site.buildings || []).flatMap(building =>
-        (building.floors || []).flatMap(floor => (floor.rooms || []).map(room => ({ ...room, buildingName: building.name, floorName: floor.name || floor.code })))
+        (building.floors || []).flatMap(floor => (floor.rooms || []).map(room => ({
+            ...room,
+            siteCode: site.code,
+            buildingName: building.name,
+            floorName: floor.name || floor.code
+        })))
     ));
+}
+
+function renderRoomSearchResults() {
+    const input = document.getElementById('roomSearchInput');
+    const container = document.getElementById('roomSearchResults');
+    if (!input || !container) return;
+    const query = input.value.trim().toLocaleLowerCase('th');
+    if (!query) {
+        container.textContent = 'พิมพ์หมายเลขห้องเพื่อค้นหา';
+        return;
+    }
+    const rooms = allRegisteredRooms().filter(room =>
+        [room.code, room.name].some(value => String(value || '').toLocaleLowerCase('th').includes(query))
+    );
+    if (!rooms.length) {
+        container.innerHTML = '<div class="empty-state">ไม่พบหมายเลขห้องที่ค้นหา</div>';
+        return;
+    }
+    container.innerHTML = rooms.map(room => {
+        const occupants = room.occupants || [];
+        const occupantSummary = occupants.length
+            ? `ผู้พัก: ${occupants.slice(0, 2).map(person => `${escapeHtml(person.employeeName)} (${escapeHtml(person.employeeId)})`).join(', ')}${occupants.length > 2 ? ` +${occupants.length - 2}` : ''}`
+            : '<span class="room-vacant">ห้องว่าง</span>';
+        return `
+        <article class="room-search-result room-search-result-compact">
+            <strong>ห้อง ${escapeHtml(room.name || room.code)}</strong>
+            <p>${escapeHtml(room.siteCode)} · ${escapeHtml(room.buildingName)} · ชั้น ${escapeHtml(room.floorName)}</p>
+            <div class="room-occupants">${occupantSummary}</div>
+            <div class="room-result-actions">
+                <button type="button" class="mini-button" data-search-edit="${escapeHtml(room.id)}">แก้ไข</button>
+                <button type="button" class="mini-button" data-search-repair="${escapeHtml(room.id)}">แจ้งซ่อม</button>
+                <button type="button" class="mini-button" data-search-cancel="${escapeHtml(room.id)}">ยกเลิกเช่า</button>
+            </div>
+        </article>`;
+    }).join('');
+    container.querySelectorAll('[data-search-edit]').forEach(button =>
+        button.addEventListener('click', () => openRoomEditForm(rooms.find(room => room.id === button.dataset.searchEdit)))
+    );
+    container.querySelectorAll('[data-search-repair]').forEach(button =>
+        button.addEventListener('click', () => openMaintenanceForm(rooms.find(room => room.id === button.dataset.searchRepair)))
+    );
+    container.querySelectorAll('[data-search-cancel]').forEach(button =>
+        button.addEventListener('click', () => openRoomCancellationForm(rooms.find(room => room.id === button.dataset.searchCancel)))
+    );
+}
+
+function openRoomCancellationForm(room) {
+    if (!room) return;
+    openManagementModal(`ยกเลิกเช่าห้อง ${room.name || room.code}`, `
+        <label>วันที่มีผล<input name="effectiveDate" type="date" required value="${new Date().toISOString().slice(0, 10)}"></label>
+        <label>ผู้พักปัจจุบัน<input value="${room.occupants?.length || 0} คน" disabled></label>
+        <label class="full">เหตุผลการยกเลิก<textarea name="reason" required maxlength="4000" placeholder="ระบุเหตุผลเพื่อใช้ตรวจสอบย้อนหลัง"></textarea></label>
+        <label class="full">หมายเหตุ/การส่งมอบห้อง<textarea name="handoverNote" maxlength="4000"></textarea></label>
+        <div class="form-actions"><button type="button" class="button button-secondary" onclick="closeManagementModal()">กลับ</button><button type="submit" class="button button-primary">ยืนยันยกเลิกเช่า</button></div>
+    `, async data => {
+        if (room.occupants?.length) throw new Error('ต้องย้ายผู้พักออกจากห้องให้ครบก่อนยกเลิกเช่า');
+        if (!confirm(`ยืนยันยกเลิกเช่าห้อง ${room.name || room.code} ตั้งแต่วันที่ ${data.effectiveDate}?`)) return;
+        await accommodationRequest(`/rooms/${room.id}`, { method: 'DELETE' });
+    });
 }
 
 function openMovementForm(occupant, currentRoom) {
@@ -844,11 +1015,11 @@ async function hydrateMaintenanceThumbnails() {
 
 function openImagePreview(src) {
     document.getElementById('imagePreviewElement').src = src;
-    document.getElementById('imagePreviewModal').removeAttribute('hidden');
+    showExclusiveOverlay('imagePreviewModal', { returnToPrevious: true });
 }
 
 function closeImagePreview() {
-    document.getElementById('imagePreviewModal')?.setAttribute('hidden', '');
+    closeExclusiveOverlay('imagePreviewModal');
     document.getElementById('imagePreviewElement')?.removeAttribute('src');
 }
 
@@ -1140,10 +1311,12 @@ function renderBuildingDetails(
 
     section.removeAttribute('hidden');
 
-    section.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-    });
+    if (window.innerWidth <= 900) {
+        section.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
 }
 //#endregion
 
@@ -1290,8 +1463,7 @@ function openAccommodationReport() {
         });
     });
 
-    modal.removeAttribute('hidden');
-    document.body.style.overflow = 'hidden';
+    showExclusiveOverlay('accommodationReportModal');
 }
 
 function closeAccommodationReport() {
@@ -1299,13 +1471,14 @@ function closeAccommodationReport() {
         'accommodationReportModal'
     );
 
-    modal?.setAttribute('hidden', '');
-    document.body.style.overflow = '';
+    closeExclusiveOverlay('accommodationReportModal');
 }
 
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-        closeAccommodationReport();
+        if (!document.getElementById('imagePreviewModal')?.hasAttribute('hidden')) closeImagePreview();
+        else if (!document.getElementById('managementModal')?.hasAttribute('hidden')) closeManagementModal();
+        else if (!document.getElementById('accommodationReportModal')?.hasAttribute('hidden')) closeAccommodationReport();
     }
 });
 //#endregion
