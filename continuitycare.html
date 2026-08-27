@@ -1,0 +1,65 @@
+<section class="continuity-card" aria-labelledby="continuityCareTitle">
+    <div class="continuity-sticky-summary">
+        <div class="continuity-heading">
+            <div>
+                <span class="continuity-eyebrow">CASE MONITORING</span>
+                <h2 id="continuityCareTitle">Continuity of Care</h2>
+                <p>ติดตามสถานะล่าสุดของแต่ละเคส ตั้งแต่เปิดเคสจนเอกสารและบัญชีครบถ้วน</p>
+            </div>
+            <div class="continuity-total" aria-label="จำนวนเคสทั้งหมด">
+                <span>เคสทั้งหมด</span>
+                <strong id="continuityTotalCount">0</strong>
+            </div>
+        </div>
+
+        <nav id="continuityAreaFilters" class="continuity-area-filters" aria-label="กรองตามพื้นที่">
+            <span>พื้นที่:</span>
+            <div id="continuityAreaButtons" class="continuity-area-buttons"></div>
+        </nav>
+
+        <div id="continuitySummaryGrid" class="continuity-summary-grid">
+        <button type="button" class="continuity-metric continuity-pending" data-category="pending" aria-expanded="false">
+            <span>Pending / Awaiting Action</span>
+            <strong id="continuityPendingCount">0</strong>
+            <small>เปิดเคส รอประสานประกันหรือนัดหมาย</small>
+        </button>
+        <button type="button" class="continuity-metric continuity-active" data-category="active" aria-expanded="false">
+            <span>Active / Open Case</span>
+            <strong id="continuityActiveCount">0</strong>
+            <small>อยู่ระหว่างตรวจ รักษา หรือรอแผนรักษา</small>
+        </button>
+        <button type="button" class="continuity-metric continuity-followup" data-category="followUp" aria-expanded="false">
+            <span>In Progress / Follow-up</span>
+            <strong id="continuityFollowUpCount">0</strong>
+            <small>กลับบ้านแล้ว นัดติดตามหรือรักษาต่อ</small>
+        </button>
+        <button type="button" class="continuity-metric continuity-billing" data-category="billing" aria-expanded="false">
+            <span>Discharged / Billing Pending</span>
+            <strong id="continuityBillingCount">0</strong>
+            <small>รอเอกสาร ยืนยันยอด เคลม หรือคืนเงิน</small>
+        </button>
+        <button type="button" class="continuity-metric continuity-closed" data-category="closed" aria-expanded="false">
+            <span>Closed Case</span>
+            <strong id="continuityClosedCount">0</strong>
+            <small>ปิดเคสแล้ว เอกสารและบัญชีครบถ้วน</small>
+        </button>
+        </div>
+    </div>
+
+    <div id="continuityTreatmentSlot" class="continuity-treatment-slot"></div>
+
+    <section id="continuityCasePanel" class="continuity-case-panel" hidden aria-live="polite">
+        <div class="continuity-case-panel-heading">
+            <div>
+                <h3 id="continuityCasePanelTitle">รายละเอียดเคส</h3>
+                <p id="continuityCasePanelDescription"></p>
+            </div>
+            <button type="button" id="continuityCasePanelClose" class="continuity-close-button" aria-label="ปิดรายละเอียด">×</button>
+        </div>
+        <div id="continuityCaseList" class="continuity-case-list"></div>
+    </section>
+
+    <p id="continuityCareStatus" class="continuity-status" role="status" aria-live="polite">
+        กำลังโหลดข้อมูลสรุป…
+    </p>
+</section>
