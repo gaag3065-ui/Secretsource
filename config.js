@@ -12,7 +12,7 @@ const LOCAL_API_URL = 'http://127.0.0.1:43127';
 
 // Backend สำหรับเว็บไซต์จริง
 // ตอนนี้ยังใช้ค่าว่างไว้ก่อน จนกว่าเราจะจัดการ Production Backend
-const PRODUCTION_API_URL = 'https://methods-minister-spin-lighter.trycloudflare.com';
+const PRODUCTION_API_URL = 'https://identical-song-explosion-recycling.trycloudflare.com';
 
 
 // API หลักที่ทุกหน้าในระบบจะเรียกใช้
