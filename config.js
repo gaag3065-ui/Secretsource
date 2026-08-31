@@ -19,7 +19,7 @@ const LOCAL_API_URL = `http://127.0.0.1:${localApiPort}`;
 // Backend สำหรับเว็บไซต์จริง
 // ตอนนี้ยังใช้ค่าว่างไว้ก่อน จนกว่าเราจะจัดการ Production Backend
 
-const PRODUCTION_API_URL = 'https://hawk-correction-synthesis-core.trycloudflare.com';
+const PRODUCTION_API_URL = 'https://passes-soviet-connections-rating.trycloudflare.com';
 
 
 
