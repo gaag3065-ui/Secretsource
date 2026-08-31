@@ -21,57 +21,37 @@
 
 <body>
     <main class="page-main">
-        <div class="accommodation-shell">
-        <section class="dashboard-summary-section dashboard-summary-sidebar" aria-labelledby="dashboardSummaryTitle">
+        <div class="accommodation-layout">
+        <section class="dashboard-summary-section dashboard-summary-top" aria-labelledby="dashboardSummaryTitle">
             <div class="summary-sidebar-heading">
                 <span class="section-label">PORTFOLIO OVERVIEW</span>
                 <h2 id="dashboardSummaryTitle">ภาพรวมวันนี้</h2>
                 <p>ข้อมูลล่าสุดจากทุกพื้นที่ปฏิบัติงาน</p>
             </div>
             <div id="employeeSummary" class="dashboard-kpis">กำลังโหลดข้อมูล...</div>
-            <div class="sidebar-note"><span class="status-dot" aria-hidden="true"></span><div><b>ระบบติดตามแบบเรียลไทม์</b><small>อัปเดตข้อมูลอัตโนมัติทุก 5 วินาที</small></div></div>
-        </section>
-
-        <div class="workspace-main">
-            <section class="room-search-section" aria-labelledby="roomSearchTitle">
+            <div class="dashboard-search">
                 <div class="room-search-heading">
-                    <div><span class="section-label">QUICK FIND</span><h2 id="roomSearchTitle">ค้นหาและจัดการห้อง</h2></div>
+                    <div><span class="section-label">QUICK FIND</span><h2 id="roomSearchTitle">ค้นหาและจัดการห้อง</h2><p>พิมพ์คำค้นเพื่อดูและจัดการห้องทันที</p></div>
                     <label class="room-search-control"><span class="search-icon" aria-hidden="true">⌕</span><span class="sr-only">หมายเลขหรือชื่อห้อง</span><input id="roomSearchInput" type="search" placeholder="ค้นหาหมายเลขห้อง อาคาร หรือผู้เข้าพัก…" autocomplete="off"></label>
                 </div>
                 <div id="roomSearchResults" class="room-search-results" aria-live="polite">พิมพ์คำค้นเพื่อดูและจัดการห้องทันที</div>
-            </section>
+            </div>
+        </section>
 
-            <section class="building-catalog-section" aria-labelledby="buildingCatalogTitle">
-                <div class="catalog-heading">
-                    <div><span class="section-label">ACCOMMODATION DIRECTORY</span><h2 id="buildingCatalogTitle">อาคารและที่พักทั้งหมด</h2></div>
-                    <div class="catalog-heading-actions">
-                        <div class="catalog-toolbar" role="group" aria-label="เครื่องมือจัดการที่พัก">
-                            <button type="button" id="roomMaintenanceButton" class="button button-secondary"><span aria-hidden="true">⌁</span> งานซ่อม</button>
-                            <button type="button" id="accommodationReportButton" class="button button-secondary"><span aria-hidden="true">⇩</span> ส่งออกรายงาน</button>
-                            <button type="button" id="createBuildingButton" class="button button-primary"><span aria-hidden="true">＋</span> เพิ่มอาคาร</button>
-                            <button type="button" id="backToPortalButton" class="button button-icon button-close-panel" aria-label="กลับหน้าหลัก" title="กลับหน้าหลัก">⌂</button>
-                        </div>
-                        <label class="catalog-filter"><span class="sr-only">กรองรายชื่ออาคาร</span><input id="buildingFilterInput" type="search" placeholder="กรองชื่ออาคาร…" autocomplete="off"></label>
+        <div class="accommodation-shell">
+        <div class="workspace-main">
+            <section id="accommodationDataPanel" class="accommodation-data-panel" aria-labelledby="accommodationDataTitle">
+                <div class="accommodation-data-heading">
+                    <div>
+                        <span class="section-label">ACCOMMODATION OVERVIEW</span>
+                        <h2 id="accommodationDataTitle">จำนวนตึก</h2>
+                        <p id="accommodationDataDescription">เลือกกล่องสรุปด้านบนเพื่อดูรายละเอียด</p>
                     </div>
                 </div>
-                <div id="workAreaNavigation" class="building-catalog" aria-label="อาคารและที่พักทั้งหมด"></div>
+                <div id="accommodationDataGrid" class="accommodation-data-grid" aria-live="polite"></div>
             </section>
         </div>
-
-        <section id="buildingDetailSection" class="building-detail-section" hidden aria-labelledby="selectedBuildingTitle">
-            <div class="detail-empty" aria-hidden="true">
-                <span>⌂</span><h2>เลือกอาคารเพื่อดูรายละเอียด</h2><p>ตรวจห้อง ผู้เข้าพัก สัญญา ค่าใช้จ่าย และงานซ่อมได้จากแผงนี้</p>
-            </div>
-            <div class="detail-header">
-                <div>
-                    <span class="section-label">BUILDING WORKSPACE</span>
-                    <h2 id="selectedBuildingTitle">รายละเอียดอาคาร</h2>
-                    <p id="selectedBuildingSummary"></p>
-                </div>
-                <button type="button" id="closeBuildingDetailButton" class="button button-icon button-close-panel" aria-label="ปิดรายละเอียดอาคาร">×</button>
-            </div>
-            <div id="floorRoomContainer" class="floor-room-container"></div>
-        </section>
+        </div>
         </div>
     </main>
 

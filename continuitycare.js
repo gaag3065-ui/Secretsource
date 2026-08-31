@@ -59,6 +59,7 @@ function normalizeContinuityCases(history) {
             insuranceId: latest.insuranceId || latest.InsuranceId || latest.colC || '-',
             workLocation: continuityArea(latest),
             hospital: latest.hospital || latest.Hospital || '-',
+            symptoms: latest.symptoms || latest.Symptoms || latest.symptom || '-',
             statusText,
             category,
             waitingDays: continuityWaitingDays(latest.treatmentDateTime),
@@ -212,7 +213,10 @@ function initContinuityInteractions() {
     if (caseSearchButton && caseSearchButton.dataset.initialized !== 'true') {
         caseSearchButton.dataset.initialized = 'true';
         const search = () => {
-            const query = String(caseSearchInput?.value || '').trim().toLowerCase();
+            const query = String(caseSearchInput?.value || '')
+                .normalize('NFKC')
+                .trim()
+                .toLocaleLowerCase('th-TH');
             const panel = document.getElementById('continuityCasePanel');
             const list = document.getElementById('continuityCaseList');
             const title = document.getElementById('continuityCasePanelTitle');
@@ -222,13 +226,19 @@ function initContinuityInteractions() {
                 caseSearchInput?.focus();
                 return;
             }
-            const matches = continuityAllCases.filter((item) =>
-                String(item.caseId).toLowerCase() === query
-            );
+            const matches = continuityAllCases.filter((item) => [
+                item.employeeName,
+                item.employeeId,
+                item.insuranceId,
+                item.caseId
+            ].some((value) => String(value || '')
+                .normalize('NFKC')
+                .toLocaleLowerCase('th-TH')
+                .includes(query)));
             document.querySelectorAll('.continuity-metric[data-category]')
                 .forEach((card) => card.classList.remove('selected'));
             panel.hidden = false;
-            title.textContent = `ผลการค้นหาเคส ${query}`;
+            title.textContent = `ผลการค้นหา ${caseSearchInput.value.trim()}`;
             description.textContent = `พบ ${matches.length.toLocaleString('th-TH')} เคส`;
             renderContinuityCases(matches, list);
         };
@@ -301,7 +311,8 @@ function renderContinuityCases(cases, container) {
         details.className = 'continuity-case-details';
         addContinuityDetail(details, 'รหัสประกัน', item.insuranceId);
         addContinuityDetail(details, 'รหัสพนักงาน', item.employeeId);
-        addContinuityDetail(details, 'เคส ID', item.caseId);
+        addContinuityDetail(details, 'เคส ID', item.caseId, 'continuity-detail-case-id');
+        addContinuityDetail(details, 'อาการป่วย', item.symptoms, 'continuity-detail-symptoms');
         addContinuityDetail(details, 'ขั้นตอนล่าสุด', item.statusText);
         addContinuityDetail(details, 'อัปเดตล่าสุด', item.lastUpdated);
         addContinuityDetail(details, 'สิ่งที่ควรทำต่อ', item.nextAction);
@@ -331,9 +342,13 @@ function renderContinuityCases(cases, container) {
     });
 }
 
-function addContinuityDetail(container, label, value) {
+function addContinuityDetail(container, label, value, emphasisClass = '') {
     const term = document.createElement('dt');
     const detail = document.createElement('dd');
+    if (emphasisClass) {
+        term.classList.add(emphasisClass);
+        detail.classList.add(emphasisClass);
+    }
     term.textContent = label;
     detail.textContent = String(value || '-');
     container.append(term, detail);
@@ -343,6 +358,8 @@ function openContinuityInlineUpdate(item, target, button) {
     if (typeof window.populateOutcomeToModal !== 'function') return;
 
     const modal = document.getElementById('outcomeUpdateModal');
+    const panel = document.getElementById('continuityCasePanel');
+    const row = target.closest('.continuity-case-item');
     const isCurrent = modal?.parentElement === target && !target.hidden;
 
     document.querySelectorAll('.continuity-inline-form-host')
@@ -355,14 +372,24 @@ function openContinuityInlineUpdate(item, target, button) {
         });
 
     if (isCurrent) {
-        modal.style.setProperty('display', 'none', 'important');
+        window.closeOutcomeUpdateModal?.();
         return;
     }
 
+    document.querySelectorAll('.continuity-case-item.is-editing')
+        .forEach((caseRow) => caseRow.classList.remove('is-editing'));
+    row?.classList.add('is-editing');
+    panel?.classList.add('is-updating');
     target.hidden = false;
     window.populateOutcomeToModal(item, { inlineTarget: target });
     button.textContent = 'ซ่อนแบบฟอร์มอัปเดต';
     target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function resetContinuityEditingState() {
+    document.getElementById('continuityCasePanel')?.classList.remove('is-updating');
+    document.querySelectorAll('.continuity-case-item.is-editing')
+        .forEach((caseRow) => caseRow.classList.remove('is-editing'));
 }
 
 function closeContinuityCasePanel() {
@@ -385,11 +412,17 @@ function restoreContinuityUpdateForm() {
     if (!modal || !home) return;
 
     modal.style.setProperty('display', 'none', 'important');
+    resetContinuityEditingState();
     modal.classList.remove('continuity-inline-update');
     if (typeof window.setOutcomeModalLayout === 'function') {
         window.setOutcomeModalLayout(modal, false);
     }
     home.after(modal);
+}
+
+if (!window.continuityOutcomeCloseBound) {
+    window.continuityOutcomeCloseBound = true;
+    document.addEventListener('continuity:outcome-update-close', resetContinuityEditingState);
 }
 
 function setContinuityCount(elementId, value) {

@@ -35,7 +35,7 @@ const services = [
                 title: 'เปิดเคส เข้ารักษา',
                 icon: 'plus',
                 page:
-                    'search.html?v=20260831-insurance-31' +
+                    'search.html?v=20260831-insurance-32' +
                     '#treatment-box-placeholder'
             },
             {
@@ -44,7 +44,7 @@ const services = [
                     'อัปเดตผลการรักษาหรือปิดเคส',
                 icon: 'health',
                 page:
-                    'search.html?v=20260831-insurance-31' +
+                    'search.html?v=20260831-insurance-32' +
                     '#continuity-care-placeholder'
             },
             {
@@ -52,7 +52,7 @@ const services = [
                 title: 'ประวัติการรักษา',
                 icon: 'home',
                 page:
-                    'search.html?v=20260831-insurance-31' +
+                    'search.html?v=20260831-insurance-32' +
                     '#table-box-placeholder'
             }
         ]
@@ -679,7 +679,8 @@ function renderTaskContent(
         service.id === 'insurance' &&
         (
             task.route === 'open-treatment' ||
-            task.route === 'update-treatment'
+            task.route === 'update-treatment' ||
+            task.route === 'treatment-history'
         )
     );
     elements.workspaceView.classList.toggle(

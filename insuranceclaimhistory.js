@@ -136,6 +136,18 @@ function getTreatmentStatusBadgeStyle(statusText) {
     return 'background-color:#fef3c7;color:#92400e;padding:4px 8px;border-radius:4px;';
 }
 
+// 🎯 ใช้เรียงการ์ดประวัติ: เคสล่าสุด (เลขเคสมากสุด) อยู่บนสุดเสมอ
+function compareCaseIdDescending(a, b) {
+    const numA = Number(a);
+    const numB = Number(b);
+
+    if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
+        return numB - numA;
+    }
+
+    return String(b).localeCompare(String(a), 'th', { numeric: true });
+}
+
 function renderHistoryTable(historyData) {
 
         window.historyDisplayMode = 'individual';
@@ -146,6 +158,7 @@ function renderHistoryTable(historyData) {
 
     const tableBody = document.getElementById('tableBodyResult');
     if (!tableBody) return;
+
     updateHistoryResultCount(historyData);
     tableBody.innerHTML = '';
 
@@ -161,7 +174,10 @@ function renderHistoryTable(historyData) {
         groupedCases[id].push(item);
     });
 
-    Object.keys(groupedCases).forEach(caseId => {
+    // 🎯 เรียงการ์ดจากเคสล่าสุด (เลขเคสมากสุด) ไว้บนสุดเสมอ
+    Object.keys(groupedCases)
+        .sort(compareCaseIdDescending)
+        .forEach(caseId => {
         const timelines = groupedCases[caseId];
         
         // แถวหน้าด่านยึดข้อมูลอัปเดตสถานะล่าสุด (ตัวสุดท้ายของอาร์เรย์) เสมอ
@@ -183,27 +199,27 @@ function renderHistoryTable(historyData) {
             <td class="text-center font-bold">
                 <div class="case-cell"><span class="txt-case-id">${caseId}</span><span class="toggle-arrow" style="margin-left:5px;">▼</span></div>
             </td>
-            <td class="text-center">${latestEvent.treatmentDateTime || '-'}</td>
-            <td class="text-center"><span style="${badgeStyle}">${latestEvent.statusText || 'รอดำเนินการ'}</span></td>
-            <td class="text-left" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${latestEvent.symptoms || '-'}</td>
-            <td class="text-left">${getDisplayWorkLocation(latestEvent)}</td>
-            <td class="text-left">${latestEvent.hospital || '-'}</td>
-            <td class="text-right" style="background:#f9fff9;">${latestEvent.DentalOPD || '0'}</td>
-            <td class="text-right" style="background:#f9fff9;">${latestEvent.PPUsageOPD || '0'}</td>
-            <td class="text-right" style="background:#f9fff9;">${latestEvent.PPUsageIPD || '0'}</td>
-            <td class="text-right slk-column" style="background:#fffdf0;">${latestEvent.SLKUsageOpdThB || '0'}</td>
-            <td class="text-right slk-column" style="background:#fffdf0;">${latestEvent.SLKUsageIpdThB || '0'}</td>
-            <td class="text-right slk-column" style="background:#fffdf0;">${latestEvent.SLKUsageOpdLkr || '0'}</td>
-            <td class="text-right slk-column" style="background:#fffdf0;">${latestEvent.SLKUsageIpdLkr || '0'}</td>
-            <td class="text-right slk-column" style="color:red; background:#fffdf0;">${latestEvent.OverLimitCreditInsThB || '0'}</td>
-            <td class="text-right slk-column" style="color:red; background:#fffdf0;">${latestEvent.OverLimitCreditInsLkr || '0'}</td>
-            <td class="text-center slk-column" style="background:#fffdf0;">${latestEvent.ExchangeRatesIns || '1'}</td>
-            <td class="text-center slk-column" style="background:#fffdf0;">${latestEvent.ExchangeRatesInt || '1'}</td>
-            <td class="text-left">${latestEvent.ClinicianReportedOutcomes || '-'}</td>
+            <td class="text-center" data-label="เวลาและวันที่เข้ารักษา">${latestEvent.treatmentDateTime || '-'}</td>
+            <td class="text-center" data-label="ขั้นตอนการรักษา"><span style="${badgeStyle}">${latestEvent.statusText || 'รอดำเนินการ'}</span></td>
+            <td class="text-left" data-label="อาการป่วย" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${latestEvent.symptoms || '-'}</td>
+            <td class="text-left" data-label="สถานที่ทำงาน">${getDisplayWorkLocation(latestEvent)}</td>
+            <td class="text-left" data-label="สถานที่รักษา">${latestEvent.hospital || '-'}</td>
+            <td class="text-right" data-label="ทำฟัน หักวงเงิน OPD" style="background:#f9fff9;">${latestEvent.DentalOPD || '0'}</td>
+            <td class="text-right" data-label="PP OPD" style="background:#f9fff9;">${latestEvent.PPUsageOPD || '0'}</td>
+            <td class="text-right" data-label="PP IPD" style="background:#f9fff9;">${latestEvent.PPUsageIPD || '0'}</td>
+            <td class="text-right slk-column" data-label="SL OPD (THB)" style="background:#fffdf0;">${latestEvent.SLKUsageOpdThB || '0'}</td>
+            <td class="text-right slk-column" data-label="SL IPD (THB)" style="background:#fffdf0;">${latestEvent.SLKUsageIpdThB || '0'}</td>
+            <td class="text-right slk-column" data-label="SL OPD (LKR)" style="background:#fffdf0;">${latestEvent.SLKUsageOpdLkr || '0'}</td>
+            <td class="text-right slk-column" data-label="SL IPD (LKR)" style="background:#fffdf0;">${latestEvent.SLKUsageIpdLkr || '0'}</td>
+            <td class="text-right slk-column" data-label="ส่วนเกินวงเงินค่ารักษา (THB)" style="color:red; background:#fffdf0;">${latestEvent.OverLimitCreditInsThB || '0'}</td>
+            <td class="text-right slk-column" data-label="ส่วนเกินวงเงินค่ารักษา (LKR)" style="color:red; background:#fffdf0;">${latestEvent.OverLimitCreditInsLkr || '0'}</td>
+            <td class="text-center slk-column" data-label="เรทค่าเงินที่ประกันคิดให้ (THB/LKR)" style="background:#fffdf0;">${latestEvent.ExchangeRatesIns || '1'}</td>
+            <td class="text-center slk-column" data-label="เรทค่าเงินปัจจุบัน (THB/LKR)" style="background:#fffdf0;">${latestEvent.ExchangeRatesInt || '1'}</td>
+            <td class="text-left" data-label="ผลการรักษา">${latestEvent.ClinicianReportedOutcomes || '-'}</td>
             <td class="text-left">${latestEvent.DocumentsAttached || '-'}</td>
-            <td class="text-left">${latestEvent.notes || '-'}</td>
-            <td class="text-center">${latestEvent.autoDateTime || '-'}</td>
-            <td class="text-center">${latestEvent.adminName || '-'}</td>
+            <td class="text-left" data-label="หมายเหตุ">${latestEvent.notes || '-'}</td>
+            <td class="text-center" data-label="เวลาและวันที่บันทึกข้อมูล">${latestEvent.autoDateTime || '-'}</td>
+            <td class="text-center" data-label="แอดมินที่บันทึกข้อมูล">${latestEvent.adminName || '-'}</td>
             <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- คลิกเพื่อดูไทม์ไลน์ -</td>
         `;
         const combinedCaseEvidence =
@@ -233,29 +249,29 @@ function renderHistoryTable(historyData) {
 
             childTr.innerHTML = `
                 <td class="text-center font-bold" style="color:#0b5ed7; background:#eef1f6;">${caseId}</td>
-                <td class="text-center" style="font-size:12px; color:#555;">${event.treatmentDateTime || '-'}</td>
-                <td class="text-center" style="font-size:12px; color:#555;">${event.statusText || '-'}</td>
-                <td class="text-left" style="white-space:normal !important; max-width:200px;">${event.symptoms || '-'}</td>
-                <td class="text-center">${getDisplayWorkLocation(event)}</td>
-                <td class="text-left">${event.hospital || '-'}</td>
-                <td class="text-right" style="background:#edf7ed;">${event.DentalOPD || '0'}</td>
-                <td class="text-right" style="background:#edf7ed;">${event.PPUsageOPD || '0'}</td>
-                <td class="text-right" style="background:#edf7ed;">${event.PPUsageIPD || '0'}</td>
-                <td class="text-right slk-column" style="background:#fffbe6;">${event.SLKUsageOpdThB || '0'}</td>
-                <td class="text-right slk-column" style="background:#fffbe6;">${event.SLKUsageIpdThB || '0'}</td>
-                <td class="text-right slk-column" style="background:#fffbe6;">${event.SLKUsageOpdLkr || '0'}</td>
-                <td class="text-right slk-column" style="background:#fffbe6;">${event.SLKUsageIpdLkr || '0'}</td>
-                <td class="text-right slk-column" style="color:red; background:#fffbe6;">${event.OverLimitCreditInsThB || '0'}</td>
-                <td class="text-right slk-column" style="color:red; background:#fffbe6;">${event.OverLimitCreditInsLkr || '0'}</td>
-                <td class="text-center slk-column" style="background:#fffbe6;">${event.ExchangeRatesIns || '1'}</td>
-                <td class="text-center slk-column" style="background:#fffbe6;">${event.ExchangeRatesInt || '1'}</td>
-                <td class="text-left">${event.ClinicianReportedOutcomes || '-'}</td>
+                <td class="text-center" data-label="เวลาและวันที่เข้ารักษา" style="font-size:12px; color:#555;">${event.treatmentDateTime || '-'}</td>
+                <td class="text-center" data-label="ขั้นตอนการรักษา" style="font-size:12px; color:#555;">${event.statusText || '-'}</td>
+                <td class="text-left" data-label="อาการป่วย" style="white-space:normal !important; max-width:200px;">${event.symptoms || '-'}</td>
+                <td class="text-center" data-label="สถานที่ทำงาน">${getDisplayWorkLocation(event)}</td>
+                <td class="text-left" data-label="สถานที่รักษา">${event.hospital || '-'}</td>
+                <td class="text-right" data-label="ทำฟัน หักวงเงิน OPD" style="background:#edf7ed;">${event.DentalOPD || '0'}</td>
+                <td class="text-right" data-label="PP OPD" style="background:#edf7ed;">${event.PPUsageOPD || '0'}</td>
+                <td class="text-right" data-label="PP IPD" style="background:#edf7ed;">${event.PPUsageIPD || '0'}</td>
+                <td class="text-right slk-column" data-label="SL OPD (THB)" style="background:#fffbe6;">${event.SLKUsageOpdThB || '0'}</td>
+                <td class="text-right slk-column" data-label="SL IPD (THB)" style="background:#fffbe6;">${event.SLKUsageIpdThB || '0'}</td>
+                <td class="text-right slk-column" data-label="SL OPD (LKR)" style="background:#fffbe6;">${event.SLKUsageOpdLkr || '0'}</td>
+                <td class="text-right slk-column" data-label="SL IPD (LKR)" style="background:#fffbe6;">${event.SLKUsageIpdLkr || '0'}</td>
+                <td class="text-right slk-column" data-label="ส่วนเกินวงเงินค่ารักษา (THB)" style="color:red; background:#fffbe6;">${event.OverLimitCreditInsThB || '0'}</td>
+                <td class="text-right slk-column" data-label="ส่วนเกินวงเงินค่ารักษา (LKR)" style="color:red; background:#fffbe6;">${event.OverLimitCreditInsLkr || '0'}</td>
+                <td class="text-center slk-column" data-label="เรทค่าเงินที่ประกันคิดให้ (THB/LKR)" style="background:#fffbe6;">${event.ExchangeRatesIns || '1'}</td>
+                <td class="text-center slk-column" data-label="เรทค่าเงินปัจจุบัน (THB/LKR)" style="background:#fffbe6;">${event.ExchangeRatesInt || '1'}</td>
+                <td class="text-left" data-label="ผลการรักษา">${event.ClinicianReportedOutcomes || '-'}</td>
                 <td class="text-left">${event.DocumentsAttached || '-'}</td>
-                <td class="text-left">${event.notes || '-'}</td>
-                <td class="text-center" style="font-size:12px;">${event.autoDateTime || '-'}</td>
-                <td class="text-center" style="font-size:12px;">${event.adminName || '-'}</td>
+                <td class="text-left" data-label="หมายเหตุ">${event.notes || '-'}</td>
+                <td class="text-center" data-label="เวลาและวันที่บันทึกข้อมูล" style="font-size:12px;">${event.autoDateTime || '-'}</td>
+                <td class="text-center" data-label="แอดมินที่บันทึกข้อมูล" style="font-size:12px;">${event.adminName || '-'}</td>
                 <td class="text-center" style="background:#fff;">
-                    ${window.hasPermission?.('EditTreatment') === true ? `<button type="button" class="btn-edit-minimal" data-permission="EditTreatment" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${window.btoa(unescape(encodeURIComponent(JSON.stringify(event))))}')))); populateDataToForm(decodedData);">✏️ แก้ไข</button>` : ''}
+                    ${window.hasPermission?.('EditTreatment') === true ? `<button type="button" class="btn-edit-minimal" data-permission="EditTreatment" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${window.btoa(unescape(encodeURIComponent(JSON.stringify(event))))}')))); populateDataToForm(decodedData, event.currentTarget);">✏️ แก้ไข</button>` : ''}
                     ${window.hasPermission?.('DeleteTreatment') === true ? `<button type="button" data-permission="DeleteTreatment" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(${event.targetRowNumber}, '${caseId}')">🗑️ ลบ</button>` : ''}
                 </td>
             `;
@@ -659,27 +675,27 @@ window.injectNewRowToTableRealtime = function (payloadData) {
         <td class="text-center font-bold" style="color:#198754;">
             <div class="case-cell"><span class="txt-case-id">${caseId}</span><span class="toggle-arrow" style="margin-left:5px;">▼</span></div>
         </td>
-        <td class="text-center">${mockEventItem.treatmentDateTime}</td>
-        <td class="text-center"><span style="${getTreatmentStatusBadgeStyle(mockEventItem.statusText)}">${mockEventItem.statusText}</span></td>
-        <td class="text-left" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${mockEventItem.symptoms || '-'}</td>
-        <td>${getDisplayWorkLocation(mockEventItem)}</td>
-        <td class="text-left">${mockEventItem.hospital || '-'}</td>
-        <td class="text-right" style="font-weight:bold;">${formatMoney(mockEventItem.DentalOPD)}</td>
-        <td class="text-right" style="font-weight:bold;">${formatMoney(mockEventItem.PPUsageOPD)}</td>
-        <td class="text-right" style="font-weight:bold;">${formatMoney(mockEventItem.PPUsageIPD)}</td>
-        <td class="text-right slk-column" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageOpdThB)}</td>
-        <td class="text-right slk-column" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageIpdThB)}</td>
-        <td class="text-right slk-column" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageOpdLkr)}</td>
-        <td class="text-right slk-column" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageIpdLkr)}</td>
-        <td class="text-right slk-column" style="color:red; font-weight:bold;">${formatMoney(mockEventItem.OverLimitCreditInsThB)}</td>
-        <td class="text-right slk-column" style="color:red; font-weight:bold;">${formatMoney(mockEventItem.OverLimitCreditInsLkr)}</td>
-        <td class="text-center slk-column">${mockEventItem.ExchangeRatesIns}</td>
-        <td class="text-center slk-column">${mockEventItem.ExchangeRatesInt}</td>
-        <td class="text-left">${mockEventItem.ClinicianReportedOutcomes}</td>
+        <td class="text-center" data-label="เวลาและวันที่เข้ารักษา">${mockEventItem.treatmentDateTime}</td>
+        <td class="text-center" data-label="ขั้นตอนการรักษา"><span style="${getTreatmentStatusBadgeStyle(mockEventItem.statusText)}">${mockEventItem.statusText}</span></td>
+        <td class="text-left" data-label="อาการป่วย" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${mockEventItem.symptoms || '-'}</td>
+        <td data-label="สถานที่ทำงาน">${getDisplayWorkLocation(mockEventItem)}</td>
+        <td class="text-left" data-label="สถานที่รักษา">${mockEventItem.hospital || '-'}</td>
+        <td class="text-right" data-label="ทำฟัน หักวงเงิน OPD" style="font-weight:bold;">${formatMoney(mockEventItem.DentalOPD)}</td>
+        <td class="text-right" data-label="PP OPD" style="font-weight:bold;">${formatMoney(mockEventItem.PPUsageOPD)}</td>
+        <td class="text-right" data-label="PP IPD" style="font-weight:bold;">${formatMoney(mockEventItem.PPUsageIPD)}</td>
+        <td class="text-right slk-column" data-label="SL OPD (THB)" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageOpdThB)}</td>
+        <td class="text-right slk-column" data-label="SL IPD (THB)" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageIpdThB)}</td>
+        <td class="text-right slk-column" data-label="SL OPD (LKR)" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageOpdLkr)}</td>
+        <td class="text-right slk-column" data-label="SL IPD (LKR)" style="font-weight:bold;">${formatMoney(mockEventItem.SLKUsageIpdLkr)}</td>
+        <td class="text-right slk-column" data-label="ส่วนเกินวงเงินค่ารักษา (THB)" style="color:red; font-weight:bold;">${formatMoney(mockEventItem.OverLimitCreditInsThB)}</td>
+        <td class="text-right slk-column" data-label="ส่วนเกินวงเงินค่ารักษา (LKR)" style="color:red; font-weight:bold;">${formatMoney(mockEventItem.OverLimitCreditInsLkr)}</td>
+        <td class="text-center slk-column" data-label="เรทค่าเงินที่ประกันคิดให้ (THB/LKR)">${mockEventItem.ExchangeRatesIns}</td>
+        <td class="text-center slk-column" data-label="เรทค่าเงินปัจจุบัน (THB/LKR)">${mockEventItem.ExchangeRatesInt}</td>
+        <td class="text-left" data-label="ผลการรักษา">${mockEventItem.ClinicianReportedOutcomes}</td>
         <td class="text-left">${mockEventItem.DocumentsAttached}</td>
-        <td class="text-left">${mockEventItem.notes}</td>
-        <td class="text-center">${mockEventItem.autoDateTime}</td>
-        <td class="text-center">${mockEventItem.adminName}</td>
+        <td class="text-left" data-label="หมายเหตุ">${mockEventItem.notes}</td>
+        <td class="text-center" data-label="เวลาและวันที่บันทึกข้อมูล">${mockEventItem.autoDateTime}</td>
+        <td class="text-center" data-label="แอดมินที่บันทึกข้อมูล">${mockEventItem.adminName}</td>
         <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- ไทม์ไลน์เรียลไทม์ -</td>
     `;
 
@@ -698,29 +714,29 @@ window.injectNewRowToTableRealtime = function (payloadData) {
 
     childTr.innerHTML = `
         <td class="text-center font-bold" style="color:#0b5ed7; background:#eef1f6;">${caseId}</td>
-        <td class="text-center" style="font-size:12px; color:#555;">${mockEventItem.treatmentDateTime}</td>
-        <td class="text-center" style="font-size:12px; color:#555;">${mockEventItem.statusText}</td>
-        <td class="text-left" style="white-space:normal !important; max-width:200px;">${mockEventItem.symptoms || '-'}</td>
-        <td>${getDisplayWorkLocation(mockEventItem)}</td>
-        <td class="text-left">${mockEventItem.hospital || '-'}</td>
-        <td class="text-right">${formatMoney(mockEventItem.DentalOPD)}</td>
-        <td class="text-right">${formatMoney(mockEventItem.PPUsageOPD)}</td>
-        <td class="text-right">${formatMoney(mockEventItem.PPUsageIPD)}</td>
-        <td class="text-right slk-column">${formatMoney(mockEventItem.SLKUsageOpdThB)}</td>
-        <td class="text-right slk-column">${formatMoney(mockEventItem.SLKUsageIpdThB)}</td>
-        <td class="text-right slk-column">${formatMoney(mockEventItem.SLKUsageOpdLkr)}</td>
-        <td class="text-right slk-column">${formatMoney(mockEventItem.SLKUsageIpdLkr)}</td>
-        <td class="text-right slk-column" style="color:red;">${formatMoney(mockEventItem.OverLimitCreditInsThB)}</td>
-        <td class="text-right slk-column" style="color:red;">${formatMoney(mockEventItem.OverLimitCreditInsLkr)}</td>
-        <td class="text-center slk-column">${mockEventItem.ExchangeRatesIns}</td>
-        <td class="text-center slk-column">${mockEventItem.ExchangeRatesInt}</td>
-        <td class="text-left">${mockEventItem.ClinicianReportedOutcomes}</td>
+        <td class="text-center" data-label="เวลาและวันที่เข้ารักษา" style="font-size:12px; color:#555;">${mockEventItem.treatmentDateTime}</td>
+        <td class="text-center" data-label="ขั้นตอนการรักษา" style="font-size:12px; color:#555;">${mockEventItem.statusText}</td>
+        <td class="text-left" data-label="อาการป่วย" style="white-space:normal !important; max-width:200px;">${mockEventItem.symptoms || '-'}</td>
+        <td data-label="สถานที่ทำงาน">${getDisplayWorkLocation(mockEventItem)}</td>
+        <td class="text-left" data-label="สถานที่รักษา">${mockEventItem.hospital || '-'}</td>
+        <td class="text-right" data-label="ทำฟัน หักวงเงิน OPD">${formatMoney(mockEventItem.DentalOPD)}</td>
+        <td class="text-right" data-label="PP OPD">${formatMoney(mockEventItem.PPUsageOPD)}</td>
+        <td class="text-right" data-label="PP IPD">${formatMoney(mockEventItem.PPUsageIPD)}</td>
+        <td class="text-right slk-column" data-label="SL OPD (THB)">${formatMoney(mockEventItem.SLKUsageOpdThB)}</td>
+        <td class="text-right slk-column" data-label="SL IPD (THB)">${formatMoney(mockEventItem.SLKUsageIpdThB)}</td>
+        <td class="text-right slk-column" data-label="SL OPD (LKR)">${formatMoney(mockEventItem.SLKUsageOpdLkr)}</td>
+        <td class="text-right slk-column" data-label="SL IPD (LKR)">${formatMoney(mockEventItem.SLKUsageIpdLkr)}</td>
+        <td class="text-right slk-column" data-label="ส่วนเกินวงเงินค่ารักษา (THB)" style="color:red;">${formatMoney(mockEventItem.OverLimitCreditInsThB)}</td>
+        <td class="text-right slk-column" data-label="ส่วนเกินวงเงินค่ารักษา (LKR)" style="color:red;">${formatMoney(mockEventItem.OverLimitCreditInsLkr)}</td>
+        <td class="text-center slk-column" data-label="เรทค่าเงินที่ประกันคิดให้ (THB/LKR)">${mockEventItem.ExchangeRatesIns}</td>
+        <td class="text-center slk-column" data-label="เรทค่าเงินปัจจุบัน (THB/LKR)">${mockEventItem.ExchangeRatesInt}</td>
+        <td class="text-left" data-label="ผลการรักษา">${mockEventItem.ClinicianReportedOutcomes}</td>
         <td class="text-left">${mockEventItem.DocumentsAttached}</td>
-        <td class="text-left">${mockEventItem.notes}</td>
-        <td class="text-center" style="font-size:12px;">${mockEventItem.autoDateTime}</td>
-        <td class="text-center" style="font-size:12px;">${mockEventItem.adminName}</td>
+        <td class="text-left" data-label="หมายเหตุ">${mockEventItem.notes}</td>
+        <td class="text-center" data-label="เวลาและวันที่บันทึกข้อมูล" style="font-size:12px;">${mockEventItem.autoDateTime}</td>
+        <td class="text-center" data-label="แอดมินที่บันทึกข้อมูล" style="font-size:12px;">${mockEventItem.adminName}</td>
         <td class="text-center" style="background:#fff; white-space: nowrap;">
-            ${window.hasPermission?.('EditTreatment') === true ? `<button type="button" class="btn-edit-minimal" data-permission="EditTreatment" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateDataToForm(decodedData);">✏️ แก้ไข</button>` : ''}
+            ${window.hasPermission?.('EditTreatment') === true ? `<button type="button" class="btn-edit-minimal" data-permission="EditTreatment" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateDataToForm(decodedData, event.currentTarget);">✏️ แก้ไข</button>` : ''}
             ${window.hasPermission?.('DeleteTreatment') === true ? `<button type="button" data-permission="DeleteTreatment" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(${targetRowNo}, '${caseId}')">🗑️ ลบ</button>` : ''}
         </td>
     `;
@@ -886,6 +902,8 @@ window.injectNewRowToTableRealtime = function (payloadData) {
 
             const inlineHost = modal.closest('.continuity-inline-form-host');
             if (inlineHost) inlineHost.hidden = true;
+
+            document.dispatchEvent(new CustomEvent('continuity:outcome-update-close'));
 
             document
                 .querySelectorAll('.continuity-update-button')
@@ -1093,9 +1111,9 @@ const EDIT_EVIDENCE_TYPES = {
     }
 };
 
-function renderEditEvidenceEditor(eventItem) {
+function renderEditEvidenceEditor(eventItem, editorEl) {
     const editor =
-        document.getElementById('mdEvidenceEditor');
+        editorEl || document.getElementById('mdEvidenceEditor');
 
     if (!editor) return;
 
@@ -1201,10 +1219,11 @@ function renderEditEvidenceEditor(eventItem) {
     }
 }
 
-async function collectEditedEvidenceDocuments() {
-    const cards = document.querySelectorAll(
-        '#mdEvidenceEditor .edit-evidence-card'
-    );
+async function collectEditedEvidenceDocuments(editorEl) {
+    const editor = editorEl || document.getElementById('mdEvidenceEditor');
+    const cards = editor
+        ? editor.querySelectorAll('.edit-evidence-card')
+        : [];
     const lines = [];
 
     for (const card of cards) {
@@ -1239,99 +1258,242 @@ async function collectEditedEvidenceDocuments() {
 //window.populateDataToForm = function (eventItem) {
 //window.closeEditModal = function () {
 //#region
-// 🎯 แก้ไขปรับปรุงใหม่: สั่งเปิดหน้าต่างแบบฟอร์มป๊อปอัป Modal ให้ดีดเด้งกึ่งกลางจอเป๊ะๆ 100%
-window.populateDataToForm = function (eventItem) {
-
-    renderEditEvidenceEditor(eventItem);
-
-    //  สั่งให้ระบบค้นหาและจำพิกัดบรรทัดบนหน้าจอของปุ่มที่แอดมินเพิ่งคลิกเข้ามา
-    const allRows = document.querySelectorAll('#tableBodyResult tr');
-    allRows.forEach((row, idx) => {
-        // ดักหาแถวที่มีข้อมูลอาการป่วยและวันที่ตรวจตรงกันกับที่กดเข้ามา
-        if (row.innerHTML.includes(eventItem.symptoms) && row.innerHTML.includes(eventItem.treatmentDateTime)) {
-            currentDomRowIndex = row.rowIndex; // บันทึกพิกัดลำดับแถวหน้าจอจริงเก็บไว้ในตัวแปรกลาง
-        }
-    });
-
-    // 1. ล็อกเลขบรรทัดจริงเก็บเข้าตัวแปรกลางหลักหลังบ้าน (ยึดตามคำสั่งควบคุมขั้นตอนที่ 1)
-    currentEditingRowIndex = eventItem.targetRowNumber || -1;
-
-    // 2. สั่งปลุกหน้าต่างป๊อปอัปกล่องข้อความโครงสร้าง HTML ของเราให้เด้งแสดงผลกึ่งกลางหน้าจอทันที
-    const modal = document.getElementById('editCaseModal');
-    if (modal) {
-        modal.style.setProperty('display', 'flex', 'important'); 
-    }
-
-    // ฟังก์ชันย่อยสำหรับป้อนค่าเข้าช่องอินพุตภายในโมดอลป๊อปอัปอย่างปลอดภัย
-           function setMdInput(id, value) {
-            const el = document.getElementById(id);
-            if (el) {
-                let cleanValue = (value !== undefined && value !== null) ? String(value) : '';
-                
-                // 🎯 ปรับปรุงใหม่: ลบทั้งคอมม่า และลบช่องว่าง/เว้นวรรคทุกจุดทิ้งทันทีหากอินพุตเป็น type="number"
-                if (el.type === 'number') {
-                    cleanValue = cleanValue.replace(/,/g, '').replace(/\s+/g, '').trim();
-                }
-                
-                el.value = cleanValue;
-            }
-        }
-
-
-    // 3. หยอดป้อนค่าข้อมูลทั่วไปประจำเคสลงช่องกรอกในกล่องป๊อปอัป
-    setMdInput('mdCaseId', eventItem.CaseIdNew);
-    setMdInput('mdHospitalSelect', eventItem.hospital);
-    setMdInput('mdSymptomsInput', eventItem.symptoms);
-    setMdInput('mdNotesInput', eventItem.notes);
-
-    // 4. วิเคราะห์สับสยายแยกวันที่และเวลาออกจากกันให้สะอาด เพื่อล็อกช่อง Flatpickr เดี่ยวๆ
-    const rawDateTime = String(eventItem.treatmentDateTime || '').trim();
-    const dateTimeParts = rawDateTime.split(' ');
-    let cleanDate = dateTimeParts[0] || '';
-    let cleanTime = dateTimeParts[1] || '';
-    
-    // ล้างเครื่องหมายจุลภาคขยะ (,) ที่อาจจะหลงเหลือติดมาจากฐานข้อมูลชีต
-    cleanDate = cleanDate.replace(/,/g, '').trim();
-    cleanTime = cleanTime.replace(/,/g, '').trim();
-
-    setMdInput('mdManualDate', cleanDate);
-    setMdInput('mdManualTime', cleanTime);
-
-       // ✅ โค้ดชุดใหม่ที่ปลอดภัยกว่าเดิม (วางแทนที่จุดที่ลบออกได้เลยครับ)
-    const mdDateEl = document.getElementById('mdManualDate');
-    const mdTimeEl = document.getElementById('mdManualTime');
-
-    if (mdDateEl && !mdDateEl._flatpickr) {
-        flatpickr("#mdManualDate", { dateFormat: "d/m/Y", allowInput: true });
-    }
-    if (mdTimeEl && !mdTimeEl._flatpickr) {
-        flatpickr("#mdManualTime", { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, allowInput: true });
-    }
-
-    if (mdDateEl && mdDateEl._flatpickr) mdDateEl._flatpickr.setDate(cleanDate, true);
-    if (mdTimeEl && mdTimeEl._flatpickr) mdTimeEl._flatpickr.setDate(cleanTime, true);
-
-
-    // 5. ดีดข้อมูลสิทธิ์ตัวเลขวงเงินต่างๆ กรอกลงตามล็อกช่องในป๊อปอัปครบทุกไอดี
-    setMdInput('mdInpDentalOPD', eventItem.DentalOPD);
-    setMdInput('mdInpPPUsageOPD', eventItem.PPUsageOPD);
-    setMdInput('mdInpPPUsageIPD', eventItem.PPUsageIPD);
-    setMdInput('mdInpSLKUsageOpdThB', eventItem.SLKUsageOpdThB);
-    setMdInput('mdInpSLKUsageIpdThB', eventItem.SLKUsageIpdThB);
-    setMdInput('mdInpSLKUsageOpdLkr', eventItem.SLKUsageOpdLkr);
-    setMdInput('mdInpSLKUsageIpdLkr', eventItem.SLKUsageIpdLkr);
-    setMdInput('mdInpOverLimitThB', eventItem.OverLimitCreditInsThB);
-    setMdInput('mdInpOverLimitLkr', eventItem.OverLimitCreditInsLkr);
-    setMdInput('mdInpExchangeRatesIns', eventItem.ExchangeRatesIns);
-    setMdInput('mdInpExchangeRatesInt', eventItem.ExchangeRatesInt);
-    
-    // บรรจุสิทธิ์ผลรักษาและเอกสารลงฟิลด์ป๊อปอัปเพื่อพร้อมอัปเดตย้อนหลัง
-    setMdInput('mdInpClinician', eventItem.ClinicianReportedOutcomes);
-    setMdInput('mdInpDocs', eventItem.DocumentsAttached);
+// 🎯 ช่องไหนกดแก้ไขได้บ้าง ผูกกับ data-label เดียวกับที่การ์ดใช้แสดงผลอยู่แล้ว
+// (key ตรงกับชื่อฟิลด์ที่ /api/update-treatment ต้องการเป๊ะ ๆ)
+const INLINE_EDIT_FIELD_CONFIG = {
+    'สถานที่รักษา': { key: 'hospital', type: 'select' },
+    'อาการป่วย': { key: 'symptoms', type: 'textarea', required: true },
+    'เวลาและวันที่เข้ารักษา': { key: 'treatmentDateTime', type: 'text' },
+    'ทำฟัน หักวงเงิน OPD': { key: 'DentalOPD', type: 'number' },
+    'PP OPD': { key: 'PPUsageOPD', type: 'number' },
+    'PP IPD': { key: 'PPUsageIPD', type: 'number' },
+    'SL OPD (THB)': { key: 'SLKUsageOpdThB', type: 'number' },
+    'SL IPD (THB)': { key: 'SLKUsageIpdThB', type: 'number' },
+    'SL OPD (LKR)': { key: 'SLKUsageOpdLkr', type: 'number' },
+    'SL IPD (LKR)': { key: 'SLKUsageIpdLkr', type: 'number' },
+    'ส่วนเกินวงเงินค่ารักษา (THB)': { key: 'OverLimitCreditInsThB', type: 'number' },
+    'ส่วนเกินวงเงินค่ารักษา (LKR)': { key: 'OverLimitCreditInsLkr', type: 'number' },
+    'เรทค่าเงินที่ประกันคิดให้ (THB/LKR)': { key: 'ExchangeRatesIns', type: 'number' },
+    'เรทค่าเงินปัจจุบัน (THB/LKR)': { key: 'ExchangeRatesInt', type: 'number' },
+    'ผลการรักษา': { key: 'ClinicianReportedOutcomes', type: 'text' },
+    'หมายเหตุ': { key: 'notes', type: 'text' }
 };
 
+function parseInlineNumberValue(value) {
+    const cleaned = String(value ?? '').replace(/,/g, '').trim();
+    return cleaned === '' || cleaned === '-' ? '0' : cleaned;
+}
+
+function buildInlineEditInput(config, eventItem, fallbackText) {
+    const rawValue = eventItem[config.key];
+    const hasRealValue = rawValue !== undefined && rawValue !== null && rawValue !== '-' && rawValue !== '';
+
+    let input;
+
+    if (config.type === 'select') {
+        const source = document.getElementById('mdHospitalSelect');
+        input = source ? source.cloneNode(true) : document.createElement('select');
+        input.removeAttribute('id');
+        input.value = hasRealValue ? rawValue : fallbackText;
+    } else if (config.type === 'textarea') {
+        input = document.createElement('textarea');
+        input.rows = 2;
+        input.value = hasRealValue ? rawValue : (fallbackText === '-' ? '' : fallbackText);
+    } else if (config.type === 'number') {
+        input = document.createElement('input');
+        input.type = 'number';
+        input.step = 'any';
+        input.value = parseInlineNumberValue(hasRealValue ? rawValue : fallbackText);
+    } else {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.value = hasRealValue ? rawValue : (fallbackText === '-' ? '' : fallbackText);
+    }
+
+    input.className = 'inline-edit-field';
+    input.dataset.fieldKey = config.key;
+    if (config.required) input.required = true;
+
+    return input;
+}
+
+// 🎯 สลับการ์ด/แถวที่กด "แก้ไข" ให้ช่องข้อมูลที่แสดงอยู่แล้วกลายเป็นแก้ไขได้ทันที ณ ที่เดิม
+// ไม่มีป๊อปอัปหรือฟอร์มแยกหน้าใด ๆ เกิดขึ้นใหม่
+window.populateDataToForm = function (eventItem, triggerButton) {
+    const row = triggerButton?.closest('tr');
+    if (!row || row.classList.contains('is-editing-inline')) return;
+
+    row.classList.add('is-editing-inline');
+    currentEditingRowIndex = eventItem.targetRowNumber || -1;
+    currentActiveCaseId = String(eventItem.CaseIdNew || '');
+    currentActiveEventItem = eventItem;
+
+    // 1. สลับทุกช่องที่แก้ไขได้จากข้อความล้วน ๆ ให้กลายเป็นอินพุตกรอกได้ตรงตำแหน่งเดิม
+    row.querySelectorAll('td[data-label]').forEach((td) => {
+        const config = INLINE_EDIT_FIELD_CONFIG[td.dataset.label];
+        if (!config) return;
+
+        const fallbackText = td.textContent.trim();
+        td.replaceChildren(
+            buildInlineEditInput(config, eventItem, fallbackText)
+        );
+    });
+
+    // 2. เอกสารแนบ: สลับเป็นตัวแก้ไขรูปแบบเดียวกับที่ใช้อยู่เดิม แค่ฝังไว้ในช่องเดิมของการ์ด
+    const evidenceTd = row.querySelector('td.history-evidence-cell');
+    if (evidenceTd) {
+        const editorDiv = document.createElement('div');
+        editorDiv.className = 'edit-evidence-editor inline-evidence-editor';
+        evidenceTd.replaceChildren(editorDiv);
+        renderEditEvidenceEditor(eventItem, editorDiv);
+    }
+
+    // 3. สลับปุ่ม "แก้ไข / ลบ" ท้ายแถวเป็น "บันทึก / ยกเลิก"
+    const actionsTd = row.lastElementChild;
+    if (actionsTd) {
+        const saveButton = document.createElement('button');
+        saveButton.type = 'button';
+        saveButton.className = 'inline-edit-save';
+        saveButton.textContent = '💾 บันทึก';
+        saveButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            saveInlineRowEdit(row, eventItem);
+        });
+
+        const cancelButton = document.createElement('button');
+        cancelButton.type = 'button';
+        cancelButton.className = 'inline-edit-cancel';
+        cancelButton.textContent = 'ยกเลิก';
+        cancelButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            cancelInlineRowEdit();
+        });
+
+        actionsTd.replaceChildren(saveButton, cancelButton);
+    }
+};
+
+// 🎯 ยกเลิก: เรนเดอร์การ์ดใหม่จากข้อมูลล่าสุดที่มีอยู่ ทิ้งอินพุตที่กำลังแก้ทั้งหมด
+function cancelInlineRowEdit() {
+    if (window.historyDisplayMode === 'filtered') {
+        renderFlatHistoryTable(window.currentFilteredHistory || []);
+    } else {
+        renderHistoryTable(window.currentIndividualHistory || []);
+    }
+}
+
+// 🎯 บันทึก: อ่านค่าจากอินพุตที่ฝังอยู่ในช่องเดิมของการ์ด แล้วยิง payload ชุดเดียวกับฟอร์มแก้ไขเดิมทุกประการ
+async function saveInlineRowEdit(row, eventItem) {
+    const getField = (key) =>
+        row.querySelector(`.inline-edit-field[data-field-key="${key}"]`);
+
+    const symptomsField = getField('symptoms');
+    const symptoms = (symptomsField ? symptomsField.value : eventItem.symptoms || '').trim();
+
+    if (!symptoms) {
+        alert('⚠️ กรุณากรอกรายละเอียดอาการป่วยด้วยครับ');
+        symptomsField?.focus();
+        return;
+    }
+
+    const saveButton = row.querySelector('.inline-edit-save');
+    if (saveButton) {
+        saveButton.disabled = true;
+        saveButton.textContent = '⏳ กำลังบันทึก...';
+    }
+
+    try {
+        let editedDocuments = eventItem.DocumentsAttached || '-';
+        const evidenceEditor = row.querySelector('.inline-evidence-editor');
+        if (evidenceEditor) {
+            editedDocuments = await collectEditedEvidenceDocuments(evidenceEditor);
+        }
+
+        let loggedInAdminName = '';
+        try {
+            loggedInAdminName = sessionStorage.getItem('loggedInAdminName') || '';
+        } catch (storageError) {
+            loggedInAdminName = '';
+        }
+
+        const payload = {
+            sheetRowIndex: eventItem.targetRowNumber,
+            CaseIdNew: eventItem.CaseIdNew || '-',
+            autoDateTime: new Date().toLocaleString('th-TH'),
+            adminName: loggedInAdminName || 'System Admin',
+            treatmentDateTime: (getField('treatmentDateTime')?.value || eventItem.treatmentDateTime || '-').trim(),
+            company: document.getElementById('hiddenCompany')?.value || 'CALL 365',
+            workLocation: eventItem.workLocation || document.getElementById('hiddenWorkLocation')?.value || '-',
+            hospital: getField('hospital')?.value || eventItem.hospital || '-',
+            symptoms,
+            insuranceId: document.getElementById('hiddenInsuranceId')?.value || '-',
+            size: document.getElementById('hiddenSize')?.value || 'M',
+            employeeName: document.getElementById('hiddenEmpName')?.value || eventItem.employeeName || '-',
+            statusText: eventItem.statusText || '-',
+            DentalOPD: getField('DentalOPD')?.value || '0',
+            PPUsageOPD: getField('PPUsageOPD')?.value || '0',
+            PPUsageIPD: getField('PPUsageIPD')?.value || '0',
+            SLKUsageOpdThB: getField('SLKUsageOpdThB')?.value || '0',
+            SLKUsageIpdThB: getField('SLKUsageIpdThB')?.value || '0',
+            SLKUsageOpdLkr: getField('SLKUsageOpdLkr')?.value || '0',
+            SLKUsageIpdLkr: getField('SLKUsageIpdLkr')?.value || '0',
+            OverLimitCreditInsThB: getField('OverLimitCreditInsThB')?.value || '0',
+            OverLimitCreditInsLkr: getField('OverLimitCreditInsLkr')?.value || '0',
+            ExchangeRatesIns: getField('ExchangeRatesIns')?.value || '1',
+            ExchangeRatesInt: getField('ExchangeRatesInt')?.value || '1',
+            ClinicianReportedOutcomes: getField('ClinicianReportedOutcomes')?.value || '-',
+            DocumentsAttached: editedDocuments,
+            previousDocumentsAttached: eventItem.DocumentsAttached || '-',
+            notes: getField('notes')?.value || '-'
+        };
+
+        const response = await window.authFetch(
+            `${window.APP_CONFIG.API_BASE_URL}/api/update-treatment`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }
+        );
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'ไม่สามารถบันทึกข้อมูลได้');
+        }
+
+        if (result.driveCleanupWarning) {
+            alert(`บันทึกสำเร็จ แต่มีคำเตือนเรื่องรูปบน Drive: ${result.driveCleanupWarning}`);
+        }
+
+        const applyUpdate = (list) => {
+            const index = (list || []).findIndex(
+                (item) => Number(item.targetRowNumber) === Number(payload.sheetRowIndex)
+            );
+            if (index >= 0) {
+                list[index] = {
+                    ...list[index],
+                    ...payload,
+                    targetRowNumber: Number(payload.sheetRowIndex)
+                };
+            }
+        };
+
+        applyUpdate(window.currentIndividualHistory);
+        applyUpdate(window.currentFilteredHistory);
+
+        cancelInlineRowEdit();
+    } catch (error) {
+        alert(`❌ เกิดข้อผิดพลาด: ${error.message}`);
+        if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.textContent = '💾 บันทึก';
+        }
+    }
+}
+
 window.closeEditModal = function () {
-    document.getElementById('editCaseModal').style.display = 'none';
+    const modal = document.getElementById('editCaseModal');
+    if (modal) modal.style.setProperty('display', 'none', 'important');
 };
 //#endregion
 
@@ -1675,7 +1837,7 @@ if (response.ok && result.success) {
                 if (editButton) {
                     const safeJsonString = JSON.stringify({ ...payload, targetRowNumber: payload.sheetRowIndex });
                     const safeEncodedBase64 = window.btoa(unescape(encodeURIComponent(safeJsonString)));
-                    editButton.setAttribute('onclick', `event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateDataToForm(decodedData);`);
+                    editButton.setAttribute('onclick', `event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateDataToForm(decodedData, event.currentTarget);`);
                 }
 
                 // เปลี่ยนสีแถวเป้าหมายให้เป็นสีไฮไลต์สีเขียวอ่อนกระตุ้นสายตา
@@ -2537,7 +2699,8 @@ function initHistoryFilterApplyEvent() {
 //#region
 function createHistoryTableCell(
     value,
-    className = ''
+    className = '',
+    label = ''
 ) {
     const cell = document.createElement('td');
 
@@ -2550,6 +2713,10 @@ function createHistoryTableCell(
 
     if (className) {
         cell.className = className;
+    }
+
+    if (label) {
+        cell.dataset.label = label;
     }
 
     return cell;
@@ -2572,7 +2739,7 @@ function createHistoryActionCell(item) {
 
         editButton.addEventListener(
             'click',
-            () => populateDataToForm(item)
+            (event) => populateDataToForm(item, event.currentTarget)
         );
 
         actionCell.appendChild(editButton);
@@ -2825,6 +2992,7 @@ function createEvidenceDocumentsCell(
 ) {
     const cell = document.createElement('td');
     cell.className = 'history-evidence-cell';
+    cell.dataset.label = 'เอกสารที่ต้องแนบ';
     cell.dataset.evidenceRaw =
         String(rawValue || '-');
 
@@ -2942,59 +3110,68 @@ function createEvidenceDocumentsCell(
 
 function appendHistoryDataCells(row, item) {
     const values = [
-        { value: item.treatmentDateTime },
-        { value: item.statusText },
-        { value: item.symptoms },
-        { value: getDisplayWorkLocation(item) },
-        { value: item.hospital },
+        { value: item.treatmentDateTime, label: 'เวลาและวันที่เข้ารักษา' },
+        { value: item.statusText, label: 'ขั้นตอนการรักษา' },
+        { value: item.symptoms, label: 'อาการป่วย' },
+        { value: getDisplayWorkLocation(item), label: 'สถานที่ทำงาน' },
+        { value: item.hospital, label: 'สถานที่รักษา' },
 
-        { value: item.DentalOPD },
-        { value: item.PPUsageOPD },
-        { value: item.PPUsageIPD },
+        { value: item.DentalOPD, label: 'ทำฟัน หักวงเงิน OPD' },
+        { value: item.PPUsageOPD, label: 'PP OPD' },
+        { value: item.PPUsageIPD, label: 'PP IPD' },
 
         {
             value: item.SLKUsageOpdThB,
-            className: 'slk-column'
+            className: 'slk-column',
+            label: 'SL OPD (THB)'
         },
         {
             value: item.SLKUsageIpdThB,
-            className: 'slk-column'
+            className: 'slk-column',
+            label: 'SL IPD (THB)'
         },
         {
             value: item.SLKUsageOpdLkr,
-            className: 'slk-column'
+            className: 'slk-column',
+            label: 'SL OPD (LKR)'
         },
         {
             value: item.SLKUsageIpdLkr,
-            className: 'slk-column'
+            className: 'slk-column',
+            label: 'SL IPD (LKR)'
         },
         {
             value: item.OverLimitCreditInsThB,
-            className: 'slk-column'
+            className: 'slk-column',
+            label: 'ส่วนเกินวงเงินค่ารักษา (THB)'
         },
         {
             value: item.OverLimitCreditInsLkr,
-            className: 'slk-column'
+            className: 'slk-column',
+            label: 'ส่วนเกินวงเงินค่ารักษา (LKR)'
         },
         {
             value: item.ExchangeRatesIns,
-            className: 'slk-column'
+            className: 'slk-column',
+            label: 'เรทค่าเงินที่ประกันคิดให้ (THB/LKR)'
         },
         {
             value: item.ExchangeRatesInt,
-            className: 'slk-column'
+            className: 'slk-column',
+            label: 'เรทค่าเงินปัจจุบัน (THB/LKR)'
         },
 
         {
-            value: item.ClinicianReportedOutcomes
+            value: item.ClinicianReportedOutcomes,
+            label: 'ผลการรักษา'
         },
         {
             value: item.DocumentsAttached,
             type: 'evidence'
         },
-        { value: item.notes },
-        { value: item.autoDateTime },
-        { value: item.adminName }
+        { value: item.notes, label: 'หมายเหตุ' },
+        { value: item.autoDateTime, label: 'เวลาและวันที่บันทึกข้อมูล' },
+        { value: item.adminName, label: 'แอดมินที่บันทึกข้อมูล' }
     ];
 
         for (const itemValue of values) {
@@ -3011,7 +3188,8 @@ function appendHistoryDataCells(row, item) {
         row.appendChild(
             createHistoryTableCell(
                 itemValue.value,
-                itemValue.className || ''
+                itemValue.className || '',
+                itemValue.label || ''
             )
         );
     }
@@ -3063,7 +3241,14 @@ function renderFlatHistoryTable(history) {
     const fragment =
         document.createDocumentFragment();
 
-    for (const [caseId, events] of caseGroups) {
+    // 🎯 เรียงการ์ดจากเคสล่าสุด (เลขเคสมากสุด) ไว้บนสุดเสมอ
+    const sortedCaseGroups = Array.from(
+        caseGroups.entries()
+    ).sort(([caseIdA], [caseIdB]) =>
+        compareCaseIdDescending(caseIdA, caseIdB)
+    );
+
+    for (const [caseId, events] of sortedCaseGroups) {
         events.sort(
             (a, b) =>
                 Number(a.targetRowNumber) -
@@ -3132,6 +3317,12 @@ function renderFlatHistoryTable(history) {
         );
 
         fragment.appendChild(parentRow);
+
+        parentRow.style.cursor = 'pointer';
+        parentRow.addEventListener('click', (event) => {
+            if (event.target.closest('button')) return;
+            parentRow.classList.toggle('flat-row-open');
+        });
 
         const childRows = [];
 

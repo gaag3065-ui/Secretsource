@@ -194,6 +194,36 @@
         font-size: 12px !important;
     }
 
+    /* เน้นข้อมูลสำคัญที่ต้องเห็นในทุกผลลัพธ์: มาจากช่องค้นหาและหมวดเคสใช้ renderer เดียวกัน */
+    .insurance-continuity-view .continuity-case-details dt.continuity-detail-case-id,
+    .insurance-continuity-view .continuity-case-details dd.continuity-detail-case-id {
+        color: #123f9c !important;
+        font-size: 14px !important;
+        font-weight: 800 !important;
+    }
+
+    .insurance-continuity-view .continuity-case-details dt.continuity-detail-symptoms {
+        grid-column: 1 / -1 !important;
+        margin-top: 4px !important;
+        color: #1f3d7a !important;
+        font-size: 13px !important;
+        font-weight: 800 !important;
+    }
+
+    .insurance-continuity-view .continuity-case-details dd.continuity-detail-symptoms {
+        grid-column: 1 / -1 !important;
+        margin: -3px 0 4px !important;
+        padding: 10px 12px !important;
+        border-left: 4px solid #3370ff !important;
+        border-radius: 8px !important;
+        background: #eef4ff !important;
+        color: #102a5c !important;
+        font-size: 14px !important;
+        font-weight: 750 !important;
+        line-height: 1.6 !important;
+        overflow-wrap: anywhere !important;
+    }
+
     .insurance-continuity-view .continuity-update-button {
         margin-top: 4px !important;
         min-height: 40px !important;
@@ -209,6 +239,272 @@
     .insurance-continuity-view .continuity-update-button:hover {
         background: #2b2e36 !important;
         border-color: #2b2e36 !important;
+    }
+
+    /* การ์ดที่กำลังแก้ไข: รูปแบบการขยายแบบหน้าประวัติการรักษา */
+    .insurance-continuity-view .continuity-case-panel.is-updating {
+        padding: 14px !important;
+        background: #f7f9fd !important;
+    }
+
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-panel-heading {
+        display: none !important;
+    }
+
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item:not(.is-editing) {
+        display: none !important;
+    }
+
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item.is-editing {
+        grid-column: 1 / -1 !important;
+        padding: 0 !important;
+        border: 1px solid #dce5f3 !important;
+        border-radius: 16px !important;
+        background: #ffffff !important;
+        box-shadow: 0 10px 24px rgba(16, 24, 40, .07) !important;
+        overflow: hidden !important;
+    }
+
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item.is-editing .continuity-case-item-heading {
+        min-height: 62px !important;
+        padding: 14px 18px 14px 64px !important;
+        align-items: center !important;
+        border-bottom: 1px solid #e6ecf5 !important;
+        background: #ffffff !important;
+    }
+
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item.is-editing .continuity-case-item-heading::before {
+        left: 18px !important;
+        top: 13px !important;
+    }
+
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item.is-editing .continuity-case-item-heading strong {
+        font-size: 18px !important;
+    }
+
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item.is-editing .continuity-case-details {
+        display: none !important;
+    }
+
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item.is-editing .continuity-update-button {
+        display: block !important;
+        width: calc(100% - 36px) !important;
+        margin: 14px 18px 0 !important;
+    }
+
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-inline-form-host {
+        width: 100% !important;
+        margin: 14px 0 0 !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        background: transparent !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update > div {
+        width: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        margin: 0 !important;
+        padding: 24px !important;
+        border: 0 !important;
+        border-top: 1px solid #e6ecf5 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .outcome-modal-heading {
+        margin: 0 0 20px !important;
+        padding: 0 0 14px !important;
+        background: transparent !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 16px !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > div,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > p {
+        margin: 0 !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > div[style*="margin-bottom"],
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > p,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocStatusOtherWrapper,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocSlkFieldsWrapper,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .update-upload-grid {
+        grid-column: 1 / -1 !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update input,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update select,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update textarea {
+        min-height: 44px !important;
+        font-size: 14px !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update textarea {
+        min-height: 100px !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .edit-money-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    @media (max-width: 760px) {
+        .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm,
+        .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .edit-money-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
+    /* การ์ดที่เปิดแก้ไขให้ขยายเหมือนรายการที่เลือกในหน้าประวัติการรักษา
+       โดยการ์ดอื่นยังคงอยู่ในกริดและจัดตำแหน่งใหม่อัตโนมัติ */
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item:not(.is-editing) {
+        display: block !important;
+    }
+
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item.is-editing {
+        margin: 0 !important;
+        border: 1px solid #1f2937 !important;
+        border-radius: 18px !important;
+        background: #ffffff !important;
+    }
+
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item.is-editing .continuity-update-button {
+        width: auto !important;
+        min-width: 240px !important;
+        margin: 14px 18px 0 auto !important;
+        padding: 0 22px !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update > div {
+        max-width: 1180px !important;
+        margin: 0 auto !important;
+        padding: 20px 22px 24px !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm {
+        max-width: 1080px !important;
+        margin: 0 auto !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > div[style*="display: grid"][style*="margin-bottom"] {
+        grid-column: auto !important;
+        padding: 14px !important;
+        border: 1px solid #e3e9f3 !important;
+        border-radius: 12px !important;
+        background: #f8faff !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > div:not([style*="display: grid"]),
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > div[style*="display: flex"],
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > p,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocSlkFieldsWrapper,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .update-upload-grid {
+        grid-column: 1 / -1 !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocSymptoms,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocNotesInput {
+        min-height: 82px !important;
+    }
+
+    /* ลดพื้นที่ว่าง: หัวการ์ดและปุ่มอยู่แถวเดียวกัน แล้วตามด้วยฟอร์มแบบตารางกระชับ */
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item.is-editing {
+        position: relative !important;
+    }
+
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item.is-editing .continuity-case-item-heading {
+        padding-right: 290px !important;
+    }
+
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item.is-editing .continuity-update-button {
+        position: absolute !important;
+        top: 11px !important;
+        right: 18px !important;
+        width: 240px !important;
+        min-width: 0 !important;
+        min-height: 38px !important;
+        margin: 0 !important;
+    }
+
+    .insurance-continuity-view .continuity-case-panel.is-updating .continuity-inline-form-host {
+        margin-top: 0 !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update > div {
+        padding: 16px 22px 20px !important;
+        background: #ffffff !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .outcome-modal-heading {
+        display: none !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 12px !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > div[style*="display: grid"] {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 10px !important;
+        min-width: 0 !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > div[style*="display: grid"][style*="margin-bottom"] {
+        grid-column: auto !important;
+        padding: 10px !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > div[style*="margin-bottom"]:not([style*="display: grid"]),
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > div[style*="display: flex"],
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > p,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocSlkFieldsWrapper,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .update-upload-grid {
+        grid-column: 1 / -1 !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocStatusSelect,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocSymptoms,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocNotesInput {
+        grid-column: 1 / -1 !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocSymptoms,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocNotesInput {
+        min-height: 68px !important;
+    }
+
+    @media (max-width: 900px) {
+        .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+    }
+
+    @media (max-width: 620px) {
+        .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item.is-editing .continuity-case-item-heading {
+            padding-right: 18px !important;
+        }
+
+        .insurance-continuity-view .continuity-case-panel.is-updating .continuity-case-item.is-editing .continuity-update-button {
+            position: static !important;
+            width: calc(100% - 36px) !important;
+            margin: 12px 18px 0 !important;
+        }
+
+        .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm,
+        .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > div[style*="display: grid"] {
+            grid-template-columns: 1fr !important;
+        }
     }
 </style>
 
@@ -236,20 +532,6 @@
                     </button>
                 </div>
             </div>
-        </div>
-
-        <div class="continuity-control-strip">
-            <div class="continuity-case-search" role="search" aria-label="ค้นหาเคสเพื่ออัปเดต">
-                <label for="continuityCaseSearchInput">ค้นหา Case ID</label>
-                <div class="continuity-case-search-control">
-                    <input id="continuityCaseSearchInput" type="search" inputmode="numeric" autocomplete="off" placeholder="เช่น 1059">
-                    <button id="continuityCaseSearchButton" type="button">ค้นหาเคส</button>
-                </div>
-            </div>
-            <nav id="continuityAreaFilters" class="continuity-area-filters" aria-label="กรองตามพื้นที่">
-            <span>กรองตามพื้นที่ทำงาน:</span>
-                <div id="continuityAreaButtons" class="continuity-area-buttons"></div>
-            </nav>
         </div>
 
         <div id="continuitySummaryGrid" class="continuity-summary-grid">
@@ -282,6 +564,20 @@
     </div>
 
     <div class="continuity-scroll-region">
+        <div class="continuity-control-strip">
+            <div class="continuity-case-search" role="search" aria-label="ค้นหาด้วยชื่อ รหัสพนักงาน รหัสประกัน หรือ Case ID">
+                <label for="continuityCaseSearchInput">ค้นหาด้วย ชื่อ รหัสพนักงาน รหัสประกัน Case ID</label>
+                <div class="continuity-case-search-control">
+                    <input id="continuityCaseSearchInput" type="search" autocomplete="off" placeholder="ชื่อ รหัสพนักงาน รหัสประกัน หรือ Case ID">
+                    <button id="continuityCaseSearchButton" type="button">ค้นหา</button>
+                </div>
+            </div>
+            <nav id="continuityAreaFilters" class="continuity-area-filters" aria-label="กรองตามพื้นที่">
+                <span>กรองตามพื้นที่ทำงาน:</span>
+                <div id="continuityAreaButtons" class="continuity-area-buttons"></div>
+            </nav>
+        </div>
+
         <section id="continuityCasePanel" class="continuity-case-panel" hidden aria-live="polite">
             <div class="continuity-case-panel-heading insurance-box-heading panel-dark-header">
                 <div>

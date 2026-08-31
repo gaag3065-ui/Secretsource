@@ -654,16 +654,18 @@
     }
 }
 
-/* Desktop: keep the outer white workspace frame flush and identical in both
-   insurance workflows. Inner controls retain their existing spacing. */
+/* Desktop: keep the outer white workspace frame flush and identical across
+   all three insurance workflows. Inner controls retain their existing spacing. */
 @media (min-width: 901px) {
     body.insurance-open-treatment-mode,
-    body.insurance-continuity-mode {
+    body.insurance-continuity-mode,
+    body.insurance-history-mode {
         padding: 0 !important;
     }
 
     body.insurance-open-treatment-mode .insurance-workspace-layout,
-    body.insurance-continuity-mode .insurance-workspace-layout {
+    body.insurance-continuity-mode .insurance-workspace-layout,
+    body.insurance-history-mode .insurance-workspace-layout {
         width: 100% !important;
         height: 100dvh !important;
         min-height: 100dvh !important;
@@ -674,7 +676,10 @@
     body.insurance-open-treatment-mode .open-case-combined-card,
     body.insurance-continuity-mode .insurance-continuity-view,
     body.insurance-continuity-mode .continuity-placeholder,
-    body.insurance-continuity-mode .continuity-card {
+    body.insurance-continuity-mode .continuity-card,
+    body.insurance-history-mode .insurance-history-view,
+    body.insurance-history-mode .history-main-panel,
+    body.insurance-history-mode .history-main-panel .bottom-full-box {
         width: 100% !important;
         height: 100dvh !important;
         min-height: 100dvh !important;
@@ -2489,80 +2494,6 @@ textarea {
 
 .insurance-view[hidden] {
     display: none !important;
-}
-
-/* The update/close-case workflow reuses the exact employee lookup component
-   from the open-case workflow and places it above its own workspace. */
-.insurance-continuity-view .continuity-card > .open-case-search-section {
-    width: 100%;
-    min-width: 0;
-    padding: 0 !important;
-    background: #ffffff;
-}
-
-/* Match the open-case lookup layout exactly when it is shown above follow-up. */
-.insurance-continuity-view .continuity-card > .open-case-search-section .employee-search-content,
-.insurance-continuity-view .continuity-card > .open-case-search-section .employee-search-sticky-header {
-    display: grid !important;
-    width: 100% !important;
-    max-width: none !important;
-    grid-template-columns: minmax(220px, 240px) minmax(320px, 440px) minmax(0, 1fr) !important;
-    gap: 0 20px !important;
-    align-items: center !important;
-}
-
-.insurance-continuity-view .continuity-card > .open-case-search-section .employee-search-sticky-header {
-    grid-column: 1 / -1 !important;
-    position: static !important;
-    padding: 0 !important;
-    background: transparent !important;
-}
-
-.insurance-continuity-view .continuity-card > .open-case-search-section .employee-sidebar-brand {
-    grid-column: 1 !important;
-    grid-row: 1 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: transparent !important;
-}
-
-.insurance-continuity-view .continuity-card > .open-case-search-section .employee-sidebar-brand > span {
-    color: #344f91 !important;
-    font-weight: 700 !important;
-}
-
-.insurance-continuity-view .continuity-card > .open-case-search-section .employee-sidebar-brand .insurance-box-title {
-    color: #173b8f !important;
-    font-weight: 700 !important;
-}
-
-.insurance-continuity-view .continuity-card > .open-case-search-section .employee-search-heading {
-    display: none !important;
-}
-
-.insurance-continuity-view .continuity-card > .open-case-search-section .employee-search-tool {
-    grid-column: 2 !important;
-    grid-row: 1 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-}
-
-.insurance-continuity-view .continuity-card > .open-case-search-section .employee-search-feedback {
-    grid-column: 3 !important;
-    grid-row: 1 !important;
-    min-width: 0 !important;
-    padding: 8px 12px !important;
-    border: 0 !important;
-    background: transparent !important;
-    text-align: center !important;
-}
-
-.insurance-continuity-view .continuity-card > .open-case-search-section #resultsList {
-    grid-column: 1 / -1 !important;
-    max-height: none !important;
-    overflow: visible !important;
 }
 
 .insurance-open-treatment-view {

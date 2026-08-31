@@ -10,6 +10,8 @@ const accommodationState = {
     unmatchedEmployees: [],
     selectedWorkArea: '',
     selectedBuilding: null,
+    activeSummaryView: 'buildings',
+    expandedSummaryRecord: null,
     buildingFilter: '',
     refreshTimer: null,
     refreshInProgress: false,
@@ -345,8 +347,7 @@ const visibleWorkAreas = matchedRouteArea
     : workAreas;
 
 renderEmployeeSummary();
-renderWorkAreaNavigation(visibleWorkAreas);
-renderBuildingCards();
+renderAccommodationDataPanel();
 renderRoomSearchResults();
         if (accommodationState.selectedBuilding) {
             const refreshed = accommodationState.sites
@@ -404,30 +405,163 @@ function renderEmployeeSummary() {
 
     if (!summary) return;
 
-    const dashboard = accommodationState.summary;
-
-    if (dashboard) {
-        const sourceVacantRoomCount = accommodationState.sites.reduce(
-            (siteTotal, site) => siteTotal + (site.buildings || []).reduce(
-                (buildingTotal, building) => buildingTotal + getBuildingSourceMetrics(building, site.code).vacantRoomCount,
+    const sourceMetrics = accommodationState.sites.reduce((totals, site) => {
+        (site.buildings || []).forEach((building) => {
+            const metrics = getBuildingSourceMetrics(building, site.code);
+            const registeredRooms = (building.floors || []).reduce(
+                (roomTotal, floor) => roomTotal + (floor.rooms || []).length,
                 0
-            ),
-            0
-        );
-        const items = [
-            ['พนักงานทั้งหมด', dashboard.employeeCount],
-            ['ห้องที่ขึ้นทะเบียน', dashboard.registeredRoomCount],
-            ['ห้องว่าง', sourceVacantRoomCount],
-            ['ยังไม่จับคู่ห้อง', dashboard.unmatchedEmployeeCount],
-            ['รายการที่ต้องตรวจสอบ', dashboard.alertCount || 0]
-        ];
-        summary.innerHTML = items.map(([label, value]) =>
-            `<article class="dashboard-kpi"><b>${Number(value || 0).toLocaleString()}</b>${label}</article>`
-        ).join('');
+            );
+            totals.buildingCount += 1;
+            totals.roomCount += registeredRooms;
+            totals.occupiedRoomCount += metrics.occupiedRoomCount;
+            totals.vacantRoomCount += metrics.vacantRoomCount;
+        });
+        return totals;
+    }, {
+        buildingCount: 0,
+        roomCount: 0,
+        occupiedRoomCount: 0,
+        vacantRoomCount: 0
+    });
+    const items = [
+        ['buildings', 'จำนวนตึก', sourceMetrics.buildingCount],
+        ['rooms', 'จำนวนห้อง', sourceMetrics.roomCount],
+        ['occupied', 'ห้องที่มีผู้พักอาศัย', sourceMetrics.occupiedRoomCount],
+        ['vacant', 'ห้องว่าง', sourceMetrics.vacantRoomCount],
+        ['employees', 'จำนวนพนักงาน', accommodationState.summary?.employeeCount ?? accommodationState.records.length]
+    ];
+    summary.innerHTML = items.map(([view, label, value]) =>
+        `<button type="button" class="dashboard-kpi${accommodationState.activeSummaryView === view ? ' is-active' : ''}" data-summary-view="${view}" aria-pressed="${accommodationState.activeSummaryView === view}"><b>${Number(value || 0).toLocaleString()}</b>${label}</button>`
+    ).join('');
+    summary.querySelectorAll('[data-summary-view]').forEach(button => {
+        button.addEventListener('click', () => {
+            accommodationState.activeSummaryView = button.dataset.summaryView;
+            accommodationState.expandedSummaryRecord = null;
+            renderEmployeeSummary();
+            renderAccommodationDataPanel();
+        });
+    });
+}
+
+function getAccommodationSummaryItems() {
+    const buildings = accommodationState.sites.flatMap(site =>
+        (site.buildings || []).map(building => ({
+            building,
+            area: site.code,
+            rooms: (building.floors || []).flatMap(floor =>
+                (floor.rooms || []).map(room => ({
+                    ...room,
+                    siteCode: site.code,
+                    buildingName: building.name,
+                    floorName: floor.name || floor.code
+                }))
+            )
+        }))
+    );
+    const rooms = buildings.flatMap(item => item.rooms);
+    const rentable = room => !['INACTIVE', 'COMMON_AREA', 'MAINTENANCE', 'RESERVED'].includes(room.status);
+
+    return {
+        buildings,
+        rooms,
+        occupied: rooms.filter(room => (room.occupants || []).length > 0),
+        vacant: rooms.filter(room => rentable(room) && !(room.occupants || []).length),
+        employees: accommodationState.records
+    };
+}
+
+function renderAccommodationDataPanel() {
+    const panel = document.getElementById('accommodationDataPanel');
+    const title = document.getElementById('accommodationDataTitle');
+    const description = document.getElementById('accommodationDataDescription');
+    const grid = document.getElementById('accommodationDataGrid');
+    if (!panel || !title || !description || !grid) return;
+
+    const data = getAccommodationSummaryItems();
+    const view = accommodationState.activeSummaryView;
+    const viewConfig = {
+        buildings: ['จำนวนตึก', 'อาคารทั้งหมด 1 กล่องต่อ 1 ตึก', data.buildings, renderAccommodationBuildingCard],
+        rooms: ['จำนวนห้อง', 'ห้องทั้งหมด 1 กล่องต่อ 1 ห้อง', data.rooms, renderAccommodationRoomCard],
+        occupied: ['ห้องที่มีผู้พักอาศัย', 'ห้องที่มีผู้พักอาศัย 1 กล่องต่อ 1 ห้อง', data.occupied, renderAccommodationRoomCard],
+        vacant: ['ห้องว่าง', 'ห้องว่างพร้อมใช้งาน 1 กล่องต่อ 1 ห้อง', data.vacant, renderAccommodationRoomCard],
+        employees: ['จำนวนพนักงาน', 'พนักงานทั้งหมด 1 กล่องต่อ 1 คน', data.employees, renderAccommodationEmployeeCard]
+    }[view] || ['จำนวนตึก', 'อาคารทั้งหมด 1 กล่องต่อ 1 ตึก', data.buildings, renderAccommodationBuildingCard];
+
+    const [heading, helper, items, renderCard] = viewConfig;
+    title.textContent = heading;
+    description.textContent = `${helper} · พบ ${items.length.toLocaleString()} รายการ`;
+    grid.replaceChildren();
+
+    if (!items.length) {
+        grid.innerHTML = '<div class="accommodation-data-empty">ไม่พบข้อมูลในหมวดนี้</div>';
         return;
     }
 
-    summary.innerHTML = `<article class="dashboard-kpi"><b>${accommodationState.records.length.toLocaleString()}</b>พนักงานทั้งหมด</article>`;
+    items.forEach((item, index) => {
+        const recordKey = `${view}-${index}`;
+        const card = document.createElement('article');
+        card.className = `accommodation-data-card${accommodationState.expandedSummaryRecord === recordKey ? ' is-expanded' : ''}`;
+        card.innerHTML = renderCard(item, accommodationState.expandedSummaryRecord === recordKey);
+        card.querySelector('[data-summary-card]')?.addEventListener('click', () => {
+            accommodationState.expandedSummaryRecord = accommodationState.expandedSummaryRecord === recordKey ? null : recordKey;
+            renderAccommodationDataPanel();
+        });
+        grid.appendChild(card);
+    });
+}
+
+function renderAccommodationBuildingCard(item, expanded) {
+    const { building, area, rooms } = item;
+    const source = getBuildingSourceMetrics(building, area);
+    const occupied = rooms.filter(room => (room.occupants || []).length > 0).length;
+    const vacant = rooms.filter(room => !['INACTIVE', 'COMMON_AREA', 'MAINTENANCE', 'RESERVED'].includes(room.status) && !(room.occupants || []).length).length;
+    return `
+        <button type="button" class="accommodation-data-card-toggle" data-summary-card aria-expanded="${expanded}">
+            <span class="accommodation-card-icon" aria-hidden="true">⌂</span>
+            <span class="accommodation-card-title"><b>${escapeHtml(building.name)}</b><small>${escapeHtml(area)} · ${rooms.length.toLocaleString()} ห้อง · ${source.employeeCount.toLocaleString()} พนักงาน</small></span>
+            <span class="accommodation-card-state">${expanded ? '⌃' : '⌄'}</span>
+        </button>
+        <div class="accommodation-card-details">
+            <div><span>จำนวนชั้น</span><b>${(building.floors || []).length.toLocaleString()}</b></div>
+            <div><span>จำนวนห้อง</span><b>${rooms.length.toLocaleString()}</b></div>
+            <div><span>ห้องที่มีผู้พัก</span><b>${occupied.toLocaleString()}</b></div>
+            <div><span>ห้องว่าง</span><b>${vacant.toLocaleString()}</b></div>
+            <div><span>จำนวนพนักงาน</span><b>${source.employeeCount.toLocaleString()}</b></div>
+        </div>`;
+}
+
+function renderAccommodationRoomCard(room, expanded) {
+    const occupants = room.occupants || [];
+    const occupantText = occupants.length
+        ? occupants.map(person => `${escapeHtml(person.employeeName)} (${escapeHtml(person.employeeId)})`).join(', ')
+        : 'ไม่มีผู้พัก';
+    return `
+        <button type="button" class="accommodation-data-card-toggle" data-summary-card aria-expanded="${expanded}">
+            <span class="accommodation-card-icon" aria-hidden="true">▣</span>
+            <span class="accommodation-card-title"><b>ห้อง ${escapeHtml(room.name || room.code)}</b><small>${escapeHtml(room.siteCode)} · ${escapeHtml(room.buildingName)} · ชั้น ${escapeHtml(room.floorName)}</small></span>
+            <span class="accommodation-card-badge">${occupants.length ? `${occupants.length} ผู้พัก` : 'ห้องว่าง'}</span>
+            <span class="accommodation-card-state">${expanded ? '⌃' : '⌄'}</span>
+        </button>
+        <div class="accommodation-card-details accommodation-room-details">
+            <div><span>สถานะห้อง</span><b>${occupants.length ? 'มีผู้พักอาศัย' : 'ห้องว่าง'}</b></div>
+            <div><span>ความจุ</span><b>${Number(room.capacity || 0).toLocaleString()} คน</b></div>
+            <div class="accommodation-details-wide"><span>ผู้พักอาศัย</span><b>${occupantText}</b></div>
+        </div>`;
+}
+
+function renderAccommodationEmployeeCard(employee, expanded) {
+    return `
+        <button type="button" class="accommodation-data-card-toggle" data-summary-card aria-expanded="${expanded}">
+            <span class="accommodation-card-icon" aria-hidden="true">●</span>
+            <span class="accommodation-card-title"><b>${escapeHtml(employee.employeeName)}</b><small>${escapeHtml(employee.company)} · ${escapeHtml(employee.workArea)}</small></span>
+            <span class="accommodation-card-state">${expanded ? '⌃' : '⌄'}</span>
+        </button>
+        <div class="accommodation-card-details">
+            <div><span>รหัสพนักงาน</span><b>${escapeHtml(employee.employeeId)}</b></div>
+            <div><span>อาคาร</span><b>${escapeHtml(employee.building || '-')}</b></div>
+            <div><span>ห้อง</span><b>${escapeHtml(employee.room || '-')}</b></div>
+        </div>`;
 }
 
 function renderWorkAreaNavigation(workAreas) {
@@ -1729,5 +1863,3 @@ async function downloadAccommodationReports() {
     }
 }
 //#endregion downloadAccommodationReports
-
-

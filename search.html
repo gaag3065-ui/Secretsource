@@ -15,7 +15,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบบริหารจัดการพนักงานและบันทึกข้อมูลการเข้ารักษา</title>
   <link rel="stylesheet" href="style.css?v=20260831-insurance-25">
-  <link rel="stylesheet" href="responsive.css?v=20260831-insurance-30">
+  <link rel="stylesheet" href="responsive.css?v=20260831-insurance-31">
       <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -162,18 +162,9 @@ function applyInsuranceView() {
         document.querySelector('.open-case-combined-card');
     const openCaseForm =
         document.querySelector('.open-case-form-section');
-    const continuityCard =
-        continuityView?.querySelector('.continuity-card');
-
-    /* Use the same employee lookup instance in both workflows. This preserves
-       its selected employee and avoids duplicate inputs or event handlers. */
+    /* Keep employee lookup exclusively in the open-case workflow. */
     if (searchBox) {
-        if (showContinuity && continuityCard) {
-            continuityCard.insertBefore(
-                searchBox,
-                continuityCard.firstChild
-            );
-        } else if (openCaseCard && openCaseForm) {
+        if (openCaseCard && openCaseForm) {
             openCaseCard.insertBefore(searchBox, openCaseForm);
         }
     }

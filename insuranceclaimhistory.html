@@ -8,7 +8,11 @@
      ฟังก์ชันการทำงานเดิม (id, onclick, onchange ฯลฯ) ไม่ถูกแก้ไขแต่อย่างใด
      ============================================================================ -->
 <style>
-#table-box-placeholder {
+/* ตัวแปรสีอยู่ที่ :root (ไม่ใช่ #table-box-placeholder) เพราะ #outcomeUpdateModal
+   ถูกย้าย (reparent) ออกไปแสดงแบบฝังในตัวในหน้า "อัปเดตผลการรักษาหรือปิดเคส"
+   ได้ (ดู continuitycare.js: inlineTarget.appendChild(modal)) ซึ่งจะหลุดออกจาก
+   ขอบเขตของ #table-box-placeholder ถ้าตัวแปรอยู่ตรงนั้น สไตล์จะหายไปทันที */
+:root {
     --hv-bg: #ffffff;
     --hv-ink: #16181d;
     --hv-muted: #6b7280;
@@ -21,6 +25,9 @@
     --hv-radius-lg: 14px;
     --hv-radius-md: 10px;
     --hv-shadow: 0 1px 2px rgba(16,24,40,.04), 0 12px 32px rgba(16,24,40,.06);
+}
+
+#table-box-placeholder {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Leelawadee UI", "Noto Sans Thai", Tahoma, sans-serif !important;
 }
 
@@ -282,6 +289,17 @@
     color: #9aa0a6 !important;
 }
 
+/* กันรูปหลักฐานล้นออกไปทับช่องข้อมูลข้าง ๆ เมื่อการ์ดกางออก: ให้ขึ้นเต็มความกว้างของการ์ดเสมอ */
+#table-box-placeholder tr.parent-row.is-open > td.history-evidence-cell,
+#table-box-placeholder tr.flat-history-row.flat-row-open > td.history-evidence-cell {
+    grid-column: 1 / -1 !important;
+}
+
+#table-box-placeholder td.history-evidence-cell .history-evidence-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 130px)) !important;
+    justify-content: flex-start !important;
+}
+
 /* ---------- แถบซูมตาราง ---------- */
 #table-box-placeholder .history-table-zoom-toolbar {
     border: 1px solid var(--hv-border) !important;
@@ -357,6 +375,12 @@
 }
 
 /* ---------- ป๊อปอัปอัปเดตผลการรักษา ---------- */
+/* กำหนดฟอนต์ไว้ที่ #outcomeUpdateModal โดยตรง (ไม่พึ่ง inherit จาก
+   #table-box-placeholder) เพราะ modal นี้ถูกย้ายออกไปแสดงในหน้าอื่นได้ */
+#outcomeUpdateModal {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Leelawadee UI", "Noto Sans Thai", Tahoma, sans-serif !important;
+}
+
 #outcomeUpdateModal .outcome-modal-heading {
     background: #ffffff !important;
     color: var(--hv-ink) !important;
@@ -386,8 +410,13 @@
 }
 
 #outcomeUpdateModal label {
+    display: block !important;
+    margin-bottom: 4px !important;
     color: var(--hv-muted) !important;
+    font-size: 10.5px !important;
     font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .03em !important;
 }
 
 #outcomeUpdateModal input,
@@ -407,7 +436,13 @@
 }
 
 #outcomeUpdateModal p[style*="border-bottom"] {
+    margin-top: 18px !important;
+    padding-bottom: 8px !important;
     color: var(--hv-ink) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .04em !important;
     border-bottom: 1px solid var(--hv-border-soft) !important;
 }
 
@@ -416,7 +451,8 @@
     background: #fbfbfc !important;
 }
 
-#outcomeUpdateModal #ocSlkFieldsWrapper > div {
+#outcomeUpdateModal #ocSlkFieldsWrapper > div,
+#outcomeUpdateModal .edit-money-grid {
     border: 1px solid var(--hv-border) !important;
     border-radius: var(--hv-radius-md) !important;
     background: #fbfbfc !important;
@@ -481,8 +517,13 @@
 }
 
 #editCaseModal label {
+    display: block !important;
+    margin-bottom: 4px !important;
     color: var(--hv-muted) !important;
+    font-size: 10.5px !important;
     font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .03em !important;
 }
 
 #editCaseModal input,
@@ -502,7 +543,13 @@
 }
 
 #editCaseModal p[style*="border-bottom"] {
+    margin-top: 18px !important;
+    padding-bottom: 8px !important;
     color: var(--hv-ink) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .04em !important;
     border-bottom: 1px solid var(--hv-border-soft) !important;
 }
 
@@ -538,6 +585,511 @@
     #outcomeUpdateModal .outcome-modal-heading {
         margin: -20px -20px 16px !important;
         padding: 16px 20px 14px !important;
+    }
+}
+
+/* ============================================================================
+   🎴 การ์ดประวัติการรักษา: แปลงตารางเดิมให้เป็นการ์ด 1 เคส/1 กล่อง แบบพับ-กางได้
+   ใช้กลไก .parent-row / .child-row-of-X / .is-open เดิมทุกอย่าง (ไม่แตะ JS
+   ที่ผูก event หรือ index ของ children[]) เปลี่ยนแค่ display ของ table/tr/td
+   ผ่าน CSS ล้วน ๆ จึงไม่กระทบฟังก์ชันแก้ไข/ลบ/แนบเอกสาร/อัปเดตผลการรักษาเดิม
+   ============================================================================ */
+#table-box-placeholder .custom-claim-table thead {
+    display: none !important;
+}
+
+#table-box-placeholder .custom-claim-table,
+#table-box-placeholder .custom-claim-table tbody {
+    display: block !important;
+    width: 100% !important;
+}
+
+#table-box-placeholder #tableBodyResult {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)) !important;
+    gap: 14px !important;
+    width: 100% !important;
+    padding: 2px !important;
+}
+
+#table-box-placeholder .history-table-zoom-toolbar {
+    display: none !important;
+}
+
+#table-box-placeholder .history-table-zoom-surface {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-bottom: 0 !important;
+    zoom: 1 !important;
+}
+
+/* การ์ดสรุปเคส (แถวหลัก) */
+#table-box-placeholder tr.parent-row {
+    display: flex !important;
+    flex-direction: column !important;
+    margin: 0 !important;
+    padding: 16px 18px !important;
+    border: 1px solid var(--hv-border) !important;
+    border-radius: var(--hv-radius-xl) !important;
+    background: #ffffff !important;
+    box-shadow: var(--hv-shadow) !important;
+    cursor: pointer !important;
+    transition: box-shadow .15s ease, border-color .15s ease !important;
+}
+
+#table-box-placeholder tr.parent-row:hover {
+    box-shadow: 0 4px 10px rgba(16,24,40,.06), 0 14px 28px rgba(16,24,40,.08) !important;
+}
+
+#table-box-placeholder tr.parent-row.is-open {
+    display: grid !important;
+    grid-column: 1 / -1 !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 10px 22px !important;
+    align-items: start !important;
+    border-color: var(--hv-ink) !important;
+}
+
+#table-box-placeholder tr.parent-row > td {
+    display: none !important;
+    opacity: 1 !important;
+}
+
+#table-box-placeholder tr.parent-row > td:first-child {
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 0 10px !important;
+    margin-bottom: 10px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--hv-border-soft) !important;
+}
+
+#table-box-placeholder tr.parent-row.is-open > td:first-child {
+    grid-column: 1 / -1 !important;
+}
+
+#table-box-placeholder tr.parent-row > td:nth-child(2),
+#table-box-placeholder tr.parent-row > td:nth-child(3),
+#table-box-placeholder tr.parent-row > td:nth-child(4) {
+    display: block !important;
+}
+
+#table-box-placeholder tr.parent-row.is-open > td:not(.slk-column):not(:last-child) {
+    display: block !important;
+}
+
+#table-box-placeholder tr.parent-row > td:last-child,
+#table-box-placeholder tr.parent-row.is-open > td:last-child {
+    display: none !important;
+}
+
+#table-box-placeholder tr.parent-row.is-open > td.slk-column {
+    display: block;
+}
+
+/* หัวการ์ด: เลขเคส + ลูกศรพับ/กาง */
+#table-box-placeholder .case-cell {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 10px !important;
+}
+
+#table-box-placeholder .txt-case-id {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    color: var(--hv-ink) !important;
+}
+
+#table-box-placeholder .txt-case-id::before {
+    content: "เคส #";
+    margin-right: 3px;
+    color: var(--hv-muted);
+    font-weight: 700;
+    font-size: 12px;
+}
+
+#table-box-placeholder tr.parent-row.is-open .txt-case-id {
+    display: inline !important;
+}
+
+#table-box-placeholder .toggle-arrow {
+    font-size: 12px !important;
+}
+
+/* ช่องข้อมูลแบบมีป้ายกำกับ (label บน / ค่าล่าง) ใช้ร่วมกันทั้งการ์ดหลักและไทม์ไลน์ย่อย */
+#table-box-placeholder td[data-label] {
+    display: block;
+    padding: 8px 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--hv-border-soft) !important;
+    text-align: left !important;
+    white-space: normal !important;
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+
+#table-box-placeholder td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 3px;
+    color: var(--hv-muted);
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+
+/* ไทม์ไลน์ย่อยของเคส (แถวลูก) แสดงเมื่อกางออก */
+#table-box-placeholder tr[class*="child-row-of-"] {
+    grid-column: 1 / -1 !important;
+    margin: 0 !important;
+}
+
+#table-box-placeholder tr[class*="child-row-of-"]:not([class$="-spacer"]) {
+    display: flex;
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    column-gap: 24px !important;
+    row-gap: 0 !important;
+    padding: 12px 16px !important;
+    border: 1px solid var(--hv-border-soft) !important;
+    border-left: 3px solid var(--hv-ink) !important;
+    border-radius: 12px !important;
+    background: #fbfbfc !important;
+}
+
+#table-box-placeholder tr[class*="child-row-of-"] > td {
+    display: none !important;
+}
+
+#table-box-placeholder tr[class*="child-row-of-"]:not([class$="-spacer"]) > td:nth-child(2),
+#table-box-placeholder tr[class*="child-row-of-"]:not([class$="-spacer"]) > td:nth-child(3),
+#table-box-placeholder tr[class*="child-row-of-"]:not([class$="-spacer"]) > td:nth-child(4),
+#table-box-placeholder tr[class*="child-row-of-"]:not([class$="-spacer"]) > td:nth-child(6) {
+    display: block !important;
+    flex: 1 1 160px !important;
+    min-width: 140px !important;
+    padding: 4px 0 !important;
+    border-bottom: 0 !important;
+}
+
+#table-box-placeholder tr[class*="child-row-of-"]:not([class$="-spacer"]) > td:last-child {
+    display: block !important;
+    flex: 0 0 auto !important;
+    align-self: center !important;
+    padding: 4px 0 !important;
+    border-bottom: 0 !important;
+    white-space: nowrap !important;
+}
+
+/* แถบปุ่ม "อัปเดตผลการรักษา" ท้ายไทม์ไลน์ของเคส */
+#table-box-placeholder tr[class$="-spacer"] {
+    display: flex;
+    padding: 2px 0 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+#table-box-placeholder tr[class$="-spacer"] > td {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+#table-box-placeholder tr[class$="-spacer"] button {
+    width: 100% !important;
+    padding: 12px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: var(--hv-accent) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+    box-shadow: none !important;
+}
+
+#table-box-placeholder tr[class$="-spacer"] button:hover {
+    background: var(--hv-accent-hover) !important;
+}
+
+/* ---------- การ์ดผลค้นหาแบบแบน (ค้นหา Case ID / กรองประวัติหลายพนักงาน) ---------- */
+/* ใช้กลไก renderFlatHistoryTable เดิม (.flat-history-row / .grouped-child-row /
+   childRow.hidden) ทุกอย่าง เพิ่มแค่ data-label ผ่าน JS และ class .flat-row-open
+   ใหม่สำหรับพับ/กางการ์ดหลัก โดยไม่แตะ event ปุ่มแก้ไข/ลบ/ดูรายการก่อนหน้าเดิม */
+#table-box-placeholder tr.flat-history-row.grouped-parent-row {
+    display: flex !important;
+    flex-direction: column !important;
+    margin: 0 !important;
+    padding: 16px 18px !important;
+    border: 1px solid var(--hv-border) !important;
+    border-radius: var(--hv-radius-xl) !important;
+    background: #ffffff !important;
+    box-shadow: var(--hv-shadow) !important;
+    cursor: pointer !important;
+    transition: box-shadow .15s ease, border-color .15s ease !important;
+}
+
+#table-box-placeholder tr.flat-history-row.grouped-parent-row:hover {
+    box-shadow: 0 4px 10px rgba(16,24,40,.06), 0 14px 28px rgba(16,24,40,.08) !important;
+}
+
+#table-box-placeholder tr.flat-history-row.grouped-parent-row.flat-row-open {
+    display: grid !important;
+    grid-column: 1 / -1 !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 10px 22px !important;
+    align-items: start !important;
+    border-color: var(--hv-ink) !important;
+}
+
+#table-box-placeholder tr.flat-history-row > td:first-child {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px 12px !important;
+    padding: 0 0 10px !important;
+    margin-bottom: 10px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--hv-border-soft) !important;
+}
+
+#table-box-placeholder tr.flat-history-row.flat-row-open > td:first-child {
+    grid-column: 1 / -1 !important;
+}
+
+#table-box-placeholder .history-case-toggle {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    color: var(--hv-ink) !important;
+    font: inherit !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+}
+
+#table-box-placeholder .history-case-toggle:disabled {
+    cursor: default !important;
+    opacity: .55 !important;
+}
+
+#table-box-placeholder .history-case-toggle span:first-child {
+    color: var(--hv-muted) !important;
+    font-size: 11px !important;
+}
+
+#table-box-placeholder .history-case-toggle strong::before {
+    content: "เคส #";
+    margin-right: 2px;
+    color: var(--hv-muted);
+    font-weight: 700;
+    font-size: 12px;
+}
+
+#table-box-placeholder .history-case-employee {
+    color: var(--hv-ink) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+
+#table-box-placeholder .history-area-badge {
+    padding: 3px 10px !important;
+    border-radius: 999px !important;
+    background: var(--hv-pill) !important;
+    color: var(--hv-ink) !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+}
+
+#table-box-placeholder tr.flat-history-row > td:not(:first-child) {
+    display: none !important;
+    opacity: 1 !important;
+}
+
+#table-box-placeholder tr.flat-history-row > td:nth-child(2),
+#table-box-placeholder tr.flat-history-row > td:nth-child(3),
+#table-box-placeholder tr.flat-history-row > td:nth-child(4),
+#table-box-placeholder tr.flat-history-row > td:last-child {
+    display: block !important;
+}
+
+#table-box-placeholder tr.flat-history-row.flat-row-open > td:not(.slk-column) {
+    display: block !important;
+}
+
+#table-box-placeholder tr.flat-history-row.flat-row-open > td.slk-column {
+    display: block;
+}
+
+/* "รายการก่อนหน้า" ของเคสเดียวกัน (แสดงเมื่อกดปุ่มลูกศรที่หัวการ์ด) */
+#table-box-placeholder tr.grouped-child-row {
+    margin: 0 !important;
+}
+
+#table-box-placeholder tr.grouped-child-row:not([hidden]) {
+    display: flex !important;
+    grid-column: 1 / -1 !important;
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    column-gap: 24px !important;
+    row-gap: 2px !important;
+    padding: 12px 16px !important;
+    border: 1px solid var(--hv-border-soft) !important;
+    border-left: 3px solid var(--hv-ink) !important;
+    border-radius: 12px !important;
+    background: #fbfbfc !important;
+}
+
+#table-box-placeholder tr.grouped-child-row > td {
+    display: none !important;
+}
+
+#table-box-placeholder tr.grouped-child-row:not([hidden]) > td:first-child,
+#table-box-placeholder tr.grouped-child-row:not([hidden]) > td:nth-child(2),
+#table-box-placeholder tr.grouped-child-row:not([hidden]) > td:nth-child(3),
+#table-box-placeholder tr.grouped-child-row:not([hidden]) > td:nth-child(4),
+#table-box-placeholder tr.grouped-child-row:not([hidden]) > td:nth-child(6),
+#table-box-placeholder tr.grouped-child-row:not([hidden]) > td:last-child {
+    display: block !important;
+    flex: 1 1 160px !important;
+    min-width: 140px !important;
+    padding: 4px 0 !important;
+    border-bottom: 0 !important;
+}
+
+#table-box-placeholder .history-child-label {
+    flex: 0 0 100% !important;
+    padding: 0 0 4px !important;
+    color: var(--hv-muted) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+}
+
+/* ปุ่มแก้ไข/ลบท้ายแถว ใช้ร่วมกันทั้งการ์ดหลักและรายการก่อนหน้า */
+#table-box-placeholder tr.flat-history-row > td.flat-history-actions,
+#table-box-placeholder tr.grouped-child-row > td.flat-history-actions {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 4px 0 !important;
+    border-bottom: 0 !important;
+}
+
+#table-box-placeholder .flat-history-delete {
+    padding: 2px 10px !important;
+    border: 1px solid #dc3545 !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    color: #dc3545 !important;
+    font-size: 11px !important;
+    cursor: pointer !important;
+}
+
+#table-box-placeholder .flat-history-delete:hover {
+    background: #dc3545 !important;
+    color: #ffffff !important;
+}
+
+/* ---------- แก้ไขข้อมูลตรงที่แสดงอยู่แล้วในการ์ด (ไม่มีป๊อปอัป/ฟอร์มแยกใด ๆ) ---------- */
+#table-box-placeholder tr.is-editing-inline {
+    outline: 2px solid var(--hv-ink);
+    outline-offset: -1px;
+}
+
+#table-box-placeholder .inline-edit-field {
+    display: block;
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--hv-border);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--hv-ink);
+    font: inherit;
+    font-size: 12.5px;
+    box-sizing: border-box;
+}
+
+#table-box-placeholder .inline-edit-field:focus {
+    outline: none;
+    border-color: #c7c9ce;
+    box-shadow: 0 0 0 3px rgba(22,24,29,.07);
+}
+
+#table-box-placeholder textarea.inline-edit-field {
+    min-height: 46px;
+    resize: vertical;
+}
+
+#table-box-placeholder .inline-edit-save,
+#table-box-placeholder .inline-edit-cancel {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+#table-box-placeholder .inline-edit-save {
+    border: 1px solid var(--hv-ink);
+    background: var(--hv-ink);
+    color: #ffffff;
+}
+
+#table-box-placeholder .inline-edit-save:hover {
+    background: var(--hv-accent-hover);
+}
+
+#table-box-placeholder .inline-edit-save:disabled {
+    cursor: wait;
+    opacity: .65;
+}
+
+#table-box-placeholder .inline-edit-cancel {
+    border: 1px solid var(--hv-border);
+    background: #ffffff;
+    color: var(--hv-ink);
+}
+
+#table-box-placeholder .inline-edit-cancel:hover {
+    background: var(--hv-pill);
+}
+
+/* แถวสถานะว่าง/กำลังโหลด ก่อนมีข้อมูลจริง */
+#table-box-placeholder #tableBodyResult > tr:not(.parent-row):not([class*="child-row-of-"]):not(.flat-history-row):not(.grouped-child-row) {
+    grid-column: 1 / -1 !important;
+    display: block !important;
+}
+
+#table-box-placeholder #tableBodyResult > tr:not(.parent-row):not([class*="child-row-of-"]):not(.flat-history-row):not(.grouped-child-row) > td {
+    display: block !important;
+    padding: 40px 20px !important;
+    border: 1px dashed var(--hv-border) !important;
+    border-radius: var(--hv-radius-lg) !important;
+    background: #fbfbfc !important;
+    color: var(--hv-muted) !important;
+    text-align: center !important;
+    font-size: 13px !important;
+}
+
+@media (max-width: 640px) {
+    #table-box-placeholder #tableBodyResult {
+        grid-template-columns: 1fr !important;
+    }
+
+    #table-box-placeholder tr.parent-row.is-open,
+    #table-box-placeholder tr.flat-history-row.grouped-parent-row.flat-row-open {
+        grid-template-columns: 1fr !important;
     }
 }
 </style>
@@ -983,12 +1535,13 @@
 <!-- ============================================================================================================================================ -->
 
 
+<div id="editCaseModalHome"></div>
 <div id="editCaseModal">
     <div>
         <!-- ส่วนหัวของกล่องป๊อปอัป -->
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 15px;">
             <h3 style="margin: 0; color: #ffc107; font-family: 'Segoe UI', Tahoma, sans-serif;">📝 ปรับปรุงและแก้ไขข้อมูลเคสย้อนหลัง</h3>
-            <span style="font-size: 24px; cursor: pointer; color: #aaa; font-weight: bold; line-height: 1;" onclick="document.getElementById('editCaseModal').style.setProperty('display', 'none', 'important');">&times;</span>
+            <span style="font-size: 24px; cursor: pointer; color: #aaa; font-weight: bold; line-height: 1;" onclick="window.closeEditModal?.();">&times;</span>
         </div>
 
         <!-- ฟอร์มกรอกข้อมูลปรับปรุงแก้ไขภายในป๊อปอัป -->
@@ -1060,7 +1613,7 @@
 
             <!-- ปุ่มกดยืนยันหรือยกเลิกการส่งค่าแก้ไขย้อนหลัง -->
             <div style="display: flex; gap: 10px;">
-                <button type="button" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="document.getElementById('editCaseModal').style.setProperty('display', 'none', 'important');">❌ ยกเลิก</button>
+                <button type="button" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="window.closeEditModal?.();">❌ ยกเลิก</button>
                 <button type="submit" style="flex: 2; padding: 12px; background: #ffc107; color: #212529; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">💾 ยืนยันการอัปเดตแก้ไขทับบรรทัดเดิม</button>
             </div>
         </form>
