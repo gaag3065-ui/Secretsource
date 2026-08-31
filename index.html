@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบเข้าสู่ระบบ</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; }
+        .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 300px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        #message { margin-top: 15px; text-align: center; font-weight: bold; }
+        .admin-entry {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.admin-entry-button {
+    width: auto;
+    padding: 2px 8px;
+    border: 1px solid #9ca3af;
+    border-radius: 3px;
+    background: #ffffff;
+    color: #4b5563;
+    font-size: 10px;
+    line-height: 1.3;
+    cursor: pointer;
+}
+
+#mfaPanel {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid #dbe3ec;
+}
+
+#mfaPanel h3 {
+    margin: 0 0 8px;
+    color: #15324b;
+    font-size: 18px;
+}
+
+#mfaDescription,
+#mfaQrSection p,
+#recoveryCodePanel p {
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+#mfaQrSection {
+    margin: 14px 0;
+    padding: 14px;
+    text-align: center;
+    border: 1px solid #dbe3ec;
+    border-radius: 10px;
+    background: #f8fafc;
+}
+
+#mfaQrImage {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto 10px;
+    border-radius: 8px;
+}
+
+#mfaCode {
+    text-align: center;
+    letter-spacing: 8px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+#cancelMfaButton {
+    margin-top: 8px;
+    background: #64748b;
+}
+
+#recoveryCodeList {
+    padding: 14px;
+    white-space: pre-wrap;
+    line-height: 1.7;
+    color: #15324b;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+    </style>
+    <link rel="stylesheet" href="responsive.css">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <meta name="theme-color" content="#ffffff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="GA East">
+</head>
+<body>
+
+<div class="login-card">
+    <h2>เข้าสู่ระบบ</h2>
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="username">ชื่อผู้ใช้:</label>
+            <input type="text" id="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">รหัสผ่าน:</label>
+            <input type="password" id="password" required>
+        </div>
+                <button
+            type="submit"
+            name="loginArea"
+            value="user"
+        >
+            ล็อกอิน
+        </button>
+    </form>
+    <div id="message"></div>
+
+<div class="admin-entry">
+<button
+    type="submit"
+    form="loginForm"
+    name="loginArea"
+    value="admin"
+    id="adminLoginButton"
+    class="admin-entry-button"
+>
+    ผู้ดูแล
+</button>
+</div>
+
+<section id="mfaPanel" hidden>
+    <h3 id="mfaTitle">
+        ยืนยันตัวตนแบบ 2 ขั้นตอน
+    </h3>
+
+    <p id="mfaDescription">
+        กรอกรหัส 6 หลักจากแอป Authenticator
+    </p>
+
+    <div id="mfaQrSection" hidden>
+        <img
+            id="mfaQrImage"
+            alt="QR Code สำหรับตั้งค่า 2FA"
+            width="220"
+            height="220"
+        >
+
+        <p>
+            สแกน QR Code ด้วย Google Authenticator,
+            Microsoft Authenticator หรือแอป TOTP
+        </p>
+    </div>
+
+    <form id="mfaForm">
+        <div class="form-group">
+            <label for="mfaCode">
+                รหัสยืนยัน 6 หลัก:
+            </label>
+
+            <input
+                type="text"
+                id="mfaCode"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                required
+            >
+        </div>
+
+        <button type="submit">
+            ยืนยันรหัส 2FA
+        </button>
+
+        <button
+            type="button"
+            id="cancelMfaButton"
+        >
+            กลับหน้า Login
+        </button>
+    </form>
+
+<button
+    type="button"
+    id="showRecoveryFormButton"
+>
+    ใช้ Recovery Code
+</button>
+
+<form
+    id="recoveryForm"
+    hidden
+>
+    <div class="form-group">
+        <label for="recoveryCodeInput">
+            Recovery Code:
+        </label>
+
+        <input
+            type="text"
+            id="recoveryCodeInput"
+            maxlength="19"
+            autocomplete="one-time-code"
+            placeholder="XXXX-XXXX-XXXX-XXXX"
+            required
+        >
+    </div>
+
+    <button type="submit">
+        ยืนยัน Recovery Code
+    </button>
+
+    <button
+        type="button"
+        id="backToMfaButton"
+    >
+        กลับไปใช้รหัส 2FA
+    </button>
+</form>
+
+    <div
+        id="recoveryCodePanel"
+        hidden
+    >
+        <h3>Recovery Codes</h3>
+        <p>
+            บันทึกรหัสเหล่านี้ไว้ในที่ปลอดภัย
+            ระบบจะแสดงเพียงครั้งเดียว
+        </p>
+
+        <pre id="recoveryCodeList"></pre>
+
+        <button
+            type="button"
+            id="continueAfterRecoveryButton"
+        >
+            บันทึกแล้ว ไปยังระบบ
+        </button>
+    </div>
+</section>
+
+</div>
+
+
+
+<script>
+function loadVersion() {
+    return new Promise((resolve, reject) => {
+
+        const script = document.createElement('script');
+
+        // บังคับโหลด version.js ใหม่ทุกครั้ง
+        // ป้องกัน Browser ใช้ version.js เก่าจาก Cache
+        script.src = `version.js?t=${Date.now()}`;
+
+        script.onload = () => {
+            console.log(
+                `🚀 version.js โหลดสำเร็จ | Version: ${window.APP_VERSION}`
+            );
+            resolve();
+        };
+
+        script.onerror = () => {
+            reject(
+                new Error('โหลด version.js ไม่สำเร็จ')
+            );
+        };
+
+        document.head.appendChild(script);
+    });
+}
+
+
+function loadConfig() {
+    return new Promise((resolve, reject) => {
+
+        const script = document.createElement('script');
+
+        // ใช้ Version ที่ GitHub Actions สร้างให้
+        script.src = `config.js?v=${window.APP_VERSION}`;
+
+        script.onload = () => {
+            console.log(
+                `⚙️ config.js โหลดสำเร็จ | Version: ${window.APP_VERSION}`
+            );
+            resolve();
+        };
+
+        script.onerror = () => {
+            reject(
+                new Error('โหลด config.js ไม่สำเร็จ')
+            );
+        };
+
+        document.head.appendChild(script);
+    });
+}
+
+
+document.addEventListener('DOMContentLoaded', async () => {
+
+    const messageDiv =
+        document.getElementById('message');
+
+    try {
+
+        // =====================================================
+        // 1. โหลด Version ล่าสุดก่อน
+        // =====================================================
+        await loadVersion();
+
+        if (!window.APP_VERSION) {
+            throw new Error(
+                'ไม่พบ APP_VERSION จาก version.js'
+            );
+        }
+
+
+        // =====================================================
+        // 2. ใช้ Version ล่าสุดโหลด config.js
+        // =====================================================
+        await loadConfig();
+
+        if (
+            !window.APP_CONFIG ||
+            !window.APP_CONFIG.API_BASE_URL
+        ) {
+            throw new Error(
+                'ไม่พบ API_BASE_URL จาก config.js'
+            );
+        }
+
+        const API_BASE_URL =
+            window.APP_CONFIG.API_BASE_URL;
+
+            let pendingMfaChallengeId = '';
+            let pendingLoginArea = 'user';
+
+            const loginCard =
+                document.querySelector('.login-card');
+
+            const mfaPanel =
+                document.getElementById('mfaPanel');
+
+            const mfaForm =
+                document.getElementById('mfaForm');
+
+            const mfaTitle =
+                document.getElementById('mfaTitle');
+
+            const mfaDescription =
+                document.getElementById(
+                    'mfaDescription'
+                );
+
+            const mfaQrSection =
+                document.getElementById(
+                    'mfaQrSection'
+                );
+
+            const mfaQrImage =
+                document.getElementById(
+                    'mfaQrImage'
+                );
+
+            const recoveryCodePanel =
+                document.getElementById(
+                    'recoveryCodePanel'
+                );
+
+                const recoveryForm =
+                document.getElementById(
+                    'recoveryForm'
+                );
+
+                const showRecoveryFormButton =
+                document.getElementById(
+                    'showRecoveryFormButton'
+                );
+
+        console.log(
+            `🌐 API Backend: ${API_BASE_URL}`
+        );
+
+
+        // =====================================================
+        // 3. หลัง Config พร้อมแล้ว ค่อยเปิดระบบ Login
+        // =====================================================
+        const loginForm =
+            document.getElementById('loginForm');
+
+        loginForm.addEventListener(
+            'submit',
+            async (e) => {
+
+                e.preventDefault();
+
+                const loginArea =
+                    e.submitter?.value === 'admin'
+                        ? 'admin'
+                        : 'user';
+
+                const username =
+                    document.getElementById('username').value;
+
+                const password =
+                    document.getElementById('password').value;
+
+                messageDiv.innerText =
+                    'กำลังตรวจสอบข้อมูล...';
+
+                messageDiv.style.color =
+                    'black';
+
+                try {
+
+                    const response = await fetch(
+                        `${API_BASE_URL}/api/login`,
+
+                        {
+                            method: 'POST',
+                            credentials: 'include',
+
+                            headers: {
+                                'Content-Type':
+                                    'application/json'
+                            },
+
+
+                            body: JSON.stringify({
+                                username,
+                                password
+                            })
+                        }
+                    );
+
+                    const data =
+                        await response.json();
+
+                    if (response.ok && data.success) {
+                        if (data.mfaRequired) {
+                    pendingMfaChallengeId =
+                        data.challengeId;
+
+                    pendingLoginArea =
+                        loginArea;
+
+                    loginForm.hidden = true;
+
+                    document
+                        .querySelector('.admin-entry')
+                        ?.setAttribute('hidden', '');
+
+                    mfaPanel.hidden = false;
+
+                    mfaTitle.textContent =
+                        data.setupRequired
+                            ? 'ตั้งค่าการยืนยันตัวตน 2FA'
+                            : 'ยืนยันตัวตนแบบ 2 ขั้นตอน';
+
+                    mfaDescription.textContent =
+                        data.setupRequired
+                            ? 'สแกน QR Code แล้วกรอกรหัส 6 หลักจากแอป Authenticator'
+                            : 'กรอกรหัส 6 หลักจากแอป Authenticator';
+
+                    if (
+                        data.setupRequired &&
+                        data.qrCodeDataUrl
+                    ) {
+                        mfaQrImage.src =
+                            data.qrCodeDataUrl;
+
+                        mfaQrSection.hidden = false;
+                    } else {
+                        mfaQrImage.removeAttribute(
+                            'src'
+                        );
+
+                        mfaQrSection.hidden = true;
+                    }
+                    showRecoveryFormButton.hidden =
+                    data.setupRequired;
+
+                    messageDiv.innerText = '';
+                    document
+                        .getElementById('mfaCode')
+                        .focus();
+
+                    return;
+                }
+
+                messageDiv.innerText =
+                    'รูปแบบคำตอบจากระบบไม่ถูกต้อง';
+
+                messageDiv.style.color = 'red';
+                    } else {
+
+                        messageDiv.innerText =
+                            data.message ||
+                            'ล็อกอินไม่สำเร็จ';
+
+                        messageDiv.style.color =
+                            'red';
+                    }
+
+                } catch (error) {
+
+                    console.error(
+                        'Login Error:',
+                        error
+                    );
+
+                    messageDiv.innerText =
+                        'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+
+                    messageDiv.style.color =
+                        'red';
+                }
+            }
+        );
+
+function enterSystem(user) {
+    sessionStorage.setItem(
+        'loggedInAdminName',
+        user.name || user.username
+    );
+
+    window.location.href =
+        pendingLoginArea === 'admin'
+            ? 'admin.html'
+            : 'portal.html';
+}
+
+mfaForm.addEventListener(
+    'submit',
+    async event => {
+        event.preventDefault();
+
+        const token =
+            document
+                .getElementById('mfaCode')
+                .value
+                .replace(/\D/g, '');
+
+        if (token.length !== 6) {
+            messageDiv.innerText =
+                'กรุณากรอกรหัส 2FA จำนวน 6 หลัก';
+
+            messageDiv.style.color =
+                'red';
+
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/mfa/verify`,
+                {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type':
+                            'application/json'
+                    },
+                    body: JSON.stringify({
+                        challengeId:
+                            pendingMfaChallengeId,
+                        token
+                    })
+                }
+            );
+
+            const data =
+                await response.json();
+
+            if (
+                !response.ok ||
+                !data.success
+            ) {
+                throw new Error(
+                    data.message ||
+                    'ยืนยัน 2FA ไม่สำเร็จ'
+                );
+            }
+
+            if (!data.csrfToken) {
+            throw new Error(
+                'เซิร์ฟเวอร์ไม่ได้ส่ง CSRF Token'
+            );
+            }
+
+            sessionStorage.setItem(
+                'csrfToken',
+                data.csrfToken
+            );
+
+            const userRole =
+                String(data.user?.role || '')
+                    .trim()
+                    .toUpperCase();
+
+            if (
+                pendingLoginArea === 'admin' &&
+                userRole !== 'ADMIN'
+            ) {
+                await window
+                    .performSecureLogout();
+
+                return;
+            }
+
+            if (
+                Array.isArray(
+                    data.recoveryCodes
+                ) &&
+                data.recoveryCodes.length
+            ) {
+                mfaForm.hidden = true;
+                mfaQrSection.hidden = true;
+                recoveryCodePanel.hidden = false;
+
+                document
+                    .getElementById(
+                        'recoveryCodeList'
+                    )
+                    .textContent =
+                    data.recoveryCodes.join('\n');
+
+                recoveryCodePanel
+                    .dataset.user =
+                    JSON.stringify(data.user);
+
+                messageDiv.innerText = '';
+                return;
+            }
+
+            enterSystem(data.user);
+        } catch (error) {
+            messageDiv.innerText =
+                error.message;
+
+            messageDiv.style.color =
+                'red';
+
+            document
+                .getElementById('mfaCode')
+                .value = '';
+        }
+    }
+);
+
+        document
+            .getElementById(
+                'continueAfterRecoveryButton'
+            )
+            .addEventListener('click', () => {
+                const user = JSON.parse(
+                    recoveryCodePanel.dataset.user
+                );
+
+                enterSystem(user);
+            });
+
+        document
+            .getElementById('cancelMfaButton')
+            .addEventListener('click', () => {
+                pendingMfaChallengeId = '';
+
+                mfaPanel.hidden = true;
+                loginForm.hidden = false;
+
+                document
+                    .querySelector('.admin-entry')
+                    ?.removeAttribute('hidden');
+
+                document
+                    .getElementById('mfaCode')
+                    .value = '';
+
+                messageDiv.innerText = '';
+            });
+
+            showRecoveryFormButton
+    .addEventListener('click', () => {
+        mfaForm.hidden = true;
+        recoveryForm.hidden = false;
+        showRecoveryFormButton.hidden = true;
+
+        mfaTitle.textContent =
+            'เข้าสู่ระบบด้วย Recovery Code';
+
+        document
+            .getElementById(
+                'recoveryCodeInput'
+            )
+            .focus();
+    });
+
+document
+    .getElementById('backToMfaButton')
+    .addEventListener('click', () => {
+        recoveryForm.hidden = true;
+        mfaForm.hidden = false;
+        showRecoveryFormButton.hidden = false;
+
+        mfaTitle.textContent =
+            'ยืนยันตัวตนแบบ 2 ขั้นตอน';
+
+        document
+            .getElementById(
+                'recoveryCodeInput'
+            )
+            .value = '';
+    });
+
+recoveryForm.addEventListener(
+    'submit',
+    async event => {
+        event.preventDefault();
+
+        const recoveryCode =
+            document
+                .getElementById(
+                    'recoveryCodeInput'
+                )
+                .value
+                .trim()
+                .toUpperCase();
+
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/mfa/recovery`,
+                {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type':
+                            'application/json'
+                    },
+                    body: JSON.stringify({
+                        challengeId:
+                            pendingMfaChallengeId,
+                        recoveryCode
+                    })
+                }
+            );
+
+            const data =
+                await response.json();
+
+            if (
+                !response.ok ||
+                !data.success
+            ) {
+                throw new Error(
+                    data.message ||
+                    'Recovery Code ไม่ถูกต้อง'
+                );
+            }
+
+                if (!data.csrfToken) {
+        throw new Error(
+            'เซิร์ฟเวอร์ไม่ได้ส่ง CSRF Token'
+        );
+        }
+
+        sessionStorage.setItem(
+            'csrfToken',
+            data.csrfToken
+        );
+
+            alert(
+                `Recovery Code ถูกใช้แล้ว เหลือ ${data.recoveryCodesRemaining} รหัส`
+            );
+
+            enterSystem(data.user);
+        } catch (error) {
+            messageDiv.innerText =
+                error.message;
+
+            messageDiv.style.color =
+                'red';
+        }
+    }
+);
+
+        console.log(
+            `✅ ระบบ Login พร้อมใช้งาน | Version ${window.APP_VERSION}`
+        );
+
+    } catch (error) {
+
+        console.error(
+            'Startup Error:',
+            error
+        );
+
+        messageDiv.innerText =
+            `ระบบเริ่มต้นไม่สำเร็จ: ${error.message}`;
+
+        messageDiv.style.color =
+            'red';
+    }
+});
+</script>
+<script src="pwa.js"></script>
+</body>
+</html>
