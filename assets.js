@@ -809,13 +809,16 @@ function getAssetScannerErrorMessage(error) {
 
 function applyAssetPermissions() {
     const permissions = window.USER_PERMISSIONS || {};
+    const hasPermission = permissionKey =>
+        window.isCurrentUserAdmin === true ||
+        permissions[permissionKey] === true;
 
     const createButton =
         document.getElementById('createAssetButton');
 
     if (createButton) {
         createButton.hidden =
-            permissions.CreateAssets !== true;
+            !hasPermission('CreateAssets');
     }
 
     const locationButton =
@@ -823,7 +826,7 @@ function applyAssetPermissions() {
 
     if (locationButton) {
         locationButton.hidden =
-            permissions.ManageAssetMasters !== true;
+            !hasPermission('ManageAssetMasters');
     }
 
 }
@@ -1487,25 +1490,28 @@ function renderAssetDetail(asset) {
 
 function applyAssetDetailPermissions() {
     const permissions = window.USER_PERMISSIONS || {};
+    const hasPermission = permissionKey =>
+        window.isCurrentUserAdmin === true ||
+        permissions[permissionKey] === true;
 
     setButtonPermission(
         'transferAssetButton',
-        permissions.TransferAssets === true
+        hasPermission('TransferAssets')
     );
 
     setButtonPermission(
         'changeAssetStatusButton',
-        permissions.ChangeAssetStatus === true
+        hasPermission('ChangeAssetStatus')
     );
 
     setButtonPermission(
         'uploadAssetFileButton',
-        permissions.UploadAssetFiles === true
+        hasPermission('UploadAssetFiles')
     );
 
     setButtonPermission(
         'editAssetButton',
-        permissions.UpdateAssets === true
+        hasPermission('UpdateAssets')
     );
 }
 

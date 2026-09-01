@@ -83,7 +83,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const role =
-            String(data.user?.role || '').toUpperCase();
+            String(data.user?.role || '')
+                .trim()
+                .toUpperCase();
 
         const permissions = data.permissions || {};
 

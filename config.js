@@ -19,7 +19,7 @@ const LOCAL_API_URL = `http://127.0.0.1:${localApiPort}`;
 // Backend เธชเธณเธซเธฃเธฑเธเน€เธงเนเธเนเธเธ•เนเธเธฃเธดเธ
 // เธ•เธญเธเธเธตเนเธขเธฑเธเนเธเนเธเนเธฒเธงเนเธฒเธเนเธงเนเธเนเธญเธ เธเธเธเธงเนเธฒเน€เธฃเธฒเธเธฐเธเธฑเธ”เธเธฒเธฃ Production Backend
 
-const PRODUCTION_API_URL = 'https://near-learned-years-split.trycloudflare.com';
+const PRODUCTION_API_URL = 'https://accessing-vista-romance-stories.trycloudflare.com';
 
 
 
@@ -136,6 +136,11 @@ window.requirePagePermission = async function (
 
     const data = await response.json();
 
+    const isAdmin =
+        String(data.user?.role || '')
+            .trim()
+            .toUpperCase() === 'ADMIN';
+
     if (data.csrfToken) {
     sessionStorage.setItem(
         'csrfToken',
@@ -146,7 +151,10 @@ window.requirePagePermission = async function (
     if (
         !response.ok ||
         !data.success ||
-        data.permissions?.[permissionKey] !== true
+        (
+            !isAdmin &&
+            data.permissions?.[permissionKey] !== true
+        )
     ) {
         alert('เธเธฑเธเธเธตเธเธตเนเนเธกเนเธกเธตเธชเธดเธ—เธเธดเนเน€เธเนเธฒเธ–เธถเธเธซเธเนเธฒเธเธตเน');
         window.location.replace('portal.html');
@@ -155,6 +163,9 @@ window.requirePagePermission = async function (
 
     window.USER_PERMISSIONS =
         data.permissions || {};
+
+    window.CURRENT_SESSION_USER = data.user || {};
+    window.isCurrentUserAdmin = isAdmin;
 
     return data;
 };

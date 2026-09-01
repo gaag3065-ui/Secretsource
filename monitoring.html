@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="monitoring.css?v=20260901-2">
     <link rel="stylesheet" href="monitoring-embed.css?v=20260901-2">
     <link rel="stylesheet" href="monitoring-interactions.css?v=20260901-4">
+    <link rel="stylesheet" href="monitoring-fixes.css?v=20260901-1">
 </head>
 <body>
     <main class="monitoring-shell">
@@ -28,6 +29,9 @@
                     <input id="conversationSearch" type="search" placeholder="ค้นหาชื่อหรือข้อความ">
                 </label>
                 <div id="channelTabs" class="channel-tabs" role="tablist"></div>
+                <button id="clearUnreadButton" class="clear-unread-button" type="button">
+                    ทำเครื่องหมายว่าอ่านทั้งหมด
+                </button>
                 <div id="conversationList" class="conversation-list"></div>
             </aside>
 
@@ -64,5 +68,6 @@
     </main>
     <script src="config.js"></script>
     <script src="monitoring.js?v=20260901-4"></script>
+    <script src="monitoring-fixes.js?v=20260901-1"></script>
 </body>
 </html>

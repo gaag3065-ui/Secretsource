@@ -317,10 +317,16 @@ const elements = {
         return String(page || '').split(/[?#]/, 1)[0];
     }
 
+    function isAdminSession() {
+        return String(sessionUser.role || '')
+            .trim()
+            .toUpperCase() === 'ADMIN';
+    }
+
     function canAccessPage(page) {
         const basePage = getBasePage(page);
 
-        if (String(sessionUser.role || '').toUpperCase() === 'ADMIN') {
+        if (isAdminSession()) {
             return true;
         }
 
@@ -918,8 +924,7 @@ function renderTaskContent(
             sessionUser.employeeName ||
             'ผู้ใช้งาน';
 
-        const isAdmin =
-            String(sessionUser.role || '').toUpperCase() === 'ADMIN';
+        const isAdmin = isAdminSession();
 
         document.getElementById('accountName').textContent =
             displayName;

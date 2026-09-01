@@ -248,8 +248,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             window.USER_PERMISSIONS =
                 sessionData.permissions || {};
 
+            const isAdmin =
+                String(sessionData.user.role || '')
+                    .trim()
+                    .toUpperCase() === 'ADMIN';
+
             window.hasPermission = function (permissionKey) {
-                return window.USER_PERMISSIONS[permissionKey] === true;
+                return (
+                    isAdmin ||
+                    window.USER_PERMISSIONS[permissionKey] === true
+                );
             };
 
             function applyPermissionVisibility(root = document) {
