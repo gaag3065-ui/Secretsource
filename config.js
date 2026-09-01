@@ -16,15 +16,12 @@ const localApiPort = /^\d{4,5}$/.test(localApiPortParameter || '')
     : '43127';
 const LOCAL_API_URL = `http://127.0.0.1:${localApiPort}`;
 
-// Backend เธชเธณเธซเธฃเธฑเธเน€เธงเนเธเนเธเธ•เนเธเธฃเธดเธ
-// เธ•เธญเธเธเธตเนเธขเธฑเธเนเธเนเธเนเธฒเธงเนเธฒเธเนเธงเนเธเนเธญเธ เธเธเธเธงเนเธฒเน€เธฃเธฒเธเธฐเธเธฑเธ”เธเธฒเธฃ Production Backend
 
-const PRODUCTION_API_URL = 'https://accessing-vista-romance-stories.trycloudflare.com';
 
+const PRODUCTION_API_URL = 'https://removal-province-boundary-constitutes.trycloudflare.com';
 
 
 
-// API เธซเธฅเธฑเธเธ—เธตเนเธ—เธธเธเธซเธเนเธฒเนเธเธฃเธฐเธเธเธเธฐเน€เธฃเธตเธขเธเนเธเน
 window.APP_CONFIG = {
     API_BASE_URL: IS_LOCAL ? LOCAL_API_URL : PRODUCTION_API_URL,
     ENVIRONMENT: IS_LOCAL ? 'development' : 'production'
