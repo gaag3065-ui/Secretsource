@@ -506,6 +506,540 @@
             grid-template-columns: 1fr !important;
         }
     }
+
+    /* ---------- ฟอร์ม "อัปเดตผลการรักษาหรือปิดเคส" ฝังในกล่องค้นหา: กว้างเต็มการ์ด แต่ฟอร์มเดิม
+       ตั้งจำนวนคอลัมน์ตายตัวไว้หลายชั้น (grid 3 คอลัมน์ + grid ย่อยของกลุ่มเงิน/อัปโหลดรูป)
+       พอมาอยู่ในกล่องกว้าง ๆ แต่ละช่องเลยถูกยืดกว้างเกินจำเป็น สลับทุกชั้นมาใช้ flex-wrap แบบ
+       "ไม่ยืด" (flex-grow: 0) แทน ให้แต่ละช่องเล็กกะทัดรัดคงที่เหมือนแถวข้อมูลของเคสที่เปิดออกมา
+       แล้วห่อบรรทัดเอง ไม่ทิ้งที่ว่างเป็นแถวโหว่ (ใช้ !important ชนะกฎ grid เดิมทั้งหมด) ---------- */
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        column-gap: 12px !important;
+        row-gap: 12px !important;
+        align-items: start !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > div,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > p {
+        flex: 0 1 200px !important;
+        max-width: 220px !important;
+        min-width: 0 !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > div[style*="margin-bottom"]:not([style*="display: grid"]),
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > div[style*="display: flex"],
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > p,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocSlkFieldsWrapper,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .edit-money-grid,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .update-upload-grid,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocStatusSelect,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocSymptoms,
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #ocNotesInput {
+        flex-basis: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* กลุ่มเงิน (ทำฟัน/PP OPD/PP IPD) เดิมเป็น grid 3 คอลัมน์เท่ากันที่ยืดเต็มแถว — เปลี่ยนเป็น
+       flex-wrap ไม่ยืด ให้แต่ละช่องเล็กแล้วชิดกันทางซ้ายแทนที่จะกางเต็มความกว้างกล่อง */
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .edit-money-grid {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .edit-money-grid > div {
+        flex: 0 1 140px !important;
+        max-width: 140px !important;
+    }
+
+    /* กลุ่มอัปโหลดรูป 3 ช่อง เดิมเป็น grid 3 คอลัมน์เท่ากันที่ยืดเต็มแถว — เปลี่ยนเป็น flex-wrap
+       ไม่ยืดเช่นกัน ให้การ์ดอัปโหลดแต่ละใบเล็กกะทัดรัด ไม่ต้องกว้างเกินความจำเป็น */
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .update-upload-grid {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+    }
+
+    .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .update-upload-card {
+        flex: 0 1 190px !important;
+        max-width: 190px !important;
+        min-height: 0 !important;
+    }
+
+    @media (max-width: 620px) {
+        .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > div,
+        .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update #modalOutcomeForm > p {
+            flex-basis: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .edit-money-grid > div,
+        .insurance-continuity-view #outcomeUpdateModal.continuity-inline-update .update-upload-card {
+            flex-basis: 140px !important;
+        }
+    }
+
+    /* ---------- ช่องแก้ไขรูปแบบฝังในแถว (openContinuitySearchRowEdit): เดิม grid การ์ดรูปใช้
+       minmax(118px, 1fr) ซึ่งถ้ามีรูปแค่ 1-2 ใบจะยืดเต็มความกว้างกล่องจนใหญ่เทอะทะ ล็อกให้เล็ก
+       กะทัดรัดคงที่เหมือนรูปแบบอ่านอย่างเดียวเสมอ ไม่ว่าจะมีกี่ใบก็ตาม ---------- */
+    .insurance-continuity-view .edit-evidence-editor {
+        grid-template-columns: repeat(auto-fill, minmax(90px, 130px)) !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
+    }
+
+    .insurance-continuity-view .edit-evidence-current {
+        height: 62px !important;
+    }
+</style>
+
+<!-- ============================================================================
+     🎴 ผลการค้นหาแบบ "การ์ดพับ-กางเต็มรูปแบบ" (เฉพาะผลลัพธ์จากช่องค้นหาเท่านั้น)
+     ใช้กลไก/คลาสเดียวกับหน้า "ประวัติการรักษา" (renderFlatHistoryTable: .flat-history-row
+     / .grouped-parent-row / .grouped-child-row / .history-case-toggle / td[data-label] /
+     .history-evidence-cell ฯลฯ) เพื่อให้รายละเอียด ฟังก์ชัน และพฤติกรรมเหมือนกัน 100%
+     เปลี่ยนแค่ชุดสี (ตัวแปร --cc-*) ให้ตรงกับโทนสีเดิมของหน้านี้ (ฟ้า #3370ff) แทนโทน
+     ขาว-ดำของหน้าประวัติ ไม่กระทบสไตล์ที่ขอบเขตไว้ที่ #table-box-placeholder เดิมแต่อย่างใด
+     ============================================================================ -->
+<style>
+    .insurance-continuity-view {
+        --cc-bg: #ffffff;
+        --cc-ink: #16181d;
+        --cc-muted: #667085;
+        --cc-border: #dfe6f2;
+        --cc-border-soft: #eef2fa;
+        --cc-pill: #eaf0ff;
+        --cc-accent: #3370ff;
+        --cc-accent-hover: #2457d6;
+        --cc-radius-xl: 18px;
+        --cc-radius-lg: 14px;
+        --cc-radius-md: 10px;
+        --cc-shadow: 0 1px 2px rgba(16,24,40,.04), 0 8px 20px rgba(16,24,40,.05);
+    }
+
+    .insurance-continuity-view .continuity-search-table-shell {
+        width: 100%;
+    }
+
+    .insurance-continuity-view .continuity-search-table,
+    .insurance-continuity-view .continuity-search-table tbody {
+        display: block;
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .insurance-continuity-view #continuitySearchResultsBody {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 14px;
+        width: 100%;
+        padding: 2px;
+    }
+
+    /* ---------- การ์ดหลัก (1 เคส/1 กล่อง) ---------- */
+    .insurance-continuity-view tr.flat-history-row.grouped-parent-row {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 12px 14px;
+        border: 1px solid var(--cc-border);
+        border-radius: var(--cc-radius-xl);
+        background: var(--cc-bg);
+        box-shadow: var(--cc-shadow);
+        cursor: pointer;
+        transition: box-shadow .15s ease, border-color .15s ease;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Leelawadee UI", "Noto Sans Thai", Tahoma, sans-serif;
+    }
+
+    .insurance-continuity-view tr.flat-history-row.grouped-parent-row:hover {
+        box-shadow: 0 4px 10px rgba(16,24,40,.06), 0 14px 28px rgba(16,24,40,.08);
+    }
+
+    .insurance-continuity-view tr.flat-history-row.grouped-parent-row.flat-row-open {
+        /* ใช้ flex-wrap แทน grid: ช่องสุดท้ายที่เหลือไม่เต็มแถวจะขยายเติมที่ว่างเอง
+           ไม่ทิ้งช่องว่างโหว่ด้านขวาเหมือน grid-template-columns คงที่ */
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        grid-column: 1 / -1;
+        column-gap: 14px;
+        row-gap: 6px;
+        align-items: start;
+        border-color: var(--cc-accent);
+        /* กางแล้วตัดขอบ/มุมล่างออก ให้ต่อเนื่องเป็นกล่องเดียวกับรายการก่อนหน้า/ปุ่มด้านล่าง */
+        border-bottom: 0;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        padding-bottom: 10px;
+    }
+
+    .insurance-continuity-view tr.flat-history-row > td:first-child {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 10px;
+        padding: 0 0 8px;
+        margin-bottom: 8px;
+        border: 0;
+        border-bottom: 1px solid var(--cc-border-soft);
+    }
+
+    .insurance-continuity-view tr.flat-history-row.flat-row-open > td:first-child {
+        flex: 1 1 100%;
+    }
+
+    .insurance-continuity-view .history-case-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        color: var(--cc-ink);
+        font: inherit;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .insurance-continuity-view .history-case-toggle:disabled {
+        cursor: default;
+        opacity: .55;
+    }
+
+    .insurance-continuity-view .history-case-toggle span:first-child {
+        color: var(--cc-muted);
+        font-size: 11px;
+    }
+
+    .insurance-continuity-view .history-case-toggle strong::before {
+        content: "เคส #";
+        margin-right: 2px;
+        color: var(--cc-muted);
+        font-weight: 700;
+        font-size: 12px;
+    }
+
+    .insurance-continuity-view .history-case-employee {
+        color: var(--cc-ink);
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .insurance-continuity-view .history-area-badge {
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: var(--cc-pill);
+        color: var(--cc-accent-hover);
+        font-size: 10.5px;
+        font-weight: 700;
+    }
+
+    .insurance-continuity-view tr.flat-history-row > td:not(:first-child) {
+        display: none;
+        opacity: 1;
+    }
+
+    .insurance-continuity-view tr.flat-history-row > td:nth-child(2),
+    .insurance-continuity-view tr.flat-history-row > td:nth-child(3),
+    .insurance-continuity-view tr.flat-history-row > td:nth-child(4),
+    .insurance-continuity-view tr.flat-history-row > td.flat-history-actions {
+        display: block;
+    }
+
+    .insurance-continuity-view tr.flat-history-row.flat-row-open > td:not(.slk-column) {
+        display: block;
+        flex: 1 1 130px;
+        min-width: 110px;
+    }
+
+    .insurance-continuity-view tr.flat-history-row.flat-row-open > td.slk-column {
+        display: block;
+        flex: 1 1 130px;
+        min-width: 110px;
+    }
+
+    /* ---------- รายการก่อนหน้าของเคสเดียวกัน (ไทม์ไลน์ย่อย) ----------
+       ต่อเนื่องเป็น "กล่องเดียวกัน" กับการ์ดหลักด้านบน: ปิดช่องว่าง gap ของกริด
+       ด้วย margin-top ติดลบ ตัดมุมโค้ง/เส้นขอบบน-ล่างออก เหลือแค่เส้นคั่นบางๆ
+       ระหว่างแต่ละเหตุการณ์ ให้เห็นเป็นกรอบเดียวยาวต่อกันลงมา ไม่ใช่หลายกล่องแยกกัน */
+    .insurance-continuity-view tr.grouped-child-row {
+        margin: 0;
+    }
+
+    .insurance-continuity-view tr.grouped-child-row:not([hidden]) {
+        display: flex;
+        grid-column: 1 / -1;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        column-gap: 20px;
+        row-gap: 2px;
+        margin-top: -14px;
+        padding: 10px 14px;
+        border-left: 1px solid var(--cc-accent);
+        border-right: 1px solid var(--cc-accent);
+        border-top: 1px dashed var(--cc-border);
+        border-radius: 0;
+        background: #f8faff;
+    }
+
+    .insurance-continuity-view tr.grouped-child-row > td {
+        display: none;
+    }
+
+    .insurance-continuity-view tr.grouped-child-row:not([hidden]) > td:first-child,
+    .insurance-continuity-view tr.grouped-child-row:not([hidden]) > td[data-label],
+    .insurance-continuity-view tr.grouped-child-row:not([hidden]) > td.flat-history-actions {
+        display: block;
+        flex: 1 1 140px;
+        min-width: 120px;
+        padding: 3px 0;
+        border-bottom: 0;
+    }
+
+    /* เอกสารแนบในรายการก่อนหน้าก็ขึ้นเต็มความกว้างเหมือนแถวหลัก ให้รูปเรียงแนวนอนได้เสมอ
+       ไม่ถูกบีบแคบเหลือคอลัมน์เดียวจนรูปเรียงตกลงมาแนวตั้งเหมือนก่อนแก้ */
+    .insurance-continuity-view tr.grouped-child-row:not([hidden]) > td.history-evidence-cell {
+        display: block;
+        flex: 1 1 100%;
+        min-width: 0;
+        padding: 3px 0;
+        border-bottom: 0;
+    }
+
+    .insurance-continuity-view .history-child-label {
+        flex: 0 0 100%;
+        padding: 0 0 4px;
+        color: var(--cc-accent-hover);
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    /* แถวปุ่ม "อัปเดตผลการรักษาหรือปิดเคส" ท้ายไทม์ไลน์รวม — ปิดท้ายกล่องเดียวกันนี้ */
+    .insurance-continuity-view tr.continuity-search-update-row:not([hidden]) {
+        display: block;
+        margin-top: -14px;
+        padding: 10px 14px 14px;
+        border: 1px solid var(--cc-accent);
+        border-top: 1px dashed var(--cc-border);
+        border-bottom-left-radius: var(--cc-radius-xl);
+        border-bottom-right-radius: var(--cc-radius-xl);
+        background: var(--cc-bg);
+    }
+
+    .insurance-continuity-view tr.continuity-search-update-row > td.continuity-search-update-cell {
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: 0;
+    }
+
+    .insurance-continuity-view tr.continuity-search-update-row .continuity-update-button {
+        width: 100%;
+        margin: 0;
+    }
+
+    /* ---------- ช่องข้อมูลแบบมีป้ายกำกับ (label บน / ค่าล่าง) ---------- */
+    .insurance-continuity-view td[data-label] {
+        display: block;
+        padding: 6px 0;
+        border: 0;
+        border-bottom: 1px solid var(--cc-border-soft);
+        text-align: left;
+        white-space: normal;
+        max-width: none;
+        overflow: visible;
+        text-overflow: clip;
+    }
+
+    .insurance-continuity-view td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 3px;
+        color: var(--cc-muted);
+        font-size: 10.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+
+    /* ---------- หลักฐานเอกสารแนบ ---------- */
+    .insurance-continuity-view .history-evidence-item {
+        border: 1px solid var(--cc-border);
+        border-radius: var(--cc-radius-md);
+        background: #fbfbfc;
+    }
+
+    .insurance-continuity-view .history-evidence-title {
+        color: var(--cc-ink);
+    }
+
+    .insurance-continuity-view .history-evidence-preview {
+        border: 1px solid var(--cc-border);
+        border-radius: 8px;
+        color: var(--cc-ink);
+    }
+
+    .insurance-continuity-view .history-evidence-preview:hover {
+        border-color: var(--cc-accent);
+        box-shadow: none;
+    }
+
+    .insurance-continuity-view .history-evidence-empty {
+        border: 1px dashed var(--cc-border);
+        color: #9aa0a6;
+    }
+
+    .insurance-continuity-view tr.flat-history-row.flat-row-open > td.history-evidence-cell {
+        flex-basis: 100%;
+    }
+
+    /* ---------- ตัวเลขวงเงิน/การใช้สิทธิ์ (ทำฟัน, PP OPD, PP IPD, SLK ฯลฯ) — ทำตัวใหญ่ อ่านง่าย ---------- */
+    .insurance-continuity-view td[data-label].continuity-money-value {
+        font-size: 19px;
+        font-weight: 800;
+        color: var(--cc-accent-hover);
+        letter-spacing: -.01em;
+    }
+
+    .insurance-continuity-view td.history-evidence-cell .history-evidence-grid {
+        grid-template-columns: repeat(auto-fill, minmax(90px, 130px));
+        justify-content: flex-start;
+    }
+
+    /* ---------- ปุ่มแก้ไข/ลบ ---------- */
+    .insurance-continuity-view tr.flat-history-row > td.flat-history-actions,
+    .insurance-continuity-view tr.grouped-child-row > td.flat-history-actions {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 0;
+        border-bottom: 0;
+    }
+
+    .insurance-continuity-view .btn-edit-minimal {
+        padding: 2px 10px !important;
+        border: 1px solid var(--cc-border) !important;
+        border-radius: 999px !important;
+        background: #ffffff !important;
+        color: var(--cc-ink) !important;
+        font-size: 11px !important;
+        cursor: pointer;
+    }
+
+    .insurance-continuity-view .btn-edit-minimal:hover {
+        background: var(--cc-pill) !important;
+        border-color: var(--cc-accent) !important;
+    }
+
+    .insurance-continuity-view .flat-history-delete {
+        padding: 2px 10px !important;
+        border: 1px solid #dc3545 !important;
+        border-radius: 999px !important;
+        background: transparent !important;
+        color: #dc3545 !important;
+        font-size: 11px !important;
+        cursor: pointer;
+    }
+
+    .insurance-continuity-view .flat-history-delete:hover {
+        background: #dc3545 !important;
+        color: #ffffff !important;
+    }
+
+    /* ---------- แก้ไขข้อมูลตรงที่แสดงอยู่แล้วในการ์ด ---------- */
+    .insurance-continuity-view tr.is-editing-inline {
+        outline: 2px solid var(--cc-accent);
+        outline-offset: -1px;
+    }
+
+    .insurance-continuity-view .inline-edit-field {
+        display: block;
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid var(--cc-border);
+        border-radius: 8px;
+        background: #ffffff;
+        color: var(--cc-ink);
+        font: inherit;
+        font-size: 12.5px;
+        box-sizing: border-box;
+    }
+
+    .insurance-continuity-view .inline-edit-field:focus {
+        outline: none;
+        border-color: var(--cc-accent);
+        box-shadow: 0 0 0 3px rgba(51,112,255,.14);
+    }
+
+    .insurance-continuity-view textarea.inline-edit-field {
+        min-height: 46px;
+        resize: vertical;
+    }
+
+    .insurance-continuity-view .inline-edit-save,
+    .insurance-continuity-view .inline-edit-cancel {
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .insurance-continuity-view .inline-edit-save {
+        border: 1px solid var(--cc-accent);
+        background: var(--cc-accent);
+        color: #ffffff;
+    }
+
+    .insurance-continuity-view .inline-edit-save:hover {
+        background: var(--cc-accent-hover);
+    }
+
+    .insurance-continuity-view .inline-edit-save:disabled {
+        cursor: wait;
+        opacity: .65;
+    }
+
+    .insurance-continuity-view .inline-edit-cancel {
+        border: 1px solid var(--cc-border);
+        background: #ffffff;
+        color: var(--cc-ink);
+    }
+
+    .insurance-continuity-view .inline-edit-cancel:hover {
+        background: var(--cc-pill);
+    }
+
+    /* ---------- แถวว่าง/ไม่พบผลลัพธ์ ---------- */
+    .insurance-continuity-view #continuitySearchResultsBody > tr:not(.flat-history-row):not(.grouped-child-row) {
+        grid-column: 1 / -1;
+        display: block;
+    }
+
+    .insurance-continuity-view #continuitySearchResultsBody > tr:not(.flat-history-row):not(.grouped-child-row) > td {
+        display: block;
+        padding: 40px 20px;
+        border: 1px dashed var(--cc-border);
+        border-radius: var(--cc-radius-lg);
+        background: #fbfbfc;
+        color: var(--cc-muted);
+        text-align: center;
+        font-size: 13px;
+    }
+
+    @media (max-width: 640px) {
+        .insurance-continuity-view #continuitySearchResultsBody {
+            grid-template-columns: 1fr;
+        }
+
+        .insurance-continuity-view tr.flat-history-row.flat-row-open > td:not(.slk-column),
+        .insurance-continuity-view tr.flat-history-row.flat-row-open > td.slk-column {
+            flex-basis: 100%;
+        }
+    }
 </style>
 
 <section class="continuity-card" aria-labelledby="continuityCareTitle">
@@ -587,6 +1121,14 @@
                 <button type="button" id="continuityCasePanelClose" class="continuity-close-button" aria-label="ปิดรายละเอียด">×</button>
             </div>
             <div id="continuityCaseList" class="continuity-case-list"></div>
+
+            <!-- ผลการค้นหา: ใช้ตัวเรนเดอร์เดียวกับหน้า "ประวัติการรักษา" (การ์ดพับ-กางแบบแบน)
+                 เพื่อให้กดที่กล่องแล้วขยายรายละเอียดเต็มรูปแบบเหมือนกัน 100% (สีคงชุดเดิมของหน้านี้) -->
+            <div id="continuitySearchTableShell" class="continuity-search-table-shell" hidden>
+                <table class="continuity-search-table">
+                    <tbody id="continuitySearchResultsBody"></tbody>
+                </table>
+            </div>
         </section>
 
         <p id="continuityCareStatus" class="continuity-status" role="status" aria-live="polite">

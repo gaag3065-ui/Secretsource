@@ -1053,3 +1053,114 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     .accommodation-card-details > div:nth-child(2n) { border-right:0; }
     .accommodation-card-details > div:nth-child(n+3) { border-top:1px solid var(--border); }
 }
+
+/* Area filters and data-quality states */
+.accommodation-data-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.accommodation-data-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sync-accommodation-button {
+    min-height: 38px;
+    padding: 7px 14px;
+    border: 1px solid #087f74;
+    border-radius: 9px;
+    color: #087f74;
+    background: #effbf9;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.sync-accommodation-button:disabled {
+    opacity: 0.65;
+    cursor: wait;
+}
+.summary-area-filters {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.summary-area-filter {
+    min-width: 54px;
+    min-height: 38px;
+    padding: 7px 14px;
+    border: 1px solid #cbd8df;
+    border-radius: 9px;
+    color: #36505e;
+    background: #ffffff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.summary-area-filter:hover,
+.summary-area-filter:focus-visible {
+    border-color: #0b8f84;
+    outline: none;
+}
+
+.summary-area-filter.is-active {
+    border-color: #087f74;
+    color: #ffffff;
+    background: #087f74;
+}
+
+.accommodation-card-badge.is-warning {
+    color: #9a4d00;
+    background: #fff3d6;
+}
+
+@media (max-width: 720px) {
+    .accommodation-data-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .accommodation-data-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sync-accommodation-button {
+    min-height: 38px;
+    padding: 7px 14px;
+    border: 1px solid #087f74;
+    border-radius: 9px;
+    color: #087f74;
+    background: #effbf9;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.sync-accommodation-button:disabled {
+    opacity: 0.65;
+    cursor: wait;
+}
+.summary-area-filters {
+        justify-content: flex-start;
+        flex-wrap: nowrap;
+        padding-bottom: 4px;
+        overflow-x: auto;
+    }
+
+    .summary-area-filter {
+        flex: 0 0 auto;
+    }
+}

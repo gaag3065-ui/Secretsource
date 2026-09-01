@@ -6,8 +6,8 @@
 
     <title>ระบบบริหารที่พักพนักงาน | GA Operations</title>
 
-    <link rel="stylesheet" href="accommodation.css">
-    <link rel="stylesheet" href="responsive.css">
+    <link rel="stylesheet" href="accommodation.css?v=20260902-accommodation-audit-01">
+    <link rel="stylesheet" href="responsive.css?v=20260902-mobile-layout-02">
         <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -46,6 +46,10 @@
                         <span class="section-label">ACCOMMODATION OVERVIEW</span>
                         <h2 id="accommodationDataTitle">จำนวนตึก</h2>
                         <p id="accommodationDataDescription">เลือกกล่องสรุปด้านบนเพื่อดูรายละเอียด</p>
+                    </div>
+                    <div class="accommodation-data-actions">
+                        <button type="button" id="syncAccommodationButton" class="sync-accommodation-button">ซิงก์ข้อมูลล่าสุด</button>
+                        <div id="summaryAreaFilters" class="summary-area-filters" aria-label="กรองตามพื้นที่ปฏิบัติงาน"></div>
                     </div>
                 </div>
                 <div id="accommodationDataGrid" class="accommodation-data-grid" aria-live="polite"></div>
@@ -130,7 +134,7 @@
     </div>
 
     <script src="config.js"></script>
-    <script src="accommodation.js"></script>
+    <script src="accommodation.js?v=20260902-accommodation-audit-01"></script>
     <script src="pwa.js"></script>
 </body>
 </html>

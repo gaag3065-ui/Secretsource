@@ -2706,3 +2706,166 @@ textarea {
         height: auto !important;
     }
 }
+
+/* ===== Mobile-first application shell (2026-09-02) ===== */
+html {
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+}
+
+body.login-page {
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: auto;
+    margin: 0;
+    padding: clamp(16px, 5vw, 32px);
+}
+
+.login-page .login-card {
+    width: min(100%, 360px);
+    max-height: calc(100dvh - 32px);
+    padding: clamp(20px, 6vw, 30px);
+    overflow-y: auto;
+}
+
+.login-page input,
+.login-page button {
+    min-height: 44px;
+    font-size: 16px;
+}
+
+.login-page .admin-entry-button {
+    min-height: 32px;
+    font-size: 12px;
+}
+
+@media (max-width: 600px) {
+    body:not(.login-page) {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    img,
+    video,
+    canvas,
+    svg {
+        max-width: 100%;
+    }
+
+    input,
+    select,
+    textarea {
+        max-width: 100%;
+        font-size: 16px !important;
+    }
+
+    button,
+    [role="button"] {
+        min-height: 42px;
+        touch-action: manipulation;
+    }
+
+    .insurance-workspace-layout,
+    .insurance-open-treatment-view,
+    .insurance-continuity-view,
+    .insurance-history-view {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 100dvh !important;
+        overflow: visible !important;
+    }
+
+    .insurance-continuity-view .continuity-card,
+    .open-case-combined-card,
+    .history-main-panel .bottom-full-box {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 12px !important;
+        overflow: visible !important;
+        border-radius: 0 !important;
+    }
+
+    .continuity-heading,
+    .continuity-heading-tools,
+    .main-header-actions,
+    .history-filter-toolbar,
+    .treatment-form-actions {
+        align-items: stretch !important;
+        flex-direction: column !important;
+    }
+
+    .insurance-continuity-view .continuity-control-strip,
+    .continuity-control-strip,
+    .treatment-field-grid,
+    .history-case-search {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    .continuity-case-search {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .continuity-case-search-control {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .insurance-continuity-view .continuity-summary-grid,
+    .continuity-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .insurance-continuity-view .continuity-case-list,
+    .continuity-case-list {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .continuity-metric {
+        min-width: 0 !important;
+        min-height: 78px !important;
+    }
+
+    .responsive-table-wrapper,
+    .history-table-shell,
+    .table-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        max-width: none;
+    }
+
+    .modal-content,
+    .dialog-content,
+    [role="dialog"] {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+        max-height: calc(100dvh - 24px) !important;
+        margin: 12px !important;
+        overflow-y: auto !important;
+    }
+}
+
+@media (max-width: 380px) {
+    .login-page {
+        padding: 10px;
+    }
+
+    .login-page .login-card {
+        max-height: calc(100dvh - 20px);
+        padding: 18px 16px;
+    }
+
+    .insurance-continuity-view .continuity-summary-grid,
+    .continuity-summary-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+}

@@ -11,6 +11,7 @@ const accommodationState = {
     selectedWorkArea: '',
     selectedBuilding: null,
     activeSummaryView: 'buildings',
+    summaryAreaFilter: 'ALL',
     expandedSummaryRecord: null,
     buildingFilter: '',
     refreshTimer: null,
@@ -117,6 +118,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         .getElementById('backToPortalButton')
         ?.addEventListener('click', () => {
             window.location.href = 'portal.html';
+        });
+
+    document.getElementById('syncAccommodationButton')
+        ?.addEventListener('click', async event => {
+            const button = event.currentTarget;
+            button.disabled = true;
+            button.textContent = 'กำลังซิงก์...';
+            try {
+                await syncInsuranceAccommodationData();
+            } finally {
+                button.disabled = false;
+                button.textContent = 'ซิงก์ข้อมูลล่าสุด';
+            }
         });
 
     document.getElementById('roomMaintenanceButton')
@@ -335,6 +349,8 @@ const matchedRouteArea =
 if (matchedRouteArea) {
     accommodationState.selectedWorkArea =
         matchedRouteArea;
+    accommodationState.summaryAreaFilter =
+        matchedRouteArea;
 } else if (
     !workAreas.includes(
         accommodationState.selectedWorkArea
@@ -348,6 +364,7 @@ const visibleWorkAreas = matchedRouteArea
     ? [matchedRouteArea]
     : workAreas;
 
+renderSummaryAreaFilters();
 renderEmployeeSummary();
 renderAccommodationDataPanel();
 renderRoomSearchResults();
@@ -401,41 +418,70 @@ async function syncInsuranceAccommodationData(options = {}) {
     }
 }
 
-function renderEmployeeSummary() {
-    const summary =
-        document.getElementById('employeeSummary');
+function getSummaryAreaCodes() {
+    return Array.from(new Set([
+        ...accommodationState.sites.map(site => site.code),
+        ...accommodationState.records.map(employee => employee.workArea)
+    ].filter(Boolean))).sort((a, b) =>
+        a.localeCompare(b, 'th', { numeric: true })
+    );
+}
 
+function renderSummaryAreaFilters() {
+    const container = document.getElementById('summaryAreaFilters');
+    if (!container) return;
+
+    const areas = getSummaryAreaCodes();
+    if (
+        accommodationState.summaryAreaFilter !== 'ALL' &&
+        !areas.includes(accommodationState.summaryAreaFilter)
+    ) {
+        accommodationState.summaryAreaFilter = 'ALL';
+    }
+
+    container.innerHTML = [
+        ['ALL', 'ทุกพื้นที่'],
+        ...areas.map(area => [area, area])
+    ].map(([value, label]) => `
+        <button type="button"
+            class="summary-area-filter${accommodationState.summaryAreaFilter === value ? ' is-active' : ''}"
+            data-summary-area="${escapeHtml(value)}"
+            aria-pressed="${accommodationState.summaryAreaFilter === value}">
+            ${escapeHtml(label)}
+        </button>
+    `).join('');
+
+    container.querySelectorAll('[data-summary-area]').forEach(button => {
+        button.addEventListener('click', () => {
+            accommodationState.summaryAreaFilter = button.dataset.summaryArea;
+            accommodationState.expandedSummaryRecord = null;
+            renderSummaryAreaFilters();
+            renderEmployeeSummary();
+            renderAccommodationDataPanel();
+        });
+    });
+}
+
+function renderEmployeeSummary() {
+    const summary = document.getElementById('employeeSummary');
     if (!summary) return;
 
-    const sourceMetrics = accommodationState.sites.reduce((totals, site) => {
-        (site.buildings || []).forEach((building) => {
-            const metrics = getBuildingSourceMetrics(building, site.code);
-            const registeredRooms = (building.floors || []).reduce(
-                (roomTotal, floor) => roomTotal + (floor.rooms || []).length,
-                0
-            );
-            totals.buildingCount += 1;
-            totals.roomCount += registeredRooms;
-            totals.occupiedRoomCount += metrics.occupiedRoomCount;
-            totals.vacantRoomCount += metrics.vacantRoomCount;
-        });
-        return totals;
-    }, {
-        buildingCount: 0,
-        roomCount: 0,
-        occupiedRoomCount: 0,
-        vacantRoomCount: 0
-    });
+    const data = getAccommodationSummaryItems();
     const items = [
-        ['buildings', 'จำนวนตึก', sourceMetrics.buildingCount],
-        ['rooms', 'จำนวนห้อง', sourceMetrics.roomCount],
-        ['occupied', 'ห้องที่มีผู้พักอาศัย', sourceMetrics.occupiedRoomCount],
-        ['vacant', 'ห้องว่าง', sourceMetrics.vacantRoomCount],
-        ['employees', 'จำนวนพนักงาน', accommodationState.summary?.employeeCount ?? accommodationState.records.length]
+        ['buildings', 'จำนวนตึก', data.buildings.length],
+        ['rooms', 'จำนวนห้อง', data.rooms.length],
+        ['occupied', 'ห้องที่มีผู้พักยืนยันแล้ว', data.occupied.length],
+        ['vacant', 'ห้องว่างยืนยันแล้ว', data.vacant.length],
+        ['pending', 'ห้องรอยืนยันสถานะ', data.pending.length],
+        ['unavailable', 'ห้องไม่พร้อมใช้งาน', data.unavailable.length],
+        ['employees', 'จำนวนพนักงานต้นทาง', data.employees.length],
+        ['unmatched', 'รอตรวจสอบการจับคู่', data.unmatched.length]
     ];
+
     summary.innerHTML = items.map(([view, label, value]) =>
         `<button type="button" class="dashboard-kpi${accommodationState.activeSummaryView === view ? ' is-active' : ''}" data-summary-view="${view}" aria-pressed="${accommodationState.activeSummaryView === view}"><b>${Number(value || 0).toLocaleString()}</b>${label}</button>`
     ).join('');
+
     summary.querySelectorAll('[data-summary-view]').forEach(button => {
         button.addEventListener('click', () => {
             accommodationState.activeSummaryView = button.dataset.summaryView;
@@ -447,29 +493,70 @@ function renderEmployeeSummary() {
 }
 
 function getAccommodationSummaryItems() {
-    const buildings = accommodationState.sites.flatMap(site =>
-        (site.buildings || []).map(building => ({
-            building,
-            area: site.code,
-            rooms: (building.floors || []).flatMap(floor =>
+    const selectedArea = accommodationState.summaryAreaFilter;
+    const visibleSites = accommodationState.sites.filter(site =>
+        selectedArea === 'ALL' || site.code === selectedArea
+    );
+    const unmatched = accommodationState.unmatchedEmployees.filter(employee =>
+        selectedArea === 'ALL' || employee.workArea === selectedArea
+    );
+
+    const buildings = visibleSites.flatMap(site =>
+        (site.buildings || []).map(building => {
+            const buildingUnmatched = unmatched.filter(employee =>
+                employee.workArea === site.code &&
+                normalizeBuildingName(employee.building) ===
+                    normalizeBuildingName(building.name)
+            );
+            const areaHasUnmatched = unmatched.some(employee =>
+                employee.workArea === site.code
+            );
+            const rooms = (building.floors || []).flatMap(floor =>
                 (floor.rooms || []).map(room => ({
                     ...room,
                     siteCode: site.code,
+                    buildingId: building.id,
                     buildingName: building.name,
-                    floorName: floor.name || floor.code
+                    floorName: floor.name || floor.code,
+                    hasUnresolvedOccupancy: areaHasUnmatched
                 }))
-            )
-        }))
+            );
+            return {
+                building,
+                area: site.code,
+                rooms,
+                unmatched: buildingUnmatched,
+                areaUnmatchedCount: unmatched.filter(employee =>
+                    employee.workArea === site.code
+                ).length
+            };
+        })
     );
     const rooms = buildings.flatMap(item => item.rooms);
-    const rentable = room => !['INACTIVE', 'COMMON_AREA', 'MAINTENANCE', 'RESERVED'].includes(room.status);
+    const rentable = room =>
+        !['INACTIVE', 'COMMON_AREA', 'MAINTENANCE', 'RESERVED'].includes(room.status);
 
     return {
         buildings,
         rooms,
         occupied: rooms.filter(room => (room.occupants || []).length > 0),
-        vacant: rooms.filter(room => rentable(room) && !(room.occupants || []).length),
-        employees: accommodationState.records
+        vacant: rooms.filter(room =>
+            rentable(room) &&
+            !(room.occupants || []).length &&
+            !room.hasUnresolvedOccupancy
+        ),
+        pending: rooms.filter(room =>
+            rentable(room) &&
+            !(room.occupants || []).length &&
+            room.hasUnresolvedOccupancy
+        ),
+        unavailable: rooms.filter(room =>
+            !(room.occupants || []).length && !rentable(room)
+        ),
+        employees: accommodationState.records.filter(employee =>
+            selectedArea === 'ALL' || employee.workArea === selectedArea
+        ),
+        unmatched
     };
 }
 
@@ -487,7 +574,10 @@ function renderAccommodationDataPanel() {
         rooms: ['จำนวนห้อง', 'ห้องทั้งหมด 1 กล่องต่อ 1 ห้อง', data.rooms, renderAccommodationRoomCard],
         occupied: ['ห้องที่มีผู้พักอาศัย', 'ห้องที่มีผู้พักอาศัย 1 กล่องต่อ 1 ห้อง', data.occupied, renderAccommodationRoomCard],
         vacant: ['ห้องว่าง', 'ห้องว่างพร้อมใช้งาน 1 กล่องต่อ 1 ห้อง', data.vacant, renderAccommodationRoomCard],
-        employees: ['จำนวนพนักงาน', 'พนักงานทั้งหมด 1 กล่องต่อ 1 คน', data.employees, renderAccommodationEmployeeCard]
+        pending: ['ห้องรอยืนยันสถานะ', 'ห้องที่ยังสรุปว่าว่างไม่ได้เพราะมีพนักงานรอจับคู่ในพื้นที่', data.pending, renderAccommodationRoomCard],
+        unavailable: ['ห้องไม่พร้อมใช้งาน', 'ห้องซ่อม จอง ปิดใช้งาน หรือพื้นที่ส่วนกลาง', data.unavailable, renderAccommodationRoomCard],
+        employees: ['จำนวนพนักงาน', 'พนักงานจากข้อมูลต้นทาง 1 กล่องต่อ 1 คน', data.employees, renderAccommodationEmployeeCard],
+        unmatched: ['รอตรวจสอบการจับคู่', 'พนักงานที่ยังจับคู่กับทะเบียนห้องไม่ได้', data.unmatched, renderAccommodationEmployeeCard]
     }[view] || ['จำนวนตึก', 'อาคารทั้งหมด 1 กล่องต่อ 1 ตึก', data.buildings, renderAccommodationBuildingCard];
 
     const [heading, helper, items, renderCard] = viewConfig;
@@ -514,22 +604,37 @@ function renderAccommodationDataPanel() {
 }
 
 function renderAccommodationBuildingCard(item, expanded) {
-    const { building, area, rooms } = item;
-    const source = getBuildingSourceMetrics(building, area);
+    const { building, area, rooms, unmatched = [], areaUnmatchedCount = 0 } = item;
+    const mappedEmployeeCount = rooms.reduce(
+        (sum, room) => sum + (room.occupants || []).length,
+        0
+    );
+    const sourceEmployeeCount = accommodationState.records.filter(employee =>
+        employee.workArea === area &&
+        normalizeBuildingName(employee.building) === normalizeBuildingName(building.name)
+    ).length;
     const occupied = rooms.filter(room => (room.occupants || []).length > 0).length;
-    const vacant = rooms.filter(room => !['INACTIVE', 'COMMON_AREA', 'MAINTENANCE', 'RESERVED'].includes(room.status) && !(room.occupants || []).length).length;
+    const rentable = room =>
+        !['INACTIVE', 'COMMON_AREA', 'MAINTENANCE', 'RESERVED'].includes(room.status);
+    const vacant = areaUnmatchedCount
+        ? null
+        : rooms.filter(room => rentable(room) && !(room.occupants || []).length).length;
+
     return `
         <button type="button" class="accommodation-data-card-toggle" data-summary-card aria-expanded="${expanded}">
             <span class="accommodation-card-icon" aria-hidden="true">⌂</span>
-            <span class="accommodation-card-title"><b>${escapeHtml(building.name)}</b><small>${escapeHtml(area)} · ${rooms.length.toLocaleString()} ห้อง · ${source.employeeCount.toLocaleString()} พนักงาน</small></span>
+            <span class="accommodation-card-title"><b>${escapeHtml(building.name)}</b><small>${escapeHtml(area)} · ${rooms.length.toLocaleString()} ห้อง · ${sourceEmployeeCount.toLocaleString()} พนักงานต้นทาง</small></span>
+            ${areaUnmatchedCount ? `<span class="accommodation-card-badge is-warning">พื้นที่รอตรวจ ${areaUnmatchedCount}</span>` : ''}
             <span class="accommodation-card-state">${expanded ? '⌃' : '⌄'}</span>
         </button>
         <div class="accommodation-card-details">
             <div><span>จำนวนชั้น</span><b>${(building.floors || []).length.toLocaleString()}</b></div>
-            <div><span>จำนวนห้อง</span><b>${rooms.length.toLocaleString()}</b></div>
-            <div><span>ห้องที่มีผู้พัก</span><b>${occupied.toLocaleString()}</b></div>
-            <div><span>ห้องว่าง</span><b>${vacant.toLocaleString()}</b></div>
-            <div><span>จำนวนพนักงาน</span><b>${source.employeeCount.toLocaleString()}</b></div>
+            <div><span>จำนวนห้องทะเบียน</span><b>${rooms.length.toLocaleString()}</b></div>
+            <div><span>ห้องมีผู้พักยืนยันแล้ว</span><b>${occupied.toLocaleString()}</b></div>
+            <div><span>ห้องว่างยืนยันแล้ว</span><b>${vacant === null ? 'รอตรวจสอบ' : vacant.toLocaleString()}</b></div>
+            <div><span>พนักงานจับคู่ห้องแล้ว</span><b>${mappedEmployeeCount.toLocaleString()}</b></div>
+            <div><span>พนักงานต้นทาง</span><b>${sourceEmployeeCount.toLocaleString()}</b></div>
+            <div><span>รอตรวจสอบการจับคู่</span><b>${unmatched.length.toLocaleString()}</b></div>
         </div>`;
 }
 

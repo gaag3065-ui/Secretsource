@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_VERSION = 'ga-east-pwa-v2-mobile-auth';
+const CACHE_VERSION = 'ga-east-pwa-v3-mobile-layout';
 
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;

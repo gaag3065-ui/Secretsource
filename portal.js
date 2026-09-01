@@ -288,6 +288,10 @@ const elements = {
         document.getElementById(
             'workspaceExternalLink'
         ),
+    accommodationReportTopbarButton:
+        document.getElementById(
+            'accommodationReportTopbarButton'
+        ),
     sidebarScrim:
         document.getElementById(
             'sidebarScrim'
@@ -728,6 +732,11 @@ function renderTaskContent(
     );
     elements.workspaceLoading.hidden = false;
 
+    if (elements.accommodationReportTopbarButton) {
+        elements.accommodationReportTopbarButton.hidden =
+            !task.page.startsWith('accommodation.html');
+    }
+
     elements.workspaceTitle.textContent =
         task.title;
     elements.workspaceSubtitle.textContent =
@@ -861,6 +870,9 @@ function renderTaskContent(
 }
 
     function closeWorkspace() {
+        if (elements.accommodationReportTopbarButton) {
+            elements.accommodationReportTopbarButton.hidden = true;
+        }
         elements.workspaceFrame.src = 'about:blank';
         elements.workspaceView.classList.remove(
             'is-open-treatment',
@@ -986,6 +998,24 @@ document
         'click',
         closeMobileNavigation
     );
+
+    elements.accommodationReportTopbarButton
+        ?.addEventListener('click', async () => {
+            const button = elements.accommodationReportTopbarButton;
+            const frameWindow = elements.workspaceFrame.contentWindow;
+
+            if (typeof frameWindow?.downloadAccommodationReports !== 'function') {
+                alert('หน้าระบบห้องพักยังโหลดไม่เสร็จ กรุณาลองอีกครั้ง');
+                return;
+            }
+
+            button.disabled = true;
+            try {
+                await frameWindow.downloadAccommodationReports();
+            } finally {
+                button.disabled = false;
+            }
+        });
 
     document
         .getElementById('logoutButton')

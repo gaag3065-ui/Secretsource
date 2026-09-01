@@ -1243,3 +1243,179 @@ body.second-sidebar-open
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ===== Phone navigation and catalog layout (2026-09-02) ===== */
+@media (max-width: 600px) {
+    :root {
+        --topbar-height: 56px;
+        --first-sidebar-width: min(88vw, 320px);
+        --second-sidebar-width: min(88vw, 320px);
+    }
+
+    .app-topbar {
+        min-width: 0;
+        padding: 0 12px;
+        gap: 8px;
+    }
+
+    .brand-lockup {
+        min-width: 0;
+    }
+
+    .brand-name {
+        overflow: hidden;
+        font-size: 14px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .mobile-menu-button {
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+    }
+
+    .first-sidebar,
+    .second-sidebar {
+        left: 0;
+        width: min(88vw, 320px);
+        min-width: 0;
+        max-width: 320px;
+        box-shadow: 16px 0 36px rgba(16, 24, 40, 0.2);
+    }
+
+    .second-sidebar-content {
+        width: 100%;
+    }
+
+    body.sidebar-open:not(.second-sidebar-open) .first-sidebar {
+        transform: translateX(0);
+    }
+
+    body.sidebar-open:not(.second-sidebar-open) .second-sidebar {
+        transform: translateX(-110%);
+    }
+
+    body.sidebar-open.second-sidebar-open .first-sidebar {
+        transform: translateX(-110%);
+    }
+
+    body.sidebar-open.second-sidebar-open .second-sidebar {
+        transform: translateX(0);
+    }
+
+    .first-menu-item {
+        width: 100%;
+        min-height: 48px;
+    }
+
+    .catalog-view {
+        padding: 18px 12px 28px;
+    }
+
+    .catalog-header {
+        gap: 14px;
+    }
+
+    .catalog-header h1 {
+        font-size: clamp(22px, 7vw, 28px);
+        line-height: 1.2;
+    }
+
+    .catalog-header p {
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    .category-filters {
+        margin-top: 16px;
+        gap: 8px;
+        scroll-snap-type: x proximity;
+    }
+
+    .filter-button {
+        min-height: 42px;
+        padding-inline: 15px;
+        scroll-snap-align: start;
+    }
+
+    .service-grid {
+        margin-top: 20px;
+        gap: 12px;
+    }
+
+    .service-card {
+        min-height: 0;
+        padding: 15px;
+        border-radius: 14px;
+    }
+
+    .service-card h2 {
+        white-space: normal;
+    }
+
+    .workspace-view,
+    .workspace-frame-container,
+    .workspace-frame-container iframe {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .workspace-header {
+        height: auto;
+        min-height: 60px;
+        padding: 8px 10px;
+        gap: 9px;
+    }
+
+    .workspace-back {
+        min-height: 42px;
+    }
+
+    .workspace-frame-container {
+        height: calc(100dvh - var(--topbar-height) - 60px);
+        min-height: 520px;
+    }
+
+    .workspace-view.is-open-treatment,
+    .workspace-view.is-open-treatment .workspace-frame-container,
+    .workspace-view.is-open-treatment .workspace-frame-container iframe,
+    .workspace-view.is-self-headered,
+    .workspace-view.is-self-headered .workspace-frame-container,
+    .workspace-view.is-self-headered .workspace-frame-container iframe {
+        height: calc(100dvh - var(--topbar-height));
+        min-height: calc(100dvh - var(--topbar-height));
+    }
+}
+.topbar-report-button {
+    min-height: 34px;
+    padding: 6px 12px;
+    border: 1px solid #84cfc7;
+    border-radius: 9px;
+    color: #076c64;
+    background: #effbf9;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.topbar-report-button:hover,
+.topbar-report-button:focus-visible {
+    border-color: #087f74;
+    background: #dcf6f2;
+    outline: none;
+}
+
+.topbar-report-button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+@media (max-width: 600px) {
+    .topbar-report-button {
+        min-height: 40px;
+        padding-inline: 10px;
+        font-size: 10px;
+    }
+}
