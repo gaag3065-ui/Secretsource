@@ -1,13 +1,13 @@
-// ======================================================
+﻿// ======================================================
 // Secretsource - Frontend Environment Configuration
 // ======================================================
 
-// ตรวจสอบว่าหน้าเว็บกำลังทำงานอยู่ในเครื่อง Local หรือไม่
+// เธ•เธฃเธงเธเธชเธญเธเธงเนเธฒเธซเธเนเธฒเน€เธงเนเธเธเธณเธฅเธฑเธเธ—เธณเธเธฒเธเธญเธขเธนเนเนเธเน€เธเธฃเธทเนเธญเธ Local เธซเธฃเธทเธญเนเธกเน
 const IS_LOCAL =
     window.location.hostname === '127.0.0.1' ||
     window.location.hostname === 'localhost';
 
-// Backend สำหรับการพัฒนาในเครื่อง รองรับกำหนดพอร์ตเฉพาะการทดสอบบน localhost
+// Backend เธชเธณเธซเธฃเธฑเธเธเธฒเธฃเธเธฑเธ’เธเธฒเนเธเน€เธเธฃเธทเนเธญเธ เธฃเธญเธเธฃเธฑเธเธเธณเธซเธเธ”เธเธญเธฃเนเธ•เน€เธเธเธฒเธฐเธเธฒเธฃเธ—เธ”เธชเธญเธเธเธ localhost
 const localApiPortParameter = new URLSearchParams(
     window.location.search
 ).get('apiPort');
@@ -16,15 +16,15 @@ const localApiPort = /^\d{4,5}$/.test(localApiPortParameter || '')
     : '43127';
 const LOCAL_API_URL = `http://127.0.0.1:${localApiPort}`;
 
-// Backend สำหรับเว็บไซต์จริง
-// ตอนนี้ยังใช้ค่าว่างไว้ก่อน จนกว่าเราจะจัดการ Production Backend
+// Backend เธชเธณเธซเธฃเธฑเธเน€เธงเนเธเนเธเธ•เนเธเธฃเธดเธ
+// เธ•เธญเธเธเธตเนเธขเธฑเธเนเธเนเธเนเธฒเธงเนเธฒเธเนเธงเนเธเนเธญเธ เธเธเธเธงเนเธฒเน€เธฃเธฒเธเธฐเธเธฑเธ”เธเธฒเธฃ Production Backend
 
-const PRODUCTION_API_URL = 'https://passes-soviet-connections-rating.trycloudflare.com';
-
-
+const PRODUCTION_API_URL = 'https://near-learned-years-split.trycloudflare.com';
 
 
-// API หลักที่ทุกหน้าในระบบจะเรียกใช้
+
+
+// API เธซเธฅเธฑเธเธ—เธตเนเธ—เธธเธเธซเธเนเธฒเนเธเธฃเธฐเธเธเธเธฐเน€เธฃเธตเธขเธเนเธเน
 window.APP_CONFIG = {
     API_BASE_URL: IS_LOCAL ? LOCAL_API_URL : PRODUCTION_API_URL,
     ENVIRONMENT: IS_LOCAL ? 'development' : 'production'
@@ -36,7 +36,7 @@ console.log(
 
 
 
-//ฟังก์ชันอ่าน CSRF Token
+//เธเธฑเธเธเนเธเธฑเธเธญเนเธฒเธ CSRF Token
 //window.getCsrfToken = function () {
 //#region
 window.getCsrfToken = function () {
@@ -94,7 +94,7 @@ window.authFetch = async function (url, options = {}) {
 
         if (!csrfToken) {
             throw new Error(
-                'ไม่พบ CSRF Token กรุณาเข้าสู่ระบบใหม่'
+                'เนเธกเนเธเธ CSRF Token เธเธฃเธธเธ“เธฒเน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเนเธซเธกเน'
             );
         }
 
@@ -116,7 +116,7 @@ window.authFetch = async function (url, options = {}) {
         window.location.replace('index.html');
 
         throw new Error(
-            'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'
+            'เน€เธเธชเธเธฑเธเธซเธกเธ”เธญเธฒเธขเธธ เธเธฃเธธเธ“เธฒเน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเนเธซเธกเน'
         );
     }
 
@@ -148,7 +148,7 @@ window.requirePagePermission = async function (
         !data.success ||
         data.permissions?.[permissionKey] !== true
     ) {
-        alert('บัญชีนี้ไม่มีสิทธิ์เข้าถึงหน้านี้');
+        alert('เธเธฑเธเธเธตเธเธตเนเนเธกเนเธกเธตเธชเธดเธ—เธเธดเนเน€เธเนเธฒเธ–เธถเธเธซเธเนเธฒเธเธตเน');
         window.location.replace('portal.html');
         throw new Error('PERMISSION_DENIED');
     }
@@ -159,7 +159,7 @@ window.requirePagePermission = async function (
     return data;
 };
 
-//ฟังก์ชัน Logout กลาง
+//เธเธฑเธเธเนเธเธฑเธ Logout เธเธฅเธฒเธ
 //window.performSecureLogout =
 //#region
 window.performSecureLogout =
@@ -188,5 +188,8 @@ window.performSecureLogout =
         }
     };
 //#endregion
+
+
+
 
 
