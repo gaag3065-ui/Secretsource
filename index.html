@@ -608,6 +608,13 @@ mfaForm.addEventListener(
                 data.csrfToken
             );
 
+            if (data.accessToken) {
+                sessionStorage.setItem(
+                    'accessToken',
+                    data.accessToken
+                );
+            }
+
             const userRole =
                 String(data.user?.role || '')
                     .trim()
@@ -782,6 +789,13 @@ recoveryForm.addEventListener(
             'csrfToken',
             data.csrfToken
         );
+
+        if (data.accessToken) {
+            sessionStorage.setItem(
+                'accessToken',
+                data.accessToken
+            );
+        }
 
             alert(
                 `Recovery Code ถูกใช้แล้ว เหลือ ${data.recoveryCodesRemaining} รหัส`

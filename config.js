@@ -77,6 +77,15 @@ window.authFetch = async function (url, options = {}) {
     );
     const method =
         String(options.method || 'GET').toUpperCase();
+    const accessToken =
+        sessionStorage.getItem('accessToken');
+
+    if (accessToken) {
+        headers.set(
+            'Authorization',
+            'Bearer ' + accessToken
+        );
+    }
 
     const unsafeMethods = new Set([
         'POST',
@@ -173,16 +182,25 @@ window.requirePagePermission = async function (
 window.performSecureLogout =
     async function () {
         try {
+            const headers = {
+                'X-CSRF-Token':
+                    window.getCsrfToken()
+            };
+            const accessToken =
+                sessionStorage.getItem('accessToken');
+
+            if (accessToken) {
+                headers.Authorization =
+                    'Bearer ' + accessToken;
+            }
+
             await fetch(
                 `${window.APP_CONFIG.API_BASE_URL}/api/logout`,
                 {
                     method: 'POST',
                     credentials: 'include',
                     cache: 'no-store',
-                    headers: {
-                        'X-CSRF-Token':
-                            window.getCsrfToken()
-                    }
+                    headers
                 }
             );
         } catch (error) {
