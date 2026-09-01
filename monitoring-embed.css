@@ -1,0 +1,8 @@
+body.is-conversation-embed { background: #fbfcfd; overflow: hidden; }
+body.is-conversation-embed .monitoring-shell { min-height: 100vh; padding: 0; }
+body.is-conversation-embed .monitoring-header,
+body.is-conversation-embed .conversation-panel,
+body.is-conversation-embed .profile-panel { display: none; }
+body.is-conversation-embed .chat-layout { display: block; height: 100vh; min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: #fbfcfd; }
+body.is-conversation-embed .oa-panel { position: static; width: 100%; height: 100vh; border: 0; background: #fbfcfd; }
+body.is-conversation-embed .search-box { margin-top: 22px; }

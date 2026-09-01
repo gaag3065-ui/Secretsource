@@ -1,0 +1,29 @@
+html, body { width: 100%; height: 100%; overflow: hidden; }
+.monitoring-shell { width: 100%; height: 100vh; height: 100dvh; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
+.monitoring-header { min-height: 0; }
+.chat-layout { height: auto; min-height: 0; }
+.oa-panel, .conversation-panel, .profile-panel { min-height: 0; overflow: hidden; }
+.conversation-panel { position: relative; }
+.conversation-list, .message-list, .profile-panel { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.reply-composer { position: relative; z-index: 3; min-height: 0; }
+.message-list { overflow-y: scroll !important; scrollbar-gutter: stable; scrollbar-width: auto; scrollbar-color: #7f8e99 #e3e9ec; }
+.message-list::-webkit-scrollbar { width: 11px; }
+.message-list::-webkit-scrollbar-track { background: #edf2f4; }
+.message-list::-webkit-scrollbar-thumb { border: 3px solid #edf2f4; border-radius: 10px; background: #9aa7b0; }
+.message-scroll-controls { position: absolute; z-index: 4; right: 20px; bottom: 112px; display: grid; gap: 7px; }
+.message-scroll-controls button { position: relative; width: 36px; height: 36px; border: 1px solid #d6dee2; border-radius: 50%; background: rgba(255,255,255,.96); color: #45525e; cursor: pointer; box-shadow: 0 4px 14px rgba(25,42,55,.14); font-weight: 700; }
+.message-scroll-controls button:hover { background: #ecfff4; border-color: #72d99f; color: #087a3d; }
+#newMessageIndicator { position: absolute; top: 1px; right: 1px; width: 9px; height: 9px; border: 2px solid #fff; border-radius: 50%; background: #06c755; }
+body.is-conversation-embed .message-scroll-controls { display: none; }
+body.is-conversation-embed .monitoring-shell,
+body.is-conversation-embed .chat-layout,
+body.is-conversation-embed .oa-panel { height: 100vh; height: 100dvh; min-height: 0; }
+
+@media (max-height: 700px) {
+    .monitoring-shell { padding-top: 12px; padding-bottom: 12px; }
+    .monitoring-header { height: 58px; margin-bottom: 8px; }
+    .monitoring-header h1 { font-size: 21px; }
+    .reply-composer { padding-top: 9px; padding-bottom: 9px; }
+    .reply-composer textarea { max-height: 64px; }
+    .message-scroll-controls { bottom: 98px; }
+}

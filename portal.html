@@ -52,6 +52,11 @@
             <circle cx="13.5" cy="13" r=".7"/>
         </symbol>
 
+        <symbol id="icon-message" viewBox="0 0 20 20">
+            <path d="M3 4.5h14v9H8l-4.5 3v-3H3v-9Z"/>
+            <path d="M6 8h8M6 10.5h5"/>
+        </symbol>
+
         <symbol id="icon-search" viewBox="0 0 20 20">
             <circle cx="8.8" cy="8.8" r="5.8"/>
             <path d="m13.1 13.1 4 4"/>
@@ -117,6 +122,18 @@
 >
     <nav class="first-navigation">
         <p class="sidebar-caption">ระบบงาน</p>
+
+        <button
+            class="first-menu-item"
+            type="button"
+            data-service-id="internal-support"
+            aria-expanded="false"
+        >
+            <svg aria-hidden="true">
+                <use href="#icon-message"></use>
+            </svg>
+            <span>สนับสนุนกิจการภายใน</span>
+        </button>
 
         <button
             class="first-menu-item"
@@ -264,6 +281,9 @@
                     <h2>ไม่พบส่วนงาน</h2>
                     <p>ลองเปลี่ยนคำค้นหาหรือเลือกหมวดงานอื่น</p>
                 </div>
+                <aside class="catalog-conversation-rail" aria-label="ห้องสนทนา LINE OA">
+                    <iframe id="catalogConversationFrame" src="monitoring.html?view=conversations&v=20260901-4" title="รายการห้องสนทนา LINE OA"></iframe>
+                </aside>
             </section>
 
             <section id="workspaceView" class="workspace-view" hidden>
@@ -298,7 +318,7 @@
     </div>
 
     <script src="config.js"></script>
-    <script src="portal.js?v=20260831-insurance-20"></script>
+    <script src="portal.js?v=20260901-monitoring-5"></script>
     <script src="pwa.js"></script>
 </body>
 </html>

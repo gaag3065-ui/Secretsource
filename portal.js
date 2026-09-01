@@ -21,6 +21,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 const services = [
     {
+        id: 'internal-support',
+        category: 'people',
+        title: 'สนับสนุนกิจการภายใน',
+        shortTitle: 'สนับสนุนกิจการภายใน',
+        icon: 'message',
+        color: '#06a86b',
+        soft: '#e9fbf3',
+        tags: [],
+        tasks: [
+            {
+                route: 'monitoring',
+                title: 'Monitoring',
+                icon: 'message',
+                page: 'monitoring.html?v=20260901-4'
+            },
+            {
+                route: 'new-work-update',
+                title: 'อัปเดตงานใหม่',
+                icon: 'plus',
+                planned: true,
+                page: ''
+            },
+            {
+                route: 'business-overview',
+                title: 'ภาพรวมกิจการ',
+                icon: 'home',
+                planned: true,
+                page: ''
+            }
+        ]
+    },
+    {
         id: 'insurance',
         category: 'insurance',
         title: 'งานประกันและการรักษา',
@@ -685,7 +717,8 @@ function renderTaskContent(
     );
     elements.workspaceView.classList.toggle(
         'is-self-headered',
-        task.page.startsWith('accommodation.html')
+        task.page.startsWith('accommodation.html') ||
+        task.page.startsWith('monitoring.html')
     );
     elements.workspaceLoading.hidden = false;
 
@@ -1005,6 +1038,27 @@ window.addEventListener('popstate', event => {
         task,
         state.taskIndex,
         false
+    );
+});
+
+window.addEventListener('message', event => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type !== 'open-line-conversation') return;
+
+    const service = services.find(item => item.id === 'internal-support');
+    const monitoringTask = service?.tasks.find(task => task.route === 'monitoring');
+    if (!service || !monitoringTask) return;
+
+    const conversationId = encodeURIComponent(String(event.data.conversationId || ''));
+    const channelId = encodeURIComponent(String(event.data.channelId || ''));
+    if (!conversationId || !channelId) return;
+
+    openSecondarySidebar(service.id);
+    renderTaskContent(
+        service,
+        { ...monitoringTask, page: `monitoring.html?conversation=${conversationId}&channel=${channelId}` },
+        service.tasks.indexOf(monitoringTask),
+        true
     );
 });
 
