@@ -312,20 +312,28 @@ function renderContinuityCases(cases, container) {
             );
         }
 
-        const action = document.createElement('button');
-        action.type = 'button';
-        action.className = 'continuity-update-button';
-        action.textContent = 'อัปเดตผลการรักษา';
+        row.append(header, details);
 
-        const inlineForm = document.createElement('div');
-        inlineForm.className = 'continuity-inline-form-host';
-        inlineForm.hidden = true;
+        // ปุ่มนี้ยิงไป /api/save-treatment ซึ่งฝั่งหลังบ้านต้องใช้สิทธิ์ CreateTreatment (ไม่ใช่
+        // EditTreatment ที่ใช้เปิดคอมโพเนนต์นี้ทั้งชุด) — บัญชีที่มี EditTreatment แต่ไม่มี
+        // CreateTreatment เดิมจะเห็นปุ่มนี้แล้วกดไม่ได้ (เซิร์ฟเวอร์ตอบ 403) จึงต้องเช็คแยกอีกชั้น
+        if (window.hasPermission?.('CreateTreatment') === true) {
+            const action = document.createElement('button');
+            action.type = 'button';
+            action.className = 'continuity-update-button';
+            action.textContent = 'อัปเดตผลการรักษา';
 
-        action.addEventListener('click', () => {
-            openContinuityInlineUpdate(item, inlineForm, action);
-        });
+            const inlineForm = document.createElement('div');
+            inlineForm.className = 'continuity-inline-form-host';
+            inlineForm.hidden = true;
 
-        row.append(header, details, action, inlineForm);
+            action.addEventListener('click', () => {
+                openContinuityInlineUpdate(item, inlineForm, action);
+            });
+
+            row.append(action, inlineForm);
+        }
+
         container.appendChild(row);
     });
 }
@@ -343,6 +351,9 @@ function addContinuityDetail(container, label, value, emphasisClass = '') {
 }
 
 function openContinuityInlineUpdate(item, target, button) {
+    // ปุ่มที่เรียกฟังก์ชันนี้ถูกซ่อนไว้แล้วถ้าไม่มีสิทธิ์ CreateTreatment (ดู renderContinuityCases)
+    // กันไว้อีกชั้นตรงนี้ — ฝั่งหลังบ้าน (/api/save-treatment) ก็บังคับสิทธิ์เดียวกันนี้อยู่แล้ว
+    if (window.hasPermission?.('CreateTreatment') !== true) return;
     if (typeof window.populateOutcomeToModal !== 'function') return;
 
     const modal = document.getElementById('outcomeUpdateModal');
@@ -521,12 +532,17 @@ function buildContinuitySearchCaseGroup(caseItem) {
     const updateCell = document.createElement('td');
     updateCell.className = 'continuity-search-update-cell';
 
-    const updateButton = document.createElement('button');
-    updateButton.type = 'button';
-    updateButton.className = 'continuity-update-button';
-    updateButton.textContent = 'อัปเดตผลการรักษาหรือปิดเคส';
+    // ปุ่มนี้ยิงไป /api/save-treatment ซึ่งฝั่งหลังบ้านต้องใช้สิทธิ์ CreateTreatment (ไม่ใช่
+    // EditTreatment ที่ใช้เปิดคอมโพเนนต์นี้ทั้งชุด) — บัญชีที่มี EditTreatment แต่ไม่มี
+    // CreateTreatment เดิมจะเห็นปุ่มนี้แล้วกดไม่ได้ (เซิร์ฟเวอร์ตอบ 403) จึงต้องเช็คแยกอีกชั้น
+    if (window.hasPermission?.('CreateTreatment') === true) {
+        const updateButton = document.createElement('button');
+        updateButton.type = 'button';
+        updateButton.className = 'continuity-update-button';
+        updateButton.textContent = 'อัปเดตผลการรักษาหรือปิดเคส';
+        updateCell.appendChild(updateButton);
+    }
 
-    updateCell.appendChild(updateButton);
     updateRow.appendChild(updateCell);
     timelineRows.push(updateRow);
 
@@ -553,10 +569,11 @@ function buildContinuitySearchCaseGroup(caseItem) {
         isOpen: () => parentRow.classList.contains('flat-row-open')
     };
 
-    updateButton.addEventListener('click', (event) => {
-        event.stopPropagation();
-        openContinuitySearchNewEventForm(group);
-    });
+    updateCell.querySelector('.continuity-update-button')
+        ?.addEventListener('click', (event) => {
+            event.stopPropagation();
+            openContinuitySearchNewEventForm(group);
+        });
 
     return group;
 }
@@ -1061,16 +1078,18 @@ function restoreContinuityUpdateRowButton(group) {
     const updateCell = document.createElement('td');
     updateCell.className = 'continuity-search-update-cell';
 
-    const updateButton = document.createElement('button');
-    updateButton.type = 'button';
-    updateButton.className = 'continuity-update-button';
-    updateButton.textContent = 'อัปเดตผลการรักษาหรือปิดเคส';
-    updateButton.addEventListener('click', (event) => {
-        event.stopPropagation();
-        openContinuitySearchNewEventForm(group);
-    });
+    if (window.hasPermission?.('CreateTreatment') === true) {
+        const updateButton = document.createElement('button');
+        updateButton.type = 'button';
+        updateButton.className = 'continuity-update-button';
+        updateButton.textContent = 'อัปเดตผลการรักษาหรือปิดเคส';
+        updateButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            openContinuitySearchNewEventForm(group);
+        });
+        updateCell.appendChild(updateButton);
+    }
 
-    updateCell.appendChild(updateButton);
     row.appendChild(updateCell);
 }
 
@@ -1092,6 +1111,10 @@ function continuityAddEventLocally(payload) {
 // รูปแบบเดียวกับแถวประวัติทุกกล่อง (เรียกใช้ appendContinuityHistoryCells + INLINE_EDIT_FIELD_CONFIG
 // ชุดเดียวกับตอนกด "✏️ แก้ไข" เป๊ะ ๆ) แล้วค่อยดัดแปลงเฉพาะจุดที่เจตนารมย์ต่างกันตามที่อธิบายไว้ด้านบน
 function openContinuitySearchNewEventForm(group) {
+    // การ์ดยาม: ปุ่มที่เรียกฟังก์ชันนี้ถูกซ่อนไว้แล้วถ้าไม่มีสิทธิ์ CreateTreatment แต่กันไว้อีกชั้น
+    // เผื่อถูกเรียกจากที่อื่นในอนาคต — ฝั่งหลังบ้าน (/api/save-treatment) ก็บังคับสิทธิ์นี้อยู่แล้ว
+    if (window.hasPermission?.('CreateTreatment') !== true) return;
+
     const row = group.updateRow;
     if (row.classList.contains('is-editing-inline')) return;
 

@@ -351,6 +351,10 @@ if (basePage === 'assets.html') {
     return permissions.ViewAssets === true;
 }
 
+if (basePage === 'monitoring.html') {
+    return permissions.ViewMonitoring === true;
+}
+
 return false;
     }
 
@@ -1107,4 +1111,11 @@ window.addEventListener('message', event => {
 
 updateAccountInformation();
 renderServiceCards();
+
+// แถบห้องสนทนา LINE OA ฝังอยู่ในหน้าแคตตาล็อกหลักตายตัว (ไม่ผ่าน canAccessPage ที่ใช้ตอนเปิด
+// การ์ดบริการ) เดิมจึงโชว์ให้ทุกบัญชีเห็นเสมอโดยไม่เช็คสิทธิ์เลย — ซ่อนถ้าไม่มี ViewMonitoring
+const conversationRail = document.querySelector('.catalog-conversation-rail');
+if (conversationRail && !isAdminSession() && permissions.ViewMonitoring !== true) {
+    conversationRail.hidden = true;
+}
 });
