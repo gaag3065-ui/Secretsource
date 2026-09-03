@@ -25,6 +25,7 @@ const services = [
         category: 'people',
         title: 'สนับสนุนกิจการภายใน',
         shortTitle: 'สนับสนุนกิจการภายใน',
+        description: 'ติดตามข้อความ LINE OA และงานสนับสนุนกิจการภายใน',
         icon: 'message',
         color: '#06a86b',
         soft: '#e9fbf3',
@@ -57,6 +58,7 @@ const services = [
         category: 'insurance',
         title: 'งานประกันและการรักษา',
         shortTitle: 'งานประกัน',
+        description: 'เปิดเคส บันทึกผลการรักษา และดูประวัติการเบิกประกัน',
         icon: 'shield',
         color: '#635bff',
         soft: '#efedff',
@@ -94,6 +96,7 @@ const services = [
         category: 'people',
         title: 'ห้องพักพนักงาน',
         shortTitle: 'ห้องพักพนักงาน',
+        description: 'ค้นหาและจัดการห้องพักพนักงานทุกพื้นที่',
         icon: 'building',
         color: '#087f74',
         soft: '#e5f7f4',
@@ -138,6 +141,7 @@ const services = [
         category: 'assets',
         title: 'บริหารทรัพย์สิน',
         shortTitle: 'ทรัพย์สิน',
+        description: 'ทะเบียนทรัพย์สิน ติดตามสถานะและการโยกย้าย',
         icon: 'box',
         color: '#2563eb',
         soft: '#eaf2ff',
@@ -182,6 +186,7 @@ const services = [
         category: 'wellbeing',
         title: 'จัดการยา',
         shortTitle: 'จัดการยา',
+        description: 'ระบบจัดการยาและเวชภัณฑ์ (เตรียมเปิดใช้งาน)',
         icon: 'health',
         color: '#d92d20',
         soft: '#fff0ee',
@@ -202,6 +207,7 @@ const services = [
         category: 'wellbeing',
         title: 'ฟิตเนส',
         shortTitle: 'ฟิตเนส',
+        description: 'ระบบจองและจัดการฟิตเนสพนักงาน (เตรียมเปิดใช้งาน)',
         icon: 'health',
         color: '#e04f9a',
         soft: '#fff0f7',
@@ -222,6 +228,7 @@ const services = [
         category: 'transport',
         title: 'รถรับส่งพนักงาน',
         shortTitle: 'รถรับส่งพนักงาน',
+        description: 'ระบบรถรับส่งพนักงาน (เตรียมเปิดใช้งาน)',
         icon: 'bus',
         color: '#c26a12',
         soft: '#fff5e8',
@@ -891,7 +898,13 @@ function renderTaskContent(
     }
 
     function closeMobileNavigation() {
-        document.body.classList.remove('sidebar-open');
+        // เดิมปิดแค่เมนูหลัก (ระดับ 1) เท่านั้น — พอเปิดเมนูย่อย (ระดับ 2) แล้วกดเลือกงานจริง
+        // renderTaskContent() เรียกฟังก์ชันนี้เพื่อเก็บเมนูให้หมด แต่เมนูย่อยไม่ถูกปิดไปด้วย
+        // จอมือถือเลยถูกเมนูย่อยบังพื้นที่ทำงานทั้งหมดค้างอยู่ตลอด (กดเข้าไปแล้วไม่พับเก็บ)
+        // แก้ให้ปิดทั้งสองระดับ โดยไม่ล้างค่า selectedServiceId/activeTaskIndex ที่ยังใช้อยู่
+        // (ต่างจาก closeSecondarySidebar() ที่รีเซ็ตค่าด้วย ซึ่งไม่เหมาะตรงนี้เพราะเพิ่งเลือกงานไป)
+        document.body.classList.remove('sidebar-open', 'second-sidebar-open');
+        elements.secondarySidebar.setAttribute('aria-hidden', 'true');
     }
 
     async function logout() {

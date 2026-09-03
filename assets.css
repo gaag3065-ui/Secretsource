@@ -280,6 +280,116 @@ select {
     display: none;
 }
 
+/* การ์ดทรัพย์สินสำหรับจอมือถือ (แสดงแทนตาราง .asset-table-wrapper ที่ ≤700px) —
+   เดิม renderAssetCards() ใน assets.js สร้างมาร์กอัปส่วนนี้ไว้แล้ว แต่ไม่เคยมี CSS
+   รองรับเลย ทำให้ .asset-mobile-heading เป็น display:block ปกติของเบราว์เซอร์ ส่งผลให้
+   รหัสทรัพย์สิน (<strong>) กับป้ายสถานะ (.asset-status-badge) ที่เป็น inline ติดกันสนิท
+   ไม่มีช่องไฟเลย และป้ายสถานะก็ไม่มีสี/พื้นหลังใดๆ เป็นตัวหนังสือเปล่าๆ */
+.asset-mobile-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--asset-border);
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: var(--asset-shadow);
+}
+
+.asset-mobile-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.asset-mobile-heading strong {
+    color: var(--asset-text);
+    font-size: 14px;
+    letter-spacing: .01em;
+}
+
+.asset-mobile-card > h3 {
+    margin: 0;
+    color: var(--asset-text);
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.asset-mobile-card > dl {
+    display: grid;
+    grid-template-columns: minmax(84px, 110px) 1fr;
+    row-gap: 6px;
+    column-gap: 10px;
+    margin: 0;
+}
+
+.asset-mobile-card > dl dt {
+    color: var(--asset-muted);
+    font-size: 12px;
+}
+
+.asset-mobile-card > dl dd {
+    margin: 0;
+    color: var(--asset-text);
+    font-size: 12.5px;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.asset-card-action {
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 14px;
+    border: 1px solid var(--asset-primary);
+    border-radius: 8px;
+    background: var(--asset-primary-soft);
+    color: var(--asset-primary-dark);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.asset-card-action:hover {
+    background: var(--asset-primary);
+    color: #ffffff;
+}
+
+.asset-status-badge {
+    flex: 0 0 auto;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #eef2f6;
+    color: var(--asset-muted);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.asset-status-badge.status-in-use {
+    background: var(--asset-primary-soft);
+    color: var(--asset-primary-dark);
+}
+
+.asset-status-badge.status-spare {
+    background: #eaf1ff;
+    color: #2457d6;
+}
+
+.asset-status-badge.status-maintenance,
+.asset-status-badge.status-repairing {
+    background: #fef3e0;
+    color: var(--asset-warning);
+}
+
+.asset-status-badge.status-retired,
+.asset-status-badge.status-disposed,
+.asset-status-badge.status-lost {
+    background: #fdecea;
+    color: var(--asset-danger);
+}
+
 .asset-empty-state {
     padding: 42px 20px;
     text-align: center;

@@ -687,6 +687,27 @@
     }
 }
 
+/* มือถือ (จอแคบ ≤620px): เมื่อเปิดกรอบ "อัปเดตผลการรักษาหรือปิดเคส" การ์ดสรุป 5 ช่อง
+   (.continuity-summary-grid) จะถูกจัดเป็น 1 คอลัมน์ (ซ้อนกัน 5 แถว) ทำให้
+   .continuity-sticky-summary สูงเกินความสูงคงที่ของ .continuity-card (ซึ่งถูกล็อกเท่า
+   ความสูงจอ + overflow:hidden ไว้สำหรับจอกว้าง) ผลคือ .continuity-scroll-region ที่บรรจุ
+   รายการเคส/ผลค้นหาถูกบีบจนความสูงเหลือเกือบ 0 และมองไม่เห็นเลยบนมือถือ (พับ/แสดงผิดปกติ)
+   แก้โดยยกเลิกการล็อกความสูงคงที่บนจอแคบ ให้การ์ดขยายตามเนื้อหาจริงและให้หน้าเลื่อนตามปกติแทน
+   ใช้ selector ที่มี specificity เท่ากับกฎเดิมด้านบน (body.<mode> .continuity-card) เพื่อให้
+   ชนะกฎ !important อื่นๆ ที่ scope ด้วย .insurance-continuity-view เพียงอย่างเดียวได้แน่นอน */
+@media (max-width: 620px) {
+    body.insurance-continuity-mode .continuity-card {
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+    }
+
+    body.insurance-continuity-mode .continuity-scroll-region {
+        overflow: visible !important;
+        max-height: none !important;
+    }
+}
+
 /* ===== Excel-like zoom: scoped only to the history table ===== */
 
 .history-table-shell {

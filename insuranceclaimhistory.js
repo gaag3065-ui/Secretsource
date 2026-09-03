@@ -3320,7 +3320,11 @@ function renderFlatHistoryTable(history) {
 
         parentRow.style.cursor = 'pointer';
         parentRow.addEventListener('click', (event) => {
-            if (event.target.closest('button')) return;
+            // เดิมกันคลิกทุกปุ่มแบบเหมารวม (closest('button')) ซึ่งไปกันปุ่มลูกศร/เลขเคส
+            // (.history-case-toggle) ที่เป็น <button> ด้วย ทำให้กดตรงลูกศรที่เห็นชัดเจนที่สุด
+            // แล้วไม่พับ/กางเลย ต้องไปกดที่ว่างข้างๆ ถึงจะทำงาน — แก้ให้กันเฉพาะปุ่มแก้ไข/ลบ
+            // เหมือนฝั่งอัปเดตผลการรักษาหรือปิดเคส (continuitycare.js) เพื่อให้กดลูกศรแล้วพับ/กางได้จริง
+            if (event.target.closest('.btn-edit-minimal, .flat-history-delete')) return;
             parentRow.classList.toggle('flat-row-open');
         });
 
