@@ -109,30 +109,6 @@ const services = [
                 page:
                     'accommodation.html' +
                     '?view=search'
-            },
-            {
-                route: 'room-pp',
-                title: 'ห้องพักพื้นที่ PP',
-                icon: 'building',
-                page:
-                    'accommodation.html' +
-                    '?area=PP'
-            },
-            {
-                route: 'room-sl',
-                title: 'ห้องพักพื้นที่ SL',
-                icon: 'building',
-                page:
-                    'accommodation.html' +
-                    '?area=SL'
-            },
-            {
-                route: 'room-ge',
-                title: 'ห้องพักพื้นที่ GE',
-                icon: 'building',
-                page:
-                    'accommodation.html' +
-                    '?area=GE'
             }
         ]
     },

@@ -15,6 +15,8 @@ let continuitySummaryRequestSequence = 0;
 let continuityCasesRequestSequence = 0;
 let continuityAllCases = [];
 let continuitySearchLastQuery = '';
+let continuityAutoRefreshTimer = null;
+const CONTINUITY_AUTO_REFRESH_MS = 30000;
 
 function continuityStatusCategory(statusText) {
     const value = String(statusText || '');
@@ -136,7 +138,8 @@ async function refreshContinuitySummary(options = {}) {
 
         initContinuityInteractions();
 
-        status.textContent = `ข้อมูลล่าสุดจากต้นทาง · ${visibleCases.length.toLocaleString('th-TH')} เคสพร้อมดำเนินการ`;
+        const syncedAt = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        status.textContent = `ซิงก์จาก Google Sheets ล่าสุด ${syncedAt} · ${visibleCases.length.toLocaleString('th-TH')} เคส`;
         status.dataset.status = 'success';
     } catch (error) {
         if (error.name === 'AbortError') return;
@@ -1351,3 +1354,12 @@ function setContinuityCount(elementId, value) {
 }
 
 window.refreshContinuitySummary = refreshContinuitySummary;
+function continuityHasUnsavedEdit() { return Boolean(document.querySelector('.inline-edit-row') || document.querySelector('.continuity-inline-update')); }
+async function refreshContinuityWhenSafe() { if (document.hidden || continuityHasUnsavedEdit()) return; await refreshContinuitySummary({ forceFresh: true }); }
+function startContinuityAutoRefresh() {
+    if (continuityAutoRefreshTimer) return;
+    continuityAutoRefreshTimer = window.setInterval(refreshContinuityWhenSafe, CONTINUITY_AUTO_REFRESH_MS);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshContinuityWhenSafe(); });
+    window.addEventListener('focus', refreshContinuityWhenSafe);
+}
+startContinuityAutoRefresh();

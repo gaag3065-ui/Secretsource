@@ -1123,6 +1123,167 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     background: #fff3d6;
 }
 
+/* ปุ่มแจ้งเตือน "รอตรวจสอบห้องพัก" — วางตรงข้ามกับปุ่มซิงก์/ตัวกรองพื้นที่ (PP/SL/TH)
+   ใน .accommodation-data-heading (space-between) จึงลอยอยู่คนละฝั่งของแถวหัวข้อ */
+.pending-review-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 7px 14px;
+    border: 1px solid #f0b429;
+    border-radius: 9px;
+    color: #9a4d00;
+    background: #fff8e6;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    animation: pending-review-pulse 2.4s ease-in-out infinite;
+}
+
+.pending-review-button:hover,
+.pending-review-button:focus-visible {
+    background: #fff3d6;
+    outline: none;
+}
+
+.pending-review-button span {
+    display: inline-grid;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    place-items: center;
+    border-radius: 999px;
+    background: #f0b429;
+    color: #ffffff;
+    font-size: 12px;
+}
+
+@keyframes pending-review-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(240, 180, 41, 0.35); }
+    50% { box-shadow: 0 0 0 6px rgba(240, 180, 41, 0); }
+}
+
+.pending-review-modal {
+    width: min(92vw, 760px);
+    max-height: 86vh;
+    overflow-y: auto;
+}
+
+.pending-review-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 4px 2px 2px;
+}
+
+.pending-review-card {
+    padding: 14px;
+    border: 1px solid #e3e9ec;
+    border-radius: 12px;
+    background: #fbfcfc;
+}
+
+.pending-review-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.pending-review-card-head b {
+    display: block;
+    color: #17212b;
+    font-size: 14px;
+}
+
+.pending-review-card-head small {
+    display: block;
+    margin-top: 2px;
+    color: #64748b;
+    font-size: 11.5px;
+}
+
+.pending-review-reason {
+    flex: 0 0 auto;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #fff3d6;
+    color: #9a4d00;
+    font-size: 10.5px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.pending-review-source {
+    margin: 0 0 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #f4f7f8;
+    color: #475467;
+    font-size: 11.5px;
+    line-height: 1.6;
+}
+
+.pending-review-source b {
+    color: #17212b;
+}
+
+.pending-review-picker {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+    gap: 8px;
+    align-items: end;
+}
+
+.pending-review-picker label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #64748b;
+    font-size: 10.5px;
+    font-weight: 700;
+}
+
+.pending-review-picker select {
+    min-height: 36px;
+    padding: 6px 8px;
+    border: 1px solid #cbd8df;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 12px;
+}
+
+.pending-review-save {
+    min-height: 36px;
+    padding: 7px 16px;
+    border: 1px solid #087f74;
+    border-radius: 8px;
+    color: #ffffff;
+    background: #087f74;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.pending-review-save:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pending-review-empty {
+    padding: 30px 16px;
+    color: #64748b;
+    text-align: center;
+}
+
+@media (max-width: 640px) {
+    .pending-review-picker {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 720px) {
     .accommodation-data-heading {
         align-items: stretch;
@@ -1162,5 +1323,222 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
     .summary-area-filter {
         flex: 0 0 auto;
+    }
+}
+
+/* ===== ตัวกรองบริษัท (ชั้นเพิ่มเติมเหนือตัวกรองพื้นที่) ===== */
+.summary-company-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.summary-company-filter {
+    min-height: 34px;
+    padding: 6px 13px;
+    border: 1px solid #cbd8df;
+    border-radius: 999px;
+    color: #36505e;
+    background: #ffffff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.summary-company-filter:hover,
+.summary-company-filter:focus-visible {
+    border-color: #0b8f84;
+    outline: none;
+}
+
+.summary-company-filter.is-active {
+    border-color: #087f74;
+    color: #ffffff;
+    background: #087f74;
+}
+
+/* ===== หัวการ์ดตึก: ปุ่มเปิด/ปิด + แถวปุ่มตัวกรอง 7 ปุ่มเรียงข้างชื่อตึก ===== */
+.accommodation-building-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+    padding-right: 12px;
+}
+
+.accommodation-building-card-head .accommodation-data-card-toggle {
+    flex: 1 1 260px;
+    min-width: 0;
+}
+
+.accommodation-building-filters {
+    display: flex;
+    flex: 2 1 320px;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 0;
+}
+
+.building-filter-chip {
+    min-height: 28px;
+    padding: 4px 10px;
+    border: 1px solid #cbd8df;
+    border-radius: 999px;
+    color: #64748b;
+    background: #f8fafb;
+    font: inherit;
+    font-size: 10.5px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.building-filter-chip:hover,
+.building-filter-chip:focus-visible {
+    border-color: #0b8f84;
+    outline: none;
+}
+
+.building-filter-chip.is-active {
+    border-color: #087f74;
+    color: #087f74;
+    background: #eef8f5;
+}
+
+/* ตอนยังไม่กางการ์ด: ตัวหนังสือธรรมดา ไม่มีกรอบ/พื้นหลัง — จัดเป็นตาราง ป้ายอยู่ซ้าย
+   ตัวเลขอยู่ขวา (ขนาดตัวอักษรเท่าเดิม) มีเส้นบางๆ กั้นระหว่างแต่ละหัวข้อให้เห็นชัดว่า
+   ตัวเลขไหนเป็นของหัวข้อไหน จำนวนคอลัมน์ปรับอัตโนมัติตามความกว้างจอ (มือถือลดคอลัมน์ลง
+   เองโดยไม่ต้องกำหนด breakpoint ตายตัว ป้องกันตัวเลขทับกัน) */
+.accommodation-building-filters.is-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    padding: 0;
+    border-top: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+}
+
+.building-stat-preview {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 12px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 10.5px;
+}
+
+.building-stat-preview-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.building-stat-preview b {
+    flex: 0 0 auto;
+    color: var(--teal);
+    font-size: 16px;
+    line-height: 1.15;
+}
+
+/* ===== เนื้อหาตอนกางการ์ดตึก: กล่องห้อง (1 ห้อง/1 กล่อง) + กล่องรอจับคู่ ===== */
+.accommodation-building-expand {
+    display: none;
+    padding: 14px;
+    border-top: 1px solid var(--border);
+    background: #f8fbfc;
+}
+
+.accommodation-data-card.is-expanded .accommodation-building-expand {
+    display: block;
+}
+
+.building-floor-section {
+    margin-bottom: 16px;
+}
+
+.building-floor-section h4 {
+    margin: 0 0 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--blue-light);
+    color: var(--navy);
+    font-size: 12.5px;
+}
+
+.building-room-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+}
+
+.building-room-box {
+    overflow: hidden;
+    border: 1px solid #dbe4e8;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.building-room-box.is-vacant {
+    border-color: #8bcfc3;
+    background: #f2fbf9;
+}
+
+.building-room-box-unassigned {
+    margin-top: 14px;
+    border-color: #f0b429;
+    background: #fffaf0;
+}
+
+.building-room-box-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 11px;
+    background: #f7f9fa;
+    color: var(--navy);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.building-room-box-unassigned .building-room-box-head {
+    background: #fff3d6;
+    color: #9a4d00;
+}
+
+.building-room-box-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11.5px;
+}
+
+.building-room-box-table th,
+.building-room-box-table td {
+    padding: 7px 10px;
+    border-top: 1px solid #edf0f2;
+    text-align: left;
+}
+
+.building-room-box-table th {
+    color: var(--muted);
+    font-size: 10.5px;
+}
+
+@media (max-width: 720px) {
+    .accommodation-building-card-head {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .accommodation-building-filters {
+        padding: 0 12px 10px;
+    }
+
+    .building-room-grid {
+        grid-template-columns: 1fr;
     }
 }

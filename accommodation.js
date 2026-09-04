@@ -12,6 +12,12 @@ const accommodationState = {
     selectedBuilding: null,
     activeSummaryView: 'buildings',
     summaryAreaFilter: 'ALL',
+    // ตัวกรองบริษัท (ชั้นเพิ่มเติมเหนือตัวกรองพื้นที่) — เลือกได้พร้อมกันหลายบริษัท
+    // ว่างเปล่า = ไม่กรอง (แสดงทุกบริษัท) ดึงรายชื่อบริษัทอัตโนมัติจากข้อมูลจริงใน records
+    summaryCompanyFilters: new Set(),
+    // ตัวกรองภายในการ์ดแต่ละตึก (จำนวนชั้น/ห้องทะเบียน/ห้องมีผู้พัก/ห้องว่าง/พนักงาน
+    // จับคู่แล้ว/พนักงานต้นทาง/รอตรวจสอบ) แยกสถานะต่อตึก คีย์ = building.id
+    buildingCardFilters: new Map(),
     expandedSummaryRecord: null,
     buildingFilter: '',
     refreshTimer: null,
@@ -36,7 +42,8 @@ const accommodationState = {
 const accommodationOverlayIds = [
     'managementModal',
     'imagePreviewModal',
-    'accommodationReportModal'
+    'accommodationReportModal',
+    'pendingReviewModal'
 ];
 
 function showExclusiveOverlay(id, options = {}) {
@@ -241,6 +248,15 @@ renderWorkAreaNavigation(areas);
             if (event.target.id === 'imagePreviewModal') closeImagePreview();
         });
 
+    document.getElementById('pendingReviewButton')
+        ?.addEventListener('click', openPendingReviewModal);
+    document.getElementById('closePendingReviewModalButton')
+        ?.addEventListener('click', () => closeExclusiveOverlay('pendingReviewModal'));
+    document.getElementById('pendingReviewModal')
+        ?.addEventListener('click', event => {
+            if (event.target.id === 'pendingReviewModal') closeExclusiveOverlay('pendingReviewModal');
+        });
+
     await loadAccommodationData();
 applyAccommodationRoute();
     accommodationState.refreshTimer = window.setInterval(
@@ -364,10 +380,15 @@ const visibleWorkAreas = matchedRouteArea
     ? [matchedRouteArea]
     : workAreas;
 
+renderSummaryCompanyFilters();
 renderSummaryAreaFilters();
 renderEmployeeSummary();
 renderAccommodationDataPanel();
 renderRoomSearchResults();
+renderPendingReviewBadge();
+if (!document.getElementById('pendingReviewModal')?.hasAttribute('hidden')) {
+    renderPendingReviewList();
+}
         if (accommodationState.selectedBuilding) {
             const refreshed = accommodationState.sites
                 .flatMap(site => site.buildings || [])
@@ -416,6 +437,69 @@ async function syncInsuranceAccommodationData(options = {}) {
         console.error('Accommodation sync error:', error);
         if (!options.silent) alert(`ไม่สามารถซิงก์ข้อมูลได้: ${error.message}`);
     }
+}
+
+// ค่า company ดิบจากชีตมีหลายรูปแบบย่อยในบริษัทเดียวกัน (เช่น "ACC 800","GA 800",
+// "HR 800","CALL 800","Pretty Center" ล้วนเป็นบริษัท 800) — จัดกลุ่มด้วยตรรกะเดียวกับ
+// normalizeAccommodationCompany() ฝั่งเซิร์ฟเวอร์ (server.js) เพื่อให้ได้ 5 บริษัทจริง
+// ตามที่แจ้งไว้ (365,147,656,88S,800) ไม่ใช่โชว์ทุกรูปแบบย่อยแยกปุ่มกัน
+function normalizeCompanyLabel(value) {
+    const company = String(value || '').trim().replace(/\s+/g, ' ').toUpperCase();
+    if (company.includes('365')) return 'CALL 365';
+    if (company.includes('656')) return 'CALL 656';
+    if (company.includes('147')) return 'CALL 147';
+    if (company.includes('88S')) return 'CALL 88s';
+    if (company.includes('800') || company === 'PRETTY CENTER') return 'CALL 800';
+    return '';
+}
+
+// ดึงรายชื่อบริษัทที่มีอยู่จริงในข้อมูลปัจจุบันแบบอัตโนมัติ (ไม่ hardcode รายชื่อ)
+// ตอนนี้มี 5 บริษัท (365,147,656,88S,800) แต่ถ้าในอนาคตมีบริษัทใหม่ที่ตรรกะข้างต้นยังไม่
+// รู้จักเพิ่มเข้ามาในชีต ก็จะถูกดึงมาแสดงเป็นปุ่มกรองใหม่ (ใช้ชื่อดิบ) ให้เองทันทีที่ซิงก์ข้อมูล
+function getSummaryCompanyCodes() {
+    return Array.from(new Set(
+        accommodationState.records
+            .map(employee => normalizeCompanyLabel(employee.company) || employee.company)
+            .filter(Boolean)
+    )).sort((a, b) => a.localeCompare(b, 'th', { numeric: true }));
+}
+
+function renderSummaryCompanyFilters() {
+    const container = document.getElementById('summaryCompanyFilters');
+    if (!container) return;
+
+    const companies = getSummaryCompanyCodes();
+    // ตัดบริษัทที่หายไปจากข้อมูล (เช่น ถูกลบ/เปลี่ยนชื่อ) ออกจากตัวกรองที่เลือกไว้เดิม
+    Array.from(accommodationState.summaryCompanyFilters).forEach(company => {
+        if (!companies.includes(company)) accommodationState.summaryCompanyFilters.delete(company);
+    });
+
+    if (!companies.length) { container.innerHTML = ''; return; }
+
+    container.innerHTML = companies.map(company => `
+        <button type="button"
+            class="summary-company-filter${accommodationState.summaryCompanyFilters.has(company) ? ' is-active' : ''}"
+            data-summary-company="${escapeHtml(company)}"
+            aria-pressed="${accommodationState.summaryCompanyFilters.has(company)}">
+            ${escapeHtml(company)}
+        </button>
+    `).join('');
+
+    container.querySelectorAll('[data-summary-company]').forEach(button => {
+        button.addEventListener('click', () => {
+            const company = button.dataset.summaryCompany;
+            // สลับ toggle เข้า/ออกจากชุดที่เลือกไว้ — เลือกได้พร้อมกันหลายปุ่ม ไม่ใช่เลือกได้ทีละปุ่ม
+            if (accommodationState.summaryCompanyFilters.has(company)) {
+                accommodationState.summaryCompanyFilters.delete(company);
+            } else {
+                accommodationState.summaryCompanyFilters.add(company);
+            }
+            accommodationState.expandedSummaryRecord = null;
+            renderSummaryCompanyFilters();
+            renderEmployeeSummary();
+            renderAccommodationDataPanel();
+        });
+    });
 }
 
 function getSummaryAreaCodes() {
@@ -467,15 +551,16 @@ function renderEmployeeSummary() {
     if (!summary) return;
 
     const data = getAccommodationSummaryItems();
+    // เอา 3 ช่อง (ห้องรอยืนยันสถานะ/ห้องไม่พร้อมใช้งาน/รอตรวจสอบการจับคู่) ออกจากแถวสรุป
+    // ภาพรวมด้านบนตามที่แจ้ง — ตัวเลขเหล่านี้ยังคำนวณได้ปกติใน getAccommodationSummaryItems()
+    // และยังกดดูรายละเอียดได้ผ่าน renderAccommodationDataPanel() หากมีจุดเชื่อมอื่นอ้างถึง
+    // (view นี้) เพียงแต่ไม่โชว์เป็นการ์ดตัวเลขแถวบนสุดที่ทำให้เข้าใจผิดอีกต่อไป
     const items = [
         ['buildings', 'จำนวนตึก', data.buildings.length],
         ['rooms', 'จำนวนห้อง', data.rooms.length],
         ['occupied', 'ห้องที่มีผู้พักยืนยันแล้ว', data.occupied.length],
         ['vacant', 'ห้องว่างยืนยันแล้ว', data.vacant.length],
-        ['pending', 'ห้องรอยืนยันสถานะ', data.pending.length],
-        ['unavailable', 'ห้องไม่พร้อมใช้งาน', data.unavailable.length],
-        ['employees', 'จำนวนพนักงานต้นทาง', data.employees.length],
-        ['unmatched', 'รอตรวจสอบการจับคู่', data.unmatched.length]
+        ['employees', 'จำนวนพนักงานต้นทาง', data.employees.length]
     ];
 
     summary.innerHTML = items.map(([view, label, value]) =>
@@ -492,13 +577,21 @@ function renderEmployeeSummary() {
     });
 }
 
+// ผ่านตัวกรองบริษัทหรือไม่ — เซตว่าง = ไม่กรอง (แสดงทุกบริษัท)
+function matchesCompanyFilter(company) {
+    if (accommodationState.summaryCompanyFilters.size === 0) return true;
+    const normalized = normalizeCompanyLabel(company) || company;
+    return accommodationState.summaryCompanyFilters.has(normalized);
+}
+
 function getAccommodationSummaryItems() {
     const selectedArea = accommodationState.summaryAreaFilter;
     const visibleSites = accommodationState.sites.filter(site =>
         selectedArea === 'ALL' || site.code === selectedArea
     );
     const unmatched = accommodationState.unmatchedEmployees.filter(employee =>
-        selectedArea === 'ALL' || employee.workArea === selectedArea
+        (selectedArea === 'ALL' || employee.workArea === selectedArea) &&
+        matchesCompanyFilter(employee.company)
     );
 
     const buildings = visibleSites.flatMap(site =>
@@ -514,10 +607,14 @@ function getAccommodationSummaryItems() {
             const rooms = (building.floors || []).flatMap(floor =>
                 (floor.rooms || []).map(room => ({
                     ...room,
+                    // กรองผู้พักในห้องตามตัวกรองบริษัทด้วย เพื่อให้สถานะห้อง (มีผู้พัก/ว่าง)
+                    // สะท้อนเฉพาะบริษัทที่เลือกไว้ ไม่ใช่นับรวมทุกบริษัทเสมอ
+                    occupants: (room.occupants || []).filter(person => matchesCompanyFilter(person.company)),
                     siteCode: site.code,
                     buildingId: building.id,
                     buildingName: building.name,
                     floorName: floor.name || floor.code,
+                    floorId: floor.id,
                     hasUnresolvedOccupancy: areaHasUnmatched
                 }))
             );
@@ -554,7 +651,8 @@ function getAccommodationSummaryItems() {
             !(room.occupants || []).length && !rentable(room)
         ),
         employees: accommodationState.records.filter(employee =>
-            selectedArea === 'ALL' || employee.workArea === selectedArea
+            (selectedArea === 'ALL' || employee.workArea === selectedArea) &&
+            matchesCompanyFilter(employee.company)
         ),
         unmatched
     };
@@ -599,6 +697,23 @@ function renderAccommodationDataPanel() {
             accommodationState.expandedSummaryRecord = accommodationState.expandedSummaryRecord === recordKey ? null : recordKey;
             renderAccommodationDataPanel();
         });
+        // ปุ่มตัวกรองในการ์ดตึก (จำนวนชั้น/ห้องทะเบียน/ห้องมีผู้พัก/ห้องว่าง/พนักงานจับคู่แล้ว/
+        // พนักงานต้นทาง/รอตรวจสอบ) — เลือกได้พร้อมกันหลายปุ่ม ไม่ใช่แบบเลือกได้ทีละปุ่ม
+        // คลิกปุ่มไหนก็เปิดการ์ดให้กางออกด้วยเลย เพื่อให้เห็นผลของตัวกรองทันที
+        if (view === 'buildings') {
+            card.querySelectorAll('[data-filter-key]').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const buildingId = chip.closest('[data-building-id]')?.dataset.buildingId;
+                    const filters = accommodationState.buildingCardFilters.get(buildingId) ||
+                        { floorGroup: true, otherStatus: true, occupied: true, vacant: true, unassigned: true };
+                    const key = chip.dataset.filterKey;
+                    filters[key] = !filters[key];
+                    accommodationState.buildingCardFilters.set(buildingId, filters);
+                    accommodationState.expandedSummaryRecord = recordKey;
+                    renderAccommodationDataPanel();
+                });
+            });
+        }
         grid.appendChild(card);
     });
 }
@@ -613,29 +728,142 @@ function renderAccommodationBuildingCard(item, expanded) {
         employee.workArea === area &&
         normalizeBuildingName(employee.building) === normalizeBuildingName(building.name)
     ).length;
-    const occupied = rooms.filter(room => (room.occupants || []).length > 0).length;
     const rentable = room =>
         !['INACTIVE', 'COMMON_AREA', 'MAINTENANCE', 'RESERVED'].includes(room.status);
-    const vacant = areaUnmatchedCount
-        ? null
-        : rooms.filter(room => rentable(room) && !(room.occupants || []).length).length;
+    const occupiedRooms = rooms.filter(room => (room.occupants || []).length > 0);
+    const vacantRooms = areaUnmatchedCount
+        ? []
+        : rooms.filter(room => rentable(room) && !(room.occupants || []).length);
+    const otherStatusRooms = rooms.filter(room =>
+        !(room.occupants || []).length && !rentable(room)
+    );
+    const floorCount = (building.floors || []).length;
+
+    // ตัวกรอง 7 ปุ่มภายในการ์ดนี้ (เก็บสถานะแยกต่อตึกด้วย building.id) — ค่าเริ่มต้นเปิด
+    // ให้เห็นครบทุกอย่างเหมือนเดิม กดปิดปุ่มไหนก็ซ่อนหมวดนั้นออกจากรายการห้อง/พนักงานด้านล่าง
+    // "ห้องที่มีผู้พักยืนยันแล้ว" กับ "พนักงานจับคู่ห้องแล้ว" ควบคุมชุดข้อมูลเดียวกัน (ห้องที่มี
+    // คนอยู่) ส่วน "พนักงานต้นทาง" กับ "รอตรวจสอบการจับคู่" ก็ควบคุมชุดเดียวกัน (คนที่ยัง
+    // ไม่จับคู่ห้อง) จึงกดปุ่มไหนก็ได้ในคู่นั้นแล้วเห็นผลเหมือนกัน — ตามที่ให้ทำปุ่มครบ 7 ปุ่ม
+    const filters = accommodationState.buildingCardFilters.get(building.id) || {
+        floorGroup: true, otherStatus: true, occupied: true, vacant: true, unassigned: true
+    };
+    accommodationState.buildingCardFilters.set(building.id, filters);
+
+    // เปลี่ยนชื่อป้าย 6 ใน 7 รายการตามที่แจ้ง (จำนวนชั้น คงชื่อเดิม) — แยกป้าย/ตัวเลขออก
+    // จากกันเป็น [key, label, value] เพื่อเรนเดอร์ 2 แบบ: ตอนยังไม่กาง (plain text เน้น
+    // ตัวเลข) กับตอนกางแล้ว (ปุ่มกรอบเดิม คลิกได้) ใช้ป้ายชุดเดียวกันทั้งสองแบบ
+    const statItems = [
+        ['floorGroup', 'จำนวนชั้น', floorCount.toLocaleString()],
+        ['otherStatus', 'จำนวนห้อง', rooms.length.toLocaleString()],
+        ['occupied', 'ห้องที่มีผู้พักอาศัย', occupiedRooms.length.toLocaleString()],
+        ['vacant', 'ห้องว่าง', areaUnmatchedCount ? 'รอตรวจสอบ' : vacantRooms.length.toLocaleString()],
+        ['occupied', 'พนักงานทั้งหมดในตึก', mappedEmployeeCount.toLocaleString()],
+        ['unassigned', 'พนักงานที่ลงข้อมูลไว้', sourceEmployeeCount.toLocaleString()],
+        ['unassigned', 'รอตรวจสอบ', unmatched.length.toLocaleString()]
+    ];
+
+    let bodyHtml = '';
+    if (expanded) {
+        const visibleRooms = [
+            ...(filters.occupied ? occupiedRooms : []),
+            ...(filters.vacant ? vacantRooms : []),
+            ...(filters.otherStatus ? otherStatusRooms : [])
+        ];
+
+        if (filters.floorGroup) {
+            const floorMap = new Map();
+            visibleRooms.forEach(room => {
+                const key = room.floorId || room.floorName || '-';
+                if (!floorMap.has(key)) floorMap.set(key, { name: room.floorName, rooms: [] });
+                floorMap.get(key).rooms.push(room);
+            });
+            const floorSections = Array.from(floorMap.values())
+                .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'th', { numeric: true }));
+            bodyHtml += floorSections.map(section => `
+                <div class="building-floor-section">
+                    <h4>ชั้น ${escapeHtml(section.name || '-')}</h4>
+                    <div class="building-room-grid">${section.rooms.map(renderBuildingCardRoomBox).join('')}</div>
+                </div>
+            `).join('');
+        } else if (visibleRooms.length) {
+            bodyHtml += `<div class="building-room-grid">${visibleRooms.map(renderBuildingCardRoomBox).join('')}</div>`;
+        }
+
+        if (filters.unassigned && unmatched.length) {
+            bodyHtml += renderBuildingCardUnassignedBox(unmatched);
+        }
+
+        if (!bodyHtml) {
+            bodyHtml = '<div class="accommodation-data-empty">ไม่พบข้อมูลตามตัวกรองที่เลือก</div>';
+        }
+    }
+
+    // ยังไม่กาง: ตัวหนังสือธรรมดา ไม่มีกรอบ ไม่คลิกได้ เน้นตัวเลขเป็นหลัก (แยกป้ายกับเลข
+    // ออกจากกันชัดเจน) — กางแล้ว: กลับไปเป็นปุ่มกรอบเดิมที่คลิกกรองได้ตามที่เคยทำไว้
+    const statsHtml = expanded
+        ? statItems.map(([key, label, value]) => `<button type="button" class="building-filter-chip${filters[key] ? ' is-active' : ''}" data-filter-key="${key}">${escapeHtml(label)} ${escapeHtml(value)}</button>`).join('')
+        : statItems.map(([, label, value]) => `<span class="building-stat-preview"><span class="building-stat-preview-label">${escapeHtml(label)}</span><b>${escapeHtml(value)}</b></span>`).join('');
 
     return `
-        <button type="button" class="accommodation-data-card-toggle" data-summary-card aria-expanded="${expanded}">
-            <span class="accommodation-card-icon" aria-hidden="true">⌂</span>
-            <span class="accommodation-card-title"><b>${escapeHtml(building.name)}</b><small>${escapeHtml(area)} · ${rooms.length.toLocaleString()} ห้อง · ${sourceEmployeeCount.toLocaleString()} พนักงานต้นทาง</small></span>
-            ${areaUnmatchedCount ? `<span class="accommodation-card-badge is-warning">พื้นที่รอตรวจ ${areaUnmatchedCount}</span>` : ''}
-            <span class="accommodation-card-state">${expanded ? '⌃' : '⌄'}</span>
-        </button>
-        <div class="accommodation-card-details">
-            <div><span>จำนวนชั้น</span><b>${(building.floors || []).length.toLocaleString()}</b></div>
-            <div><span>จำนวนห้องทะเบียน</span><b>${rooms.length.toLocaleString()}</b></div>
-            <div><span>ห้องมีผู้พักยืนยันแล้ว</span><b>${occupied.toLocaleString()}</b></div>
-            <div><span>ห้องว่างยืนยันแล้ว</span><b>${vacant === null ? 'รอตรวจสอบ' : vacant.toLocaleString()}</b></div>
-            <div><span>พนักงานจับคู่ห้องแล้ว</span><b>${mappedEmployeeCount.toLocaleString()}</b></div>
-            <div><span>พนักงานต้นทาง</span><b>${sourceEmployeeCount.toLocaleString()}</b></div>
-            <div><span>รอตรวจสอบการจับคู่</span><b>${unmatched.length.toLocaleString()}</b></div>
-        </div>`;
+        <div class="accommodation-building-card-head">
+            <button type="button" class="accommodation-data-card-toggle" data-summary-card aria-expanded="${expanded}">
+                <span class="accommodation-card-icon" aria-hidden="true">⌂</span>
+                <span class="accommodation-card-title"><b>${escapeHtml(building.name)}</b><small>${escapeHtml(area)} · ${rooms.length.toLocaleString()} ห้อง · ${sourceEmployeeCount.toLocaleString()} พนักงานที่ลงข้อมูลไว้</small></span>
+                ${areaUnmatchedCount ? `<span class="accommodation-card-badge is-warning">พื้นที่รอตรวจ ${areaUnmatchedCount}</span>` : ''}
+                <span class="accommodation-card-state">${expanded ? '⌃' : '⌄'}</span>
+            </button>
+            <div class="accommodation-building-filters${expanded ? '' : ' is-preview'}" data-building-id="${escapeHtml(building.id)}">
+                ${statsHtml}
+            </div>
+        </div>
+        <div class="accommodation-building-expand">${bodyHtml}</div>`;
+}
+
+function renderBuildingCardRoomBox(room) {
+    const occupants = room.occupants || [];
+    const rows = occupants.length
+        ? occupants.map(person => `
+            <tr>
+                <td>${escapeHtml(person.company || '-')}</td>
+                <td>${escapeHtml(person.employeeName)}</td>
+                <td>${escapeHtml(person.employeeId)}</td>
+            </tr>
+        `).join('')
+        : `<tr><td colspan="3" class="vacant-room-label">ห้องว่าง</td></tr>`;
+
+    return `
+        <article class="building-room-box${occupants.length ? '' : ' is-vacant'}">
+            <div class="building-room-box-head">
+                <span>ห้อง ${escapeHtml(room.name || room.code)} · ชั้น ${escapeHtml(room.floorName || '-')}</span>
+                <span class="accommodation-card-badge">${occupants.length.toLocaleString()}/${Number(room.capacity || 0).toLocaleString()} คน</span>
+            </div>
+            <table class="building-room-box-table">
+                <thead><tr><th>บริษัท</th><th>ชื่อพนักงาน</th><th>รหัสพนักงาน</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </article>`;
+}
+
+function renderBuildingCardUnassignedBox(employees) {
+    const rows = employees.map(employee => `
+        <tr>
+            <td>${escapeHtml(employee.company || '-')}</td>
+            <td>${escapeHtml(employee.employeeName)}</td>
+            <td>${escapeHtml(employee.employeeId)}</td>
+        </tr>
+    `).join('');
+
+    return `
+        <article class="building-room-box building-room-box-unassigned">
+            <div class="building-room-box-head">
+                <span>⚠ ยังไม่จับคู่ห้อง (อยู่ในคิว "รอตรวจสอบห้องพัก")</span>
+                <span class="accommodation-card-badge is-warning">${employees.length.toLocaleString()} คน</span>
+            </div>
+            <table class="building-room-box-table">
+                <thead><tr><th>บริษัท</th><th>ชื่อพนักงาน</th><th>รหัสพนักงาน</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </article>`;
 }
 
 function renderAccommodationRoomCard(room, expanded) {
@@ -747,6 +975,232 @@ function renderWorkAreaNavigation(workAreas) {
     if (!navigation.childElementCount) {
         navigation.innerHTML = '<div class="catalog-empty">ไม่พบอาคารหรือผู้พักที่ตรงกับคำค้น</div>';
     }
+}
+
+// ================== รอตรวจสอบห้องพัก ==================
+// พนักงานที่ไม่มีการจับคู่ห้อง (accommodationState.unmatchedEmployees ที่ backend
+// ส่งมาให้อยู่แล้วจาก /dashboard) มาแสดงเป็นคิวให้ผู้ใช้เลือกตึก/ชั้น/ห้องจากรายการ
+// ที่ลงทะเบียนไว้แล้วเท่านั้น (ห้ามพิมพ์เอง กันสร้างห้อง/ตึกซ้ำซ้อนจากการพิมพ์ผิด)
+// เมื่อบันทึกจะเรียก endpoint เดียวกับการย้ายห้องปกติ (ซึ่งเขียนกลับ Google Sheet
+// เฉพาะ 3 คอลัมน์ตึก/ชั้น/ห้องให้อัตโนมัติอยู่แล้ว)
+
+function renderPendingReviewBadge() {
+    const button = document.getElementById('pendingReviewButton');
+    const countEl = document.getElementById('pendingReviewCount');
+    if (!button || !countEl) return;
+    const count = accommodationState.unmatchedEmployees.length;
+    countEl.textContent = count.toLocaleString();
+    button.hidden = count === 0;
+}
+
+function classifyPendingEmployee(employee) {
+    const site = accommodationState.sites.find(item => item.code === employee.workArea);
+    if (!site) {
+        return { reason: 'ไม่มีพื้นที่ทำงานนี้ในระบบ', matchedSite: null, matchedBuilding: null };
+    }
+    const normalizedTarget = normalizeBuildingName(employee.building);
+    const matchedBuilding = normalizedTarget
+        ? (site.buildings || []).find(building => normalizeBuildingName(building.name) === normalizedTarget)
+        : null;
+    if (!matchedBuilding) {
+        return { reason: 'ไม่พบชื่อตึกนี้ในระบบ', matchedSite: site, matchedBuilding: null };
+    }
+    return { reason: 'พบตึกแล้ว แต่ชั้น/ห้องไม่ตรงกับทะเบียน', matchedSite: site, matchedBuilding };
+}
+
+function openPendingReviewModal() {
+    renderPendingReviewList();
+    showExclusiveOverlay('pendingReviewModal');
+}
+
+function renderPendingReviewList() {
+    const container = document.getElementById('pendingReviewList');
+    if (!container) return;
+    const employees = accommodationState.unmatchedEmployees;
+
+    if (!employees.length) {
+        container.innerHTML = '<div class="pending-review-empty">ไม่มีรายการที่ต้องตรวจสอบแล้ว ✅</div>';
+        return;
+    }
+
+    container.innerHTML = employees.map((employee, index) => {
+        const { reason, matchedSite, matchedBuilding } = classifyPendingEmployee(employee);
+        const siteOptions = accommodationState.sites.map(site =>
+            `<option value="${escapeHtml(site.code)}" ${matchedSite?.code === site.code ? 'selected' : ''}>${escapeHtml(site.code)} — ${escapeHtml(site.name)}</option>`
+        ).join('');
+
+        return `
+            <article class="pending-review-card" data-pending-index="${index}">
+                <div class="pending-review-card-head">
+                    <div>
+                        <b>${escapeHtml(employee.employeeName)}</b>
+                        <small>${escapeHtml(employee.company || '-')} · รหัสพนักงาน ${escapeHtml(employee.employeeId)}</small>
+                    </div>
+                    <span class="pending-review-reason">${escapeHtml(reason)}</span>
+                </div>
+                <p class="pending-review-source">
+                    ข้อมูลที่กรอกไว้ต้นทาง — <b>พื้นที่</b> ${escapeHtml(employee.workArea || '-')}
+                    &nbsp;·&nbsp;<b>ตึก</b> ${escapeHtml(employee.building || '-')}
+                    &nbsp;·&nbsp;<b>ชั้น</b> ${escapeHtml(employee.floor || '-')}
+                    &nbsp;·&nbsp;<b>ห้อง</b> ${escapeHtml(employee.room || '-')}
+                </p>
+                <div class="pending-review-picker">
+                    <label>พื้นที่
+                        <select data-role="site">
+                            <option value="">-- เลือกพื้นที่ --</option>
+                            ${siteOptions}
+                        </select>
+                    </label>
+                    <label>ตึก
+                        <select data-role="building" disabled>
+                            <option value="">-- เลือกตึก --</option>
+                        </select>
+                    </label>
+                    <label>ชั้น
+                        <select data-role="floor" disabled>
+                            <option value="">-- เลือกชั้น --</option>
+                        </select>
+                    </label>
+                    <label>ห้อง
+                        <select data-role="room" disabled>
+                            <option value="">-- เลือกห้อง --</option>
+                        </select>
+                    </label>
+                    <button type="button" class="pending-review-save" data-role="save" disabled>บันทึก</button>
+                </div>
+            </article>
+        `;
+    }).join('');
+
+    container.querySelectorAll('.pending-review-card').forEach(card => {
+        const index = Number(card.dataset.pendingIndex);
+        wirePendingReviewCard(card, employees[index]);
+        const { matchedSite, matchedBuilding } = classifyPendingEmployee(employees[index]);
+        const siteSelect = card.querySelector('[data-role="site"]');
+        if (matchedSite) {
+            populateBuildingOptions(card, matchedSite);
+            if (matchedBuilding) {
+                const buildingSelect = card.querySelector('[data-role="building"]');
+                buildingSelect.value = matchedBuilding.id;
+                populateFloorOptions(card, matchedBuilding);
+            }
+        }
+    });
+}
+
+function populateBuildingOptions(card, site) {
+    const buildingSelect = card.querySelector('[data-role="building"]');
+    const buildings = (site?.buildings || []).slice().sort((a, b) => a.name.localeCompare(b.name, 'th', { numeric: true }));
+    buildingSelect.innerHTML = '<option value="">-- เลือกตึก --</option>' +
+        buildings.map(building => `<option value="${escapeHtml(building.id)}">${escapeHtml(building.name)}</option>`).join('');
+    buildingSelect.disabled = buildings.length === 0;
+    resetPendingSelect(card, 'floor', 'เลือกชั้น');
+    resetPendingSelect(card, 'room', 'เลือกห้อง');
+    updatePendingSaveState(card);
+}
+
+function populateFloorOptions(card, building) {
+    const floorSelect = card.querySelector('[data-role="floor"]');
+    const floors = (building?.floors || []).slice().sort((a, b) =>
+        (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || (a.name || a.code || '').localeCompare(b.name || b.code || '', 'th', { numeric: true })
+    );
+    floorSelect.innerHTML = '<option value="">-- เลือกชั้น --</option>' +
+        floors.map(floor => `<option value="${escapeHtml(floor.id)}">${escapeHtml(floor.name || floor.code)}</option>`).join('');
+    floorSelect.disabled = floors.length === 0;
+    resetPendingSelect(card, 'room', 'เลือกห้อง');
+    updatePendingSaveState(card);
+}
+
+function populateRoomOptions(card, floor) {
+    const roomSelect = card.querySelector('[data-role="room"]');
+    const rooms = (floor?.rooms || []).slice().sort((a, b) => (a.name || a.code || '').localeCompare(b.name || b.code || '', 'th', { numeric: true }));
+    roomSelect.innerHTML = '<option value="">-- เลือกห้อง --</option>' +
+        rooms.map(room => {
+            const occupied = (room.occupants || []).length;
+            return `<option value="${escapeHtml(room.id)}">${escapeHtml(room.name || room.code)} (${occupied}/${room.capacity} คน)</option>`;
+        }).join('');
+    roomSelect.disabled = rooms.length === 0;
+    updatePendingSaveState(card);
+}
+
+function resetPendingSelect(card, role, placeholderLabel) {
+    const select = card.querySelector(`[data-role="${role}"]`);
+    select.innerHTML = `<option value="">-- ${escapeHtml(placeholderLabel)} --</option>`;
+    select.disabled = true;
+}
+
+function updatePendingSaveState(card) {
+    const roomSelect = card.querySelector('[data-role="room"]');
+    const saveButton = card.querySelector('[data-role="save"]');
+    saveButton.disabled = !roomSelect.value;
+}
+
+function wirePendingReviewCard(card, employee) {
+    const siteSelect = card.querySelector('[data-role="site"]');
+    const buildingSelect = card.querySelector('[data-role="building"]');
+    const floorSelect = card.querySelector('[data-role="floor"]');
+    const roomSelect = card.querySelector('[data-role="room"]');
+    const saveButton = card.querySelector('[data-role="save"]');
+
+    siteSelect.addEventListener('change', () => {
+        const site = accommodationState.sites.find(item => item.code === siteSelect.value);
+        if (site) populateBuildingOptions(card, site);
+        else {
+            resetPendingSelect(card, 'building', 'เลือกตึก');
+            resetPendingSelect(card, 'floor', 'เลือกชั้น');
+            resetPendingSelect(card, 'room', 'เลือกห้อง');
+            updatePendingSaveState(card);
+        }
+    });
+
+    buildingSelect.addEventListener('change', () => {
+        const site = accommodationState.sites.find(item => item.code === siteSelect.value);
+        const building = (site?.buildings || []).find(item => item.id === buildingSelect.value);
+        if (building) populateFloorOptions(card, building);
+        else {
+            resetPendingSelect(card, 'floor', 'เลือกชั้น');
+            resetPendingSelect(card, 'room', 'เลือกห้อง');
+            updatePendingSaveState(card);
+        }
+    });
+
+    floorSelect.addEventListener('change', () => {
+        const site = accommodationState.sites.find(item => item.code === siteSelect.value);
+        const building = (site?.buildings || []).find(item => item.id === buildingSelect.value);
+        const floor = (building?.floors || []).find(item => item.id === floorSelect.value);
+        if (floor) populateRoomOptions(card, floor);
+        else {
+            resetPendingSelect(card, 'room', 'เลือกห้อง');
+            updatePendingSaveState(card);
+        }
+    });
+
+    roomSelect.addEventListener('change', () => updatePendingSaveState(card));
+
+    saveButton.addEventListener('click', async () => {
+        if (!roomSelect.value) return;
+        saveButton.disabled = true;
+        saveButton.textContent = 'กำลังบันทึก...';
+        try {
+            const result = await accommodationRequest('/employee-movements', {
+                method: 'POST',
+                body: JSON.stringify({
+                    employeeId: employee.employeeId,
+                    toRoomId: roomSelect.value,
+                    effectiveDate: new Date().toISOString().slice(0, 10),
+                    reason: 'ยืนยันห้องพักจากคิวรอตรวจสอบห้องพัก'
+                })
+            });
+            if (result.movement?.sheetSyncWarning) {
+                alert(result.movement.sheetSyncWarning);
+            }
+            await loadAccommodationData({ silent: true });
+        } catch (error) {
+            alert(error.message);
+            saveButton.disabled = false;
+            saveButton.textContent = 'บันทึก';
+        }
+    });
 }
 
 function normalizeBuildingName(value) {
@@ -1298,7 +1752,15 @@ function openMovementForm(occupant, currentRoom) {
         <label>วันที่มีผล<input name="effectiveDate" type="date" required value="${new Date().toISOString().slice(0,10)}"></label>
         <label class="full">เหตุผลการย้าย<textarea name="reason" required maxlength="4000"></textarea></label>
         <div class="form-actions"><button type="button" class="button button-secondary" onclick="closeManagementModal()">ยกเลิก</button><button type="submit" class="button button-primary">บันทึกการย้าย</button></div>
-    `, data => accommodationRequest('/employee-movements', { method: 'POST', body: JSON.stringify({ ...data, employeeId: occupant.employeeId }) }));
+    `, async data => {
+        const result = await accommodationRequest('/employee-movements', { method: 'POST', body: JSON.stringify({ ...data, employeeId: occupant.employeeId }) });
+        // ย้ายห้องในระบบสำเร็จเสมอถ้ามาถึงจุดนี้ (ฐานข้อมูลคือแหล่งข้อมูลหลัก) แต่ถ้าเขียน
+        // กลับไปที่ Google Sheet ไม่สำเร็จ (เช่น หาแถวพนักงานไม่เจอ) จะมี sheetSyncWarning
+        // ติดมาด้วย แจ้งเตือนแยกไว้ให้เห็นชัดเจน โดยไม่ทำให้การย้ายห้องดูเหมือนล้มเหลว
+        if (result.movement?.sheetSyncWarning) {
+            window.setTimeout(() => alert(result.movement.sheetSyncWarning), 300);
+        }
+    });
 }
 
 function openMaintenanceForm(room) {
