@@ -601,12 +601,50 @@ function closeSecondarySidebar() {
     elements.selectedServiceDetail.hidden = true;
 }
 
+// เฉพาะจอมือถือ (ตรงกับ breakpoint ที่สลับเป็นเมนูล้นจอเต็มหน้าใน portal.css) — งานที่
+// เลือกได้จริง (ไม่ใช่ planned/เตรียมระบบ และมีสิทธิ์เข้าถึง) ไม่นับรายการที่กดไม่ได้จริง
+function getAccessibleTasks(service) {
+    return service.tasks.filter(
+        task => !task.planned && canAccessPage(task.page)
+    );
+}
+
+function isMobileNavigationViewport() {
+    return window.matchMedia('(max-width: 820px)').matches;
+}
+
+// มือถือ: ถ้ากล่องส่วนงานนี้มีงานที่กดได้จริงแค่รายการเดียว ไม่ต้องให้ผ่านหน้าเมนูย่อยที่มี
+// ตัวเลือกเดียวให้กดซ้ำอีกครั้ง — เปิดเข้าไปที่งานนั้นให้เลยในคลิกเดียว (เดสก์ท็อปยังคง
+// พฤติกรรมเดิม เพราะเมนูย่อยฝั่งนั้นเป็นแผงข้างที่เห็นตลอดอยู่แล้ว ไม่ใช่หน้าล้นจอ) ใช้ร่วมกัน
+// ทั้งทางเข้าจากการ์ดหน้าแรกและเมนูแฮมเบอร์เกอร์ (ระดับ 1) — คืนค่า true ถ้าจัดการให้แล้ว
+function tryAutoOpenOnlyAccessibleTask(service) {
+    if (!isMobileNavigationViewport()) {
+        return false;
+    }
+
+    const accessibleTasks = getAccessibleTasks(service);
+    if (accessibleTasks.length !== 1) {
+        return false;
+    }
+
+    const onlyTask = accessibleTasks[0];
+    const taskIndex = service.tasks.indexOf(onlyTask);
+    openSecondarySidebar(service.id);
+    openTask(service, onlyTask, taskIndex);
+    return true;
+}
+
 function selectService(serviceId) {
     const service = services.find(
         item => item.id === serviceId
     );
 
     if (!service) {
+        return;
+    }
+
+    if (tryAutoOpenOnlyAccessibleTask(service)) {
+        renderServiceCards();
         return;
     }
 
@@ -957,6 +995,14 @@ document
 
             if (isAlreadyOpen) {
                 closeSecondarySidebar();
+                return;
+            }
+
+            // ทางเข้าจากเมนูแฮมเบอร์เกอร์ (ระดับ 1) เป็นอีกจุดที่ไม่ได้ผ่าน selectService()
+            // เรียกตัวช่วยเดียวกันซ้ำอีกจุดด้วย เพื่อให้พฤติกรรมตรงกันไม่ว่าจะเข้าทางไหน
+            // (การ์ดหน้าแรก หรือเมนูแฮมเบอร์เกอร์)
+            const service = services.find(item => item.id === serviceId);
+            if (service && tryAutoOpenOnlyAccessibleTask(service)) {
                 return;
             }
 
