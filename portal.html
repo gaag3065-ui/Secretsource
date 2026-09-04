@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>General Affairs Workspace</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Outfit:wght@400;500;600&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="portal.css?v=20260904-brand-09">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/icon-192.png">
+    <meta name="theme-color" content="#eef1f6">
+</head>
+
+<body>
+    <!-- SVG icons ใช้ร่วมกันทั้งหน้า -->
+    <svg class="svg-library" aria-hidden="true">
+        <symbol id="icon-home" viewBox="0 0 20 20">
+            <path d="M7.94 2.83a3.62 3.62 0 0 1 4.12 0l4.09 2.84a3.62 3.62 0 0 1 1.56 2.97v5.39a3.62 3.62 0 0 1-3.62 3.62H5.91a3.62 3.62 0 0 1-3.62-3.62V8.64a3.62 3.62 0 0 1 1.56-2.97l4.09-2.84Z"/>
+            <path d="M7.4 14h5.2"/>
+        </symbol>
+
+        <symbol id="icon-shield" viewBox="0 0 20 20">
+            <path d="M10 2.1 4.3 4.4v5c0 3.9 2.4 6.9 5.7 8.5 3.3-1.6 5.7-4.6 5.7-8.5v-5L10 2.1Z"/>
+            <path d="m7.3 10 1.8 1.8 3.8-4"/>
+        </symbol>
+
+        <symbol id="icon-building" viewBox="0 0 20 20">
+            <path d="M4 18V3h9v15M13 8h4v10M2 18h16"/>
+            <path d="M7 6h1M10 6h1M7 9h1M10 9h1M7 12h1M10 12h1"/>
+        </symbol>
+
+        <symbol id="icon-box" viewBox="0 0 20 20">
+            <path d="m3 6 7-3.5L17 6l-7 3.5L3 6Z"/>
+            <path d="m3 6 7 3.5L17 6v8.5L10 18l-7-3.5V6ZM10 9.5V18"/>
+        </symbol>
+
+        <symbol id="icon-health" viewBox="0 0 20 20">
+            <path d="M5 7v6M2.5 8.5v3M15 7v6M17.5 8.5v3M5 10h10"/>
+        </symbol>
+
+        <symbol id="icon-bus" viewBox="0 0 20 20">
+            <path d="M4 14.5h12V6.8A2.8 2.8 0 0 0 13.2 4H6.8A2.8 2.8 0 0 0 4 6.8v7.7Z"/>
+            <path d="M4 10h12M6.5 14.5v2M13.5 14.5v2"/>
+            <circle cx="6.5" cy="13" r=".7"/>
+            <circle cx="13.5" cy="13" r=".7"/>
+        </symbol>
+
+        <symbol id="icon-message" viewBox="0 0 20 20">
+            <path d="M3 4.5h14v9H8l-4.5 3v-3H3v-9Z"/>
+            <path d="M6 8h8M6 10.5h5"/>
+        </symbol>
+
+        <symbol id="icon-search" viewBox="0 0 20 20">
+            <circle cx="8.8" cy="8.8" r="5.8"/>
+            <path d="m13.1 13.1 4 4"/>
+        </symbol>
+
+        <symbol id="icon-plus" viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="7"/>
+            <path d="M10 6.5v7M6.5 10h7"/>
+        </symbol>
+
+        <symbol id="icon-arrow" viewBox="0 0 20 20">
+            <path d="m7.5 4.5 5.5 5.5-5.5 5.5"/>
+        </symbol>
+
+        <symbol id="icon-menu" viewBox="0 0 20 20">
+            <path d="M3 5h14M3 10h14M3 15h14"/>
+        </symbol>
+
+        <symbol id="icon-logout" viewBox="0 0 20 20">
+            <path d="M8 3H3.5v14H8M12 6l4 4-4 4M7 10h9"/>
+        </symbol>
+    </svg>
+
+    <header class="app-topbar">
+        <div class="brand">
+            <span class="brand-logo" aria-hidden="true">
+                <img src="icons/icon-192.png" alt="">
+            </span>
+            <span class="brand-name">GENERAL AFFAIR EAST (Ins.)</span>
+        </div>
+
+        <div class="topbar-spacer"></div>
+
+        <div class="topbar-actions">
+            <span class="system-status">
+                <span class="status-dot"></span>
+                ระบบพร้อมใช้งาน
+            </span>
+
+            <button
+                id="accommodationReportTopbarButton"
+                class="topbar-report-button"
+                type="button"
+                hidden
+            >
+                สร้างรายงาน
+            </button>
+
+            <button
+                id="mobileMenuButton"
+                class="icon-button mobile-menu-button"
+                type="button"
+                aria-label="เปิดเมนู"
+            >
+                <svg><use href="#icon-menu"></use></svg>
+            </button>
+
+            <button id="logoutButton" class="logout-topbar" type="button">
+                ออกจากระบบ
+            </button>
+        </div>
+    </header>
+
+    <div id="sidebarScrim" class="sidebar-scrim"></div>
+
+    <div class="app-body">
+<!-- Level 1: เมนูระบบหลัก -->
+<aside
+    class="first-sidebar"
+    aria-label="ระบบงานหลัก"
+>
+    <nav class="first-navigation">
+        <p class="sidebar-caption">ระบบงาน</p>
+
+        <button
+            class="first-menu-item"
+            type="button"
+            data-service-id="internal-support"
+            aria-expanded="false"
+        >
+            <svg aria-hidden="true">
+                <use href="#icon-message"></use>
+            </svg>
+            <span>สนับสนุนกิจการภายใน</span>
+        </button>
+
+        <button
+            class="first-menu-item"
+            type="button"
+            data-service-id="insurance"
+            aria-expanded="false"
+        >
+            <svg aria-hidden="true">
+                <use href="#icon-shield"></use>
+            </svg>
+            <span>งานประกัน</span>
+        </button>
+
+        <button
+            class="first-menu-item"
+            type="button"
+            data-service-id="accommodation"
+            aria-expanded="false"
+        >
+            <svg aria-hidden="true">
+                <use href="#icon-building"></use>
+            </svg>
+            <span>ห้องพักพนักงาน</span>
+        </button>
+
+        <button
+            class="first-menu-item"
+            type="button"
+            data-service-id="assets"
+            aria-expanded="false"
+        >
+            <svg aria-hidden="true">
+                <use href="#icon-box"></use>
+            </svg>
+            <span>ทรัพย์สิน</span>
+        </button>
+
+        <button
+            class="first-menu-item"
+            type="button"
+            data-service-id="medication"
+            aria-expanded="false"
+        >
+            <svg aria-hidden="true">
+                <use href="#icon-health"></use>
+            </svg>
+            <span>จัดการยา</span>
+        </button>
+
+        <button
+            class="first-menu-item"
+            type="button"
+            data-service-id="fitness"
+            aria-expanded="false"
+        >
+            <svg aria-hidden="true">
+                <use href="#icon-health"></use>
+            </svg>
+            <span>ฟิตเนส</span>
+        </button>
+
+        <button
+            class="first-menu-item"
+            type="button"
+            data-service-id="transport"
+            aria-expanded="false"
+        >
+            <svg aria-hidden="true">
+                <use href="#icon-bus"></use>
+            </svg>
+            <span>รถรับส่งพนักงาน</span>
+        </button>
+    </nav>
+
+            <footer class="sidebar-account">
+                <span id="accountAvatar" class="account-avatar">GA</span>
+
+                <span class="account-information">
+                    <strong id="accountName">กำลังโหลด...</strong>
+                    <small id="accountRole">ผู้ใช้งาน</small>
+                </span>
+
+                <button id="sidebarLogoutButton" class="account-logout" type="button" aria-label="ออกจากระบบ">
+                    <svg><use href="#icon-logout"></use></svg>
+                </button>
+            </footer>
+        </aside>
+
+<!-- Level 2: Dynamic Secondary Sidebar -->
+<aside
+    id="secondarySidebar"
+    class="second-sidebar"
+    aria-label="เมนูย่อยของระบบ"
+    aria-hidden="true"
+>
+    <div class="second-sidebar-content">
+        <header class="second-heading-row">
+            <span id="secondCategoryTitle">
+                เลือกระบบงาน
+            </span>
+        </header>
+
+        <nav
+            id="selectedServiceDetail"
+            class="selected-service-detail"
+            aria-label="รายการเมนูย่อย"
+            hidden
+        ></nav>
+    </div>
+</aside>
+
+        <!-- คอลัมน์ที่ 3 -->
+        <main class="main-content">
+            <section id="catalogView" class="catalog-view">
+                <div class="catalog-header">
+                    <div>
+                        <h1>ศูนย์รวมงาน</h1>
+                        <p>เลือกส่วนงานและเริ่มทำงานทั้งหมดได้จากหน้าเดียว</p>
+                    </div>
+
+                    <label class="search-field">
+                        <svg><use href="#icon-search"></use></svg>
+                        <input
+                            id="serviceSearch"
+                            type="search"
+                            placeholder="ค้นหาส่วนงาน"
+                            autocomplete="off"
+                        >
+                    </label>
+                </div>
+
+                <div id="categoryFilters" class="category-filters">
+                    <button class="filter-button is-active" type="button" data-category="all">ทั้งหมด</button>
+                    <button class="filter-button" type="button" data-category="insurance">ประกัน</button>
+                    <button class="filter-button" type="button" data-category="people">บุคลากร</button>
+                    <button class="filter-button" type="button" data-category="assets">ทรัพย์สิน</button>
+                    <button class="filter-button" type="button" data-category="wellbeing">สุขภาวะ</button>
+                    <button class="filter-button" type="button" data-category="transport">การเดินทาง</button>
+                </div>
+
+                <div id="serviceGrid" class="service-grid"></div>
+
+                <div id="emptyState" class="empty-state" hidden>
+                    <svg><use href="#icon-search"></use></svg>
+                    <h2>ไม่พบส่วนงาน</h2>
+                    <p>ลองเปลี่ยนคำค้นหาหรือเลือกหมวดงานอื่น</p>
+                </div>
+                <aside class="catalog-conversation-rail" aria-label="ห้องสนทนา LINE OA">
+                    <iframe id="catalogConversationFrame" src="monitoring.html?view=conversations&v=20260901-4" title="รายการห้องสนทนา LINE OA"></iframe>
+                </aside>
+            </section>
+
+            <section id="workspaceView" class="workspace-view" hidden>
+                <header class="workspace-header">
+                    <button id="workspaceBackButton" class="workspace-back" type="button">
+                        ← กลับ
+                    </button>
+
+                    <span class="workspace-heading">
+                        <strong id="workspaceTitle">พื้นที่ทำงาน</strong>
+                        <small id="workspaceSubtitle">General Affairs</small>
+                    </span>
+
+                    <a id="workspaceExternalLink" href="#" target="_blank" rel="noopener">
+                        เปิดเต็มหน้า ↗
+                    </a>
+                </header>
+
+                <div class="workspace-frame-container">
+                    <div id="workspaceLoading" class="workspace-loading">
+                        <span></span>
+                        กำลังเปิดพื้นที่ทำงาน...
+                    </div>
+
+                    <iframe
+                        id="workspaceFrame"
+                        title="พื้นที่ทำงาน General Affairs"
+                    ></iframe>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="config.js?v=20260902-mobile-auth-01"></script>
+    <script src="portal.js?v=20260904-accommodation-menu-02"></script>
+    <script src="pwa.js"></script>
+</body>
+</html>

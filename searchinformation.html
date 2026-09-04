@@ -1,0 +1,32 @@
+
+<div class="employee-search-content">
+    <div class="employee-search-sticky-header">
+        <div class="employee-sidebar-brand panel-dark-header">
+            <span>EMPLOYEE &amp; CASE LOOKUP</span>
+            <strong class="insurance-box-title">ค้นหาข้อมูล</strong>
+        </div>
+        <div class="employee-search-heading insurance-box-heading">
+            <p>ค้นหาพนักงานเพื่อเปิดเคสใหม่ด้วยชื่อ รหัสพนักงาน หรือรหัสประกัน</p>
+        </div>
+
+        <div class="search-tool employee-search-tool">
+            <label for="keywordInput">ชื่อหรือรหัสพนักงาน</label>
+            <div class="form-group search-tool-row">
+                <input
+                    type="search"
+                    id="keywordInput"
+                    autocomplete="off"
+                    placeholder="ชื่อเล่น ชื่อจริง รหัสพนักงาน หรือรหัสประกัน"
+                >
+                <button type="button" id="searchBtn" class="btn-search">ค้นหา</button>
+            </div>
+        </div>
+
+        <div class="employee-search-feedback">
+            <div id="message" role="status" aria-live="polite"></div>
+            <div id="employeeSearchMeta" aria-live="polite"></div>
+        </div>
+    </div>
+    <div id="resultsList" role="listbox" aria-label="ผลการค้นหา"></div>
+</div>
+

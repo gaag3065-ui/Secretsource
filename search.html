@@ -1,0 +1,519 @@
+
+<!DOCTYPE html>
+<html lang="th">
+
+
+<head>
+ <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css?v=20260813-01">
+ <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
+
+
+
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบริหารจัดการพนักงานและบันทึกข้อมูลการเข้ารักษา</title>
+  <link rel="stylesheet" href="style.css?v=20260831-insurance-25">
+  <link rel="stylesheet" href="responsive.css?v=20260902-mobile-layout-02">
+      <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <meta name="theme-color" content="#ffffff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="GA East">
+</head>
+<body>
+<h1 class="visually-hidden">จัดการงานประกัน</h1>
+
+<!-- =============================================================================================================================== -->
+<!-- =================================== 📦 [ส่วนท้าย: สิ้นสุดระบบรวมโครงสร้างหลักหน้าจอ] =============================================== -->
+<!-- =============================================================================================================================== -->
+
+
+
+<div class="insurance-workspace-layout">
+    <div
+        id="open-treatment-view"
+        class="insurance-view insurance-open-treatment-view"
+    >
+        <section class="open-case-combined-card">
+            <aside
+                id="search-box-placeholder"
+                class="open-case-search-section"
+            ></aside>
+
+            <main class="open-case-form-section">
+                <div
+                    id="treatment-box-placeholder"
+                    class="treatment-inline-panel"
+                ></div>
+            </main>
+        </section>
+    </div>
+
+    <div
+        id="continuity-view"
+        class="insurance-view insurance-continuity-view"
+        hidden
+    >
+        <div
+            id="continuity-care-placeholder"
+            class="continuity-placeholder"
+        ></div>
+    </div>
+
+    <div
+        id="history-view"
+        class="insurance-view insurance-history-view"
+        hidden
+    >
+        <div
+            id="table-box-placeholder"
+            class="history-main-panel"
+        ></div>
+    </div>
+</div>
+
+
+
+
+<script src="version.js?v=20260831-insurance-25"></script>
+<!-- ฟังก์ชันกลางที่ฝั่งขวาและฝั่งล่างใช้ร่วมกัน -->
+<script src="ui-utils.js?v=20260829-insurance-11"></script>
+
+<script>
+const APP_VERSION = window.APP_VERSION;
+
+//function loadScript(filename) {
+//#region
+function loadScript(filename) {
+    return new Promise((resolve, reject) => {
+
+        const script =
+            document.createElement('script');
+
+        script.src =
+            `${filename}?v=${APP_VERSION}`;
+
+        script.onload = resolve;
+
+        script.onerror = () =>
+            reject(
+                new Error(
+                    `โหลด ${filename} ไม่สำเร็จ`
+                )
+            );
+
+        document.body.appendChild(script);
+    });
+}
+//#endregion
+
+//async function loadComponent(placeholderId, filename) {
+//#region
+async function loadComponent(placeholderId, filename) {
+    try {
+        const response = await fetch(
+            `${filename}?v=${APP_VERSION}`,
+            { cache: 'no-store' }
+        );
+
+        if (!response.ok) {
+            throw new Error(`โหลดไฟล์ ${filename} ไม่สำเร็จ`);
+        }
+
+        const htmlContent = await response.text();
+
+        document.getElementById(placeholderId).innerHTML =
+            htmlContent;
+
+    } catch (error) {
+
+        console.error(
+            `🚨 โหลด ${filename} ไม่สำเร็จ:`,
+            error
+        );
+    }
+}
+//#endregion
+
+function applyInsuranceView() {
+    const requestedTarget =
+        window.location.hash.replace('#', '');
+
+    const showContinuity =
+        requestedTarget === 'continuity-care-placeholder';
+    const showHistory =
+        requestedTarget === 'table-box-placeholder';
+
+    const openTreatmentView =
+        document.getElementById('open-treatment-view');
+    const historyView =
+        document.getElementById('history-view');
+    const continuityView =
+        document.getElementById('continuity-view');
+    const searchBox =
+        document.getElementById('search-box-placeholder');
+    const openCaseCard =
+        document.querySelector('.open-case-combined-card');
+    const openCaseForm =
+        document.querySelector('.open-case-form-section');
+    /* Keep employee lookup exclusively in the open-case workflow. */
+    if (searchBox) {
+        if (openCaseCard && openCaseForm) {
+            openCaseCard.insertBefore(searchBox, openCaseForm);
+        }
+    }
+
+    if (openTreatmentView) {
+        openTreatmentView.hidden = showHistory || showContinuity;
+    }
+
+    if (historyView) {
+        historyView.hidden = !showHistory;
+    }
+
+    if (continuityView) {
+        continuityView.hidden = !showContinuity;
+    }
+
+    document.body.classList.toggle(
+        'insurance-history-mode',
+        showHistory
+    );
+
+    document.body.classList.toggle(
+        'insurance-continuity-mode',
+        showContinuity
+    );
+
+    document.body.classList.toggle(
+        'insurance-open-treatment-mode',
+        !showHistory && !showContinuity
+    );
+}
+
+window.addEventListener(
+    'hashchange',
+    applyInsuranceView
+);
+
+//document.addEventListener("DOMContentLoaded", async () => {
+//#region
+document.addEventListener("DOMContentLoaded", async () => {
+
+    try {
+
+        // =====================================================
+        // 1. โหลด Config ก่อนทุกอย่าง
+        // =====================================================
+        await loadScript('config.js');
+
+        if (!window.APP_CONFIG) {
+            throw new Error('ไม่พบ APP_CONFIG หลังโหลด config.js');
+        }
+
+
+        const sessionResponse = await window.authFetch(
+            `${window.APP_CONFIG.API_BASE_URL}/api/session`,
+            {
+                method: 'GET',
+                cache: 'no-store'
+            }
+        );
+
+        if (!sessionResponse.ok) {
+            throw new Error('ไม่สามารถตรวจสอบสถานะการเข้าสู่ระบบได้');
+        }
+
+        const sessionData = await sessionResponse.json();
+
+        if (!sessionData.success || !sessionData.user) {
+            sessionStorage.clear();
+            window.location.replace('index.html');
+            return;
+        }
+
+        if (sessionData.csrfToken) {
+            sessionStorage.setItem(
+                'csrfToken',
+                sessionData.csrfToken
+            );
+        }
+
+            window.USER_PERMISSIONS =
+                sessionData.permissions || {};
+
+            const isAdmin =
+                String(sessionData.user.role || '')
+                    .trim()
+                    .toUpperCase() === 'ADMIN';
+
+            window.hasPermission = function (permissionKey) {
+                return (
+                    isAdmin ||
+                    window.USER_PERMISSIONS[permissionKey] === true
+                );
+            };
+
+            function applyPermissionVisibility(root = document) {
+                root
+                    .querySelectorAll('[data-permission]')
+                    .forEach(element => {
+                        const permissionKey =
+                            element.dataset.permission;
+
+                        element.hidden =
+                            !window.hasPermission(permissionKey);
+                    });
+            }
+
+// =========== [โหลดเฉพาะส่วนที่ได้รับอนุญาต] ========== //
+            async function loadPermittedComponent(
+                permissionKey,
+                placeholderId,
+                filename
+            ) {
+                if (window.hasPermission(permissionKey)) {
+                    await loadComponent(placeholderId, filename);
+                    return true;
+                }
+
+                document.getElementById(placeholderId).innerHTML = `
+                    <div style="
+                        padding: 24px;
+                        border: 1px solid #d1d5db;
+                        border-radius: 6px;
+                        background: #f9fafb;
+                        color: #6b7280;
+                        text-align: center;
+                    ">
+                        บัญชีนี้ไม่มีสิทธิ์เข้าถึงส่วนนี้
+                    </div>
+                `;
+
+                return false;
+            }
+
+            sessionStorage.setItem(
+                'loggedInAdminName',
+                sessionData.user.name || sessionData.user.username
+            );
+
+            console.log(
+                `⚙️ Config พร้อมใช้งาน | Version: ${APP_VERSION}`
+            );
+
+            const canSearch = await loadPermittedComponent(
+                'SearchData',
+                'search-box-placeholder',
+                'searchinformation.html'
+            );
+
+            const canCreate = await loadPermittedComponent(
+                'CreateTreatment',
+                'treatment-box-placeholder',
+                'recordtreatment.html'
+            );
+
+            const canViewHistory = await loadPermittedComponent(
+                'ViewHistory',
+                'table-box-placeholder',
+                'insuranceclaimhistory.html'
+            );
+
+            const canUpdateTreatment = await loadPermittedComponent(
+                'EditTreatment',
+                'continuity-care-placeholder',
+                'continuitycare.html'
+            );
+
+            applyInsuranceView();
+
+            console.log(
+                "🎮 โครงสร้าง HTML ประกอบร่างรวมศูนย์สำเร็จ!"
+            );
+
+
+        // =====================================================
+        // 3. เปิดใช้งาน Flatpickr
+        // =====================================================
+        flatpickr("#manualDate", {
+            dateFormat: "d/m/Y",
+            defaultDate: "today",
+            allowInput: true
+        });
+
+        flatpickr("#manualTime", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true,
+            defaultDate: new Date(),
+            allowInput: true
+        });
+
+        flatpickr("#mdManualDate", {
+            dateFormat: "d/m/Y",
+            allowInput: true
+        });
+
+        flatpickr("#mdManualTime", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true,
+            allowInput: true
+        });
+
+        flatpickr("#ocManualDate", {
+            dateFormat: "d/m/Y",
+            allowInput: true
+        });
+
+        flatpickr("#ocManualTime", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true,
+            allowInput: true
+        });
+
+            const mainLogoutButton =
+                    document.getElementById(
+                        'mainLogoutButton'
+                    );
+
+                    const backToPortalButton =
+                        document.getElementById('backToPortalButton');
+
+                    backToPortalButton?.addEventListener('click', () => {
+                        window.location.href = 'portal.html';
+                    });
+
+                if (mainLogoutButton) {
+                    mainLogoutButton.addEventListener(
+                    'click',
+                    async () => {
+                            const confirmed = confirm(
+                                'คุณต้องการออกจากระบบใช่หรือไม่?'
+                            );
+
+                            if (!confirmed) return;
+
+                            await window.performSecureLogout();
+                        }
+                    );
+                }
+        // =====================================================
+        // 4. โหลด Script ฝั่งซ้าย
+        // =====================================================
+            if (canSearch) {
+                await loadScript('searchinformation.js');
+
+                if (typeof initSearchBoxEvents === 'function') {
+                    initSearchBoxEvents();
+                }
+            }
+
+
+        // =====================================================
+        // 5. โหลด Script ฝั่งขวา
+        // =====================================================
+                if (canCreate) {
+                await loadScript('recordtreatment.js');
+
+                if (typeof initHospitalEvents === 'function') {
+                    initHospitalEvents();
+                }
+
+                if (typeof setThaiDateTime === 'function') {
+                    setThaiDateTime();
+                }
+
+                if (typeof fetchNextCaseId === 'function') {
+                    fetchNextCaseId();
+                }
+            }
+
+
+        // =====================================================
+        // 6. โหลด Script ฝั่งล่าง
+        // =====================================================
+            if (canViewHistory) {
+                await loadScript('insuranceclaimhistory.js');
+
+                if (typeof initHistoryModalEvents === 'function') {
+                    initHistoryModalEvents();
+                }
+
+                if (typeof applyPermissionVisibility === 'function') {
+                    applyPermissionVisibility();
+                }
+
+                if (typeof initHistoryFilterDates === 'function') {
+                    initHistoryFilterDates();
+                }
+
+                if (typeof initAdvancedHistoryFilterEvents === 'function') {
+                    initAdvancedHistoryFilterEvents();
+                }
+
+                if (
+                    typeof initHistoryFilterApplyEvent
+                    === 'function'
+                ) {
+                    initHistoryFilterApplyEvent();
+                }
+
+                if (
+                    typeof initHistoryReportEvent
+                    === 'function'
+                ) {
+                    initHistoryReportEvent();
+                }
+
+                if (
+                    typeof initHistoryTableZoom
+                    === 'function'
+                ) {
+                    initHistoryTableZoom();
+                }
+
+
+            }
+
+            if (canUpdateTreatment && canViewHistory) {
+                await loadScript('continuitycare.js');
+
+                if (typeof refreshContinuitySummary === 'function') {
+                    await refreshContinuitySummary();
+                }
+            }
+
+
+        console.log(
+            `✅ Secretsource Frontend พร้อมใช้งาน | Version ${APP_VERSION}`
+        );
+
+    } catch (error) {
+
+        console.error(
+            "🚨 ระบบเริ่มต้นหน้าเว็บล้มเหลว:",
+            error
+        );
+ 
+        alert(
+            `ระบบโหลดหน้าเว็บไม่สมบูรณ์\n${error.message}`
+        );
+    }
+});
+//#endregion
+</script>
+<script src="pwa.js"></script>
+</body>
+</html>

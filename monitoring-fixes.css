@@ -1,0 +1,7 @@
+.oa-panel { overflow: hidden; }
+.channel-tabs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; padding:0 14px 10px; overflow:visible; }
+.channel-tab { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.clear-unread-button { margin:0 14px 10px; padding:7px 10px; border:1px solid #bfeacc; border-radius:9px; color:#047d3a; background:#f2fff7; font-size:11px; font-weight:700; cursor:pointer; }
+.clear-unread-button:hover { background:#e3f8eb; }
+.conversation-list { flex:1; min-height:0; overflow-x:hidden; overflow-y:auto; border-top:1px solid #edf1f3; }
+@media(max-width:720px){.channel-tabs{grid-template-columns:1fr 1fr}}

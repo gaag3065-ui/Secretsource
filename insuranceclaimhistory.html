@@ -1,0 +1,1731 @@
+
+<!-- ============================================================================
+     🎨 REDESIGN (หน้า "ประวัติการรักษา" เท่านั้น)
+     สไตล์ทั้งหมดในบล็อกนี้ถูกจำกัดขอบเขตด้วย #table-box-placeholder ซึ่งเป็น
+     คอนเทนเนอร์เฉพาะของไฟล์นี้ที่ถูกฝังไว้ใน search.html เพื่อไม่ให้ไปกระทบ
+     รูปแบบของหน้าจออื่น (ค้นหาพนักงาน / เปิดเคส / ติดตามการรักษาต่อเนื่อง)
+     ที่ใช้คลาสร่วมกันอยู่ (เช่น .card-container, .custom-claim-table ฯลฯ)
+     ฟังก์ชันการทำงานเดิม (id, onclick, onchange ฯลฯ) ไม่ถูกแก้ไขแต่อย่างใด
+     ============================================================================ -->
+<style>
+/* ตัวแปรสีอยู่ที่ :root (ไม่ใช่ #table-box-placeholder) เพราะ #outcomeUpdateModal
+   ถูกย้าย (reparent) ออกไปแสดงแบบฝังในตัวในหน้า "อัปเดตผลการรักษาหรือปิดเคส"
+   ได้ (ดู continuitycare.js: inlineTarget.appendChild(modal)) ซึ่งจะหลุดออกจาก
+   ขอบเขตของ #table-box-placeholder ถ้าตัวแปรอยู่ตรงนั้น สไตล์จะหายไปทันที */
+:root {
+    --hv-bg: #ffffff;
+    --hv-ink: #16181d;
+    --hv-muted: #6b7280;
+    --hv-border: #e5e6ea;
+    --hv-border-soft: #eef0f2;
+    --hv-pill: #f2f3f5;
+    --hv-accent: #16181d;
+    --hv-accent-hover: #2b2e36;
+    --hv-radius-xl: 20px;
+    --hv-radius-lg: 14px;
+    --hv-radius-md: 10px;
+    --hv-shadow: 0 1px 2px rgba(16,24,40,.04), 0 12px 32px rgba(16,24,40,.06);
+}
+
+#table-box-placeholder {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Leelawadee UI", "Noto Sans Thai", Tahoma, sans-serif !important;
+}
+
+/* ---------- โครงการ์ดหลัก ---------- */
+#table-box-placeholder .bottom-full-box {
+    background: var(--hv-bg) !important;
+    border: 1px solid var(--hv-border) !important;
+    border-radius: var(--hv-radius-xl) !important;
+    box-shadow: var(--hv-shadow) !important;
+    padding: 0 24px 24px !important;
+}
+
+/* ---------- หัวข้อกล่อง ---------- */
+#table-box-placeholder .bottom-full-box > .insurance-box-title.panel-dark-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    margin: 0 -24px 20px !important;
+    padding: 22px 24px 18px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--hv-border-soft) !important;
+    border-radius: var(--hv-radius-xl) var(--hv-radius-xl) 0 0 !important;
+    background: var(--hv-bg) !important;
+    color: var(--hv-ink) !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    letter-spacing: -.01em !important;
+    line-height: 1.3 !important;
+}
+
+#table-box-placeholder .hv-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    flex: none;
+    border-radius: 11px;
+    background: #eef2ff;
+    font-size: 18px;
+    line-height: 1;
+}
+
+#table-box-placeholder .hv-title-sub {
+    display: block;
+    margin-top: 3px;
+    color: var(--hv-muted);
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0;
+}
+
+/* ---------- แถบเครื่องมือกรอง/ค้นหา ---------- */
+#table-box-placeholder .history-filter-toolbar {
+    align-items: flex-end !important;
+    gap: 10px !important;
+    padding: 4px 0 16px !important;
+    border-top: 0 !important;
+}
+
+#table-box-placeholder .history-date-group label,
+#table-box-placeholder .history-case-search > label {
+    color: var(--hv-muted) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .04em !important;
+}
+
+#table-box-placeholder .history-date-input,
+#table-box-placeholder #caseSearchInput {
+    height: 40px !important;
+    border: 1px solid var(--hv-border) !important;
+    border-radius: var(--hv-radius-md) !important;
+    background: #fbfbfc !important;
+    color: var(--hv-ink) !important;
+    box-shadow: none !important;
+}
+
+#table-box-placeholder .history-date-input:focus,
+#table-box-placeholder #caseSearchInput:focus {
+    border-color: #c7c9ce !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(22,24,29,.07) !important;
+    background: #ffffff !important;
+}
+
+#table-box-placeholder .history-filter-button,
+#table-box-placeholder .history-case-search-button {
+    height: 40px !important;
+    padding: 0 18px !important;
+    border: 1px solid var(--hv-accent) !important;
+    border-radius: 999px !important;
+    background: var(--hv-accent) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+}
+
+#table-box-placeholder .history-filter-button:hover,
+#table-box-placeholder .history-case-search-button:hover {
+    background: var(--hv-accent-hover) !important;
+    border-color: var(--hv-accent-hover) !important;
+}
+
+#table-box-placeholder .history-report-button {
+    height: 40px !important;
+    padding: 0 18px !important;
+    border: 1px solid var(--hv-border) !important;
+    border-radius: 999px !important;
+    background: #ffffff !important;
+    color: var(--hv-ink) !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+}
+
+#table-box-placeholder .history-report-button:hover {
+    background: var(--hv-pill) !important;
+}
+
+#table-box-placeholder .history-result-count {
+    border: 1px solid var(--hv-border) !important;
+    border-radius: 999px !important;
+    background: var(--hv-pill) !important;
+    color: var(--hv-ink) !important;
+    font-weight: 700 !important;
+}
+
+#table-box-placeholder .history-filter-summary {
+    color: var(--hv-muted) !important;
+    font-size: 12px !important;
+}
+
+#table-box-placeholder #caseSearchStatus[data-status="success"] { color: #0f7a4d !important; }
+#table-box-placeholder #caseSearchStatus[data-status="error"] { color: #b42318 !important; }
+
+/* ---------- ตารางประวัติ ---------- */
+#table-box-placeholder .responsive-table-wrapper {
+    border: 1px solid var(--hv-border) !important;
+    border-radius: var(--hv-radius-lg) !important;
+    background: #ffffff !important;
+}
+
+#table-box-placeholder .responsive-table-wrapper th,
+#table-box-placeholder .responsive-table-wrapper td {
+    border: 0 !important;
+    border-bottom: 1px solid var(--hv-border-soft) !important;
+    padding: 11px 15px !important;
+    font-size: 12.5px !important;
+}
+
+#table-box-placeholder .responsive-table-wrapper th {
+    background: #fafafb !important;
+    color: var(--hv-ink) !important;
+    font-weight: 700 !important;
+}
+
+#table-box-placeholder .responsive-table-wrapper tbody tr:hover {
+    background: #f7f7f8 !important;
+}
+
+#table-box-placeholder .th-group-pp,
+#table-box-placeholder .th-sub-pp {
+    background: #eef8f1 !important;
+    color: #1f7a4d !important;
+}
+
+#table-box-placeholder .th-group-slk,
+#table-box-placeholder .th-sub-slk {
+    background: #fdf6e6 !important;
+    color: #8a5b06 !important;
+}
+
+#table-box-placeholder .responsive-table-wrapper tr.parent-row {
+    background: #ffffff !important;
+}
+
+#table-box-placeholder .responsive-table-wrapper tr.parent-row:hover {
+    background: #f7f7f8 !important;
+}
+
+#table-box-placeholder .responsive-table-wrapper tr[class*="child-row-of-"] {
+    background: #fbfbfc !important;
+}
+
+#table-box-placeholder .responsive-table-wrapper td[style*="f9fff9"],
+#table-box-placeholder .responsive-table-wrapper td[style*="fffdf0"] {
+    background: transparent !important;
+}
+
+#table-box-placeholder .responsive-table-wrapper td[colspan] {
+    background: #fafafa !important;
+    color: var(--hv-muted) !important;
+}
+
+#table-box-placeholder .responsive-table-wrapper td span[style*="border-radius"] {
+    border-radius: 999px !important;
+    padding: 4px 10px !important;
+    font-weight: 700 !important;
+}
+
+#table-box-placeholder .toggle-arrow {
+    color: var(--hv-muted) !important;
+}
+
+#table-box-placeholder .btn-edit-minimal {
+    border: 1px solid var(--hv-border) !important;
+    border-radius: 999px !important;
+    color: var(--hv-ink) !important;
+    background: #ffffff !important;
+}
+
+#table-box-placeholder .btn-edit-minimal:hover {
+    background: var(--hv-pill) !important;
+    border-color: #c7c9ce !important;
+}
+
+#table-box-placeholder .sub-timeline-table th {
+    background: #fafafb !important;
+    color: var(--hv-ink) !important;
+}
+
+#table-box-placeholder .continuity-update-button {
+    border-radius: 999px !important;
+    background: var(--hv-accent) !important;
+}
+
+#table-box-placeholder .continuity-update-button:hover {
+    background: var(--hv-accent-hover) !important;
+}
+
+/* ---------- หลักฐานเอกสารแนบ ---------- */
+#table-box-placeholder .history-evidence-item,
+#table-box-placeholder .edit-evidence-card {
+    border: 1px solid var(--hv-border) !important;
+    border-radius: var(--hv-radius-md) !important;
+    background: #fbfbfc !important;
+}
+
+#table-box-placeholder .history-evidence-title,
+#table-box-placeholder .edit-evidence-card-title {
+    color: var(--hv-ink) !important;
+}
+
+#table-box-placeholder .history-evidence-preview,
+#table-box-placeholder .edit-evidence-current {
+    border: 1px solid var(--hv-border) !important;
+    border-radius: 8px !important;
+    color: var(--hv-ink) !important;
+}
+
+#table-box-placeholder .history-evidence-preview:hover {
+    border-color: var(--hv-ink) !important;
+    box-shadow: none !important;
+}
+
+#table-box-placeholder .history-evidence-empty {
+    border: 1px dashed var(--hv-border) !important;
+    color: #9aa0a6 !important;
+}
+
+/* กันรูปหลักฐานล้นออกไปทับช่องข้อมูลข้าง ๆ เมื่อการ์ดกางออก: ให้ขึ้นเต็มความกว้างของการ์ดเสมอ */
+#table-box-placeholder tr.parent-row.is-open > td.history-evidence-cell,
+#table-box-placeholder tr.flat-history-row.flat-row-open > td.history-evidence-cell {
+    grid-column: 1 / -1 !important;
+}
+
+#table-box-placeholder td.history-evidence-cell .history-evidence-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 130px)) !important;
+    justify-content: flex-start !important;
+}
+
+/* ---------- แถบซูมตาราง ---------- */
+#table-box-placeholder .history-table-zoom-toolbar {
+    border: 1px solid var(--hv-border) !important;
+    border-radius: 999px !important;
+    background: rgba(255,255,255,.97) !important;
+    box-shadow: var(--hv-shadow) !important;
+    color: var(--hv-ink) !important;
+}
+
+#table-box-placeholder .history-table-zoom-button,
+#table-box-placeholder .history-table-zoom-reset {
+    border: 1px solid var(--hv-border) !important;
+    border-radius: 999px !important;
+    background: #ffffff !important;
+    color: var(--hv-ink) !important;
+}
+
+#table-box-placeholder .history-table-zoom-button:hover,
+#table-box-placeholder .history-table-zoom-reset:hover {
+    background: var(--hv-pill) !important;
+    border-color: #c7c9ce !important;
+    color: var(--hv-ink) !important;
+}
+
+#table-box-placeholder .history-table-zoom-range { accent-color: var(--hv-accent) !important; }
+#table-box-placeholder .history-table-zoom-value { color: var(--hv-ink) !important; }
+
+/* ---------- ป๊อปอัปกรองประวัติขั้นสูง ---------- */
+#historyFilterModal.history-filter-modal {
+    background: rgba(17,19,24,.5) !important;
+}
+
+#historyFilterModal .history-filter-dialog {
+    border: 1px solid var(--hv-border) !important;
+    border-top: 1px solid var(--hv-border) !important;
+    border-radius: var(--hv-radius-xl) !important;
+    box-shadow: 0 24px 60px rgba(16,24,40,.18) !important;
+}
+
+#historyFilterModal .history-filter-dialog-header h3 {
+    color: var(--hv-ink) !important;
+    font-weight: 700 !important;
+}
+
+#historyFilterModal .history-filter-dialog-header p,
+#historyFilterModal .history-filter-field label {
+    color: var(--hv-muted) !important;
+}
+
+#historyFilterModal .history-filter-field select {
+    border: 1px solid var(--hv-border) !important;
+    border-radius: var(--hv-radius-md) !important;
+    background: #fbfbfc !important;
+    color: var(--hv-ink) !important;
+}
+
+#historyFilterModal .history-filter-reset {
+    border: 1px solid var(--hv-border) !important;
+    border-radius: 999px !important;
+    background: #ffffff !important;
+    color: var(--hv-ink) !important;
+}
+
+#historyFilterModal .history-filter-apply {
+    border: 1px solid var(--hv-accent) !important;
+    border-radius: 999px !important;
+    background: var(--hv-accent) !important;
+    color: #ffffff !important;
+}
+
+#historyFilterModal .history-filter-close {
+    color: var(--hv-muted) !important;
+}
+
+/* ---------- ป๊อปอัปอัปเดตผลการรักษา ---------- */
+/* กำหนดฟอนต์ไว้ที่ #outcomeUpdateModal โดยตรง (ไม่พึ่ง inherit จาก
+   #table-box-placeholder) เพราะ modal นี้ถูกย้ายออกไปแสดงในหน้าอื่นได้ */
+#outcomeUpdateModal {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Leelawadee UI", "Noto Sans Thai", Tahoma, sans-serif !important;
+}
+
+#outcomeUpdateModal .outcome-modal-heading {
+    background: #ffffff !important;
+    color: var(--hv-ink) !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--hv-border-soft) !important;
+    border-radius: var(--hv-radius-xl) var(--hv-radius-xl) 0 0 !important;
+    margin: -28px -28px 20px !important;
+    padding: 20px 28px 16px !important;
+}
+
+#outcomeUpdateModal #outcomeUpdateModalTitle {
+    color: var(--hv-ink) !important;
+    font-family: inherit !important;
+    font-weight: 700 !important;
+}
+
+#outcomeUpdateModal .outcome-modal-close {
+    border: 1px solid var(--hv-border) !important;
+    color: var(--hv-muted) !important;
+    background: #ffffff !important;
+    border-radius: 999px !important;
+}
+
+#outcomeUpdateModal .outcome-modal-close:hover {
+    background: var(--hv-pill) !important;
+    color: var(--hv-ink) !important;
+}
+
+#outcomeUpdateModal label {
+    display: block !important;
+    margin-bottom: 4px !important;
+    color: var(--hv-muted) !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .03em !important;
+}
+
+#outcomeUpdateModal input,
+#outcomeUpdateModal select,
+#outcomeUpdateModal textarea {
+    border-radius: var(--hv-radius-md) !important;
+    border-color: var(--hv-border) !important;
+    font-family: inherit !important;
+}
+
+#outcomeUpdateModal input:focus,
+#outcomeUpdateModal select:focus,
+#outcomeUpdateModal textarea:focus {
+    outline: none !important;
+    border-color: #c7c9ce !important;
+    box-shadow: 0 0 0 3px rgba(22,24,29,.07) !important;
+}
+
+#outcomeUpdateModal p[style*="border-bottom"] {
+    margin-top: 18px !important;
+    padding-bottom: 8px !important;
+    color: var(--hv-ink) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .04em !important;
+    border-bottom: 1px solid var(--hv-border-soft) !important;
+}
+
+#outcomeUpdateModal #ocStatusOtherWrapper {
+    border: 1px dashed var(--hv-border) !important;
+    background: #fbfbfc !important;
+}
+
+#outcomeUpdateModal #ocSlkFieldsWrapper > div,
+#outcomeUpdateModal .edit-money-grid {
+    border: 1px solid var(--hv-border) !important;
+    border-radius: var(--hv-radius-md) !important;
+    background: #fbfbfc !important;
+}
+
+#outcomeUpdateModal .update-upload-card {
+    border: 1px solid var(--hv-border) !important;
+    border-radius: var(--hv-radius-md) !important;
+    background: #fbfbfc !important;
+}
+
+#outcomeUpdateModal .update-upload-button {
+    border: 1px solid var(--hv-border) !important;
+    border-radius: 999px !important;
+    background: #ffffff !important;
+    color: var(--hv-ink) !important;
+}
+
+#outcomeUpdateModal .update-upload-button:hover {
+    border-color: var(--hv-ink) !important;
+    color: var(--hv-ink) !important;
+    background: var(--hv-pill) !important;
+}
+
+#outcomeUpdateModal form > div[style*="display: flex"] button[type="button"] {
+    border-radius: 999px !important;
+    background: #f2f3f5 !important;
+    color: var(--hv-ink) !important;
+}
+
+#outcomeUpdateModal form > div[style*="display: flex"] button[type="submit"] {
+    border-radius: 999px !important;
+    background: #16a34a !important;
+}
+
+/* ---------- ป๊อปอัปแก้ไขข้อมูลย้อนหลัง ---------- */
+#table-box-placeholder #editCaseModal {
+    background-color: rgba(17,19,24,.5) !important;
+}
+
+#table-box-placeholder #editCaseModal > div {
+    background-color: #ffffff !important;
+    padding: 28px !important;
+    border-radius: var(--hv-radius-xl) !important;
+    border-top: 0 !important;
+    border: 1px solid var(--hv-border) !important;
+    box-shadow: 0 24px 60px rgba(16,24,40,.18) !important;
+}
+
+#editCaseModal h3 {
+    color: var(--hv-ink) !important;
+    font-family: inherit !important;
+    font-weight: 700 !important;
+}
+
+#editCaseModal > div > div:first-child {
+    border-bottom: 1px solid var(--hv-border-soft) !important;
+}
+
+#editCaseModal span[style*="cursor: pointer"] {
+    color: var(--hv-muted) !important;
+}
+
+#editCaseModal label {
+    display: block !important;
+    margin-bottom: 4px !important;
+    color: var(--hv-muted) !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .03em !important;
+}
+
+#editCaseModal input,
+#editCaseModal select,
+#editCaseModal textarea {
+    border-radius: var(--hv-radius-md) !important;
+    border-color: var(--hv-border) !important;
+    font-family: inherit !important;
+}
+
+#editCaseModal input:focus,
+#editCaseModal select:focus,
+#editCaseModal textarea:focus {
+    outline: none !important;
+    border-color: #c7c9ce !important;
+    box-shadow: 0 0 0 3px rgba(22,24,29,.07) !important;
+}
+
+#editCaseModal p[style*="border-bottom"] {
+    margin-top: 18px !important;
+    padding-bottom: 8px !important;
+    color: var(--hv-ink) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .04em !important;
+    border-bottom: 1px solid var(--hv-border-soft) !important;
+}
+
+#editCaseModal div[style*="background: #f8f9fa"] {
+    border: 1px solid var(--hv-border) !important;
+    border-radius: var(--hv-radius-md) !important;
+    background: #fbfbfc !important;
+}
+
+#editCaseModal form > div[style*="display: flex"] button[type="button"] {
+    border-radius: 999px !important;
+    background: #f2f3f5 !important;
+    color: var(--hv-ink) !important;
+}
+
+#editCaseModal form > div[style*="display: flex"] button[type="submit"] {
+    border-radius: 999px !important;
+    background: #f59e0b !important;
+    color: #16181d !important;
+}
+
+@media (max-width: 700px) {
+    #table-box-placeholder .bottom-full-box {
+        padding: 0 16px 16px !important;
+    }
+
+    #table-box-placeholder .bottom-full-box > .insurance-box-title.panel-dark-header {
+        margin: 0 -16px 16px !important;
+        padding: 18px 16px 14px !important;
+        font-size: 16px !important;
+    }
+
+    #outcomeUpdateModal .outcome-modal-heading {
+        margin: -20px -20px 16px !important;
+        padding: 16px 20px 14px !important;
+    }
+}
+
+/* ============================================================================
+   🎴 การ์ดประวัติการรักษา: แปลงตารางเดิมให้เป็นการ์ด 1 เคส/1 กล่อง แบบพับ-กางได้
+   ใช้กลไก .parent-row / .child-row-of-X / .is-open เดิมทุกอย่าง (ไม่แตะ JS
+   ที่ผูก event หรือ index ของ children[]) เปลี่ยนแค่ display ของ table/tr/td
+   ผ่าน CSS ล้วน ๆ จึงไม่กระทบฟังก์ชันแก้ไข/ลบ/แนบเอกสาร/อัปเดตผลการรักษาเดิม
+   ============================================================================ */
+#table-box-placeholder .custom-claim-table thead {
+    display: none !important;
+}
+
+#table-box-placeholder .custom-claim-table,
+#table-box-placeholder .custom-claim-table tbody {
+    display: block !important;
+    width: 100% !important;
+}
+
+#table-box-placeholder #tableBodyResult {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)) !important;
+    gap: 14px !important;
+    width: 100% !important;
+    padding: 2px !important;
+}
+
+#table-box-placeholder .history-table-zoom-toolbar {
+    display: none !important;
+}
+
+#table-box-placeholder .history-table-zoom-surface {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-bottom: 0 !important;
+    zoom: 1 !important;
+}
+
+/* การ์ดสรุปเคส (แถวหลัก) */
+#table-box-placeholder tr.parent-row {
+    display: flex !important;
+    flex-direction: column !important;
+    margin: 0 !important;
+    padding: 16px 18px !important;
+    border: 1px solid var(--hv-border) !important;
+    border-radius: var(--hv-radius-xl) !important;
+    background: #ffffff !important;
+    box-shadow: var(--hv-shadow) !important;
+    cursor: pointer !important;
+    transition: box-shadow .15s ease, border-color .15s ease !important;
+}
+
+#table-box-placeholder tr.parent-row:hover {
+    box-shadow: 0 4px 10px rgba(16,24,40,.06), 0 14px 28px rgba(16,24,40,.08) !important;
+}
+
+#table-box-placeholder tr.parent-row.is-open {
+    display: grid !important;
+    grid-column: 1 / -1 !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 10px 22px !important;
+    align-items: start !important;
+    border-color: var(--hv-ink) !important;
+}
+
+#table-box-placeholder tr.parent-row > td {
+    display: none !important;
+    opacity: 1 !important;
+}
+
+#table-box-placeholder tr.parent-row > td:first-child {
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 0 10px !important;
+    margin-bottom: 10px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--hv-border-soft) !important;
+}
+
+#table-box-placeholder tr.parent-row.is-open > td:first-child {
+    grid-column: 1 / -1 !important;
+}
+
+#table-box-placeholder tr.parent-row > td:nth-child(2),
+#table-box-placeholder tr.parent-row > td:nth-child(3),
+#table-box-placeholder tr.parent-row > td:nth-child(4) {
+    display: block !important;
+}
+
+#table-box-placeholder tr.parent-row.is-open > td:not(.slk-column):not(:last-child) {
+    display: block !important;
+}
+
+#table-box-placeholder tr.parent-row > td:last-child,
+#table-box-placeholder tr.parent-row.is-open > td:last-child {
+    display: none !important;
+}
+
+#table-box-placeholder tr.parent-row.is-open > td.slk-column {
+    display: block;
+}
+
+/* หัวการ์ด: เลขเคส + ลูกศรพับ/กาง */
+#table-box-placeholder .case-cell {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 10px !important;
+}
+
+#table-box-placeholder .txt-case-id {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    color: var(--hv-ink) !important;
+}
+
+#table-box-placeholder .txt-case-id::before {
+    content: "เคส #";
+    margin-right: 3px;
+    color: var(--hv-muted);
+    font-weight: 700;
+    font-size: 12px;
+}
+
+#table-box-placeholder tr.parent-row.is-open .txt-case-id {
+    display: inline !important;
+}
+
+#table-box-placeholder .toggle-arrow {
+    font-size: 12px !important;
+}
+
+/* ช่องข้อมูลแบบมีป้ายกำกับ (label บน / ค่าล่าง) ใช้ร่วมกันทั้งการ์ดหลักและไทม์ไลน์ย่อย */
+#table-box-placeholder td[data-label] {
+    display: block;
+    padding: 8px 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--hv-border-soft) !important;
+    text-align: left !important;
+    white-space: normal !important;
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+
+#table-box-placeholder td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 3px;
+    color: var(--hv-muted);
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+
+/* ไทม์ไลน์ย่อยของเคส (แถวลูก) แสดงเมื่อกางออก */
+#table-box-placeholder tr[class*="child-row-of-"] {
+    grid-column: 1 / -1 !important;
+    margin: 0 !important;
+}
+
+#table-box-placeholder tr[class*="child-row-of-"]:not([class$="-spacer"]) {
+    display: flex;
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    column-gap: 24px !important;
+    row-gap: 0 !important;
+    padding: 12px 16px !important;
+    border: 1px solid var(--hv-border-soft) !important;
+    border-left: 3px solid var(--hv-ink) !important;
+    border-radius: 12px !important;
+    background: #fbfbfc !important;
+}
+
+#table-box-placeholder tr[class*="child-row-of-"] > td {
+    display: none !important;
+}
+
+#table-box-placeholder tr[class*="child-row-of-"]:not([class$="-spacer"]) > td:nth-child(2),
+#table-box-placeholder tr[class*="child-row-of-"]:not([class$="-spacer"]) > td:nth-child(3),
+#table-box-placeholder tr[class*="child-row-of-"]:not([class$="-spacer"]) > td:nth-child(4),
+#table-box-placeholder tr[class*="child-row-of-"]:not([class$="-spacer"]) > td:nth-child(6) {
+    display: block !important;
+    flex: 1 1 160px !important;
+    min-width: 140px !important;
+    padding: 4px 0 !important;
+    border-bottom: 0 !important;
+}
+
+#table-box-placeholder tr[class*="child-row-of-"]:not([class$="-spacer"]) > td:last-child {
+    display: block !important;
+    flex: 0 0 auto !important;
+    align-self: center !important;
+    padding: 4px 0 !important;
+    border-bottom: 0 !important;
+    white-space: nowrap !important;
+}
+
+/* แถบปุ่ม "อัปเดตผลการรักษา" ท้ายไทม์ไลน์ของเคส */
+#table-box-placeholder tr[class$="-spacer"] {
+    display: flex;
+    padding: 2px 0 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+#table-box-placeholder tr[class$="-spacer"] > td {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+#table-box-placeholder tr[class$="-spacer"] button {
+    width: 100% !important;
+    padding: 12px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: var(--hv-accent) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+    box-shadow: none !important;
+}
+
+#table-box-placeholder tr[class$="-spacer"] button:hover {
+    background: var(--hv-accent-hover) !important;
+}
+
+/* ---------- การ์ดผลค้นหาแบบแบน (ค้นหา Case ID / กรองประวัติหลายพนักงาน) ---------- */
+/* ใช้กลไก renderFlatHistoryTable เดิม (.flat-history-row / .grouped-child-row /
+   childRow.hidden) ทุกอย่าง เพิ่มแค่ data-label ผ่าน JS และ class .flat-row-open
+   ใหม่สำหรับพับ/กางการ์ดหลัก โดยไม่แตะ event ปุ่มแก้ไข/ลบ/ดูรายการก่อนหน้าเดิม */
+#table-box-placeholder tr.flat-history-row.grouped-parent-row {
+    display: flex !important;
+    flex-direction: column !important;
+    margin: 0 !important;
+    padding: 16px 18px !important;
+    border: 1px solid var(--hv-border) !important;
+    border-radius: var(--hv-radius-xl) !important;
+    background: #ffffff !important;
+    box-shadow: var(--hv-shadow) !important;
+    cursor: pointer !important;
+    transition: box-shadow .15s ease, border-color .15s ease !important;
+}
+
+#table-box-placeholder tr.flat-history-row.grouped-parent-row:hover {
+    box-shadow: 0 4px 10px rgba(16,24,40,.06), 0 14px 28px rgba(16,24,40,.08) !important;
+}
+
+#table-box-placeholder tr.flat-history-row.grouped-parent-row.flat-row-open {
+    display: grid !important;
+    grid-column: 1 / -1 !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 10px 22px !important;
+    align-items: start !important;
+    border-color: var(--hv-ink) !important;
+}
+
+#table-box-placeholder tr.flat-history-row > td:first-child {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px 12px !important;
+    padding: 0 0 10px !important;
+    margin-bottom: 10px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--hv-border-soft) !important;
+}
+
+#table-box-placeholder tr.flat-history-row.flat-row-open > td:first-child {
+    grid-column: 1 / -1 !important;
+}
+
+#table-box-placeholder .history-case-toggle {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    color: var(--hv-ink) !important;
+    font: inherit !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+}
+
+#table-box-placeholder .history-case-toggle:disabled {
+    cursor: default !important;
+    opacity: .55 !important;
+}
+
+#table-box-placeholder .history-case-toggle span:first-child {
+    color: var(--hv-muted) !important;
+    font-size: 11px !important;
+}
+
+#table-box-placeholder .history-case-toggle strong::before {
+    content: "เคส #";
+    margin-right: 2px;
+    color: var(--hv-muted);
+    font-weight: 700;
+    font-size: 12px;
+}
+
+#table-box-placeholder .history-case-employee {
+    color: var(--hv-ink) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+
+#table-box-placeholder .history-area-badge {
+    padding: 3px 10px !important;
+    border-radius: 999px !important;
+    background: var(--hv-pill) !important;
+    color: var(--hv-ink) !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+}
+
+#table-box-placeholder tr.flat-history-row > td:not(:first-child) {
+    display: none !important;
+    opacity: 1 !important;
+}
+
+#table-box-placeholder tr.flat-history-row > td:nth-child(2),
+#table-box-placeholder tr.flat-history-row > td:nth-child(3),
+#table-box-placeholder tr.flat-history-row > td:nth-child(4),
+#table-box-placeholder tr.flat-history-row > td:last-child {
+    display: block !important;
+}
+
+#table-box-placeholder tr.flat-history-row.flat-row-open > td:not(.slk-column) {
+    display: block !important;
+}
+
+#table-box-placeholder tr.flat-history-row.flat-row-open > td.slk-column {
+    display: block;
+}
+
+/* "รายการก่อนหน้า" ของเคสเดียวกัน (แสดงเมื่อกดปุ่มลูกศรที่หัวการ์ด) */
+#table-box-placeholder tr.grouped-child-row {
+    margin: 0 !important;
+}
+
+#table-box-placeholder tr.grouped-child-row:not([hidden]) {
+    display: flex !important;
+    grid-column: 1 / -1 !important;
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    column-gap: 24px !important;
+    row-gap: 2px !important;
+    padding: 12px 16px !important;
+    border: 1px solid var(--hv-border-soft) !important;
+    border-left: 3px solid var(--hv-ink) !important;
+    border-radius: 12px !important;
+    background: #fbfbfc !important;
+}
+
+#table-box-placeholder tr.grouped-child-row > td {
+    display: none !important;
+}
+
+#table-box-placeholder tr.grouped-child-row:not([hidden]) > td:first-child,
+#table-box-placeholder tr.grouped-child-row:not([hidden]) > td:nth-child(2),
+#table-box-placeholder tr.grouped-child-row:not([hidden]) > td:nth-child(3),
+#table-box-placeholder tr.grouped-child-row:not([hidden]) > td:nth-child(4),
+#table-box-placeholder tr.grouped-child-row:not([hidden]) > td:nth-child(6),
+#table-box-placeholder tr.grouped-child-row:not([hidden]) > td:last-child {
+    display: block !important;
+    flex: 1 1 160px !important;
+    min-width: 140px !important;
+    padding: 4px 0 !important;
+    border-bottom: 0 !important;
+}
+
+#table-box-placeholder .history-child-label {
+    flex: 0 0 100% !important;
+    padding: 0 0 4px !important;
+    color: var(--hv-muted) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+}
+
+/* ปุ่มแก้ไข/ลบท้ายแถว ใช้ร่วมกันทั้งการ์ดหลักและรายการก่อนหน้า */
+#table-box-placeholder tr.flat-history-row > td.flat-history-actions,
+#table-box-placeholder tr.grouped-child-row > td.flat-history-actions {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 4px 0 !important;
+    border-bottom: 0 !important;
+}
+
+#table-box-placeholder .flat-history-delete {
+    padding: 2px 10px !important;
+    border: 1px solid #dc3545 !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    color: #dc3545 !important;
+    font-size: 11px !important;
+    cursor: pointer !important;
+}
+
+#table-box-placeholder .flat-history-delete:hover {
+    background: #dc3545 !important;
+    color: #ffffff !important;
+}
+
+/* ---------- แก้ไขข้อมูลตรงที่แสดงอยู่แล้วในการ์ด (ไม่มีป๊อปอัป/ฟอร์มแยกใด ๆ) ---------- */
+#table-box-placeholder tr.is-editing-inline {
+    outline: 2px solid var(--hv-ink);
+    outline-offset: -1px;
+}
+
+#table-box-placeholder .inline-edit-field {
+    display: block;
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--hv-border);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--hv-ink);
+    font: inherit;
+    font-size: 12.5px;
+    box-sizing: border-box;
+}
+
+#table-box-placeholder .inline-edit-field:focus {
+    outline: none;
+    border-color: #c7c9ce;
+    box-shadow: 0 0 0 3px rgba(22,24,29,.07);
+}
+
+#table-box-placeholder textarea.inline-edit-field {
+    min-height: 46px;
+    resize: vertical;
+}
+
+#table-box-placeholder .inline-edit-save,
+#table-box-placeholder .inline-edit-cancel {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+#table-box-placeholder .inline-edit-save {
+    border: 1px solid var(--hv-ink);
+    background: var(--hv-ink);
+    color: #ffffff;
+}
+
+#table-box-placeholder .inline-edit-save:hover {
+    background: var(--hv-accent-hover);
+}
+
+#table-box-placeholder .inline-edit-save:disabled {
+    cursor: wait;
+    opacity: .65;
+}
+
+#table-box-placeholder .inline-edit-cancel {
+    border: 1px solid var(--hv-border);
+    background: #ffffff;
+    color: var(--hv-ink);
+}
+
+#table-box-placeholder .inline-edit-cancel:hover {
+    background: var(--hv-pill);
+}
+
+/* แถวสถานะว่าง/กำลังโหลด ก่อนมีข้อมูลจริง */
+#table-box-placeholder #tableBodyResult > tr:not(.parent-row):not([class*="child-row-of-"]):not(.flat-history-row):not(.grouped-child-row) {
+    grid-column: 1 / -1 !important;
+    display: block !important;
+}
+
+#table-box-placeholder #tableBodyResult > tr:not(.parent-row):not([class*="child-row-of-"]):not(.flat-history-row):not(.grouped-child-row) > td {
+    display: block !important;
+    padding: 40px 20px !important;
+    border: 1px dashed var(--hv-border) !important;
+    border-radius: var(--hv-radius-lg) !important;
+    background: #fbfbfc !important;
+    color: var(--hv-muted) !important;
+    text-align: center !important;
+    font-size: 13px !important;
+}
+
+@media (max-width: 640px) {
+    #table-box-placeholder #tableBodyResult {
+        grid-template-columns: 1fr !important;
+    }
+
+    #table-box-placeholder tr.parent-row.is-open,
+    #table-box-placeholder tr.flat-history-row.grouped-parent-row.flat-row-open {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+
+<!-- 📦 กล่องรวมขนาดใหญ่ด้านล่าง (Full Width Container) -->
+<div class="card-container bottom-full-box insurance-panel-shell">
+    <h2 class="insurance-box-title panel-dark-header">
+        <span class="hv-icon-badge" aria-hidden="true">📊</span>
+        <span>
+            ประวัติการรักษา
+            <span class="hv-title-sub">รายละเอียดและการคำนวณสิทธิ์การรักษาอย่างละเอียด</span>
+        </span>
+    </h2>
+
+
+    <!-- ================== สร้างแถบกรองวันที่และปุ่มกรองขั้นสูง ================= -->
+<div class="history-filter-toolbar">
+    <div class="history-date-group">
+        <label for="historyStartDate">เริ่มต้น</label>
+        <input
+            type="text"
+            id="historyStartDate"
+            class="history-date-input"
+            placeholder="เลือกวันที่"
+            readonly
+        >
+    </div>
+
+    <div class="history-date-group">
+        <label for="historyEndDate">สิ้นสุด</label>
+        <input
+            type="text"
+            id="historyEndDate"
+            class="history-date-input"
+            placeholder="เลือกวันที่"
+            readonly
+        >
+    </div>
+
+    <button
+        type="button"
+        id="advancedHistoryFilterButton"
+        class="history-filter-button"
+    >
+        ⚙️ กรองประวัติ
+    </button>
+
+    <span
+        id="historyResultCount"
+        class="history-result-count"
+        role="status"
+        aria-live="polite"
+        title="จำนวนเคสจากผลลัพธ์ที่กำลังแสดง"
+    >
+        พบ 0 เคส
+    </span>
+
+    <button
+        type="button"
+        id="createHistoryReportButton"
+        class="history-report-button"
+        hidden
+    >
+        📊 สร้างรายงาน
+    </button>
+
+    <div class="history-case-search" role="search" aria-label="ค้นหาประวัติด้วย Case ID">
+        <label for="caseSearchInput">ค้นหา Case ID</label>
+        <div class="history-case-search-control">
+            <input
+                type="search"
+                id="caseSearchInput"
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="เช่น 1059"
+                aria-describedby="caseSearchStatus"
+            >
+            <button
+                type="button"
+                id="caseSearchBtn"
+                class="history-case-search-button"
+            >
+                ค้นหาเคส
+            </button>
+        </div>
+        <span id="caseSearchStatus" role="status" aria-live="polite"></span>
+    </div>
+</div>
+
+<div id="historyFilterSummary" class="history-filter-summary">
+    ยังไม่ได้เลือกเงื่อนไขการกรอง
+</div>
+    <!-- ================== สร้างแถบกรองวันที่และปุ่มกรองขั้นสูง ================= -->
+
+
+    <div class="history-table-shell">
+    <div
+        id="historyTableViewport"
+        class="responsive-table-wrapper"
+        aria-label="ตารางประวัติการรักษาแบบย่อขยายได้"
+    >
+      <div id="historyTableZoomSurface" class="history-table-zoom-surface">
+       <table class="custom-claim-table">
+            <thead>
+
+                <!-- แถวที่ 1: หัวข้อปกติจะควบลงล่าง (rowspan) ส่วนกลุ่มประกันจะควบออกข้าง (colspan) -->
+                <tr>
+                    <th rowspan="2">เลขเคส ID</th>
+                    <th rowspan="2">เวลาและวันที่เข้ารักษา</th>
+                    <th rowspan="2">ขั้นตอนการรักษา</th>
+                    <th rowspan="2">อาการป่วย</th>
+                    <th rowspan="2">สถานที่ทำงาน</th>
+                    <th rowspan="2">สถานที่รักษา</th>
+                    
+                    <!-- ส่วนหัวควบกลุ่มประกัน -->
+                    <th colspan="3" class="th-group-pp">ยอดวงเงินค่ารักษาประกัน PP</th>
+                    <th colspan="8" class="th-group-slk slk-column">ยอดวงเงินค่ารักษาประกัน SLK</th>
+        
+                    <th rowspan="2">ผลการรักษา</th>
+                    <th rowspan="2">เอกสารที่ต้องแนบ</th>
+                    <th rowspan="2">หมายเหตุ</th>
+                    <th rowspan="2">เวลาและวันที่บันทึกข้อมูล</th>
+                    <th rowspan="2">แอดมินที่บันทึกข้อมูล</th>     
+                    <!-- ✅ เพิ่มคอลัมน์ใหม่ขวาสุด -->
+                    <th rowspan="2" style="background-color: #f1f3f5; color: #333;">แก้ไขข้อมูล</th>     
+                </tr>
+
+                <!-- แถวที่ 2: จะเหลือเฉพาะช่องหัวข้อย่อยของประกัน PP และ SLK เท่านั้น ไม่เบี้ยวแน่นอน -->      
+                <tr>
+                    <!-- ภายใต้กลุ่มประกัน PP (3 ช่อง) -->
+                    <th class="th-sub-pp">ทำฟัน หักวงเงิน OPD</th>
+                    <th class="th-sub-pp">PP OPD</th>
+                    <th class="th-sub-pp">PP IPD</th>
+
+                    <!-- ภายใต้กลุ่มประกัน SLK (8 ช่อง) -->
+                    <th class="th-sub-slk slk-column">SL OPD (THB)</th>
+                    <th class="th-sub-slk slk-column">SL IPD (THB)</th>
+                    <th class="th-sub-slk slk-column">SL OPD (LKR)</th>
+                    <th class="th-sub-slk slk-column">SL IPD (LKR)</th>
+                    <th class="th-sub-slk slk-column">ส่วนเกินวงเงินค่ารักษา (THB)</th>
+                    <th class="th-sub-slk slk-column">ส่วนเกินวงเงินค่ารักษา (LKR)</th>
+                    <th class="th-sub-slk slk-column">เรทค่าเงินที่ประกันคิดให้ (THB/LKR)</th>
+                    <th class="th-sub-slk slk-column">เรทค่าเงินปัจจุบัน (THB/LKR)</th>
+                </tr>
+            </thead>
+            <tbody id="tableBodyResult">
+                <!-- ตัวอย่างแถวแสดงผลข้อมูล (มีทั้งหมด 17 คอลัมน์ รองรับ 17 แท็ก td ตรงล็อกเป๊ะๆ) -->
+                <tr>
+                    <td class="text-center font-bold">-</td>
+                    <td class="text-center">-</td>
+                    <td class="text-center">-</td>
+                    <td class="text-left">-</td>
+                    <td class="text-left">-</td>
+                    <td class="text-left">-</td>
+                    <td class="text-left">-</td>
+
+                    <!-- ฝั่ง PP (3 ช่อง) -->
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+
+                    <!-- ฝั่ง SLK (8 ช่อง) -->
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-center">-</td>
+                    <td class="text-center">-</td>
+
+                    <!-- ส่วนท้าย (3 ช่อง) -->
+                    <td class="text-center">-</td>
+                    <td class="text-center">-</td>
+                    <td class="text-center">-</td>
+                </tr>
+            </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div
+        class="history-table-zoom-toolbar"
+        role="group"
+        aria-label="เครื่องมือย่อหรือขยายตารางประวัติ"
+    >
+        <span class="history-table-zoom-label">มุมมองตาราง</span>
+        <button
+            type="button"
+            id="historyZoomOutButton"
+            class="history-table-zoom-button"
+            aria-label="ย่อตารางลง"
+            title="ย่อตารางลง"
+        >−</button>
+        <input
+            type="range"
+            id="historyZoomRange"
+            class="history-table-zoom-range"
+            min="60"
+            max="160"
+            step="10"
+            value="100"
+            aria-label="ระดับการย่อหรือขยายตาราง"
+        >
+        <output
+            id="historyZoomValue"
+            class="history-table-zoom-value"
+            for="historyZoomRange"
+            aria-live="polite"
+        >100%</output>
+        <button
+            type="button"
+            id="historyZoomInButton"
+            class="history-table-zoom-button"
+            aria-label="ขยายตารางขึ้น"
+            title="ขยายตารางขึ้น"
+        >+</button>
+        <button
+            type="button"
+            id="historyZoomResetButton"
+            class="history-table-zoom-reset"
+            title="กลับสู่ขนาดมาตรฐาน"
+        >กลับ 100%</button>
+    </div>
+    </div>
+</div>
+
+
+
+<!-- ============================================================ การอัปเดตผลการรักษา =============================================================== -->
+<!-- ============================================================================================================================================== -->
+<!-- ============================= [ส่วนบน] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับการอัปเดตผลการรักษา (Outcome Update Modal) ===================================== -->
+<!-- =============================================================================================================================================== -->
+
+<div id="outcomeUpdateModalHome"></div>
+<div id="outcomeUpdateModal" role="dialog" aria-modal="true" aria-labelledby="outcomeUpdateModalTitle" style="display: none; position: fixed !important; z-index: 99999 !important; left: 0; top: 0; width: 100vw !important; height: 100vh !important; background-color: rgba(0, 0, 0, 0.5) !important; align-items: center !important; justify-content: center !important;">
+    <div style="background-color: #ffffff !important; padding: 28px !important; border-radius: 20px !important; width: 95% !important; max-width: 1100px !important; box-shadow: 0 24px 60px rgba(16, 24, 40, 0.18) !important; max-height: 90vh !important; overflow-y: auto !important; border: 1px solid #e5e6ea !important; border-top: 1px solid #e5e6ea !important; animation: popupFadeIn 0.25s ease-out;">
+<!-- ส่วนหัวป๊อปอัปสีเขียวการแพทย์ -->
+        <div class="outcome-modal-heading panel-dark-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 15px;">
+            <h3 id="outcomeUpdateModalTitle" class="insurance-box-title" style="margin: 0; color: #198754; font-family: 'Segoe UI', Tahoma, sans-serif;">📝 อัปเดตผลการรักษาและประวัติสรุปเคส</h3>
+            <button type="button" class="outcome-modal-close" aria-label="ปิดหน้าต่างอัปเดตผลการรักษา" onclick="window.closeOutcomeUpdateModal?.()">&times;</button>
+        </div>
+
+        <form id="modalOutcomeForm">
+            <!-- โซนช่องหลัก: ล็อกให้เป็น Readonly ทึบทั้งหมดตามเงื่อนไข -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div>
+                    <label for="ocCaseId" style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เคส ID :</label>
+                    <input type="text" id="ocCaseId" readonly style="background-color: #e9ecef !important; color: #495057; cursor: not-allowed;">
+                </div>
+                <div>
+                    <label for="ocHospital" style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">สถานพยาบาล :</label>
+                    <input type="text" id="ocHospital" readonly style="background-color: #e9ecef !important; color: #495057; cursor: not-allowed;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="ocSymptoms" style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">อาการป่วย :</label>
+                <textarea id="ocSymptoms" readonly style="background-color: #e9ecef !important; color: #495057; cursor: not-allowed; min-height: 60px;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="ocStatusSelect" style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">ขั้นตอนการรักษา <span style="color:red;">*</span></label>
+                <select id="ocStatusSelect" required style="width: 100% !important; padding: 10px !important; border: 1px solid #e5e6ea !important; border-radius: 10px !important; background-color: #ffffff !important;" onchange="toggleOcOtherInput(this.value)">
+                    <option value="" disabled selected>-- กรุณาคลิกเลือกสถานะขั้นตอนการรักษาปัจจุบัน --</option>
+                    <optgroup label="Pending / Awaiting Action">
+                        <option value="เปิดเคสและแจ้งประกันแล้ว รอเข้ารับการรักษา">เปิดเคสและแจ้งประกันแล้ว รอเข้ารับการรักษา</option>
+                        <option value="รอประกันยืนยันสิทธิ์หรืออนุมัติการรักษา">รอประกันยืนยันสิทธิ์หรืออนุมัติการรักษา</option>
+                        <option value="รอนัดหมายหรือรอเข้าพบแพทย์">รอนัดหมายหรือรอเข้าพบแพทย์</option>
+                    </optgroup>
+                    <optgroup label="Active / Open Case">
+                        <option value="เข้ารับการรักษาแล้ว อยู่ระหว่างการตรวจหรือรักษา">เข้ารับการรักษาแล้ว อยู่ระหว่างการตรวจหรือรักษา</option>
+                        <option value="นอนโรงพยาบาลหรือเฝ้าดูอาการ">นอนโรงพยาบาลหรือเฝ้าดูอาการ</option>
+                        <option value="รอผลตรวจหรือแผนการรักษา">รอผลตรวจหรือแผนการรักษา</option>
+                    </optgroup>
+                    <optgroup label="In Progress / Follow-up">
+                        <option value="กลับบ้านแล้ว รอติดตามอาการ">กลับบ้านแล้ว รอติดตามอาการ</option>
+                        <option value="แพทย์นัดตรวจติดตาม">แพทย์นัดตรวจติดตาม</option>
+                        <option value="รอรักษาต่อหรือทำหัตถการเพิ่มเติม">รอรักษาต่อหรือทำหัตถการเพิ่มเติม</option>
+                    </optgroup>
+                    <optgroup label="Discharged / Billing Pending / Awaiting Payment">
+                        <option value="รักษาเสร็จ รอเอกสารหรือบิลตัวจริง">รักษาเสร็จ รอเอกสารหรือบิลตัวจริง</option>
+                        <option value="รักษาเสร็จ รอประกันยืนยันยอดชำระ">รักษาเสร็จ รอประกันยืนยันยอดชำระ</option>
+                        <option value="ผู้ป่วยสำรองจ่าย รอนำส่งเอกสารเคลม">ผู้ป่วยสำรองจ่าย รอนำส่งเอกสารเคลม</option>
+                        <option value="ส่งเอกสารเคลมแล้ว รอรับเงินคืน">ส่งเอกสารเคลมแล้ว รอรับเงินคืน</option>
+                        <option value="ได้รับเงินคืนแล้ว รอเคลียร์บัญชีหรือส่งคืน">ได้รับเงินคืนแล้ว รอเคลียร์บัญชีหรือส่งคืน</option>
+                    </optgroup>
+                    <optgroup label="Closed Case">
+                        <option value="ปิดเคส เอกสารและบัญชีครบถ้วน">ปิดเคส เอกสารและบัญชีครบถ้วน</option>
+                    </optgroup>
+                    <option value="อื่นๆ">อื่นๆ (โปรดระบุรายละเอียดเพิ่มเติม)</option>
+                </select>
+            </div>
+
+            <!-- 🎯 กล่องลับสำหรับพิมพ์ข้อความเสริมด้านหลัง (จะดีดกางออกเฉพาะตอนเลือก "อื่นๆ") -->
+            <div id="ocStatusOtherWrapper" style="display: none; margin-bottom: 15px; background-color: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px dashed #198754;">
+                <label style="font-size: 12px; font-weight: bold; color: #198754; display: block; margin-bottom: 4px;">ระบุรายละเอียดขั้นตอนการรักษาเพิ่มเติม :</label>
+                <input type="text" id="ocStatusOtherInput" placeholder="พิมพ์ข้อความเสริมต่อท้ายสถานะที่ต้องการระบุที่นี่...">
+            </div>
+
+
+
+            <!-- 🎯 ย้ายพิกัดปฏิทิน: ขยับชดเชยลงมาอยู่ใต้กล่องอาการป่วยตามสั่ง และเปลี่ยนชื่อหัวข้อ -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div>
+                    <label for="ocManualDate" style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">วันที่บันทึกผลการรักษา :</label>
+                    <input type="text" id="ocManualDate" placeholder="📅 คลิกเลือกวันที่...">
+                </div>
+                <div>
+                    <label for="ocManualTime" style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เวลาที่บันทึกผลการรักษา :</label>
+                    <input type="text" id="ocManualTime" placeholder="⏰ คลิกเลือกเวลา...">
+                </div>
+            </div>
+
+            <p style="margin: 15px 0 8px 0; font-weight: bold; color: #198754; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">📊 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัย</p>
+            <div class="edit-money-grid">
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">ทำฟัน หักวงเงิน OPD</label><input type="number" id="ocInpDentalOPD" step="any" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP OPD</label><input type="number" id="ocInpPPUsageOPD" step="any" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP IPD</label><input type="number" id="ocInpPPUsageIPD" step="any" value="0"></div>
+            </div>
+           
+            <div id="ocSlkFieldsWrapper" style="display: none; margin-top: 15px;">
+                <p style="margin: 10px 0 8px 0; font-weight: bold; color: #b48608; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">🧮 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัยเดินทาง SLK</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; background: #fffdf0; padding: 12px; border-radius: 6px; border: 1px solid #ffecb3;">
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (THB)</label><input type="number" id="ocInpSlkOpdThb" step="any" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (THB)</label><input type="number" id="ocInpSlkIpdThb" step="any" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (LKR)</label><input type="number" id="ocInpSlkOpdLkr" step="any" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (LKR)</label><input type="number" id="ocInpSlkIpdLkr" step="any" value="0"></div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: #fffdf0; padding: 12px; border-radius: 6px; border: 1px solid #ffecb3;">
+                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:red;">ส่วนเกินวงเงินค่ารักษา (THB)</label><input type="number" id="ocInpOverThb" step="any" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:red;">ส่วนเกินวงเงินค่ารักษา (LKR)</label><input type="number" id="ocInpOverLkr" step="any" value="0"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:#b48608;">เรทค่าเงินที่ประกันคิดให้ (THB/LKR)</label><input type="number" id="ocInpRateIns" value="1" step="any"></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555; color:#b48608;">เรทค่าเงินปัจจุบัน (THB/LKR)</label><input type="number" id="ocInpRateInt" value="1" step="any"></div>
+                </div>
+            </div>
+            
+            <div
+                id="ocOpenCaseUploadGrid"
+                class="update-upload-grid update-upload-grid-single"
+                hidden
+            >
+                <div class="update-upload-card update-upload-card-open-case">
+                    <label>📸 อัปโหลดรูปหลักฐานการแจ้งเคสประกัน</label>
+                    <label for="openCaseEvidenceFile" class="update-upload-button">
+                        📁 เลือกรูปภาพเปิดเคส
+                    </label>
+                    <input
+                        type="file"
+                        id="openCaseEvidenceFile"
+                        accept="image/jpeg,image/png,image/webp"
+                        hidden
+                        onchange="previewSelectedImage(this, 'openCaseEvidencePreview')"
+                    >
+                    <div id="openCaseEvidencePreview" class="upload-image-preview"></div>
+                </div>
+            </div>
+
+            <!-- หลักฐานสำหรับขั้นตอนติดตาม รักษา เคลม และปิดเคส -->
+            <div id="ocStandardUploadGrid" class="update-upload-grid">
+
+                <div class="update-upload-card">
+                    <label>🧾 อัปโหลดใบเสร็จ</label>
+                    <label for="updateReceiptFile" class="update-upload-button">
+                        📁 เลือกรูปใบเสร็จ
+                    </label>
+                    <input
+                        type="file"
+                        id="updateReceiptFile"
+                        accept="image/jpeg,image/png,image/webp"
+                        hidden
+                        onchange="previewSelectedImage(this, 'updateReceiptPreview')"
+                    >
+                    <div id="updateReceiptPreview" class="upload-image-preview"></div>
+                </div>
+
+                <div class="update-upload-card">
+                    <label>📄 อัปโหลดใบรับรองแพทย์</label>
+                    <label for="medicalCertificateFile" class="update-upload-button">
+                        📁 เลือกรูปใบรับรองแพทย์
+                    </label>
+                    <input
+                        type="file"
+                        id="medicalCertificateFile"
+                        accept="image/jpeg,image/png,image/webp"
+                        hidden
+                        onchange="previewSelectedImage(this, 'medicalCertificatePreview')"
+                    >
+                    <div id="medicalCertificatePreview" class="upload-image-preview"></div>
+                </div>
+
+                <div class="update-upload-card">
+                    <label>🔒 อัปโหลดหลักฐานการปิดเคส</label>
+                    <label for="closeCaseEvidenceFile" class="update-upload-button">
+                        📁 เลือกรูปหลักฐานปิดเคส
+                    </label>
+                    <input
+                        type="file"
+                        id="closeCaseEvidenceFile"
+                        accept="image/jpeg,image/png,image/webp"
+                        hidden
+                        onchange="previewSelectedImage(this, 'closeCaseEvidencePreview')"
+                    >
+                    <div id="closeCaseEvidencePreview" class="upload-image-preview"></div>
+                </div>
+
+            </div>
+            <!-- สิ้นสุดโซนอัปโหลดรูปภาพเพิ่มเติม -->
+             
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div><label for="ocInpClinician" style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">ผลการรักษา <span style="color:red;">*</span></label><input type="text" id="ocInpClinician" required placeholder="พิมพ์สรุปผล เช่น อาการดีขึ้น กลับบ้านได้..."></div>
+                <div><label for="ocInpDocs" style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">เอกสารแนบ</label><input type="text" id="ocInpDocs" placeholder="ใบเสร็จ, ใบรับรองแพทย์..."></div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label for="ocNotesInput" style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">หมายเหตุเพิ่มเติม :</label>
+                <textarea id="ocNotesInput" placeholder="ระบุรายละเอียดอื่น ๆ..." style="min-height: 50px;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="button" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="window.closeOutcomeUpdateModal?.()">❌ ยกเลิก</button>
+                <button type="submit" style="flex: 2; padding: 12px; background: #198754; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">💾 ยืนยันการอัปเดตผลการรักษาลงระบบ</button>
+            </div>
+
+        </form>
+    </div>
+</div>
+<!-- ============================================================ การอัปเดตผลการรักษา =============================================================== -->
+<!-- ============================================================================================================================================== -->
+<!-- ============================= [ส่วนล่าง] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับการอัปเดตผลการรักษา (Outcome Update Modal) ===================================== -->
+<!-- =============================================================================================================================================== -->
+
+
+
+
+
+
+<!-- ============================================================การแก้ไขข้อมูลย้อนหลัง============================================================== -->
+<!-- ============================================================================================================================================ -->
+<!-- ============================= [ส่วนบน] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับแก้ไขข้อมูลย้อนหลัง (Edit Custom Modal) ======================================= -->
+<!-- ============================================================================================================================================ -->
+
+
+<div id="editCaseModalHome"></div>
+<div id="editCaseModal">
+    <div>
+        <!-- ส่วนหัวของกล่องป๊อปอัป -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 15px;">
+            <h3 style="margin: 0; color: #ffc107; font-family: 'Segoe UI', Tahoma, sans-serif;">📝 ปรับปรุงและแก้ไขข้อมูลเคสย้อนหลัง</h3>
+            <span style="font-size: 24px; cursor: pointer; color: #aaa; font-weight: bold; line-height: 1;" onclick="window.closeEditModal?.();">&times;</span>
+        </div>
+
+        <!-- ฟอร์มกรอกข้อมูลปรับปรุงแก้ไขภายในป๊อปอัป -->
+        <form id="modalEditForm">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เคส ID :</label>
+                    <input type="text" id="mdCaseId" readonly style="background-color: #e9ecef; color: #495057; cursor: not-allowed;">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">สถานพยาบาล :</label>
+                    <select id="mdHospitalSelect" required>
+                        <option value="รอยัล อังกอร์">รอยัล อังกอร์</option>
+                        <option value="จัสมิน คลินิก">จัสมิน คลินิก</option>
+                        <option value="เทวิน ข้างฮุยเกียร์">เทวิน ข้างฮุยเกียร์</option>
+                        <option value="คลินิกโซน 3">คลินิกโซน 3</option>
+                        <option value="คลินิก สุวิสา">คลินิก สุวิสา</option>
+                        <option value="คลินิกไทยช่าง (ท้ายคลัง)">คลินิกไทยช่าง (ท้ายคลัง)</option>
+                        <option value="คลินิกวงเทพ">คลินิกวงเทพ</option>
+                        <option value="คลินิกโอเคทินนา">คลินิกโอเคทินนา</option>
+                        <option value="อื่นๆ กรุงเทพและปริมณฑล">อื่นๆ กรุงเทพและปริมณฑล</option>
+                        <option value="อื่นๆ ต่างจังหวัด">อื่นๆ ต่างจังหวัด</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">วันที่เข้ารักษา :</label>
+                    <input type="text" id="mdManualDate" placeholder="📅 คลิกเลือกวันที่...">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">เวลาที่เข้ารักษา :</label>
+                    <input type="text" id="mdManualTime" placeholder="⏰ คลิกเลือกเวลา...">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">อาการป่วย :<span style="color:red;">*</span></label>
+                <textarea id="mdSymptomsInput" required placeholder="ระบุอาการป่วยที่ต้องการปรับปรุงแก้ไข..." style="min-height: 70px;"></textarea>
+            </div>
+
+            <!-- โซนกรอกสิทธิ์ตัวเลขวงเงิน (แบ่งเป็น 3 คอลัมน์) -->
+            <p style="margin: 15px 0 8px 0; font-weight: bold; color: #198754; font-size: 13px; border-bottom: 1px dashed #ccc; padding-bottom: 3px;">📊 ข้อมูลสรุปสิทธิ์และยอดเงินประกันภัย</p>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #dee2e6;">
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">ทำฟัน หักวงเงิน OPD</label><input type="number" id="mdInpDentalOPD" step="any" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP OPD</label><input type="number" id="mdInpPPUsageOPD" step="any" value="0"></div>
+                <div><label style="font-size:11px; font-weight:bold; color:#555;">PP IPD</label><input type="number" id="mdInpPPUsageIPD" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (T)</label><input type="number" id="mdInpSLKUsageOpdThB" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (T)</label><input type="number" id="mdInpSLKUsageIpdThB" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL OPD (L)</label><input type="number" id="mdInpSLKUsageOpdLkr" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (L)</label><input type="number" id="mdInpSLKUsageIpdLkr" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">ส่วนเกินวงเงินค่ารักษา (T)</label><input type="number" id="mdInpOverLimitThB" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">ส่วนเกินวงเงินค่ารักษา (L)</label><input type="number" id="mdInpOverLimitLkr" step="any" value="0"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">เรทค่าเงินที่ประกันคิดให้</label><input type="number" id="mdInpExchangeRatesIns" value="1" step="0.01"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">เรทค่าเงินปัจจุบัน</label><input type="number" id="mdInpExchangeRatesInt" value="1" step="0.01"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">ผลการรักษา</label><input type="text" id="mdInpClinician" placeholder="-"></div>
+                <div>
+                    <label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">เอกสารแนบ</label>
+                    <input type="hidden" id="mdInpDocs" value="-">
+                    <div id="mdEvidenceEditor" class="edit-evidence-editor"></div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px;">หมายเหตุเพิ่มเติม :</label>
+                <textarea id="mdNotesInput" placeholder="ข้อมูลอื่นๆ..." style="min-height: 50px;"></textarea>
+            </div>
+
+            <!-- ปุ่มกดยืนยันหรือยกเลิกการส่งค่าแก้ไขย้อนหลัง -->
+            <div style="display: flex; gap: 10px;">
+                <button type="button" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;" onclick="window.closeEditModal?.();">❌ ยกเลิก</button>
+                <button type="submit" style="flex: 2; padding: 12px; background: #ffc107; color: #212529; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">💾 ยืนยันการอัปเดตแก้ไขทับบรรทัดเดิม</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- ============================================================การแก้ไขข้อมูลย้อนหลัง=============================================================== -->
+<!-- ============================================================================================================================================= -->
+<!-- ============================= [ส่วนล่าง] โครงสร้างกล่องฟอร์มป๊อปอัปสำหรับแก้ไขข้อมูลย้อนหลัง (Edit Custom Modal) ======================================== -->
+<!-- ============================================================================================================================================= -->
+
+
+
+
+
+
+<!-- ================================ สร้างแถบกรองวันที่และปุ่มกรองขั้นสูง ============================ -->
+<div id="historyFilterModal" class="history-filter-modal">
+    <div class="history-filter-dialog">
+        <div class="history-filter-dialog-header">
+            <div>
+                <h3>🔎 กรองประวัติการรักษา</h3>
+                <p>ช่องที่ไม่เลือกจะไม่ถูกนำมาเป็นเงื่อนไข</p>
+            </div>
+
+            <button
+                type="button"
+                id="closeHistoryFilterButton"
+                class="history-filter-close"
+            >
+                &times;
+            </button>
+        </div>
+
+        <div class="history-filter-grid">
+            <div class="history-filter-field">
+                <label for="historyPeriodPreset">
+                    ช่วงเวลาแบบด่วน
+                </label>
+
+                <select id="historyPeriodPreset">
+                    <option value="">กำหนดจากวันที่ด้านนอก</option>
+                    <option value="all">ประวัติทั้งหมด</option>
+                    <option value="thisMonth">เดือนนี้</option>
+                    <option value="thisYear">ปีนี้</option>
+                </select>
+            </div>
+
+            <div class="history-filter-field">
+                <label for="historyAreaFilter">
+                    พื้นที่/ประเภทประกัน
+                </label>
+
+                <select id="historyAreaFilter">
+                    <option value="">ทั้งหมด</option>
+                    <option value="PP">PP</option>
+                    <option value="SLK">SLK</option>
+                </select>
+            </div>
+
+            <div class="history-filter-field">
+                <label for="historyTreatmentResultFilter">
+                    ผลการรักษา
+                </label>
+
+                <select id="historyTreatmentResultFilter">
+                    <option value="">ทั้งหมด</option>
+                </select>
+            </div>
+
+            <div class="history-filter-field">
+                <label for="historyDocumentFilter">
+                    เอกสารแนบ
+                </label>
+
+                <select id="historyDocumentFilter">
+                    <option value="">ทั้งหมด</option>
+                    <option value="hasDocument">มีเอกสารแนบ</option>
+                    <option value="noDocument">ไม่มีเอกสารแนบ</option>
+                </select>
+            </div>
+
+            <div class="history-filter-field history-filter-field-full">
+                <label for="historyHospitalFilter">
+                    คลินิกหรือสถานพยาบาล
+                </label>
+
+                <select id="historyHospitalFilter">
+                    <option value="">ทั้งหมด</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="history-filter-dialog-footer">
+            <button
+                type="button"
+                id="resetHistoryFilterButton"
+                class="history-filter-reset"
+            >
+                ล้างเงื่อนไข
+            </button>
+
+            <button
+                type="button"
+                id="applyHistoryFilterButton"
+                class="history-filter-apply"
+            >
+                แสดงประวัติตามเงื่อนไข
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ================================ สร้างแถบกรองวันที่และปุ่มกรองขั้นสูง ============================ -->
+
+

@@ -1,0 +1,2892 @@
+/* ===== Shared responsive foundation ===== */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* ===== Insurance operations shell: compact dashboard proportions ===== */
+
+.continuity-control-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+}
+
+.insurance-workspace-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+.insurance-workspace-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 30px;
+    padding: 5px 10px;
+    border: 1px solid #d5e2e4;
+    border-radius: 6px;
+    color: #395263;
+    background: #ffffff;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 150ms ease, background-color 150ms ease,
+        color 150ms ease, transform 150ms ease;
+}
+
+.insurance-workspace-tab span {
+    color: #7b909c;
+    font-size: 9px;
+    letter-spacing: 0.04em;
+}
+
+.insurance-workspace-tab:hover,
+.insurance-workspace-tab:focus-visible {
+    border-color: #68b8ae;
+    color: #086f66;
+    outline: none;
+    transform: translateY(-1px);
+}
+
+.insurance-workspace-tab.is-active {
+    border-color: #087f72;
+    color: #ffffff;
+    background: #087f72;
+    box-shadow: 0 4px 10px rgba(8, 127, 114, 0.18);
+}
+
+.insurance-workspace-tab.is-active span {
+    color: #bff5e8;
+}
+
+.employee-sidebar-brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: -14px -14px 11px;
+    padding: 10px 13px;
+    color: #ffffff;
+    background: linear-gradient(105deg, #075f5a 0%, #087f72 62%, #0b9483 100%);
+}
+
+.employee-sidebar-brand span {
+    color: #bff5e8;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+}
+
+.employee-sidebar-brand strong {
+    font-size: 12px;
+    letter-spacing: 0.01em;
+}
+
+.continuity-metric > span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.continuity-metric > span::before {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: #94a3b8;
+    box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.13);
+    content: "";
+}
+
+.continuity-pending > span::before { background: #f59e0b; }
+.continuity-active > span::before { background: #2563eb; }
+.continuity-followup > span::before { background: #8b5cf6; }
+.continuity-billing > span::before { background: #ea580c; }
+.continuity-closed > span::before { background: #16a34a; }
+
+@media (min-width: 901px) {
+    html,
+    body {
+        height: 100%;
+    }
+
+    body {
+        min-height: 100dvh;
+        height: 100dvh;
+        padding: 8px;
+        overflow: hidden;
+        background: #edf3f4;
+    }
+
+    .insurance-workspace-layout {
+        grid-template-columns: clamp(288px, 17.5vw, 328px) minmax(0, 1fr);
+        grid-template-rows: max-content minmax(0, 1fr);
+        gap: 8px;
+        width: 100%;
+        height: calc(100dvh - 16px);
+        min-height: 0;
+    }
+
+    .continuity-sticky-summary {
+        padding: 8px 12px 9px;
+        border-top-width: 4px;
+        border-radius: 9px;
+        box-shadow: 0 4px 14px rgba(20, 57, 66, 0.06);
+    }
+
+    .continuity-heading {
+        gap: 12px;
+        min-height: 48px;
+        padding-bottom: 5px;
+    }
+
+    .continuity-eyebrow {
+        font-size: 8.5px;
+        letter-spacing: 0.14em;
+    }
+
+    .continuity-heading h2 {
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.15;
+    }
+
+    .continuity-heading p {
+        margin-top: 2px;
+        font-size: 10.5px;
+        line-height: 1.25;
+    }
+
+    .continuity-heading-tools {
+        gap: 7px;
+    }
+
+    .continuity-total {
+        min-width: 78px;
+        padding: 4px 9px;
+        border-radius: 7px;
+    }
+
+    .continuity-total span {
+        font-size: 8.5px;
+    }
+
+    .continuity-total strong {
+        font-size: 20px;
+        line-height: 1.05;
+    }
+
+    .continuity-heading-tools .main-header-actions {
+        gap: 5px;
+    }
+
+    .header-action-button {
+        min-height: 30px;
+        padding: 5px 9px;
+        border-radius: 6px;
+        font-size: 10px;
+    }
+
+    .continuity-control-strip {
+        min-height: 28px;
+        padding: 4px 0;
+        border-top: 1px solid #e1eaec;
+        border-bottom: 1px solid #e1eaec;
+    }
+
+    .insurance-workspace-tab {
+        min-height: 25px;
+        padding: 4px 8px;
+        font-size: 9.5px;
+    }
+
+    .insurance-workspace-tab span {
+        font-size: 8px;
+    }
+
+    .continuity-area-filters {
+        min-height: 25px;
+        margin-top: 0;
+        flex: 0 1 auto;
+        justify-content: flex-end;
+    }
+
+    .continuity-area-filters > span {
+        font-size: 9.5px;
+    }
+
+    .continuity-area-buttons {
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+        gap: 4px;
+    }
+
+    .continuity-area-button {
+        min-height: 24px;
+        padding: 3px 8px;
+        font-size: 9.5px;
+    }
+
+    .continuity-summary-grid {
+        gap: 6px;
+        margin-top: 6px;
+    }
+
+    .continuity-metric {
+        min-height: 60px;
+        padding: 6px 9px;
+        border-radius: 7px;
+        background: linear-gradient(180deg, #ffffff 0%, #fbfdfd 100%);
+    }
+
+    .continuity-metric > span {
+        gap: 6px;
+        font-size: 9.5px;
+        line-height: 1.15;
+    }
+
+    .continuity-metric > span::before {
+        width: 6px;
+        height: 6px;
+    }
+
+    .continuity-metric strong {
+        margin: 2px 0 0;
+        font-size: 21px;
+        line-height: 1;
+    }
+
+    .continuity-metric small {
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        font-size: 9px;
+        line-height: 1.15;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .employee-sidebar-track,
+    .insurance-main-content {
+        height: 100%;
+        min-height: 0;
+    }
+
+    .employee-sidebar-track > .employee-fixed-sidebar {
+        position: static;
+        top: auto;
+        height: 100%;
+        max-height: none;
+        min-height: 0;
+        padding: 14px;
+        overflow: hidden;
+        border-top: 0;
+        border-left: 4px solid #087f72;
+        border-radius: 9px;
+        box-shadow: 0 5px 18px rgba(20, 57, 66, 0.07);
+    }
+
+    .employee-sidebar-brand {
+        flex: 0 0 auto;
+    }
+
+    .employee-search-heading {
+        padding-bottom: 8px;
+    }
+
+    .employee-search-heading h2 {
+        margin: 1px 0 2px;
+        font-size: 18px;
+    }
+
+    .employee-search-heading p {
+        font-size: 10.5px;
+        line-height: 1.3;
+    }
+
+    .employee-search-content .search-tool {
+        margin-top: 8px;
+    }
+
+    #resultsList {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+        overflow-x: hidden;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #9bc9c3 transparent;
+    }
+
+    .insurance-main-content {
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) clamp(220px, 32dvh, 300px);
+        gap: 8px;
+        overflow: hidden;
+    }
+
+    .continuity-placeholder,
+    #treatment-box-placeholder {
+        min-height: 0;
+        height: 100%;
+    }
+
+    .continuity-card {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        height: 100%;
+        padding: 8px;
+        overflow: auto;
+        border-radius: 9px;
+        scrollbar-width: thin;
+        scrollbar-color: #9bc9c3 transparent;
+    }
+
+    .continuity-treatment-slot {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .continuity-treatment-slot .middle-box,
+    .continuity-treatment-slot .card-container {
+        height: 100%;
+        padding: 10px !important;
+        border-radius: 8px;
+        box-shadow: none;
+    }
+
+    .continuity-treatment-slot .middle-box > div:first-child {
+        margin-bottom: 5px !important;
+        padding-bottom: 5px !important;
+    }
+
+    .continuity-treatment-slot .middle-box h2 {
+        font-size: 17px;
+    }
+
+    .treatment-field-grid {
+        gap: 4px 8px;
+        margin-bottom: 3px;
+    }
+
+    .treatment-field-grid .claim-label,
+    #claimForm > div[style*="margin-bottom: 15px"] > label {
+        font-size: 10.5px !important;
+    }
+
+    #claimForm input[type="text"],
+    #claimForm select {
+        height: 31px;
+        min-height: 31px;
+        padding: 4px 8px;
+        font-size: 11.5px;
+    }
+
+    #claimForm textarea,
+    .treatment-field-grid textarea {
+        height: 44px;
+        min-height: 44px;
+        max-height: 44px;
+        padding: 6px 8px;
+        font-size: 11.5px;
+    }
+
+    #claimForm > div[style*="margin-bottom: 15px"] {
+        margin-bottom: 2px !important;
+    }
+
+    .treatment-form-actions {
+        gap: 6px;
+        margin-top: 2px;
+    }
+
+    .treatment-copy-button,
+    .treatment-submit-button {
+        min-height: 31px;
+        padding: 5px 11px;
+        border-radius: 6px;
+        font-size: 10.5px;
+    }
+
+    #submitBtn.treatment-submit-button {
+        min-width: 205px;
+    }
+
+    .history-main-panel,
+    .history-main-panel .bottom-full-box {
+        height: clamp(220px, 32dvh, 300px);
+        min-height: 0;
+        max-height: 300px;
+    }
+
+    .history-main-panel {
+        grid-column: auto;
+        grid-row: auto;
+    }
+
+    .history-main-panel .bottom-full-box {
+        display: flex;
+        flex-direction: column;
+        padding: 9px 10px;
+        overflow: hidden;
+        margin: 0 !important;
+        border-radius: 9px;
+        box-shadow: 0 5px 18px rgba(20, 57, 66, 0.07);
+    }
+
+    .history-main-panel .bottom-full-box > h2 {
+        padding-bottom: 5px;
+        font-size: 16px;
+        line-height: 1.2;
+    }
+
+    .history-filter-toolbar {
+        gap: 6px;
+        padding: 4px 0;
+        border-bottom: 1px solid #e4ecee;
+    }
+
+    .history-date-input,
+    .history-filter-button,
+    .history-report-button,
+    #caseSearchInput,
+    .history-case-search-button {
+        height: 29px;
+        min-height: 29px;
+        border-radius: 5px;
+        font-size: 10px;
+    }
+
+    .history-date-input {
+        width: 118px;
+    }
+
+    .history-case-search {
+        grid-template-columns: auto minmax(210px, 280px);
+        grid-template-rows: 29px 12px;
+    }
+
+    .history-filter-summary {
+        min-height: 12px;
+        margin-bottom: 3px;
+        font-size: 9px;
+    }
+
+    .responsive-table-wrapper {
+        min-height: 0;
+        border-radius: 6px;
+        scrollbar-width: thin;
+        scrollbar-color: #8da6af #edf3f4;
+    }
+
+    .custom-claim-table th,
+    .custom-claim-table td {
+        padding: 6px 8px;
+        font-size: 10px;
+        line-height: 1.2;
+    }
+
+    .custom-claim-table tbody tr:nth-child(even) td {
+        background: #f8fbfb;
+    }
+}
+
+@media (max-width: 1280px) and (min-width: 901px) {
+    .continuity-control-strip {
+        align-items: flex-start;
+    }
+
+    .insurance-workspace-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, max-content);
+    }
+
+    .continuity-area-buttons {
+        flex-wrap: wrap;
+    }
+}
+
+@media (min-width: 901px) and (max-height: 820px) {
+    .insurance-main-content {
+        grid-template-rows: minmax(0, 1fr) clamp(210px, 30dvh, 260px);
+    }
+
+    .history-main-panel,
+    .history-main-panel .bottom-full-box {
+        height: clamp(210px, 30dvh, 260px);
+        max-height: 260px;
+    }
+
+    .employee-sidebar-brand {
+        margin-bottom: 7px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+
+    .employee-sidebar-brand strong {
+        font-size: 10px;
+    }
+
+    .employee-search-heading {
+        padding-bottom: 5px;
+    }
+
+    .employee-search-heading h2 {
+        font-size: 16px;
+    }
+
+    .employee-search-heading p {
+        display: none;
+    }
+
+    .employee-search-content .search-tool {
+        margin-top: 5px;
+    }
+
+    #message {
+        min-height: 12px;
+        margin-top: 4px;
+        font-size: 9.5px;
+    }
+
+    .employee-selection-instruction {
+        margin: 3px 0;
+        font-size: 9.5px;
+    }
+
+    .employee-summary-line {
+        min-height: 28px;
+        padding: 3px 5px;
+        font-size: 9.5px;
+    }
+
+    .employee-expanded-details {
+        padding: 4px 6px 5px;
+    }
+
+    .employee-found-row {
+        margin-bottom: 2px;
+        font-size: 9.5px;
+    }
+
+    .employee-detail-row {
+        min-height: 20px;
+        gap: 3px;
+        font-size: 9.5px;
+    }
+
+    .employee-copy-button {
+        min-height: 18px;
+        padding: 1px 4px;
+        font-size: 8px;
+    }
+
+    .continuity-card {
+        padding: 6px;
+    }
+
+    .continuity-treatment-slot .middle-box,
+    .continuity-treatment-slot .card-container {
+        padding: 7px !important;
+    }
+
+    .continuity-treatment-slot .middle-box h2 {
+        font-size: 15px;
+    }
+
+    #claimForm input[type="text"],
+    #claimForm select {
+        height: 28px;
+        min-height: 28px;
+    }
+
+    #claimForm textarea,
+    .treatment-field-grid textarea {
+        height: 38px;
+        min-height: 38px;
+        max-height: 38px;
+    }
+
+    #claimForm label[for="imageUpload"] {
+        padding-top: 3px !important;
+        padding-bottom: 3px !important;
+    }
+
+    .treatment-copy-button,
+    .treatment-submit-button {
+        min-height: 28px;
+        padding-top: 3px;
+        padding-bottom: 3px;
+    }
+}
+
+@media (max-width: 900px) {
+    .continuity-control-strip {
+        align-items: stretch;
+        flex-direction: column;
+        padding-top: 10px;
+    }
+
+    .insurance-workspace-tabs {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 3px;
+        scrollbar-width: thin;
+    }
+
+    .insurance-workspace-tab {
+        flex: 0 0 auto;
+    }
+
+    .employee-sidebar-brand {
+        margin: -14px -14px 12px;
+    }
+}
+
+/* Desktop: keep the outer white workspace frame flush and identical across
+   all three insurance workflows. Inner controls retain their existing spacing. */
+@media (min-width: 901px) {
+    body.insurance-open-treatment-mode,
+    body.insurance-continuity-mode,
+    body.insurance-history-mode {
+        padding: 0 !important;
+    }
+
+    body.insurance-open-treatment-mode .insurance-workspace-layout,
+    body.insurance-continuity-mode .insurance-workspace-layout,
+    body.insurance-history-mode .insurance-workspace-layout {
+        width: 100% !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        padding: 0 !important;
+    }
+
+    body.insurance-open-treatment-mode .insurance-open-treatment-view,
+    body.insurance-open-treatment-mode .open-case-combined-card,
+    body.insurance-continuity-mode .insurance-continuity-view,
+    body.insurance-continuity-mode .continuity-placeholder,
+    body.insurance-continuity-mode .continuity-card,
+    body.insurance-history-mode .insurance-history-view,
+    body.insurance-history-mode .history-main-panel,
+    body.insurance-history-mode .history-main-panel .bottom-full-box {
+        width: 100% !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        margin: 0 !important;
+    }
+}
+
+/* มือถือ (จอแคบ ≤620px): เมื่อเปิดกรอบ "อัปเดตผลการรักษาหรือปิดเคส" การ์ดสรุป 5 ช่อง
+   (.continuity-summary-grid) จะถูกจัดเป็น 1 คอลัมน์ (ซ้อนกัน 5 แถว) ทำให้
+   .continuity-sticky-summary สูงเกินความสูงคงที่ของ .continuity-card (ซึ่งถูกล็อกเท่า
+   ความสูงจอ + overflow:hidden ไว้สำหรับจอกว้าง) ผลคือ .continuity-scroll-region ที่บรรจุ
+   รายการเคส/ผลค้นหาถูกบีบจนความสูงเหลือเกือบ 0 และมองไม่เห็นเลยบนมือถือ (พับ/แสดงผิดปกติ)
+   แก้โดยยกเลิกการล็อกความสูงคงที่บนจอแคบ ให้การ์ดขยายตามเนื้อหาจริงและให้หน้าเลื่อนตามปกติแทน
+   ใช้ selector ที่มี specificity เท่ากับกฎเดิมด้านบน (body.<mode> .continuity-card) เพื่อให้
+   ชนะกฎ !important อื่นๆ ที่ scope ด้วย .insurance-continuity-view เพียงอย่างเดียวได้แน่นอน */
+@media (max-width: 620px) {
+    body.insurance-continuity-mode .continuity-card {
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+    }
+
+    body.insurance-continuity-mode .continuity-scroll-region {
+        overflow: visible !important;
+        max-height: none !important;
+    }
+}
+
+/* ===== Excel-like zoom: scoped only to the history table ===== */
+
+.history-table-shell {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    width: 100%;
+    height: clamp(330px, 44vh, 540px);
+    min-height: 0;
+    max-height: 540px;
+    margin-top: 15px;
+    overflow: hidden;
+    border: 1px solid #d9e4e7;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.history-table-shell .responsive-table-wrapper {
+    flex: 1 1 auto;
+    width: 100% !important;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    margin-top: 0;
+    overflow: auto !important;
+    border: 0;
+    border-radius: 0;
+}
+
+.history-table-zoom-surface {
+    display: inline-block;
+    width: max-content;
+    min-width: max-content;
+    padding-bottom: 44px;
+    vertical-align: top;
+    transform-origin: left top;
+    zoom: var(--history-table-zoom, 1);
+}
+
+.history-table-zoom-toolbar {
+    position: absolute;
+    right: 9px;
+    bottom: 16px;
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    min-height: 32px;
+    padding: 3px 7px;
+    border: 1px solid #b9c9cf;
+    border-radius: 7px;
+    color: #435866;
+    background: rgba(244, 247, 248, 0.97);
+    box-shadow: 0 3px 10px rgba(23, 48, 66, 0.14);
+    font-size: var(--insurance-type-small);
+    line-height: 1;
+}
+
+.history-table-zoom-label {
+    margin-right: 2px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.history-table-zoom-button,
+.history-table-zoom-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 27px;
+    min-height: 25px;
+    padding: 2px 7px;
+    border: 1px solid #b9c9cf;
+    border-radius: 5px;
+    color: #173042;
+    background: #ffffff;
+    font: inherit;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.history-table-zoom-button:hover,
+.history-table-zoom-reset:hover {
+    border-color: #087f72;
+    color: #075f5a;
+    background: #e8f8f5;
+}
+
+.history-table-zoom-button:disabled {
+    color: #94a3b8;
+    background: #edf1f3;
+}
+
+.history-table-zoom-range {
+    width: clamp(90px, 9vw, 150px);
+    min-width: 80px;
+    accent-color: #087f72;
+    cursor: pointer;
+}
+
+.history-table-zoom-value {
+    min-width: 45px;
+    color: #075f5a;
+    font-weight: 800;
+    text-align: center;
+}
+
+.history-table-zoom-reset {
+    min-width: auto;
+    padding-inline: 9px;
+}
+
+@media (min-width: 901px) {
+    .history-main-panel .history-table-shell {
+        height: auto;
+        max-height: none;
+        margin-top: 3px;
+    }
+}
+
+@media (max-width: 600px) {
+    .history-table-shell {
+        height: min(68vh, 540px);
+        min-height: 360px;
+    }
+
+    .history-table-zoom-toolbar {
+        right: 7px;
+        bottom: 17px;
+        left: 7px;
+        justify-content: center;
+        min-height: 42px;
+        padding: 6px;
+    }
+
+    .history-table-zoom-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+
+    .history-table-zoom-range {
+        flex: 1 1 100px;
+        max-width: 150px;
+    }
+}
+
+/* ===== Insurance workspace refinement: compact responsive flow ===== */
+@media (max-width: 768px) {
+    .continuity-sticky-summary {
+        padding: 15px !important;
+    }
+
+    .continuity-summary-grid {
+        gap: 8px !important;
+    }
+
+    .continuity-metric {
+        min-height: 88px !important;
+        padding: 11px 12px !important;
+    }
+
+    .employee-sidebar-track > .employee-fixed-sidebar {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    #resultsList {
+        max-height: min(360px, 48dvh) !important;
+        overflow-y: auto !important;
+    }
+
+    .history-main-panel .bottom-full-box {
+        padding: 14px !important;
+    }
+
+    .history-filter-toolbar {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: end !important;
+    }
+
+    .history-date-group,
+    .history-date-input,
+    .history-filter-button,
+    .history-report-button {
+        width: 100% !important;
+    }
+
+    .history-case-search {
+        grid-column: 1 / -1;
+        width: 100%;
+        min-width: 0;
+        margin-left: 0;
+    }
+
+    .history-case-search-control {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    #caseSearchInput,
+    .history-case-search-button {
+        min-height: 44px;
+    }
+
+    .responsive-table-wrapper {
+        height: min(480px, 56dvh) !important;
+        max-height: min(480px, 56dvh) !important;
+        overflow: auto !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .history-filter-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .history-case-search {
+        grid-column: 1;
+    }
+
+    .history-case-search-control {
+        grid-template-columns: 1fr;
+    }
+
+    .history-case-search-button {
+        width: 100%;
+    }
+}
+
+/* ===== Insurance workspace refresh: mobile overrides ===== */
+@media (max-width: 768px) {
+    body {
+        padding: 10px !important;
+        gap: 12px !important;
+    }
+
+    .continuity-sticky-summary {
+        position: static !important;
+        grid-row: 1 !important;
+        padding: 17px !important;
+        border-radius: 12px !important;
+    }
+
+    .employee-sidebar-track {
+        grid-row: 2 !important;
+    }
+
+    .insurance-main-content {
+        grid-row: 3 !important;
+    }
+
+    .history-main-panel {
+        grid-row: 4 !important;
+    }
+
+    .continuity-heading-tools,
+    .continuity-heading-tools .main-header-actions {
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    .continuity-title-group {
+        flex: 0 0 auto !important;
+        min-width: 0 !important;
+    }
+
+    .continuity-heading {
+        gap: 14px !important;
+    }
+
+    .continuity-heading-tools {
+        align-items: stretch !important;
+    }
+
+    .continuity-total {
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .continuity-heading-tools .main-header-actions {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+        margin: 0 !important;
+    }
+
+    .continuity-heading-tools .header-action-refresh {
+        grid-column: 1 / -1;
+    }
+
+    .continuity-heading-tools .header-action-button {
+        width: 100% !important;
+        min-width: 0 !important;
+        white-space: normal !important;
+    }
+
+    .continuity-summary-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .continuity-metric {
+        min-height: 96px !important;
+    }
+
+    .employee-sidebar-track > .employee-fixed-sidebar {
+        padding: 16px !important;
+        max-height: none !important;
+    }
+
+    .search-tool-row {
+        grid-template-columns: 1fr !important;
+    }
+
+    .search-tool-row .btn-search {
+        width: 100% !important;
+    }
+
+    .treatment-form-actions {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+    }
+
+    #btnCopyToClaim,
+    #submitBtn.treatment-submit-button {
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1180px) {
+    .continuity-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+html {
+    width: 100%;
+    min-height: 100%;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body {
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+svg {
+    max-width: 100%;
+    height: auto;
+}
+
+input,
+select,
+textarea,
+button {
+    max-width: 100%;
+    font: inherit;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+    touch-action: manipulation;
+}
+
+.table-responsive,
+.table-container,
+.history-table-wrapper,
+.report-table-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+    body {
+        font-size: 14px;
+    }
+
+    input,
+    select,
+    textarea {
+        width: 100%;
+        min-height: 44px;
+        font-size: 16px; /* ป้องกัน iPhone ซูมช่องกรอก */
+    }
+
+    textarea {
+        min-height: 96px;
+    }
+
+    button,
+    .button,
+    .btn {
+        min-height: 44px;
+    }
+
+    .modal,
+    .modal-content {
+        max-width: calc(100vw - 24px);
+    }
+
+    .modal-content {
+        max-height: calc(100dvh - 24px);
+        overflow-y: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        font-size: 13px;
+    }
+
+    .modal,
+    .modal-content {
+        max-width: calc(100vw - 16px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+
+
+/* ===== Insurance panel system: one border, one dark title strip ===== */
+
+:root {
+    --insurance-panel-border: #087f72;
+    --insurance-panel-dark: #075f5a;
+    --insurance-panel-accent: #0b9483;
+    --insurance-panel-shadow: 0 5px 16px rgba(20, 57, 66, 0.08);
+}
+
+.panel-dark-header {
+    color: #ffffff !important;
+    border: 0 !important;
+    background: linear-gradient(
+        105deg,
+        var(--insurance-panel-dark) 0%,
+        var(--insurance-panel-border) 62%,
+        var(--insurance-panel-accent) 100%
+    ) !important;
+}
+
+.panel-dark-header .insurance-box-title,
+.panel-dark-header.insurance-box-title,
+.panel-dark-header h2,
+.panel-dark-header h3,
+.panel-dark-header strong {
+    color: #ffffff !important;
+}
+
+.panel-dark-header p,
+.panel-dark-header .continuity-eyebrow,
+.panel-dark-header > span:first-child {
+    color: #c9fff3 !important;
+}
+
+.employee-fixed-sidebar,
+.continuity-sticky-summary,
+.continuity-treatment-slot .middle-box,
+.history-main-panel .bottom-full-box,
+.continuity-workspace-detail {
+    border: 1px solid var(--insurance-panel-border) !important;
+    border-radius: 8px !important;
+    background: #ffffff;
+    box-shadow: var(--insurance-panel-shadow) !important;
+}
+
+/* The continuity component is now a layout wrapper, not a second box. */
+.continuity-placeholder .continuity-card {
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.employee-sidebar-brand.panel-dark-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+    padding: 9px 13px;
+}
+
+.employee-sidebar-brand .insurance-box-title {
+    margin: 0 !important;
+    font-size: 17px !important;
+    line-height: 1.15 !important;
+}
+
+.employee-search-heading {
+    padding-bottom: 8px;
+}
+
+.employee-search-heading p {
+    margin: 0;
+}
+
+.continuity-heading.panel-dark-header {
+    margin: -8px -12px 7px !important;
+    padding: 7px 10px !important;
+    border-radius: 7px 7px 0 0;
+}
+
+.continuity-heading.panel-dark-header .continuity-total {
+    color: #075f5a;
+    background: #e7faf6;
+}
+
+.continuity-heading.panel-dark-header .main-header-actions {
+    margin: 0;
+}
+
+.continuity-heading.panel-dark-header .header-action-button {
+    border-color: rgba(255, 255, 255, 0.72);
+    background: #ffffff;
+}
+
+.continuity-heading.panel-dark-header .header-action-refresh {
+    color: #087f72;
+}
+
+.continuity-treatment-slot .middle-box,
+.continuity-treatment-slot .card-container {
+    padding: 0 10px 8px !important;
+    overflow: hidden;
+}
+
+.treatment-panel-heading.panel-dark-header {
+    margin: 0 -10px 7px !important;
+    padding: 7px 10px !important;
+    border-radius: 7px 7px 0 0;
+}
+
+.treatment-panel-heading.panel-dark-header #headerDateTimeContainer span:first-child {
+    color: #d7fff6 !important;
+}
+
+.treatment-panel-heading.panel-dark-header #headerDateTimeValue {
+    color: #ffffff !important;
+}
+
+.history-main-panel .bottom-full-box {
+    padding: 0 10px 8px !important;
+}
+
+.history-main-panel .bottom-full-box > .insurance-box-title.panel-dark-header {
+    margin: 0 -10px 3px !important;
+    padding: 7px 10px !important;
+    border-radius: 7px 7px 0 0;
+    font-size: 16px !important;
+}
+
+.history-result-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 29px;
+    padding: 4px 10px;
+    border: 1px solid #9ed9cf;
+    border-radius: 999px;
+    color: #075f5a;
+    background: #e8f8f5;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.insurance-workspace-layout .continuity-workspace-detail {
+    padding: 0 12px 12px !important;
+    overflow: hidden;
+}
+
+.continuity-case-panel-heading.panel-dark-header {
+    margin: 0 -12px 10px !important;
+    padding: 9px 12px !important;
+    border-radius: 7px 7px 0 0;
+}
+
+.continuity-case-panel-heading.panel-dark-header p {
+    margin-top: 2px;
+    color: #c9fff3 !important;
+}
+
+.continuity-case-panel-heading.panel-dark-header .continuity-close-button {
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.68);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.outcome-modal-heading.panel-dark-header {
+    margin: -25px -25px 15px !important;
+    padding: 11px 16px !important;
+    border-radius: 7px 7px 0 0;
+}
+
+.outcome-modal-heading.panel-dark-header > span:last-child {
+    color: #ffffff !important;
+}
+
+.outcome-modal-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.62);
+    border-radius: 6px;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.outcome-modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.update-upload-grid[hidden] {
+    display: none !important;
+}
+
+.update-upload-grid-single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.update-upload-card-open-case {
+    min-height: 112px;
+    border-color: #74cdbd;
+    background: #f1fcfa;
+}
+
+@media (max-width: 900px) {
+    .continuity-heading.panel-dark-header {
+        margin: -10px -10px 8px !important;
+        border-radius: 7px 7px 0 0;
+    }
+
+    .outcome-modal-heading.panel-dark-header {
+        margin: -16px -16px 14px !important;
+    }
+
+    .history-result-count {
+        order: 4;
+    }
+}
+/* ===== Insurance workspace: mobile layout ===== */
+
+@media (max-width: 768px) {
+    .main-topbar {
+        width: 100%;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .main-topbar h1 {
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.35;
+    }
+
+    .main-header-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .header-action-button {
+        width: 100%;
+        min-width: 0;
+        white-space: normal;
+    }
+
+    .flex-row-container {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        gap: 16px !important;
+        padding: 12px !important;
+    }
+
+    .card-container,
+    .left-box,
+    .right-box,
+    #search-box-placeholder {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        flex: 0 0 auto !important;
+        margin: 0 !important;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+
+    .form-group > label {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+}
+
+@media (max-width: 420px) {
+    .main-header-actions {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ===== Treatment form: mobile proportions ===== */
+
+@media (max-width: 768px) {
+    .middle-box {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        flex: 0 0 auto !important;
+        margin: 0 !important;
+        padding: 18px !important;
+    }
+
+    .middle-box > div:first-child {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+
+    .middle-box h2 {
+        width: 100%;
+        font-size: 19px !important;
+        line-height: 1.4;
+    }
+
+    #headerDateTimeContainer {
+        width: 100%;
+        text-align: left !important;
+    }
+
+    #claimForm {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .treatment-field-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    .treatment-field-grid .treatment-field,
+    .treatment-field-grid .treatment-field-hospital,
+    .treatment-field-grid .treatment-field-long {
+        grid-column: 1 !important;
+    }
+
+    .claim-row {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 7px !important;
+        margin-bottom: 14px !important;
+    }
+
+    .claim-label {
+        width: 100% !important;
+        min-width: 0 !important;
+        flex: none !important;
+        margin: 0 !important;
+        line-height: 1.4;
+    }
+
+    #claimForm .value-text {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        flex: none !important;
+    }
+
+    #claimForm .value-text input,
+    #claimForm .value-text select,
+    #claimForm .value-text textarea,
+    #caseId,
+    #manualDate,
+    #manualTime,
+    #hospitalSelect,
+    #distanceInput,
+    #symptomsInput,
+    #notesInput {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+
+    #btnCopyToClaim,
+    #submitBtn {
+        width: 100% !important;
+        justify-content: center !important;
+        margin-top: 10px;
+    }
+
+    .upload-image-preview {
+        max-width: 100%;
+    }
+}
+
+/* ===== Search result, upload and history: mobile ===== */
+
+@media (max-width: 768px) {
+    /* ผลการค้นหาพนักงาน */
+    #resultsList {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    #resultsList .result-item {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        margin: 12px 0 0 !important;
+        padding: 14px !important;
+        font-size: 13px !important;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+    }
+
+    #resultsList .result-item > * {
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    #resultsList .result-item h3 {
+        font-size: 15px !important;
+        line-height: 1.4;
+        margin: 0 0 10px;
+    }
+
+    #resultsList .result-item p {
+        display: grid;
+        grid-template-columns: minmax(92px, 42%) minmax(0, 1fr);
+        gap: 8px;
+        margin: 0;
+        padding: 6px 0;
+        align-items: start;
+    }
+
+    /* อัปโหลดรูปเปิดเคส */
+    #claimForm [data-permission="UploadFiles"] {
+        width: 100%;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+    }
+
+    #claimForm label[for="imageUpload"] {
+        width: 100% !important;
+        min-height: 44px;
+        padding: 10px 12px !important;
+        justify-content: center;
+        text-align: center;
+        white-space: normal;
+    }
+
+    #fileNameDisplay {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        padding: 8px 10px;
+        font-size: 12px !important;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        border-left: 3px solid #0f766e;
+        background: #f8faf9;
+        border-radius: 4px;
+    }
+
+    #openCasePreview {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    #openCasePreview img {
+        display: block;
+        width: auto;
+        max-width: 100%;
+        max-height: 180px;
+        margin: 0 auto;
+        object-fit: contain;
+        border-radius: 8px;
+    }
+
+    /* ส่วนประวัติ */
+    .bottom-full-box {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        padding: 14px !important;
+    }
+
+    .bottom-full-box h2 {
+        font-size: 17px !important;
+        line-height: 1.4;
+    }
+
+    .history-filter-toolbar {
+        width: 100%;
+        gap: 8px !important;
+    }
+
+    .responsive-table-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .custom-claim-table {
+        width: max-content !important;
+        min-width: 1450px !important;
+        font-size: 10px !important;
+        line-height: 1.25 !important;
+    }
+
+    .custom-claim-table th,
+    .custom-claim-table td {
+        padding: 6px 7px !important;
+        font-size: 10px !important;
+        line-height: 1.25 !important;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .custom-claim-table th {
+        font-weight: 700;
+    }
+
+    .history-filter-button,
+    .history-report-button {
+        min-height: 42px;
+        font-size: 12px !important;
+        padding: 8px 12px !important;
+    }
+}
+
+/* ===== Employee result card: mobile ===== */
+
+@media (max-width: 768px) {
+    .left-box {
+        padding: 14px !important;
+    }
+
+    #resultsList .result-item {
+        width: 100% !important;
+        padding: 12px !important;
+    }
+
+    #resultsList .result-item > p:first-child {
+        font-size: 14px !important;
+        line-height: 1.35;
+        margin-bottom: 8px !important;
+    }
+
+    #resultsList .info-row {
+        width: 100%;
+        display: grid !important;
+        grid-template-columns:
+            minmax(105px, 46%)
+            minmax(0, 1fr);
+        gap: 8px;
+        align-items: start;
+        padding: 7px 0;
+        border-bottom: 1px dashed #e5e7eb;
+    }
+
+    #resultsList .label-text {
+        width: auto !important;
+        min-width: 0 !important;
+        font-size: 12px !important;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    #resultsList .value-text {
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        font-size: 12px !important;
+        line-height: 1.35;
+        text-align: left;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+}
+
+@media (max-width: 600px) {
+    /* กล่อง Modal */
+    #editCaseModal > div,
+    #outcomeUpdateModal > div {
+        width: calc(100vw - 24px) !important;
+        max-width: 360px !important;
+        padding: 16px !important;
+        max-height: 88vh !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        box-sizing: border-box !important;
+    }
+
+    /* ทุก Grid ภายในฟอร์มให้เรียงลงมา */
+    #modalEditForm div[style*="display: grid"],
+    #modalOutcomeForm div[style*="display: grid"] {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* ช่องกรอกทั้งหมด */
+    #modalEditForm input,
+    #modalEditForm select,
+    #modalEditForm textarea,
+    #modalOutcomeForm input,
+    #modalOutcomeForm select,
+    #modalOutcomeForm textarea {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    /* ปุ่มด้านล่าง */
+    #modalEditForm > div:last-child,
+    #modalOutcomeForm > div:last-child {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+    }
+
+    #modalEditForm > div:last-child button,
+    #modalOutcomeForm > div:last-child button {
+        width: 100% !important;
+    }
+
+    /* หัวข้อไม่ให้ชนปุ่มปิด */
+    #editCaseModal h3,
+    #outcomeUpdateModal h3 {
+        padding-right: 12px !important;
+        font-size: 16px !important;
+        line-height: 1.4 !important;
+    }
+}
+
+/* ===== Compact treatment entry: shorter controls and reclaimed history space ===== */
+
+.treatment-panel-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #dfe8ea;
+}
+
+.treatment-form-footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    margin-top: 4px;
+}
+
+.treatment-upload-field {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.treatment-upload-field > label {
+    flex: 0 0 auto;
+    margin: 0 !important;
+    font-size: 10.5px !important;
+    white-space: nowrap;
+}
+
+@media (min-width: 901px) {
+    .insurance-main-content {
+        grid-template-rows: max-content minmax(220px, 1fr);
+    }
+
+    .continuity-placeholder,
+    #treatment-box-placeholder,
+    .continuity-treatment-slot,
+    .continuity-treatment-slot .middle-box,
+    .continuity-treatment-slot .card-container {
+        height: auto;
+    }
+
+    .continuity-card {
+        height: auto;
+        min-height: 0;
+        overflow: visible;
+    }
+
+    .treatment-panel-heading {
+        margin-bottom: 5px !important;
+        padding-bottom: 5px !important;
+    }
+
+    .treatment-panel-heading h2 {
+        font-size: 16px !important;
+        line-height: 1.2;
+    }
+
+    #headerDateTimeContainer {
+        flex: 0 0 auto;
+    }
+
+    .treatment-field-grid {
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        grid-auto-flow: row dense;
+        gap: 4px 8px;
+        margin-bottom: 3px;
+    }
+
+    .treatment-field-grid .treatment-field {
+        gap: 2px;
+    }
+
+    .treatment-field-date,
+    .treatment-field-time,
+    .treatment-field-case,
+    .treatment-field-distance {
+        grid-column: span 2 !important;
+    }
+
+    .treatment-field-grid .treatment-field-hospital {
+        grid-column: span 4 !important;
+    }
+
+    .treatment-field-grid .treatment-field-long {
+        grid-column: span 6 !important;
+    }
+
+    .treatment-field-grid .claim-label {
+        font-size: 10px !important;
+        line-height: 1.15;
+        white-space: nowrap;
+    }
+
+    #claimForm input[type="text"],
+    #claimForm select {
+        height: 29px;
+        min-height: 29px;
+        padding: 3px 7px;
+        font-size: 11px;
+    }
+
+    #claimForm textarea,
+    .treatment-field-grid textarea {
+        height: 37px;
+        min-height: 37px;
+        max-height: 37px;
+        padding: 5px 7px;
+        font-size: 11px;
+    }
+
+    #claimForm.employee-not-selected {
+        padding-bottom: 31px;
+    }
+
+    #claimForm.employee-not-selected::after {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        margin: 0;
+        padding: 6px 10px;
+        font-size: 10px;
+        line-height: 1.2;
+    }
+
+    .treatment-upload-field [data-permission="UploadFiles"] {
+        gap: 6px !important;
+        min-width: 0;
+    }
+
+    #claimForm label[for="imageUpload"] {
+        padding: 4px 8px !important;
+        font-size: 10px !important;
+        white-space: nowrap;
+    }
+
+    #fileNameDisplay {
+        max-width: 170px;
+        overflow: hidden;
+        font-size: 9.5px !important;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .treatment-form-actions {
+        flex: 0 0 auto;
+        gap: 6px;
+        margin: 0;
+        flex-wrap: nowrap;
+    }
+
+    .treatment-copy-button,
+    .treatment-submit-button {
+        min-height: 29px;
+        padding: 4px 10px;
+        font-size: 10px;
+        white-space: nowrap;
+    }
+
+    #submitBtn.treatment-submit-button {
+        min-width: 190px;
+    }
+
+    .history-main-panel,
+    .history-main-panel .bottom-full-box {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        max-height: none;
+    }
+}
+
+@media (min-width: 901px) and (max-width: 1280px) {
+    .treatment-field-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .treatment-field-date,
+    .treatment-field-time,
+    .treatment-field-case,
+    .treatment-field-distance {
+        grid-column: span 2 !important;
+    }
+
+    .treatment-field-grid .treatment-field-hospital {
+        grid-column: span 4 !important;
+    }
+
+    .treatment-field-grid .treatment-field-long {
+        grid-column: span 3 !important;
+    }
+
+    .treatment-form-footer {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 5px;
+    }
+}
+
+@media (max-width: 900px) {
+    .treatment-panel-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .treatment-form-footer,
+    .treatment-upload-field {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .treatment-upload-field > label {
+        white-space: normal;
+    }
+}
+
+/* ===== Shared box headings and full-width continuity detail flow ===== */
+
+.insurance-box-title {
+    margin: 2px 0 3px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    color: #08745e !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    line-height: 1.25 !important;
+}
+
+.treatment-panel-heading .insurance-box-title {
+    font-size: 18px !important;
+}
+
+.insurance-box-heading {
+    border-bottom: 1px solid #d9e4e7 !important;
+}
+
+.history-main-panel .bottom-full-box > .insurance-box-title {
+    margin: 0 !important;
+    padding: 0 0 7px !important;
+    border-bottom: 1px solid #d9e4e7 !important;
+    font-size: 18px !important;
+}
+
+.continuity-case-panel-heading.insurance-box-heading {
+    align-items: center;
+    padding-bottom: 8px;
+}
+
+.continuity-case-panel-heading .insurance-box-title {
+    margin: 0 0 3px !important;
+}
+
+@media (min-width: 901px) {
+    .continuity-sticky-summary {
+        position: sticky;
+        top: 8px;
+        z-index: 50;
+        align-self: start;
+    }
+
+    body.continuity-details-open {
+        height: auto;
+        min-height: 100dvh;
+        overflow-y: auto;
+    }
+
+    body.continuity-details-open .insurance-workspace-layout {
+        height: auto;
+        min-height: calc(100dvh - 16px);
+        grid-template-rows:
+            max-content
+            minmax(0, calc(100dvh - 205px))
+            auto;
+    }
+
+    body.continuity-details-open .employee-sidebar-track,
+    body.continuity-details-open .insurance-main-content {
+        height: 100%;
+        min-height: 0;
+    }
+
+    .continuity-workspace-detail {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        width: 100%;
+        min-width: 0;
+        max-height: none;
+        margin: 0;
+        padding: 14px;
+        overflow: visible;
+        border-color: #d9e4e7;
+        border-top: 4px solid #14b88a;
+        border-radius: 9px;
+        background: #ffffff;
+        box-shadow: 0 5px 18px rgba(20, 57, 66, 0.07);
+        scroll-margin-top: 198px;
+    }
+
+    .continuity-workspace-detail .continuity-case-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-height: none;
+        overflow: visible;
+    }
+}
+
+@media (max-width: 900px) {
+    .continuity-sticky-summary {
+        position: static;
+    }
+
+    body.continuity-details-open,
+    body.continuity-details-open .insurance-workspace-layout {
+        height: auto;
+        min-height: 100%;
+        overflow-y: auto;
+    }
+
+    .continuity-workspace-detail {
+        grid-column: 1;
+        grid-row: 4;
+        width: 100%;
+        max-height: none;
+        margin: 0;
+        overflow: visible;
+    }
+
+    .continuity-workspace-detail .continuity-case-list {
+        grid-template-columns: 1fr;
+        max-height: none;
+        overflow: visible;
+    }
+}
+
+/* ===== Interaction, validation and feedback states ===== */
+
+.insurance-workspace-layout button:focus-visible,
+.insurance-workspace-layout input:focus-visible,
+.insurance-workspace-layout select:focus-visible,
+.insurance-workspace-layout textarea:focus-visible,
+#outcomeUpdateModal button:focus-visible,
+#outcomeUpdateModal input:focus-visible,
+#outcomeUpdateModal select:focus-visible,
+#outcomeUpdateModal textarea:focus-visible {
+    outline: 3px solid #fbbf24 !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px #ffffff !important;
+}
+
+.insurance-workspace-layout button:not(:disabled):active,
+#outcomeUpdateModal button:not(:disabled):active {
+    transform: translateY(1px);
+}
+
+.insurance-workspace-layout button:disabled,
+#outcomeUpdateModal button:disabled {
+    cursor: not-allowed !important;
+    opacity: 0.58;
+}
+
+.insurance-workspace-layout input:user-invalid,
+.insurance-workspace-layout select:user-invalid,
+.insurance-workspace-layout textarea:user-invalid,
+#outcomeUpdateModal input:user-invalid,
+#outcomeUpdateModal select:user-invalid,
+#outcomeUpdateModal textarea:user-invalid {
+    border-color: #b42318 !important;
+    box-shadow: 0 0 0 2px rgba(180, 35, 24, 0.14) !important;
+}
+
+.insurance-toast-region {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 120000;
+    display: grid;
+    gap: 8px;
+    width: min(420px, calc(100vw - 32px));
+    pointer-events: none;
+}
+
+.insurance-toast {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 14px;
+    border: 1px solid #087f72;
+    border-radius: 8px;
+    color: #ffffff;
+    background: #075f5a;
+    box-shadow: 0 12px 30px rgba(15, 42, 48, 0.24);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.45;
+    pointer-events: auto;
+    animation: insuranceToastIn 180ms ease-out;
+}
+
+.insurance-toast-error {
+    border-color: #b42318;
+    background: #8f1d14;
+}
+
+.insurance-toast-warning {
+    border-color: #b45309;
+    background: #92400e;
+}
+
+.insurance-toast.is-leaving {
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.insurance-toast-close {
+    flex: 0 0 auto;
+    padding: 0 2px;
+    border: 0;
+    color: #ffffff;
+    background: transparent;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+@keyframes insuranceToastIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 600px) {
+    .insurance-toast-region {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+    }
+}
+
+/* ===== Insurance typography scale: readable at every layer ===== */
+
+:root {
+    --insurance-type-caption: clamp(11px, 0.58vw, 11.5px);
+    --insurance-type-small: clamp(11.5px, 0.63vw, 12px);
+    --insurance-type-body: clamp(12.5px, 0.69vw, 13.25px);
+    --insurance-type-control: clamp(12.5px, 0.7vw, 13.5px);
+    --insurance-type-title: clamp(20px, 1.1vw, 22px);
+    --insurance-type-metric: clamp(23px, 1.35vw, 27px);
+}
+
+.insurance-workspace-layout,
+#outcomeUpdateModal,
+#editCaseModal,
+.history-filter-modal,
+.continuity-case-panel {
+    font-size: var(--insurance-type-body);
+    line-height: 1.42;
+    text-rendering: optimizeLegibility;
+}
+
+/* Primary headings and the dark title bars. */
+.insurance-workspace-layout .insurance-box-title,
+#outcomeUpdateModal .insurance-box-title,
+#editCaseModal h3,
+.history-filter-dialog-header h3 {
+    font-size: var(--insurance-type-title) !important;
+    line-height: 1.32 !important;
+}
+
+.insurance-workspace-layout .employee-sidebar-brand .insurance-box-title,
+.insurance-workspace-layout .continuity-heading .insurance-box-title,
+.insurance-workspace-layout .treatment-panel-heading .insurance-box-title,
+.insurance-workspace-layout
+    .history-main-panel
+    .bottom-full-box
+    > .insurance-box-title.panel-dark-header {
+    font-size: var(--insurance-type-title) !important;
+    line-height: 1.32 !important;
+}
+
+.continuity-eyebrow,
+.employee-sidebar-brand > span,
+.continuity-title-group > p,
+.employee-search-heading > p,
+.continuity-case-panel-heading p,
+.continuity-status,
+.history-filter-summary,
+#caseSearchStatus,
+#message {
+    font-size: var(--insurance-type-caption) !important;
+    line-height: 1.4 !important;
+}
+
+/* Navigation, filters and top-level actions. */
+.insurance-workspace-tab,
+.continuity-area-filters > span,
+.continuity-area-button,
+.header-action-button,
+.history-filter-button,
+.history-report-button,
+.history-case-search-button,
+.history-result-count {
+    font-size: var(--insurance-type-small) !important;
+    line-height: 1.25 !important;
+}
+
+.insurance-workspace-tab > span {
+    font-size: var(--insurance-type-small) !important;
+}
+
+/* Summary cards retain their hierarchy after the text-size increase. */
+.continuity-metric > span {
+    font-size: var(--insurance-type-small) !important;
+    line-height: 1.25 !important;
+}
+
+.continuity-metric strong {
+    font-size: var(--insurance-type-metric) !important;
+    line-height: 1.05 !important;
+}
+
+.continuity-metric small {
+    font-size: var(--insurance-type-caption) !important;
+    line-height: 1.3 !important;
+}
+
+.continuity-total > span {
+    font-size: var(--insurance-type-caption) !important;
+    line-height: 1.2 !important;
+}
+
+.continuity-heading.panel-dark-header .continuity-total #continuityTotalCount {
+    color: #111827 !important;
+    font-size: var(--insurance-type-metric) !important;
+    line-height: 1 !important;
+    text-shadow: none !important;
+}
+
+/* Employee lookup and every dynamically expanded employee card. */
+.employee-search-content label,
+.employee-selection-instruction,
+.employee-summary-line,
+.employee-found-row,
+.employee-detail-row,
+.employee-result-pager,
+.employee-result-pager button {
+    font-size: var(--insurance-type-small) !important;
+    line-height: 1.42 !important;
+}
+
+.employee-search-content input,
+.employee-search-content button,
+.employee-copy-button {
+    font-size: var(--insurance-type-control) !important;
+    line-height: 1.25 !important;
+}
+
+.employee-summary-name,
+.employee-detail-label {
+    font-weight: 700;
+}
+
+/* Opening-case form. */
+.treatment-field-grid .claim-label,
+.treatment-upload-field > label,
+#claimForm > div[style*="margin-bottom: 15px"] > label {
+    font-size: var(--insurance-type-small) !important;
+    line-height: 1.35 !important;
+}
+
+#claimForm input[type="text"],
+#claimForm input[type="number"],
+#claimForm select,
+#claimForm textarea,
+#claimForm label[for="imageUpload"],
+#fileNameDisplay,
+.treatment-copy-button,
+.treatment-submit-button {
+    font-size: var(--insurance-type-control) !important;
+    line-height: 1.35 !important;
+}
+
+#claimForm.employee-not-selected::after,
+#headerDateTimeContainer > span:first-child {
+    font-size: var(--insurance-type-caption) !important;
+    line-height: 1.35 !important;
+}
+
+#headerDateTimeContainer > #headerDateTimeValue {
+    font-size: var(--insurance-type-small) !important;
+    line-height: 1.35 !important;
+}
+
+/* History toolbar and large data table. */
+.history-filter-toolbar label,
+.history-case-search label,
+.history-date-input,
+#caseSearchInput {
+    font-size: var(--insurance-type-small) !important;
+    line-height: 1.3 !important;
+}
+
+.custom-claim-table th,
+.custom-claim-table td,
+.custom-claim-table td[style*="font-size"] {
+    font-size: clamp(11px, 0.62vw, 12px) !important;
+    line-height: 1.35 !important;
+}
+
+.btn-edit-minimal,
+.btn-delete-minimal,
+.history-evidence-title,
+.history-evidence-empty,
+.history-preview-button {
+    font-size: var(--insurance-type-small) !important;
+    line-height: 1.3 !important;
+}
+
+/* Expanded continuity layer. */
+.continuity-case-item-heading strong {
+    font-size: clamp(15px, 0.88vw, 17px) !important;
+    line-height: 1.3 !important;
+}
+
+.continuity-case-details,
+.continuity-case-item button,
+.continuity-waiting {
+    font-size: var(--insurance-type-body) !important;
+    line-height: 1.4 !important;
+}
+
+/* Modal layers: labels, controls, upload cards and actions all follow one scale. */
+#outcomeUpdateModal label,
+#editCaseModal label,
+.history-filter-dialog label,
+.update-upload-card > label,
+.edit-evidence-card,
+.edit-evidence-remove {
+    font-size: var(--insurance-type-small) !important;
+    line-height: 1.35 !important;
+}
+
+#outcomeUpdateModal input,
+#outcomeUpdateModal select,
+#outcomeUpdateModal textarea,
+#outcomeUpdateModal button,
+#editCaseModal input,
+#editCaseModal select,
+#editCaseModal textarea,
+#editCaseModal button,
+.history-filter-dialog input,
+.history-filter-dialog select,
+.history-filter-dialog button,
+.history-filter-dialog p,
+.update-upload-button {
+    font-size: var(--insurance-type-control) !important;
+    line-height: 1.35 !important;
+}
+
+.outcome-modal-close,
+.history-filter-close {
+    font-size: 24px !important;
+    line-height: 1 !important;
+}
+
+@media (max-width: 900px) {
+    :root {
+        --insurance-type-caption: 12px;
+        --insurance-type-small: 13px;
+        --insurance-type-body: 14px;
+        --insurance-type-control: 16px;
+        --insurance-type-title: clamp(20px, 4.8vw, 23px);
+        --insurance-type-metric: clamp(24px, 6vw, 28px);
+    }
+
+    .continuity-metric small {
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+    }
+
+    .custom-claim-table th,
+    .custom-claim-table td,
+    .custom-claim-table td[style*="font-size"] {
+        font-size: 12px !important;
+    }
+}
+
+
+
+.insurance-view[hidden] {
+    display: none !important;
+}
+
+.insurance-open-treatment-view {
+    display: block !important;
+    width: 100% !important;
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+    min-height: calc(100vh - 20px) !important;
+}
+
+.insurance-open-treatment-view .open-case-combined-card {
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section,
+.insurance-open-treatment-view .open-case-form-section {
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section .employee-search-content {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section #resultsList {
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section .employee-summary-line {
+    min-height: 42px !important;
+    padding: 7px 12px !important;
+    font-size: 10px !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section .employee-summary-name {
+    font-size: 11px !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section .employee-status-badge {
+    font-size: 9px !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section .employee-found-row,
+.insurance-open-treatment-view .open-case-search-section .employee-detail-label,
+.insurance-open-treatment-view .open-case-search-section .employee-detail-value {
+    font-size: 14px !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section .employee-copy-button {
+    min-width: 42px !important;
+    min-height: 26px !important;
+    margin: 0 !important;
+    padding: 3px 7px !important;
+    font-size: 11px !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section .employee-detail-row {
+    min-height: 36px !important;
+    grid-template-columns: minmax(120px, auto) minmax(60px, auto) auto !important;
+    justify-content: start !important;
+    gap: 7px !important;
+    padding: 5px 0 !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section .employee-sidebar-brand {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section .employee-sidebar-brand > span {
+    color: #344f91 !important;
+    font-weight: 700 !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section .employee-sidebar-brand .insurance-box-title {
+    color: #173b8f !important;
+    font-weight: 700 !important;
+}
+
+.insurance-open-treatment-view .treatment-panel-heading {
+    border: 0 !important;
+    background: transparent !important;
+    color: #173b8f !important;
+}
+
+.insurance-open-treatment-view .treatment-panel-heading .insurance-box-title {
+    color: #173b8f !important;
+}
+
+.insurance-open-treatment-view .treatment-panel-heading #headerDateTimeContainer,
+.insurance-open-treatment-view .treatment-panel-heading #headerDateTimeContainer > span,
+.insurance-open-treatment-view .treatment-panel-heading #headerDateTimeValue {
+    color: #344f91 !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section .employee-search-tool {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section .employee-search-tool > label {
+    color: #344054 !important;
+}
+
+.insurance-workspace-layout .open-case-search-section .employee-search-tool input:focus,
+.insurance-workspace-layout .open-case-search-section .employee-search-tool input:focus-visible {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+}
+
+.insurance-open-treatment-view .open-case-search-section .employee-search-tool .search-tool-row {
+    margin-top: 4px !important;
+}
+
+.insurance-open-treatment-view .open-case-form-section .treatment-inline-panel,
+.insurance-open-treatment-view .open-case-form-section .treatment-inline-panel > .card-container {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+}
+
+.insurance-open-treatment-view .employee-sidebar-track,
+.insurance-open-treatment-view .insurance-main-content {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: calc(100vh - 20px) !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
+}
+
+.insurance-open-treatment-view .insurance-main-content {
+    display: flex !important;
+    grid-template-rows: none !important;
+    gap: 0 !important;
+    overflow: visible !important;
+}
+
+.insurance-open-treatment-view .treatment-inline-panel {
+    min-width: 0 !important;
+    max-width: none !important;
+    flex: 1 1 auto !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+}
+
+.insurance-open-treatment-view .treatment-inline-panel > .card-container,
+.insurance-open-treatment-view .treatment-inline-panel > .middle-box,
+.insurance-open-treatment-view .treatment-inline-panel > .insurance-panel-shell {
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.insurance-open-treatment-view .employee-sidebar-track > .employee-fixed-sidebar,
+.insurance-open-treatment-view .treatment-inline-panel,
+.insurance-open-treatment-view .treatment-inline-panel > .card-container {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: calc(100vh - 20px) !important;
+    margin: 0 !important;
+}
+
+.insurance-history-view,
+.insurance-history-view .history-main-panel,
+.insurance-history-view .history-main-panel > .bottom-full-box {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: calc(100vh - 20px) !important;
+    height: calc(100vh - 20px) !important;
+    margin: 0 !important;
+}
+
+.insurance-history-view {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+}
+
+@media (max-width: 900px) {
+    .insurance-open-treatment-view {
+        min-height: auto !important;
+    }
+
+    .insurance-open-treatment-view .open-case-search-section,
+    .insurance-open-treatment-view .open-case-form-section {
+        padding: 14px !important;
+    }
+
+    .insurance-open-treatment-view .open-case-search-section .employee-expanded-details {
+        grid-template-columns: 1fr !important;
+    }
+
+    .insurance-open-treatment-view .employee-sidebar-track,
+    .insurance-open-treatment-view .insurance-main-content,
+    .insurance-open-treatment-view .employee-sidebar-track > .employee-fixed-sidebar,
+    .insurance-open-treatment-view .treatment-inline-panel,
+    .insurance-open-treatment-view .treatment-inline-panel > .card-container,
+    .insurance-history-view,
+    .insurance-history-view .history-main-panel,
+    .insurance-history-view .history-main-panel > .bottom-full-box {
+        min-height: auto !important;
+        height: auto !important;
+    }
+}
+
+/* ===== Mobile-first application shell (2026-09-02) ===== */
+html {
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+}
+
+body.login-page {
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: auto;
+    margin: 0;
+    padding: clamp(16px, 5vw, 32px);
+}
+
+.login-page .login-card {
+    width: min(100%, 360px);
+    max-height: calc(100dvh - 32px);
+    padding: clamp(20px, 6vw, 30px);
+    overflow-y: auto;
+}
+
+.login-page input,
+.login-page button {
+    min-height: 44px;
+    font-size: 16px;
+}
+
+.login-page .admin-entry-button {
+    min-height: 32px;
+    font-size: 12px;
+}
+
+@media (max-width: 600px) {
+    body:not(.login-page) {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    img,
+    video,
+    canvas,
+    svg {
+        max-width: 100%;
+    }
+
+    input,
+    select,
+    textarea {
+        max-width: 100%;
+        font-size: 16px !important;
+    }
+
+    button,
+    [role="button"] {
+        min-height: 42px;
+        touch-action: manipulation;
+    }
+
+    .insurance-workspace-layout,
+    .insurance-open-treatment-view,
+    .insurance-continuity-view,
+    .insurance-history-view {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 100dvh !important;
+        overflow: visible !important;
+    }
+
+    .insurance-continuity-view .continuity-card,
+    .open-case-combined-card,
+    .history-main-panel .bottom-full-box {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 12px !important;
+        overflow: visible !important;
+        border-radius: 0 !important;
+    }
+
+    .continuity-heading,
+    .continuity-heading-tools,
+    .main-header-actions,
+    .history-filter-toolbar,
+    .treatment-form-actions {
+        align-items: stretch !important;
+        flex-direction: column !important;
+    }
+
+    .insurance-continuity-view .continuity-control-strip,
+    .continuity-control-strip,
+    .treatment-field-grid,
+    .history-case-search {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    .continuity-case-search {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .continuity-case-search-control {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .insurance-continuity-view .continuity-summary-grid,
+    .continuity-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .insurance-continuity-view .continuity-case-list,
+    .continuity-case-list {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .continuity-metric {
+        min-width: 0 !important;
+        min-height: 78px !important;
+    }
+
+    .responsive-table-wrapper,
+    .history-table-shell,
+    .table-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        max-width: none;
+    }
+
+    .modal-content,
+    .dialog-content,
+    [role="dialog"] {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+        max-height: calc(100dvh - 24px) !important;
+        margin: 12px !important;
+        overflow-y: auto !important;
+    }
+}
+
+@media (max-width: 380px) {
+    .login-page {
+        padding: 10px;
+    }
+
+    .login-page .login-card {
+        max-height: calc(100dvh - 20px);
+        padding: 18px 16px;
+    }
+
+    .insurance-continuity-view .continuity-summary-grid,
+    .continuity-summary-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+}

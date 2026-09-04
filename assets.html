@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, viewport-fit=cover"
+    >
+
+    <title>Asset Management | GA East Operations</title>
+
+    <meta name="theme-color" content="#0f766e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <link rel="stylesheet" href="responsive.css?v=20260902-mobile-layout-02">
+    <link rel="stylesheet" href="assets.css">
+</head>
+
+<body>
+    <header class="asset-header">
+        <div class="asset-brand">
+            <div class="asset-brand-mark" aria-hidden="true">GA</div>
+            <div>
+                <span class="asset-eyebrow">GENERAL AFFAIRS · EAST OPERATIONS</span>
+                <h1>Asset Control Center</h1>
+                <p>ศูนย์ควบคุมทะเบียน สถานะ และวงจรชีวิตทรัพย์สิน</p>
+            </div>
+        </div>
+
+        <div class="asset-header-actions">
+            <span class="asset-system-status" role="status">
+                <span aria-hidden="true"></span>
+                ระบบพร้อมใช้งาน
+            </span>
+            <button
+                type="button"
+                id="backToPortalButton"
+                class="button button-secondary"
+            >
+                ← กลับหน้าจัดการงาน GA
+            </button>
+
+            <button
+                type="button"
+                id="assetLogoutButton"
+                class="button button-danger-outline"
+            >
+                ออกจากระบบ
+            </button>
+        </div>
+    </header>
+
+    <main class="asset-main">
+        <section class="asset-summary-grid">
+            <article class="summary-card is-total" role="button" tabindex="0" data-status-filter="" aria-label="แสดงทรัพย์สินทุกสถานะ">
+                <div class="summary-icon" aria-hidden="true">▦</div>
+                <div>
+                    <span>ทรัพย์สินทั้งหมด</span>
+                    <strong id="totalAssetCount">0</strong>
+                    <small>รายการในทะเบียน</small>
+                </div>
+            </article>
+
+            <article class="summary-card is-active" role="button" tabindex="0" data-status-filter="IN_USE" aria-label="กรองทรัพย์สินที่กำลังใช้งาน">
+                <div class="summary-icon" aria-hidden="true">✓</div>
+                <div>
+                    <span>กำลังใช้งาน</span>
+                    <strong id="inUseAssetCount">0</strong>
+                    <small>พร้อมปฏิบัติงาน</small>
+                </div>
+            </article>
+
+            <article class="summary-card is-spare" role="button" tabindex="0" data-status-filter="SPARE" aria-label="กรองทรัพย์สินสำรอง">
+                <div class="summary-icon" aria-hidden="true">□</div>
+                <div>
+                    <span>ทรัพย์สินสำรอง</span>
+                    <strong id="spareAssetCount">0</strong>
+                    <small>พร้อมเบิกใช้งาน</small>
+                </div>
+            </article>
+
+            <article class="summary-card summary-warning">
+                <div class="summary-icon" aria-hidden="true">!</div>
+                <div>
+                    <span>ต้องดำเนินการ</span>
+                    <strong id="attentionAssetCount">0</strong>
+                    <small>ตรวจสอบ เคลม หรือชำรุด</small>
+                </div>
+            </article>
+        </section>
+
+        <section class="asset-panel">
+            <div class="asset-panel-heading">
+                <div>
+                    <span class="asset-section-kicker">ASSET REGISTER</span>
+                    <h2>ทะเบียนทรัพย์สิน</h2>
+                    <p>
+                        ค้นหาด้วยรหัสทรัพย์สิน บาร์โค้ด
+                        Serial Number หรือชื่อพนักงาน
+                    </p>
+                </div>
+
+                <div class="asset-primary-actions">
+                    <button
+                        type="button"
+                        id="scanAssetButton"
+                        class="button button-secondary"
+                    >
+                        <span aria-hidden="true">▣</span> สแกนรหัส
+                    </button>
+
+                    <button
+                        id="manageAssetLocationsButton"
+                        class="asset-secondary-button"
+                        type="button"
+                        hidden
+                    >
+                        <span aria-hidden="true">⌖</span> จัดการตำแหน่ง
+                    </button>
+
+                    <button
+                        type="button"
+                        id="createAssetButton"
+                        class="button button-primary"
+                        hidden
+                    >
+                        <span aria-hidden="true">＋</span> เพิ่มทรัพย์สิน
+                    </button>
+                </div>
+            </div>
+
+            <form id="assetSearchForm" class="asset-filter-grid">
+                <div class="field field-search">
+                    <label for="assetSearchInput">ค้นหา</label>
+                    <input
+                        type="search"
+                        id="assetSearchInput"
+                        placeholder="ค้นหารหัสทรัพย์สิน, Barcode, Serial, ผู้ใช้งาน หรือตำแหน่ง..."
+                        maxlength="150"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="field">
+                    <label for="assetCompanyFilter">บริษัท</label>
+                    <select id="assetCompanyFilter">
+                        <option value="">ทุกบริษัท</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="assetStatusFilter">สถานะ</label>
+                    <select id="assetStatusFilter">
+                        <option value="">ทุกสถานะ</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="assetWorkAreaFilter">พื้นที่</label>
+                    <select id="assetWorkAreaFilter">
+                        <option value="">ทุกพื้นที่</option>
+                    </select>
+                </div>
+
+                <div class="asset-filter-actions">
+                    <button
+                        type="submit"
+                        class="button button-primary"
+                    >
+                        ค้นหา
+                    </button>
+
+                    <button
+                        type="button"
+                        id="clearAssetFilterButton"
+                        class="button button-secondary"
+                    >
+                        ล้างตัวกรอง
+                    </button>
+                </div>
+            </form>
+
+            <div
+                id="assetStatusMessage"
+                class="asset-status-message"
+                role="status"
+                aria-live="polite"
+            ></div>
+
+            <div class="asset-list-toolbar">
+                <div>
+                    <span class="asset-list-label">รายการที่พบ</span>
+                    <strong id="assetVisibleRange">กำลังโหลดข้อมูล...</strong>
+                    <small id="assetLastUpdated">—</small>
+                </div>
+                <div class="asset-list-controls">
+                    <label for="assetPageSize">แสดง</label>
+                    <select id="assetPageSize" aria-label="จำนวนรายการต่อหน้า">
+                        <option value="25" selected>25 รายการ</option>
+                        <option value="50">50 รายการ</option>
+                        <option value="100">100 รายการ</option>
+                    </select>
+                    <button type="button" id="assetRefreshButton" class="button button-secondary">
+                        <span aria-hidden="true">↻</span> รีเฟรช
+                    </button>
+                </div>
+            </div>
+
+            <div class="asset-table-wrapper">
+                <table class="asset-table">
+                    <thead>
+                        <tr>
+                            <th>รหัสทรัพย์สิน</th>
+                            <th>รายละเอียดทรัพย์สิน</th>
+                            <th>บริษัท</th>
+                            <th>ตำแหน่ง</th>
+                            <th>ผู้ใช้งาน</th>
+                            <th>สถานะ</th>
+                            <th>อัปเดตล่าสุด</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="assetTableBody"></tbody>
+                </table>
+            </div>
+
+            <div
+                id="assetCardList"
+                class="asset-card-list"
+            ></div>
+
+            <div
+                id="assetEmptyState"
+                class="asset-empty-state"
+                hidden
+            >
+                <strong>ไม่พบข้อมูลทรัพย์สิน</strong>
+                <p>ลองเปลี่ยนคำค้นหาหรือตัวกรอง</p>
+            </div>
+
+            <nav
+                id="assetPagination"
+                class="asset-pagination"
+                aria-label="หน้ารายการทรัพย์สิน"
+            ></nav>
+        </section>
+    </main>
+
+<!-- สร้าง Modal โยกย้ายทรัพย์สิน   -->
+<!-- #region Asset Transfer Modal -->
+<div
+    id="assetTransferModal"
+    class="asset-modal"
+    hidden
+    aria-hidden="true"
+>
+    <div
+        class="asset-modal-backdrop"
+        data-close-transfer-modal
+    ></div>
+
+    <section
+        class="asset-modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="assetTransferModalTitle"
+    >
+        <header class="asset-modal-header">
+            <div>
+                <span class="asset-modal-eyebrow">
+                    ASSET TRANSFER
+                </span>
+
+                <h2 id="assetTransferModalTitle">
+                    โยกย้ายทรัพย์สิน
+                </h2>
+            </div>
+
+            <button
+                id="closeAssetTransferModalButton"
+                class="asset-modal-close"
+                type="button"
+                aria-label="ปิดหน้าต่าง"
+            >
+                ×
+            </button>
+        </header>
+
+        <form
+            id="assetTransferForm"
+            class="asset-create-form"
+        >
+            <div class="asset-status-summary">
+                <span>รหัสทรัพย์สิน</span>
+                <strong id="transferModalAssetCode">-</strong>
+
+                <span>ตำแหน่งปัจจุบัน</span>
+                <strong id="transferModalCurrentLocation">-</strong>
+            </div>
+
+            <div class="asset-form-grid">
+                <label class="asset-field">
+                    <span>พื้นที่ปลายทาง *</span>
+
+                    <select
+                        id="transferWorkArea"
+                        required
+                    >
+                        <option value="">
+                            -- เลือกพื้นที่ --
+                        </option>
+                    </select>
+                </label>
+
+                <label class="asset-field">
+                    <span>อาคาร / สถานที่ *</span>
+
+                    <select
+                        id="transferBuilding"
+                        disabled
+                        required
+                    >
+                        <option value="">
+                            -- เลือกอาคารหรือสถานที่ --
+                        </option>
+                    </select>
+                </label>
+
+                <label class="asset-field">
+                    <span>ชั้น / ห้อง *</span>
+
+                    <select
+                        id="transferRoom"
+                        disabled
+                        required
+                    >
+                        <option value="">
+                            -- เลือกชั้นหรือห้อง --
+                        </option>
+                    </select>
+                </label>
+
+                <label class="asset-field">
+                    <span>พิกัดภายในพื้นที่</span>
+
+                    <select
+                        id="transferCoordinate"
+                        disabled
+                    >
+                        <option value="">
+                            -- เลือกพิกัด เช่น A12 --
+                        </option>
+                    </select>
+                </label>
+            </div>
+
+            <label class="asset-field">
+                <span>เหตุผลหรือรายละเอียดการโยกย้าย *</span>
+
+                <textarea
+                    id="transferActionDetail"
+                    rows="4"
+                    maxlength="2000"
+                    placeholder="เช่น โยกย้ายไปใช้งานที่ห้อง PRG 509 พิกัด A12"
+                    required
+                ></textarea>
+            </label>
+
+            <p
+                id="assetTransferFormMessage"
+                class="asset-form-message"
+                role="status"
+            ></p>
+
+            <footer class="asset-modal-actions">
+                <button
+                    id="cancelAssetTransferButton"
+                    class="asset-secondary-button"
+                    type="button"
+                >
+                    ยกเลิก
+                </button>
+
+                <button
+                    id="submitAssetTransferButton"
+                    class="asset-primary-button"
+                    type="submit"
+                >
+                    ยืนยันการโยกย้าย
+                </button>
+            </footer>
+        </form>
+    </section>
+</div>
+<!-- #endregion -->
+
+<!-- สร้างหน้าต่างเปลี่ยนสถานะ   -->
+<!-- #region <div id="assetStatusModal" -->
+<div
+    id="assetStatusModal"
+    class="asset-modal"
+    hidden
+    aria-hidden="true"
+>
+    <div
+        class="asset-modal-backdrop"
+        data-close-status-modal
+    ></div>
+
+    <section
+        class="asset-modal-dialog asset-status-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="assetStatusModalTitle"
+    >
+        <header class="asset-modal-header">
+            <div>
+                <span class="asset-modal-eyebrow">
+                    STATUS MANAGEMENT
+                </span>
+
+                <h2 id="assetStatusModalTitle">
+                    เปลี่ยนสถานะทรัพย์สิน
+                </h2>
+            </div>
+
+            <button
+                id="closeAssetStatusModalButton"
+                class="asset-modal-close"
+                type="button"
+                aria-label="ปิดหน้าต่าง"
+            >
+                ×
+            </button>
+        </header>
+
+        <form
+            id="assetStatusForm"
+            class="asset-create-form"
+        >
+            <div class="asset-status-summary">
+                <span>รหัสทรัพย์สิน</span>
+                <strong id="statusModalAssetCode">-</strong>
+
+                <span>สถานะปัจจุบัน</span>
+                <strong id="statusModalCurrentStatus">-</strong>
+            </div>
+
+            <div class="asset-form-grid">
+                <label class="asset-field asset-field-wide">
+                    <span>สถานะใหม่ *</span>
+                    <select
+                        id="statusModalNewStatus"
+                        required
+                    >
+                        <option value="">
+                            -- เลือกสถานะใหม่ --
+                        </option>
+                    </select>
+                </label>
+
+                <label
+                    id="statusModalDetailField"
+                    class="asset-field asset-field-wide"
+                    hidden
+                >
+                    <span>รายละเอียดสถานะ *</span>
+                    <textarea
+                        id="statusModalDetail"
+                        rows="4"
+                        maxlength="2000"
+                        placeholder="ระบุรายละเอียดของสถานะนี้"
+                    ></textarea>
+                </label>
+
+                <label class="asset-field asset-field-wide">
+                    <span>รายละเอียดการดำเนินการ</span>
+                    <textarea
+                        id="statusModalActionDetail"
+                        rows="3"
+                        maxlength="2000"
+                        placeholder="เช่น ส่งเคลมกับบริษัท วันที่ส่ง และผู้รับเรื่อง"
+                    ></textarea>
+                </label>
+            </div>
+
+            <p
+                id="assetStatusFormMessage"
+                class="asset-form-message"
+                role="status"
+                aria-live="polite"
+            ></p>
+
+            <footer class="asset-modal-actions">
+                <button
+                    id="cancelAssetStatusButton"
+                    class="asset-secondary-button"
+                    type="button"
+                >
+                    ยกเลิก
+                </button>
+
+                <button
+                    id="submitAssetStatusButton"
+                    class="asset-primary-button"
+                    type="submit"
+                >
+                    ยืนยันเปลี่ยนสถานะ
+                </button>
+            </footer>
+        </form>
+    </section>
+</div>
+<!-- #endregion -->
+
+<!-- เปลี่ยนการดูรายละเอียดจาก alert เป็นหน้าต่าง -->
+<!-- #region <div id="assetDetailModal" -->
+<div
+    id="assetDetailModal"
+    class="asset-modal"
+    hidden
+    aria-hidden="true"
+>
+    <div
+        class="asset-modal-backdrop"
+        data-close-asset-detail
+    ></div>
+
+    <section
+        class="asset-modal-dialog asset-detail-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="assetDetailTitle"
+    >
+        <header class="asset-modal-header">
+            <div>
+                <span class="asset-modal-eyebrow">
+                    ASSET PROFILE
+                </span>
+
+                <h2 id="assetDetailTitle">
+                    รายละเอียดทรัพย์สิน
+                </h2>
+            </div>
+
+            <button
+                id="closeAssetDetailButton"
+                class="asset-modal-close"
+                type="button"
+                aria-label="ปิดหน้าต่าง"
+            >
+                ×
+            </button>
+        </header>
+
+        <div class="asset-detail-content">
+            <div class="asset-detail-identity">
+                <div>
+                    <span>รหัสทรัพย์สิน</span>
+                    <strong id="detailAssetCode">-</strong>
+                </div>
+
+                <span
+                    id="detailAssetStatus"
+                    class="asset-status-badge"
+                >
+                    -
+                </span>
+            </div>
+
+            <dl class="asset-detail-grid">
+                <div>
+                    <dt>ชื่อทรัพย์สิน</dt>
+                    <dd id="detailAssetName">-</dd>
+                </div>
+
+                <div>
+                    <dt>บริษัท</dt>
+                    <dd id="detailAssetCompany">-</dd>
+                </div>
+
+                <div>
+                    <dt>ประเภท</dt>
+                    <dd id="detailAssetCategory">-</dd>
+                </div>
+
+                <div>
+                    <dt>Barcode / QR Code</dt>
+                    <dd id="detailAssetBarcode">-</dd>
+                </div>
+
+                <div>
+                    <dt>ยี่ห้อ / รุ่น</dt>
+                    <dd id="detailAssetBrandModel">-</dd>
+                </div>
+
+                <div>
+                    <dt>Serial Number</dt>
+                    <dd id="detailAssetSerial">-</dd>
+                </div>
+
+                <div>
+                    <dt>ตำแหน่งปัจจุบัน</dt>
+                    <dd id="detailAssetLocation">-</dd>
+                </div>
+
+                <div>
+                    <dt>ผู้ถือครอง</dt>
+                    <dd id="detailAssetEmployee">-</dd>
+                </div>
+
+                <div>
+                    <dt>วันที่ซื้อ</dt>
+                    <dd id="detailAssetPurchaseDate">-</dd>
+                </div>
+
+                <div>
+                    <dt>ราคาซื้อ</dt>
+                    <dd id="detailAssetPurchasePrice">-</dd>
+                </div>
+
+                <div>
+                    <dt>รายละเอียดสถานะ</dt>
+                    <dd id="detailAssetStatusDetail">-</dd>
+                </div>
+
+                <div>
+                    <dt>แก้ไขล่าสุด</dt>
+                    <dd id="detailAssetUpdatedAt">-</dd>
+                </div>
+            </dl>
+
+<section class="asset-detail-section">
+    <div class="asset-section-heading">
+        <div>
+            <span class="asset-eyebrow">ATTACHMENTS</span>
+            <h3>รูปภาพและเอกสาร</h3>
+        </div>
+
+        <span id="assetAttachmentTotal">0 รายการ</span>
+    </div>
+
+    <div
+        id="assetAttachmentList"
+        class="asset-attachment-list"
+    ></div>
+
+    <p
+        id="assetAttachmentEmpty"
+        class="asset-empty-message"
+    >
+        ยังไม่มีรูปภาพหรือเอกสาร
+    </p>
+</section>
+
+
+
+<!-- #region Asset Audit Trail -->
+<section class="asset-audit-section">
+    <div class="asset-audit-heading">
+        <div>
+            <span class="asset-modal-eyebrow">
+                AUDIT TRAIL
+            </span>
+
+            <h3>ประวัติการดำเนินการ</h3>
+        </div>
+
+        <span
+            id="assetAuditTotal"
+            class="asset-audit-count"
+        >
+            0 รายการ
+        </span>
+    </div>
+
+    <p
+        id="assetAuditMessage"
+        class="asset-form-message"
+        role="status"
+    ></p>
+
+    <ol
+        id="assetAuditList"
+        class="asset-audit-list"
+        aria-label="ประวัติการดำเนินการกับทรัพย์สิน"
+    ></ol>
+
+    <div
+        id="assetAuditEmpty"
+        class="asset-audit-empty"
+        hidden
+    >
+        ยังไม่มีประวัติการดำเนินการ
+    </div>
+
+    <button
+        id="loadMoreAssetAuditButton"
+        class="asset-secondary-button asset-audit-more"
+        type="button"
+        hidden
+    >
+        โหลดประวัติเพิ่ม
+    </button>
+</section>
+<!-- #endregion -->
+
+            <section class="asset-detail-note">
+                <h3>หมายเหตุ</h3>
+                <p id="detailAssetNote">-</p>
+            </section>
+
+            <p
+                id="assetDetailMessage"
+                class="asset-form-message"
+                role="status"
+            ></p>
+
+            <footer class="asset-detail-actions">
+                <button
+                    id="transferAssetButton"
+                    class="asset-secondary-button"
+                    type="button"
+                    hidden
+                >
+                    โยกย้ายทรัพย์สิน
+                </button>
+
+                <button
+                    id="changeAssetStatusButton"
+                    class="asset-secondary-button"
+                    type="button"
+                    hidden
+                >
+                    เปลี่ยนสถานะ
+                </button>
+
+                <button
+                    id="uploadAssetFileButton"
+                    class="asset-secondary-button"
+                    type="button"
+                    hidden
+                >
+                    อัปโหลดรูป/เอกสาร
+                </button>
+
+                <button
+                    id="editAssetButton"
+                    class="asset-primary-button"
+                    type="button"
+                    hidden
+                >
+                    แก้ไขข้อมูล
+                </button>
+            </footer>
+        </div>
+    </section>
+</div>
+<!-- #endregion -->
+
+<!-- #region หน้าต่างแก้ไขข้อมูลทรัพย์สิน -->
+<div
+    id="assetEditModal"
+    class="asset-modal"
+    hidden
+    aria-hidden="true"
+>
+    <div
+        class="asset-modal-backdrop"
+        data-close-asset-edit
+    ></div>
+
+    <section
+        class="asset-modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="assetEditModalTitle"
+    >
+        <header class="asset-modal-header">
+            <div>
+                <small>ASSET EDIT</small>
+                <h2 id="assetEditModalTitle">
+                    แก้ไขข้อมูลทรัพย์สิน
+                </h2>
+            </div>
+
+            <button
+                id="closeAssetEditModalButton"
+                class="asset-modal-close"
+                type="button"
+                aria-label="ปิดหน้าต่าง"
+            >
+                ×
+            </button>
+        </header>
+
+        <form id="assetEditForm">
+            <input
+                id="editAssetId"
+                type="hidden"
+            >
+
+            <input
+                id="editAssetRecordVersion"
+                type="hidden"
+            >
+
+            <div class="asset-modal-body">
+                <div class="asset-form-grid">
+                    <label class="asset-field">
+                        <span>รหัสทรัพย์สิน</span>
+                        <input
+                            id="editAssetCode"
+                            type="text"
+                            disabled
+                        >
+                    </label>
+
+                    <label class="asset-field">
+                        <span>บริษัท *</span>
+                        <select
+                            id="editAssetCompany"
+                            required
+                        ></select>
+                    </label>
+
+                    <label class="asset-field">
+                        <span>ประเภททรัพย์สิน *</span>
+                        <select
+                            id="editAssetCategory"
+                            required
+                        ></select>
+                    </label>
+
+                    <label class="asset-field">
+                        <span>ชื่อทรัพย์สิน *</span>
+                        <input
+                            id="editAssetName"
+                            type="text"
+                            maxlength="250"
+                            required
+                        >
+                    </label>
+
+                    <label class="asset-field">
+                        <span>ยี่ห้อ</span>
+                        <input
+                            id="editAssetBrand"
+                            type="text"
+                            maxlength="150"
+                        >
+                    </label>
+
+                    <label class="asset-field">
+                        <span>รุ่น</span>
+                        <input
+                            id="editAssetModel"
+                            type="text"
+                            maxlength="150"
+                        >
+                    </label>
+
+                    <label class="asset-field">
+                        <span>Serial Number</span>
+                        <input
+                            id="editAssetSerialNumber"
+                            type="text"
+                            maxlength="200"
+                        >
+                    </label>
+
+                    <label class="asset-field">
+                        <span>Barcode / QR Code</span>
+                        <input
+                            id="editAssetBarcode"
+                            type="text"
+                            maxlength="200"
+                        >
+                    </label>
+
+                    <label class="asset-field">
+                        <span>วันที่ซื้อ</span>
+                        <input
+                            id="editAssetPurchaseDate"
+                            type="date"
+                        >
+                    </label>
+
+                    <label class="asset-field">
+                        <span>ราคาซื้อ</span>
+                        <input
+                            id="editAssetPurchasePrice"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            inputmode="decimal"
+                        >
+                    </label>
+
+                    <label class="asset-field asset-field-full">
+                        <span>หมายเหตุ</span>
+                        <textarea
+                            id="editAssetNote"
+                            rows="4"
+                            maxlength="2000"
+                        ></textarea>
+                    </label>
+                </div>
+
+                <p
+                    id="assetEditFormMessage"
+                    class="asset-form-message"
+                    aria-live="polite"
+                ></p>
+            </div>
+
+            <footer class="asset-modal-footer">
+                <button
+                    id="cancelAssetEditButton"
+                    class="asset-secondary-button"
+                    type="button"
+                >
+                    ยกเลิก
+                </button>
+
+                <button
+                    id="submitAssetEditButton"
+                    class="asset-primary-button"
+                    type="submit"
+                >
+                    บันทึกการแก้ไข
+                </button>
+            </footer>
+        </form>
+    </section>
+</div>
+<!-- #endregion -->
+
+
+<!-- สร้างหน้าต่างจัดการพื้นที่ อาคาร ห้อง และพิกัด   -->
+<!-- #region <divid="assetLocationModal" -->
+
+<div
+    id="assetLocationModal"
+    class="asset-modal"
+    hidden
+    aria-hidden="true"
+>
+    <div
+        class="asset-modal-backdrop"
+        data-close-location-modal
+    ></div>
+
+    <section
+        class="asset-modal-dialog asset-location-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="assetLocationModalTitle"
+    >
+        <header class="asset-modal-header">
+            <div>
+                <span class="asset-modal-eyebrow">
+                    LOCATION MASTER
+                </span>
+
+                <h2 id="assetLocationModalTitle">
+                    จัดการตำแหน่งทรัพย์สิน
+                </h2>
+            </div>
+
+            <button
+                id="closeAssetLocationModalButton"
+                class="asset-modal-close"
+                type="button"
+                aria-label="ปิดหน้าต่าง"
+            >
+                ×
+            </button>
+        </header>
+
+        <form
+            id="assetLocationForm"
+            class="asset-create-form"
+        >
+            <div class="asset-form-grid">
+                <label class="asset-field">
+                    <span>พื้นที่ทำงาน *</span>
+                    <select
+                        id="locationMasterWorkArea"
+                        required
+                    >
+                        <option value="">-- เลือกพื้นที่ --</option>
+                    </select>
+                </label>
+
+                <label class="asset-field">
+                    <span>อาคาร / สถานที่</span>
+                    <select
+                        id="locationMasterBuilding"
+                        disabled
+                    >
+                        <option value="">-- เลือกอาคาร --</option>
+                    </select>
+                </label>
+
+                <label class="asset-field">
+                    <span>ชั้น / ห้อง</span>
+                    <select
+                        id="locationMasterRoom"
+                        disabled
+                    >
+                        <option value="">-- เลือกชั้นหรือห้อง --</option>
+                    </select>
+                </label>
+
+                <label class="asset-field">
+                    <span>สร้างรายการประเภท *</span>
+                    <select
+                        id="locationMasterType"
+                        required
+                    >
+                        <option value="">-- เลือกประเภท --</option>
+                        <option value="BUILDING">
+                            อาคาร / สถานที่
+                        </option>
+                        <option value="FLOOR">
+                            ชั้น
+                        </option>
+                        <option value="ROOM">
+                            ห้อง
+                        </option>
+                        <option value="POSITION">
+                            พิกัด เช่น A12
+                        </option>
+                    </select>
+                </label>
+
+                <label class="asset-field">
+                    <span>รหัสตำแหน่ง *</span>
+                    <input
+                        id="locationMasterCode"
+                        type="text"
+                        maxlength="80"
+                        autocomplete="off"
+                        placeholder="เช่น HD, FLOOR-2, PRG-509, A12"
+                        required
+                    >
+                </label>
+
+                <label class="asset-field">
+                    <span>ชื่อตำแหน่ง *</span>
+                    <input
+                        id="locationMasterName"
+                        type="text"
+                        maxlength="200"
+                        placeholder="ชื่อที่ต้องการแสดงในระบบ"
+                        required
+                    >
+                </label>
+            </div>
+
+            <p
+                id="assetLocationFormMessage"
+                class="asset-form-message"
+                role="status"
+                aria-live="polite"
+            ></p>
+
+            <footer class="asset-modal-actions">
+                <button
+                    id="cancelAssetLocationButton"
+                    class="asset-secondary-button"
+                    type="button"
+                >
+                    ยกเลิก
+                </button>
+
+                <button
+                    id="submitAssetLocationButton"
+                    class="asset-primary-button"
+                    type="submit"
+                >
+                    บันทึกตำแหน่ง
+                </button>
+            </footer>
+        </form>
+    </section>
+</div>
+<!-- #endregion -->
+
+<!-- รับทรัพย์สินเข้าระบบ -->
+<!-- #region <div id="createAssetModal" -->
+<div
+    id="createAssetModal"
+    class="asset-modal"
+    hidden
+    aria-hidden="true"
+>
+    <div class="asset-modal-backdrop" data-close-asset-modal></div>
+
+    <section
+        class="asset-modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="createAssetModalTitle"
+    >
+        <header class="asset-modal-header">
+            <div>
+                <span class="asset-modal-eyebrow">
+                    ASSET REGISTRATION
+                </span>
+
+                <h2 id="createAssetModalTitle">
+                    รับทรัพย์สินเข้าระบบ
+                </h2>
+            </div>
+
+            <button
+                id="closeCreateAssetModalButton"
+                class="asset-modal-close"
+                type="button"
+                aria-label="ปิดหน้าต่าง"
+            >
+                ×
+            </button>
+        </header>
+
+        <form id="createAssetForm" class="asset-create-form">
+            <div class="asset-form-grid">
+                <label class="asset-field">
+                    <span>รหัสทรัพย์สิน *</span>
+                    <input
+                        id="newAssetCode"
+                        name="assetCode"
+                        type="text"
+                        maxlength="100"
+                        autocomplete="off"
+                        required
+                    >
+                </label>
+
+                <label class="asset-field">
+                    <span>Barcode / QR Code</span>
+                    <input
+                        id="newAssetBarcode"
+                        name="barcode"
+                        type="text"
+                        maxlength="150"
+                        autocomplete="off"
+                    >
+                </label>
+
+                <label class="asset-field">
+                    <span>บริษัท *</span>
+                    <select
+                        id="newAssetCompany"
+                        name="companyCode"
+                        required
+                    >
+                        <option value="">-- เลือกบริษัท --</option>
+                    </select>
+                </label>
+
+                <label class="asset-field">
+                    <span>ประเภททรัพย์สิน</span>
+                    <select
+                        id="newAssetCategory"
+                        name="categoryId"
+                    >
+                        <option value="">-- เลือกประเภท --</option>
+                    </select>
+                </label>
+
+                <label class="asset-field asset-field-wide">
+                    <span>ชื่อทรัพย์สิน *</span>
+                    <input
+                        id="newAssetName"
+                        name="assetName"
+                        type="text"
+                        maxlength="250"
+                        required
+                    >
+                </label>
+
+                <label class="asset-field">
+                    <span>ยี่ห้อ</span>
+                    <input
+                        id="newAssetBrand"
+                        name="brand"
+                        type="text"
+                        maxlength="150"
+                    >
+                </label>
+
+                <label class="asset-field">
+                    <span>รุ่น</span>
+                    <input
+                        id="newAssetModel"
+                        name="model"
+                        type="text"
+                        maxlength="150"
+                    >
+                </label>
+
+                <label class="asset-field">
+                    <span>Serial Number</span>
+                    <input
+                        id="newAssetSerialNumber"
+                        name="serialNumber"
+                        type="text"
+                        maxlength="200"
+                    >
+                </label>
+
+                <label class="asset-field">
+                    <span>รหัสเดิมจากระบบเก่า</span>
+                    <input
+                        id="newAssetLegacyId"
+                        name="legacyAssetId"
+                        type="text"
+                        maxlength="150"
+                    >
+                </label>
+
+                <label class="asset-field">
+                    <span>วันที่ซื้อ</span>
+                    <input
+                        id="newAssetPurchaseDate"
+                        name="purchaseDate"
+                        type="date"
+                    >
+                </label>
+
+                <label class="asset-field">
+                    <span>วันที่รับทรัพย์สิน</span>
+                    <input
+                        id="newAssetReceivedDate"
+                        name="receivedDate"
+                        type="date"
+                    >
+                </label>
+
+                <label class="asset-field">
+                    <span>ราคาซื้อ</span>
+                    <input
+                        id="newAssetPurchasePrice"
+                        name="purchasePrice"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputmode="decimal"
+                    >
+                </label>
+
+                <label class="asset-field">
+                    <span>สกุลเงิน</span>
+                    <select id="newAssetCurrency" name="currency">
+                        <option value="THB">THB</option>
+                        <option value="USD">USD</option>
+                        <option value="LAK">LAK</option>
+                    </select>
+                </label>
+
+                <label class="asset-field">
+                <span>พื้นที่ทำงาน *</span>
+                <select
+                    id="newAssetLocation"
+                    name="locationId"
+                    required
+                >
+                    <option value="">-- เลือกพื้นที่ --</option>
+                </select>
+            </label>
+
+            <label class="asset-field">
+                <span>อาคาร / สถานที่</span>
+                <select id="newAssetBuilding" disabled>
+                    <option value="">-- เลือกอาคารหรือสถานที่ --</option>
+                </select>
+            </label>
+
+            <label class="asset-field">
+                <span>ชั้น / ห้อง</span>
+                <select id="newAssetRoom" disabled>
+                    <option value="">-- เลือกชั้นหรือห้อง --</option>
+                </select>
+            </label>
+
+            <label class="asset-field">
+                <span>พิกัดภายในพื้นที่</span>
+                <select id="newAssetCoordinate" disabled>
+                    <option value="">-- เลือกพิกัด เช่น A12 --</option>
+                </select>
+            </label>
+
+                <label class="asset-field">
+                    <span>สถานะเริ่มต้น *</span>
+                    <select
+                        id="newAssetStatus"
+                        name="statusCode"
+                        required
+                    >
+                        <option value="">-- เลือกสถานะ --</option>
+                    </select>
+                </label>
+
+                <label
+                    id="newAssetStatusDetailField"
+                    class="asset-field asset-field-wide"
+                    hidden
+                >
+                    <span>รายละเอียดสถานะ *</span>
+                    <textarea
+                        id="newAssetStatusDetail"
+                        name="statusDetail"
+                        maxlength="2000"
+                        rows="3"
+                    ></textarea>
+                </label>
+
+                <label class="asset-field">
+                    <span>รหัสพนักงานผู้ถือครอง</span>
+                    <input
+                        id="newAssetEmployeeId"
+                        name="assignedEmployeeId"
+                        type="text"
+                        maxlength="100"
+                    >
+                </label>
+
+                <label class="asset-field">
+                    <span>ชื่อพนักงานผู้ถือครอง</span>
+                    <input
+                        id="newAssetEmployeeName"
+                        name="assignedEmployeeName"
+                        type="text"
+                        maxlength="250"
+                    >
+                </label>
+
+                <label class="asset-field asset-field-wide">
+                    <span>หมายเหตุ</span>
+                    <textarea
+                        id="newAssetNote"
+                        name="note"
+                        maxlength="5000"
+                        rows="3"
+                    ></textarea>
+                </label>
+            </div>
+
+            <p
+                id="createAssetFormMessage"
+                class="asset-form-message"
+                role="status"
+                aria-live="polite"
+            ></p>
+
+            <footer class="asset-modal-actions">
+                <button
+                    id="cancelCreateAssetButton"
+                    type="button"
+                    class="asset-secondary-button"
+                >
+                    ยกเลิก
+                </button>
+
+                <button
+                    id="submitCreateAssetButton"
+                    type="submit"
+                    class="asset-primary-button"
+                >
+                    บันทึกรับทรัพย์สิน
+                </button>
+            </footer>
+        </form>
+    </section>
+</div>
+<!-- #endregion -->
+
+<!-- สร้างหน้าต่างอัปโหลดก่อน ยังไม่เชื่อม AP -->
+<!-- #region Asset Attachment Modal -->
+<div
+    id="assetAttachmentModal"
+    class="asset-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="assetAttachmentModalTitle"
+    hidden
+>
+    <div
+        class="asset-modal-backdrop"
+        data-close-attachment-modal
+    ></div>
+
+    <section class="asset-modal-panel">
+        <header class="asset-modal-header">
+            <div>
+                <span class="asset-eyebrow">
+                    ASSET DOCUMENTS
+                </span>
+
+                <h2 id="assetAttachmentModalTitle">
+                    อัปโหลดรูปภาพและเอกสาร
+                </h2>
+            </div>
+
+            <button
+                id="closeAssetAttachmentModalButton"
+                class="asset-modal-close"
+                type="button"
+                aria-label="ปิดหน้าต่าง"
+            >
+                ×
+            </button>
+        </header>
+
+        <form id="assetAttachmentForm">
+            <div class="asset-modal-body">
+                <div class="asset-current-summary">
+                    <div>
+                        <span>รหัสทรัพย์สิน</span>
+                        <strong id="attachmentModalAssetCode">-</strong>
+                    </div>
+
+                    <div>
+                        <span>ชื่อทรัพย์สิน</span>
+                        <strong id="attachmentModalAssetName">-</strong>
+                    </div>
+                </div>
+
+                <div class="asset-form-grid">
+                    <label class="asset-field">
+                        <span>ประเภทเอกสาร *</span>
+
+                        <select
+                            id="assetAttachmentType"
+                            required
+                        >
+                            <option value="">
+                                -- เลือกประเภทเอกสาร --
+                            </option>
+                            <option value="ASSET_PHOTO">
+                                รูปภาพทรัพย์สิน
+                            </option>
+                            <option value="RECEIPT">
+                                ใบเสร็จหรือหลักฐานการซื้อ
+                            </option>
+                            <option value="TRANSFER_EVIDENCE">
+                                หลักฐานการโยกย้าย
+                            </option>
+                            <option value="CLAIM_DOCUMENT">
+                                เอกสารส่งเคลม
+                            </option>
+                            <option value="DAMAGE_PHOTO">
+                                รูปภาพความเสียหาย
+                            </option>
+                            <option value="DISPOSAL_EVIDENCE">
+                                หลักฐานการทำลาย
+                            </option>
+                            <option value="OTHER">
+                                เอกสารอื่น ๆ
+                            </option>
+                        </select>
+                    </label>
+
+                    <label class="asset-field">
+                        <span>เลือกไฟล์ *</span>
+
+                        <input
+                            id="assetAttachmentFile"
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,application/pdf"
+                            required
+                        >
+                    </label>
+                </div>
+
+                <label class="asset-field">
+                    <span>รายละเอียดเอกสาร</span>
+
+                    <textarea
+                        id="assetAttachmentDescription"
+                        rows="3"
+                        maxlength="500"
+                        placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)"
+                    ></textarea>
+                </label>
+
+                <div
+                    id="assetAttachmentPreview"
+                    class="asset-attachment-preview"
+                    hidden
+                >
+                    <img
+                        id="assetAttachmentPreviewImage"
+                        alt="ตัวอย่างไฟล์ที่เลือก"
+                        hidden
+                    >
+
+                    <div
+                        id="assetAttachmentPdfPreview"
+                        hidden
+                    >
+                        📄 เอกสาร PDF
+                    </div>
+
+                    <p id="assetAttachmentFileName"></p>
+                </div>
+
+                <p
+                    id="assetAttachmentFormMessage"
+                    class="asset-form-message"
+                    aria-live="polite"
+                ></p>
+            </div>
+
+            <footer class="asset-modal-footer">
+                <button
+                    id="cancelAssetAttachmentButton"
+                    class="asset-secondary-button"
+                    type="button"
+                >
+                    ยกเลิก
+                </button>
+
+                <button
+                    id="submitAssetAttachmentButton"
+                    class="asset-primary-button"
+                    type="submit"
+                >
+                    อัปโหลดไฟล์
+                </button>
+            </footer>
+        </form>
+    </section>
+</div>
+<!-- #endregion -->
+
+<!-- #region หน้าต่างขยายรูปภาพทรัพย์สิน -->
+<div
+    id="assetImageLightbox"
+    class="asset-image-lightbox"
+    hidden
+    aria-hidden="true"
+>
+    <div
+        class="asset-image-lightbox-backdrop"
+        data-close-asset-image
+    ></div>
+
+    <section
+        class="asset-image-lightbox-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="assetImageLightboxTitle"
+    >
+        <header class="asset-image-lightbox-header">
+            <h2 id="assetImageLightboxTitle">
+                รูปภาพทรัพย์สิน
+            </h2>
+
+            <button
+                id="closeAssetImageLightboxButton"
+                type="button"
+                class="asset-modal-close"
+                aria-label="ปิดรูปภาพ"
+            >
+                ×
+            </button>
+        </header>
+
+        <div class="asset-image-lightbox-content">
+            <img
+                id="assetImageLightboxImage"
+                src=""
+                alt="รูปภาพทรัพย์สินแบบขยาย"
+            >
+        </div>
+
+        <p id="assetImageLightboxFileName"></p>
+    </section>
+</div>
+<!-- #endregion -->
+
+<!-- #region Barcode scanner -->
+<div
+    id="assetScannerModal"
+    class="asset-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="assetScannerModalTitle"
+    hidden
+>
+    <div
+        class="asset-modal-backdrop"
+        data-close-asset-scanner
+    ></div>
+
+    <section class="asset-modal-panel asset-scanner-panel">
+        <header class="asset-modal-header">
+            <div>
+                <span class="asset-eyebrow">ASSET SCANNER</span>
+                <h2 id="assetScannerModalTitle">สแกน Barcode / QR Code</h2>
+            </div>
+
+            <button
+                id="closeAssetScannerButton"
+                class="asset-modal-close"
+                type="button"
+                aria-label="ปิดเครื่องสแกน"
+            >
+                ×
+            </button>
+        </header>
+
+        <div class="asset-modal-body">
+            <div id="assetScannerViewport" class="asset-scanner-viewport">
+                <video
+                    id="assetScannerVideo"
+                    playsinline
+                    muted
+                    aria-label="ภาพจากกล้องสำหรับสแกนรหัส"
+                ></video>
+                <div class="asset-scanner-guide" aria-hidden="true"></div>
+            </div>
+
+            <p
+                id="assetScannerMessage"
+                class="asset-form-message"
+                role="status"
+                aria-live="polite"
+            >
+                กำลังเตรียมกล้อง…
+            </p>
+
+            <form id="assetScannerManualForm" class="asset-scanner-manual">
+                <label class="asset-field" for="assetScannerManualInput">
+                    <span>หรือกรอกรหัสด้วยตนเอง</span>
+                    <input
+                        id="assetScannerManualInput"
+                        type="text"
+                        maxlength="150"
+                        autocomplete="off"
+                        inputmode="text"
+                        placeholder="Barcode, QR Code หรือรหัสทรัพย์สิน"
+                    >
+                </label>
+
+                <button class="asset-primary-button" type="submit">
+                    ค้นหารหัสนี้
+                </button>
+            </form>
+        </div>
+
+        <footer class="asset-modal-footer">
+            <button
+                id="cancelAssetScannerButton"
+                class="asset-secondary-button"
+                type="button"
+            >
+                ยกเลิก
+            </button>
+        </footer>
+    </section>
+</div>
+<!-- #endregion -->
+
+
+    <script src="version.js"></script>
+    <script src="config.js"></script>
+    <script src="assets.js"></script>
+    <script src="pwa.js"></script>
+</body>
+</html>

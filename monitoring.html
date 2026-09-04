@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Monitoring System Project</title>
+    <link rel="stylesheet" href="monitoring.css?v=20260901-2">
+    <link rel="stylesheet" href="monitoring-embed.css?v=20260901-2">
+    <link rel="stylesheet" href="monitoring-interactions.css?v=20260901-4">
+    <link rel="stylesheet" href="monitoring-fixes.css?v=20260901-1">
+</head>
+<body>
+    <main class="monitoring-shell">
+        <header class="monitoring-header">
+            <div>
+                <p class="eyebrow">LINE OA OPERATIONS</p>
+                <h1>Monitoring System Project</h1>
+            </div>
+            <div class="header-actions">
+                <span id="connectionState" class="connection-state">กำลังเชื่อมต่อ...</span>
+                <button id="refreshButton" type="button" class="secondary-button">รีเฟรช</button>
+            </div>
+        </header>
+
+        <section class="chat-layout" aria-label="ระบบติดตามข้อความ LINE OA">
+            <aside class="oa-panel">
+                <label class="search-box">
+                    <span>⌕</span>
+                    <input id="conversationSearch" type="search" placeholder="ค้นหาชื่อหรือข้อความ">
+                </label>
+                <div id="channelTabs" class="channel-tabs" role="tablist"></div>
+                <button id="clearUnreadButton" class="clear-unread-button" type="button">
+                    ทำเครื่องหมายว่าอ่านทั้งหมด
+                </button>
+                <div id="conversationList" class="conversation-list"></div>
+            </aside>
+
+            <section class="conversation-panel">
+                <header id="conversationHeader" class="conversation-header">
+                    <div class="avatar placeholder">LINE</div>
+                    <div><strong>เลือกห้องสนทนา</strong><small>ข้อความจากทุก LINE OA จะแสดงที่นี่</small></div>
+                </header>
+                <div id="messageList" class="message-list">
+                    <div class="empty-state"><b>ยังไม่ได้เลือกห้องสนทนา</b><span>เลือกบัญชีและลูกค้าจากด้านซ้ายเพื่อเริ่มทำงาน</span></div>
+                </div>
+                <nav class="message-scroll-controls" aria-label="เลื่อนข้อความ">
+                    <button id="scrollToTopButton" type="button" title="ไปข้อความแรก" aria-label="ไปข้อความแรก">↑</button>
+                    <button id="scrollToBottomButton" type="button" title="ไปข้อความล่าสุด" aria-label="ไปข้อความล่าสุด">↓<span id="newMessageIndicator" hidden></span></button>
+                </nav>
+                <form id="replyForm" class="reply-composer">
+                    <textarea id="replyInput" rows="2" maxlength="5000" placeholder="พิมพ์ข้อความตอบกลับ..." disabled></textarea>
+                    <div class="composer-row">
+                        <span id="replyHint">Enter เพื่อส่ง · Shift+Enter เพื่อขึ้นบรรทัดใหม่</span>
+                        <button id="sendButton" type="submit" disabled>ส่ง</button>
+                    </div>
+                </form>
+            </section>
+
+            <aside class="profile-panel">
+                <div id="profileCard" class="profile-card">
+                    <div class="avatar large placeholder">OA</div>
+                    <h2>ข้อมูลผู้ติดต่อ</h2>
+                    <p>เลือกห้องสนทนาเพื่อดูโปรไฟล์และสถานะ</p>
+                </div>
+            </aside>
+        </section>
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </main>
+    <script src="config.js"></script>
+    <script src="monitoring.js?v=20260901-4"></script>
+    <script src="monitoring-fixes.js?v=20260901-1"></script>
+</body>
+</html>

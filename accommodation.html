@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+    <title>ระบบบริหารที่พักพนักงาน | GA Operations</title>
+
+    <link rel="stylesheet" href="accommodation.css?v=20260902-accommodation-audit-01">
+    <link rel="stylesheet" href="responsive.css?v=20260902-mobile-layout-02">
+        <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <meta name="theme-color" content="#ffffff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="GA East">
+</head>
+
+<body>
+    <main class="page-main">
+        <div class="accommodation-layout">
+        <section class="dashboard-summary-section dashboard-summary-top" aria-labelledby="dashboardSummaryTitle">
+            <div class="summary-sidebar-heading">
+                <span class="section-label">PORTFOLIO OVERVIEW</span>
+                <h2 id="dashboardSummaryTitle">ภาพรวมวันนี้</h2>
+                <p>ข้อมูลล่าสุดจากทุกพื้นที่ปฏิบัติงาน</p>
+            </div>
+            <div id="employeeSummary" class="dashboard-kpis">กำลังโหลดข้อมูล...</div>
+            <div class="dashboard-search">
+                <div class="room-search-heading">
+                    <div><span class="section-label">QUICK FIND</span><h2 id="roomSearchTitle">ค้นหาและจัดการห้อง</h2><p>พิมพ์คำค้นเพื่อดูและจัดการห้องทันที</p></div>
+                    <label class="room-search-control"><span class="search-icon" aria-hidden="true">⌕</span><span class="sr-only">หมายเลขหรือชื่อห้อง</span><input id="roomSearchInput" type="search" placeholder="ค้นหาหมายเลขห้อง อาคาร หรือผู้เข้าพัก…" autocomplete="off"></label>
+                </div>
+                <div id="roomSearchResults" class="room-search-results" aria-live="polite">พิมพ์คำค้นเพื่อดูและจัดการห้องทันที</div>
+            </div>
+        </section>
+
+        <div class="accommodation-shell">
+        <div class="workspace-main">
+            <section id="accommodationDataPanel" class="accommodation-data-panel" aria-labelledby="accommodationDataTitle">
+                <div id="summaryCompanyFilters" class="summary-company-filters" aria-label="กรองตามบริษัท (เลือกได้หลายบริษัท)"></div>
+                <div class="accommodation-data-heading">
+                    <div>
+                        <span class="section-label">ACCOMMODATION OVERVIEW</span>
+                        <h2 id="accommodationDataTitle">จำนวนตึก</h2>
+                        <p id="accommodationDataDescription">เลือกกล่องสรุปด้านบนเพื่อดูรายละเอียด</p>
+                    </div>
+                    <button type="button" id="pendingReviewButton" class="pending-review-button" hidden>
+                        ⚠ รอตรวจสอบห้องพัก <span id="pendingReviewCount">0</span>
+                    </button>
+                    <div class="accommodation-data-actions">
+                        <button type="button" id="syncAccommodationButton" class="sync-accommodation-button">ซิงก์ข้อมูลล่าสุด</button>
+                        <div id="summaryAreaFilters" class="summary-area-filters" aria-label="กรองตามพื้นที่ปฏิบัติงาน"></div>
+                    </div>
+                </div>
+                <div id="accommodationDataGrid" class="accommodation-data-grid" aria-live="polite"></div>
+            </section>
+        </div>
+        </div>
+        </div>
+    </main>
+
+    <div id="managementModal" class="modal-overlay" hidden>
+        <section class="management-modal" role="dialog" aria-modal="true" aria-labelledby="managementModalTitle">
+            <div class="report-header">
+                <div><span class="section-label">ACCOMMODATION MANAGEMENT</span><h2 id="managementModalTitle">รายการ</h2></div>
+                <button type="button" id="closeManagementModalButton" class="modal-close-button" aria-label="ปิด">×</button>
+            </div>
+            <form id="managementForm" class="management-form"></form>
+        </section>
+    </div>
+
+    <div id="pendingReviewModal" class="modal-overlay" hidden>
+        <section class="management-modal pending-review-modal" role="dialog" aria-modal="true" aria-labelledby="pendingReviewModalTitle">
+            <div class="report-header">
+                <div>
+                    <span class="section-label">รายบุคคลที่ต้องตรวจสอบ</span>
+                    <h2 id="pendingReviewModalTitle">รอตรวจสอบห้องพัก</h2>
+                    <p>เลือกตึก/ชั้น/ห้องจากรายการที่มีอยู่แล้วเท่านั้น เพื่อป้องกันการพิมพ์ผิดหรือสร้างห้องใหม่ซ้ำซ้อน — บันทึกแล้วจะอัปเดตทั้งระบบและ Google Sheet ทันที</p>
+                </div>
+                <button type="button" id="closePendingReviewModalButton" class="modal-close-button" aria-label="ปิด">×</button>
+            </div>
+            <div id="pendingReviewList" class="pending-review-list"></div>
+        </section>
+    </div>
+
+    <div id="imagePreviewModal" class="modal-overlay" hidden>
+        <section class="image-preview-modal" role="dialog" aria-modal="true" aria-label="รูปหลักฐาน">
+            <button type="button" id="closeImagePreviewButton" class="modal-close-button" aria-label="ปิด">×</button>
+            <img id="imagePreviewElement" alt="รูปหลักฐานงานซ่อม">
+        </section>
+    </div>
+
+    <div
+        id="accommodationReportModal"
+        class="modal-overlay"
+        hidden
+    >
+        <section
+            class="report-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reportModalTitle"
+        >
+            <div class="report-header">
+                <div>
+                    <span class="section-label">
+                        CENTRAL OFFICE REPORT
+                    </span>
+
+                    <h2 id="reportModalTitle">
+                        Employee Accommodation Report
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    id="closeReportModalButton"
+                    class="modal-close-button"
+                    aria-label="Close report"
+                >
+                    ×
+                </button>
+            </div>
+
+            <div class="report-table-wrapper">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>Employee Name</th>
+                            <th>Work Area</th>
+                            <th>Building</th>
+                            <th>Floor</th>
+                            <th>Room</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="accommodationReportBody">
+                        <tr>
+                            <td colspan="6">
+                                No accommodation data
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="accommodation.js?v=20260902-accommodation-audit-01"></script>
+    <script src="pwa.js"></script>
+</body>
+</html>
