@@ -18,7 +18,7 @@ const LOCAL_API_URL = `http://127.0.0.1:${localApiPort}`;
 
 
 
-const PRODUCTION_API_URL = 'https://platforms-complications-pounds-series.trycloudflare.com';
+const PRODUCTION_API_URL = 'https://fighting-penetration-cost-hollywood.trycloudflare.com';
 
 
 
@@ -214,6 +214,7 @@ window.performSecureLogout =
         }
     };
 //#endregion
+
 
 
 
