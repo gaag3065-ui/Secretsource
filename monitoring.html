@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="monitoring-embed.css?v=20260901-2">
     <link rel="stylesheet" href="monitoring-interactions.css?v=20260901-4">
     <link rel="stylesheet" href="monitoring-fixes.css?v=20260901-1">
+    <link rel="stylesheet" href="monitoring-media.css?v=20261006-1">
 </head>
 <body>
     <main class="monitoring-shell">
@@ -35,7 +36,8 @@
                 <div id="conversationList" class="conversation-list"></div>
             </aside>
 
-            <section class="conversation-panel">
+            <section id="conversationPanel" class="conversation-panel">
+                <div id="dropOverlay" class="drop-overlay" hidden><b>วางไฟล์ที่นี่เพื่อส่ง</b><span>รูปภาพ วิดีโอ เสียง หรือเอกสาร (ไม่เกิน 100 MB)</span></div>
                 <header id="conversationHeader" class="conversation-header">
                     <div class="avatar placeholder">LINE</div>
                     <div><strong>เลือกห้องสนทนา</strong><small>ข้อความจากทุก LINE OA จะแสดงที่นี่</small></div>
@@ -48,9 +50,16 @@
                     <button id="scrollToBottomButton" type="button" title="ไปข้อความล่าสุด" aria-label="ไปข้อความล่าสุด">↓<span id="newMessageIndicator" hidden></span></button>
                 </nav>
                 <form id="replyForm" class="reply-composer">
+                    <div id="stickerPicker" class="sticker-picker" hidden></div>
+                    <div id="attachmentTray" class="attachment-tray" hidden></div>
                     <textarea id="replyInput" rows="2" maxlength="5000" placeholder="พิมพ์ข้อความตอบกลับ..." disabled></textarea>
                     <div class="composer-row">
-                        <span id="replyHint">Enter เพื่อส่ง · Shift+Enter เพื่อขึ้นบรรทัดใหม่</span>
+                        <div class="composer-tools">
+                            <button id="attachButton" type="button" class="tool-button" title="แนบรูป/วิดีโอ/ไฟล์" aria-label="แนบไฟล์" disabled>📎</button>
+                            <button id="stickerButton" type="button" class="tool-button" title="สติกเกอร์" aria-label="สติกเกอร์" disabled>☺</button>
+                            <input id="fileInput" type="file" multiple hidden>
+                            <span id="replyHint">Enter เพื่อส่ง · Shift+Enter ขึ้นบรรทัดใหม่ · ลากไฟล์มาวางหรือวางรูปเพื่อแนบ</span>
+                        </div>
                         <button id="sendButton" type="submit" disabled>ส่ง</button>
                     </div>
                 </form>
@@ -64,10 +73,34 @@
                 </div>
             </aside>
         </section>
+        <div id="mediaViewer" class="media-viewer" role="dialog" aria-modal="true" aria-labelledby="viewerTitle" hidden>
+            <header class="viewer-header">
+                <div class="viewer-copy"><strong id="viewerTitle"></strong><small id="viewerMeta"></small></div>
+                <div class="viewer-actions">
+                    <button id="viewerRename" type="button">เปลี่ยนชื่อ</button>
+                    <button id="viewerDownload" type="button">ดาวน์โหลด</button>
+                    <button id="viewerClose" type="button" aria-label="ปิด">✕</button>
+                </div>
+            </header>
+            <button id="viewerPrev" type="button" class="viewer-nav prev" aria-label="ก่อนหน้า">‹</button>
+            <div id="viewerStage" class="viewer-stage"></div>
+            <button id="viewerNext" type="button" class="viewer-nav next" aria-label="ถัดไป">›</button>
+        </div>
+        <dialog id="renameDialog" class="rename-dialog">
+            <form id="renameForm" method="dialog">
+                <h3 id="renameTitle">เปลี่ยนชื่อ</h3>
+                <input id="renameInput" type="text" maxlength="180" autocomplete="off">
+                <small id="renameHint"></small>
+                <div class="dialog-actions">
+                    <button id="renameCancel" type="button" class="secondary-button">ยกเลิก</button>
+                    <button type="submit" class="primary-button">บันทึก</button>
+                </div>
+            </form>
+        </dialog>
         <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>
     <script src="config.js"></script>
-    <script src="monitoring.js?v=20260901-4"></script>
+    <script src="monitoring.js?v=20261006-1"></script>
     <script src="monitoring-fixes.js?v=20260901-1"></script>
 </body>
 </html>

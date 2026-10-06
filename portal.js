@@ -35,7 +35,7 @@ const services = [
                 route: 'monitoring',
                 title: 'Monitoring',
                 icon: 'message',
-                page: 'monitoring.html?v=20260901-4'
+                page: 'monitoring.html?v=20261006-1'
             },
             {
                 route: 'new-work-update',
