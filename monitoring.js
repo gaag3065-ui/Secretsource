@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const key = `${conversation.channelId}|${conversation.id}|${message.id}|${variant}`;
         if (!blobCache.has(key)) {
             const promise = (async () => {
-                const response = await window.authFetch(`${apiBase}${conversationPath(conversation)}/messages/${encodeURIComponent(message.id)}/content?channelId=${encodeURIComponent(conversation.channelId)}&variant=${variant}`);
+                const response = await window.authFetch(`${apiBase}${conversationPath(conversation)}/messages/${encodeURIComponent(message.id)}/content?channelId=${encodeURIComponent(conversation.channelId)}&variant=${variant}&v=2`);
                 if (!response.ok) { const data = await response.json().catch(() => ({})); const error = new Error(data.message || 'ไม่สามารถเปิดไฟล์ได้'); error.code = data.code; throw error; }
                 const blob = await response.blob();
                 return { url: URL.createObjectURL(blob), blob };

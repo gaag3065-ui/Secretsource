@@ -2,12 +2,12 @@
 // Secretsource - Frontend Environment Configuration
 // ======================================================
 
-// เธ•เธฃเธงเธเธชเธญเธเธงเนเธฒเธซเธเนเธฒเน€เธงเนเธเธเธณเธฅเธฑเธเธ—เธณเธเธฒเธเธญเธขเธนเนเนเธเน€เธเธฃเธทเนเธญเธ Local เธซเธฃเธทเธญเนเธกเน
+// ตรวจสอบว่าหน้าเว็บกำลังทำงานอยู่ในเครื่อง Local หรือไม่
 const IS_LOCAL =
     window.location.hostname === '127.0.0.1' ||
     window.location.hostname === 'localhost';
 
-// Backend เธชเธณเธซเธฃเธฑเธเธเธฒเธฃเธเธฑเธ’เธเธฒเนเธเน€เธเธฃเธทเนเธญเธ เธฃเธญเธเธฃเธฑเธเธเธณเธซเธเธ”เธเธญเธฃเนเธ•เน€เธเธเธฒเธฐเธเธฒเธฃเธ—เธ”เธชเธญเธเธเธ localhost
+// Backend สำหรับการพัฒนาในเครื่อง รองรับกำหนดพอร์ตเฉพาะการทดสอบบน localhost
 const localApiPortParameter = new URLSearchParams(
     window.location.search
 ).get('apiPort');
@@ -33,7 +33,7 @@ console.log(
 
 
 
-//เธเธฑเธเธเนเธเธฑเธเธญเนเธฒเธ CSRF Token
+//ฟังก์ชันอ่าน CSRF Token
 //window.getCsrfToken = function () {
 //#region
 window.getCsrfToken = function () {
@@ -100,7 +100,7 @@ window.authFetch = async function (url, options = {}) {
 
         if (!csrfToken) {
             throw new Error(
-                'เนเธกเนเธเธ CSRF Token เธเธฃเธธเธ“เธฒเน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเนเธซเธกเน'
+                'ไม่พบ CSRF Token กรุณาเข้าสู่ระบบใหม่'
             );
         }
 
@@ -122,7 +122,7 @@ window.authFetch = async function (url, options = {}) {
         window.location.replace('index.html');
 
         throw new Error(
-            'เน€เธเธชเธเธฑเธเธซเธกเธ”เธญเธฒเธขเธธ เธเธฃเธธเธ“เธฒเน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเนเธซเธกเน'
+            'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'
         );
     }
 
@@ -162,7 +162,7 @@ window.requirePagePermission = async function (
             data.permissions?.[permissionKey] !== true
         )
     ) {
-        alert('เธเธฑเธเธเธตเธเธตเนเนเธกเนเธกเธตเธชเธดเธ—เธเธดเนเน€เธเนเธฒเธ–เธถเธเธซเธเนเธฒเธเธตเน');
+        alert('บัญชีนี้ไม่มีสิทธิ์เข้าถึงหน้านี้');
         window.location.replace('portal.html');
         throw new Error('PERMISSION_DENIED');
     }
@@ -176,7 +176,7 @@ window.requirePagePermission = async function (
     return data;
 };
 
-//เธเธฑเธเธเนเธเธฑเธ Logout เธเธฅเธฒเธ
+//ฟังก์ชัน Logout กลาง
 //window.performSecureLogout =
 //#region
 window.performSecureLogout =
