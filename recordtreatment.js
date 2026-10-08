@@ -361,7 +361,12 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
                 const imgResult = await imgRes.json();
                 if (imgResult.needAuth && imgResult.authUrl) {
                 window.open(imgResult.authUrl, '_blank', 'noopener,noreferrer');
-                alert('กรุณายืนยันสิทธิ์ Google Drive ในแท็บใหม่ แล้วกลับมาอัปโหลดอีกครั้ง');
+                alert(`${imgResult.message || 'สิทธิ์ Google Drive หมดอายุ'}
+
+ข้อมูลที่กรอกยังอยู่ครบ — เมื่อผู้ดูแลเชื่อมต่อ Google Drive แล้ว กดบันทึกอีกครั้งได้เลย`);
+                claimStatus.innerText = '⚠️ รอผู้ดูแลเชื่อมต่อ Google Drive ใหม่ แล้วกดบันทึกอีกครั้ง';
+                claimStatus.style.color = '#b26a00';
+                (window.SystemHealth || window.parent?.SystemHealth)?.check();
                 return;
                 }
                 
