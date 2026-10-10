@@ -63,31 +63,16 @@ const services = [
         color: '#635bff',
         soft: '#efedff',
         tags: [],
+        // รวม 3 หน้า (เปิดเคส / อัปเดต-ปิดเคส / ประวัติ) เป็นหน้าเดียวเลื่อนต่อกัน — กดเมนูหลักครั้งเดียวเปิดเลย
+        directOpen: true,
         tasks: [
             {
-                route: 'open-treatment',
-                title: 'เปิดเคส เข้ารักษา',
-                icon: 'plus',
+                route: 'insurance-all',
+                title: 'งานประกันทั้งหมด',
+                icon: 'shield',
                 page:
-                    'search.html?v=20260831-insurance-32' +
-                    '#treatment-box-placeholder'
-            },
-            {
-                route: 'update-treatment',
-                title:
-                    'อัปเดตผลการรักษาหรือปิดเคส',
-                icon: 'health',
-                page:
-                    'search.html?v=20260831-insurance-32' +
-                    '#continuity-care-placeholder'
-            },
-            {
-                route: 'treatment-history',
-                title: 'ประวัติการรักษา',
-                icon: 'home',
-                page:
-                    'search.html?v=20260831-insurance-32' +
-                    '#table-box-placeholder'
+                    'search.html?v=20261010-insurance-all-1' +
+                    '#all'
             }
         ]
     },
@@ -618,7 +603,8 @@ function isMobileNavigationViewport() {
 // พฤติกรรมเดิม เพราะเมนูย่อยฝั่งนั้นเป็นแผงข้างที่เห็นตลอดอยู่แล้ว ไม่ใช่หน้าล้นจอ) ใช้ร่วมกัน
 // ทั้งทางเข้าจากการ์ดหน้าแรกและเมนูแฮมเบอร์เกอร์ (ระดับ 1) — คืนค่า true ถ้าจัดการให้แล้ว
 function tryAutoOpenOnlyAccessibleTask(service) {
-    if (!isMobileNavigationViewport()) {
+    // directOpen: ส่วนงานที่รวมเป็นหน้าเดียวแล้ว (เช่น งานประกัน) เปิดตรงในคลิกเดียวทั้งมือถือและเดสก์ท็อป
+    if (!isMobileNavigationViewport() && !service.directOpen) {
         return false;
     }
 
@@ -631,6 +617,11 @@ function tryAutoOpenOnlyAccessibleTask(service) {
     const taskIndex = service.tasks.indexOf(onlyTask);
     openSecondarySidebar(service.id);
     openTask(service, onlyTask, taskIndex);
+    if (service.directOpen && !isMobileNavigationViewport()) {
+        // ไม่ต้องแสดงแผงเมนูย่อยที่มีรายการเดียว — ให้พื้นที่หน้างานกว้างขึ้น
+        document.body.classList.remove('second-sidebar-open');
+        elements.secondarySidebar.setAttribute('aria-hidden', 'true');
+    }
     return true;
 }
 
@@ -745,9 +736,7 @@ function renderTaskContent(
         'is-open-treatment',
         service.id === 'insurance' &&
         (
-            task.route === 'open-treatment' ||
-            task.route === 'update-treatment' ||
-            task.route === 'treatment-history'
+            task.route === 'insurance-all'
         )
     );
     elements.workspaceView.classList.toggle(
@@ -987,7 +976,9 @@ document
     .forEach(button => {
         button.addEventListener('click', () => {
             const serviceId = button.dataset.serviceId;
+            const clickedService = services.find(item => item.id === serviceId);
             const isAlreadyOpen =
+                !clickedService?.directOpen &&
                 selectedServiceId === serviceId &&
                 document.body.classList.contains(
                     'second-sidebar-open'

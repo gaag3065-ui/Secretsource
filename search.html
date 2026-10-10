@@ -16,6 +16,7 @@
     <title>ระบบบริหารจัดการพนักงานและบันทึกข้อมูลการเข้ารักษา</title>
   <link rel="stylesheet" href="style.css?v=20260831-insurance-25">
   <link rel="stylesheet" href="responsive.css?v=20260902-mobile-layout-02">
+  <link rel="stylesheet" href="insurance-combined.css?v=20261010-1">
       <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -141,9 +142,44 @@ async function loadComponent(placeholderId, filename) {
 }
 //#endregion
 
+// #all = รวมทั้ง 3 ส่วน (เปิดเคส → อัปเดต/ปิดเคส → ประวัติ) ในหน้าเดียวเลื่อนต่อกัน แบบกระชับ
+function applyCombinedInsuranceView() {
+    const layout = document.querySelector('.insurance-workspace-layout');
+    const views = [
+        ['open-treatment-view', 'เปิดเคส เข้ารักษา'],
+        ['continuity-view', 'อัปเดตผล / ปิดเคส'],
+        ['history-view', 'ประวัติการรักษา']
+    ];
+    views.forEach(([id]) => { const view = document.getElementById(id); if (view) view.hidden = false; });
+    // ลำดับ: เปิดเคส → อัปเดต/ปิดเคส → ประวัติ
+    const continuity = document.getElementById('continuity-view');
+    const history = document.getElementById('history-view');
+    if (layout && continuity && history) layout.insertBefore(continuity, history);
+    if (layout && !document.getElementById('insuranceJumpNav')) {
+        const nav = document.createElement('nav');
+        nav.id = 'insuranceJumpNav';
+        nav.className = 'insurance-jump-nav';
+        nav.setAttribute('aria-label', 'ไปยังส่วน');
+        nav.innerHTML = views.map(([id, label]) => `<button type="button" data-jump="${id}">${label}</button>`).join('');
+        nav.addEventListener('click', event => {
+            const target = document.getElementById(event.target.closest('[data-jump]')?.dataset.jump || '');
+            target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        layout.prepend(nav);
+    }
+    document.body.classList.remove('insurance-history-mode', 'insurance-continuity-mode', 'insurance-open-treatment-mode');
+    document.body.classList.add('insurance-all-mode');
+}
+
 function applyInsuranceView() {
     const requestedTarget =
         window.location.hash.replace('#', '');
+
+    if (requestedTarget === 'all') {
+        applyCombinedInsuranceView();
+        return;
+    }
+    document.body.classList.remove('insurance-all-mode');
 
     const showContinuity =
         requestedTarget === 'continuity-care-placeholder';
