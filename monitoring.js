@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isConversationEmbed = query.get('view') === 'conversations';
     if (isConversationEmbed) document.body.classList.add('is-conversation-embed');
     const apiBase = window.APP_CONFIG?.API_BASE_URL || '';
-    const state = { channels: [], conversations: [], activeChannel: 'all', activeConversation: null, messages: [], renderedKeys: [], canReply: false, pendingFiles: [], profileTab: 'media', viewerItems: [], viewerIndex: 0 };
+    const state = { channels: [], conversations: [], activeChannel: 'all', activeConversation: null, messages: [], renderedKeys: [], canReply: false, canEdit: true, notes: [], profileSignature: '', noteDraft: '', editingNote: null, pendingFiles: [], profileTab: 'media', viewerItems: [], viewerIndex: 0 };
     const el = Object.fromEntries(['connectionState','refreshButton','conversationSearch','channelTabs','conversationList','conversationHeader','messageList','replyForm','replyInput','sendButton','replyHint','profileCard','toast','scrollToTopButton','scrollToBottomButton','newMessageIndicator','attachButton','stickerButton','fileInput','attachmentTray','stickerPicker','conversationPanel','dropOverlay','mediaViewer','viewerTitle','viewerMeta','viewerStage','viewerPrev','viewerNext','viewerRename','viewerDownload','viewerClose','renameDialog','renameForm','renameTitle','renameInput','renameHint','renameCancel'].map(id => [id, document.getElementById(id)]));
 
     // หน้านี้เปิดได้แบบ standalone/ฝังใน iframe โดยไม่ผ่านสคริปต์โหลดสิทธิ์ของ search.html เลย
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderConversations(){ const rows=filteredConversations(); el.conversationList.innerHTML=rows.length?rows.map(item=>`<button type="button" class="conversation-item${state.activeConversation?.id===item.id&&state.activeConversation?.channelId===item.channelId?' is-active':''}" data-id="${escapeHtml(item.id)}" data-channel="${escapeHtml(item.channelId)}">${avatar(item.pictureUrl,item.displayName)}<span class="conversation-copy"><strong>${escapeHtml(item.displayName||'ไม่ทราบชื่อ')}</strong><span>${escapeHtml(item.lastMessage||'ไม่มีข้อความตัวอย่าง')}</span></span><span><span class="conversation-time">${formatTime(item.updatedAt)}</span>${item.unreadCount?`<i class="unread">${item.unreadCount}</i>`:''}</span></button>`).join(''):`<div class="empty-state"><b>ไม่พบห้องสนทนา</b><span>ลองเลือกบัญชีหรือเปลี่ยนคำค้นหา</span></div>`; }
 
     const fileIcon = name => { const ext = extensionOf(name); if (ext === 'pdf') return 'PDF'; if (['xls','xlsx','csv'].includes(ext)) return 'XLS'; if (['doc','docx'].includes(ext)) return 'DOC'; if (['ppt','pptx'].includes(ext)) return 'PPT'; if (['zip','rar','7z'].includes(ext)) return 'ZIP'; return (ext || 'FILE').slice(0,4).toUpperCase(); };
-    const renameButton = message => state.canReply ? `<button type="button" class="file-action" data-action="rename-file" data-id="${escapeHtml(message.id)}">เปลี่ยนชื่อ</button>` : '';
+    const renameButton = message => state.canEdit ? `<button type="button" class="file-action" data-action="rename-file" data-id="${escapeHtml(message.id)}">เปลี่ยนชื่อ</button>` : '';
     function bubbleContent(message) {
         const payload = message.payload || {};
         const id = escapeHtml(message.id);
@@ -132,20 +132,72 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).join('');
     }
     function renderHeader(info) {
-        el.conversationHeader.innerHTML = `${avatar(info.pictureUrl,info.displayName)}<div class="header-copy"><strong>${escapeHtml(info.displayName)}${state.canReply ? ' <button type="button" class="inline-edit" data-action="rename-contact" title="เปลี่ยนชื่อ">✎</button>' : ''}</strong><small>${escapeHtml(info.channelName)} · ${escapeHtml(info.status||'พร้อมสนทนา')}</small></div>`;
+        el.conversationHeader.innerHTML = `${avatar(info.pictureUrl,info.displayName)}<div class="header-copy"><strong>${escapeHtml(info.displayName)}${state.canEdit ? ' <button type="button" class="inline-edit" data-action="rename-contact" title="เปลี่ยนชื่อ">✎</button>' : ''}</strong><small>${escapeHtml(info.channelName)} · ${escapeHtml(info.status||'พร้อมสนทนา')}</small></div>`;
     }
     function renderProfile(info, keepDraft = false) {
-        const draft = keepDraft ? document.getElementById('noteInput')?.value : undefined; // ไม่ให้โน้ตที่กำลังพิมพ์หายตอนมีข้อความใหม่
+        const focus = captureNoteFocus(); // วาดใหม่ได้โดยไม่ทำให้โน้ตที่กำลังพิมพ์หาย/เคอร์เซอร์หลุด
         const media = state.messages.filter(message => !message.unsent && ['image','video'].includes(message.type)).reverse();
         const files = state.messages.filter(message => !message.unsent && ['file','audio'].includes(message.type)).reverse();
         const gallery = state.profileTab === 'media'
             ? (media.length ? `<div class="media-grid">${media.map(message => `<button type="button" class="media-frame grid-item${message.type==='video'?' is-video':''}" data-action="view" data-id="${escapeHtml(message.id)}"><img data-load="${escapeHtml(message.id)}" data-variant="preview" alt="">${message.type==='video'?'<span class="play-icon">▶</span>':''}</button>`).join('')}</div>` : '<p class="muted">ยังไม่มีรูปภาพหรือวิดีโอ</p>')
             : (files.length ? `<ul class="file-list">${files.map(message => `<li><button type="button" class="file-link" data-action="view" data-id="${escapeHtml(message.id)}"><span class="file-icon small">${escapeHtml(message.type==='audio'?'🎤':fileIcon(displayFileName(message)))}</span><span class="file-copy"><strong>${escapeHtml(displayFileName(message))}</strong><small>${escapeHtml(formatSize(message.fileSize))} · ${escapeHtml(new Date(message.timestamp).toLocaleDateString('th-TH'))}</small></span></button><button type="button" class="icon-button" data-action="download" data-id="${escapeHtml(message.id)}" title="ดาวน์โหลด">⬇</button></li>`).join('')}</ul>` : '<p class="muted">ยังไม่มีไฟล์</p>');
-        el.profileCard.innerHTML = `${avatar(info.pictureUrl,info.displayName,true)}<h2>${escapeHtml(info.displayName)}${state.canReply ? ' <button type="button" class="inline-edit" data-action="rename-contact" title="เปลี่ยนชื่อ">✎</button>' : ''}</h2>${info.customName ? `<p class="muted">ชื่อใน LINE: ${escapeHtml(info.lineDisplayName)}</p>` : ''}<p>${escapeHtml(info.statusMessage||'ผู้ติดต่อ LINE OA')}</p><dl class="profile-data"><dt>บัญชีที่รับข้อความ</dt><dd>${escapeHtml(info.channelName)}</dd><dt>ประเภทห้องสนทนา</dt><dd>${escapeHtml(info.sourceType||'user')}</dd><dt>สถานะ</dt><dd>${escapeHtml(info.status||'เปิดใช้งาน')}</dd></dl>
-            <section class="profile-section"><h3>โน้ต</h3><textarea id="noteInput" rows="3" maxlength="2000" placeholder="${state.canReply ? 'บันทึกข้อมูลลูกค้า (เห็นเฉพาะทีมงาน)' : 'ไม่มีโน้ต'}" ${state.canReply ? '' : 'disabled'}>${escapeHtml(draft ?? info.note ?? '')}</textarea>${state.canReply ? '<button type="button" class="secondary-button small" data-action="save-note">บันทึกโน้ต</button>' : ''}</section>
+        el.profileCard.innerHTML = `${avatar(info.pictureUrl,info.displayName,true)}<h2>${escapeHtml(info.displayName)}${state.canEdit ? ' <button type="button" class="inline-edit" data-action="rename-contact" title="เปลี่ยนชื่อ">✎</button>' : ''}</h2>${info.customName ? `<p class="muted">ชื่อใน LINE: ${escapeHtml(info.lineDisplayName)}</p>` : ''}<p>${escapeHtml(info.statusMessage||'ผู้ติดต่อ LINE OA')}</p><dl class="profile-data"><dt>บัญชีที่รับข้อความ</dt><dd>${escapeHtml(info.channelName)}</dd><dt>ประเภทห้องสนทนา</dt><dd>${escapeHtml(info.sourceType||'user')}</dd><dt>สถานะ</dt><dd>${escapeHtml(info.status||'เปิดใช้งาน')}</dd></dl>
+            ${notesHtml()}
             <section class="profile-section"><div class="profile-tabs"><button type="button" data-tab="media" class="${state.profileTab==='media'?'is-active':''}">รูปภาพ/วิดีโอ (${media.length})</button><button type="button" data-tab="files" class="${state.profileTab==='files'?'is-active':''}">ไฟล์ (${files.length})</button></div><div class="profile-gallery">${gallery}</div></section>`;
         observeMedia(el.profileCard);
+        restoreNoteFocus(focus);
     }
+    // ---------------------------------------------------------------- notes (แบบ LINE OA: หลายรายการ ผู้เขียน/เวลา แก้ไข/ลบได้)
+    const formatStamp = value => new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+    function notesHtml() {
+        const items = state.notes.map(note => {
+            const id = escapeHtml(note.id);
+            if (state.editingNote?.id === note.id) return `<li class="note-item is-editing"><textarea id="noteEdit" data-note-input="edit" rows="3" maxlength="2000">${escapeHtml(state.editingNote.text)}</textarea><div class="note-actions"><button type="button" class="secondary-button small" data-action="note-cancel">ยกเลิก</button><button type="button" class="primary-button small" data-action="note-update" data-note="${id}">บันทึก</button></div></li>`;
+            const edited = note.updatedAt ? ` · แก้ไขโดย ${escapeHtml(note.updatedByName || '')} ${escapeHtml(formatStamp(note.updatedAt))}` : '';
+            return `<li class="note-item"><p>${linkify(note.body)}</p><div class="note-meta"><span>${escapeHtml(note.createdByName || 'ไม่ทราบชื่อ')} · ${escapeHtml(formatStamp(note.createdAt))}${edited}</span>${state.canEdit ? `<span class="note-buttons"><button type="button" data-action="note-edit" data-note="${id}">แก้ไข</button><button type="button" data-action="note-delete" data-note="${id}">ลบ</button></span>` : ''}</div></li>`;
+        }).join('');
+        const composer = state.canEdit ? `<div class="note-composer"><textarea id="noteNew" data-note-input="new" rows="2" maxlength="2000" placeholder="เพิ่มโน้ต (เห็นเฉพาะทีมงาน)">${escapeHtml(state.noteDraft)}</textarea><button type="button" class="primary-button small" data-action="note-add">บันทึก</button></div>` : '';
+        return `<section class="profile-section notes-section"><h3>โน้ต (${state.notes.length})</h3>${composer}${items ? `<ul class="note-list">${items}</ul>` : '<p class="muted">ยังไม่มีโน้ต</p>'}</section>`;
+    }
+    function captureNoteFocus() {
+        const active = document.activeElement;
+        if (!active?.dataset?.noteInput || !el.profileCard.contains(active)) return null;
+        return { id: active.id, start: active.selectionStart, end: active.selectionEnd };
+    }
+    function restoreNoteFocus(focus) {
+        if (!focus) return;
+        const node = document.getElementById(focus.id);
+        if (!node) return;
+        node.focus({ preventScroll: true });
+        try { node.setSelectionRange(focus.start, focus.end); } catch { /* ignore */ }
+    }
+    const notesPath = () => `${conversationPath()}/notes`;
+    async function addNote() {
+        const body = state.noteDraft.trim(); if (!body || !state.activeConversation) return;
+        try {
+            const data = await request(notesPath(), { method: 'POST', body: JSON.stringify({ channelId: state.activeConversation.channelId, body }) });
+            state.notes = [data.note, ...state.notes]; state.noteDraft = '';
+            renderProfile(state.activeConversation); notify('บันทึกโน้ตแล้ว');
+        } catch (error) { notify(error.message, true); }
+    }
+    async function updateNote(noteId) {
+        const body = String(state.editingNote?.text || '').trim(); if (!body) return notify('โน้ตต้องไม่ว่าง', true);
+        try {
+            const data = await request(`${notesPath()}/${encodeURIComponent(noteId)}`, { method: 'PATCH', body: JSON.stringify({ channelId: state.activeConversation.channelId, body }) });
+            state.notes = state.notes.map(note => note.id === noteId ? data.note : note); state.editingNote = null;
+            renderProfile(state.activeConversation); notify('แก้ไขโน้ตแล้ว');
+        } catch (error) { notify(error.message, true); }
+    }
+    async function deleteNote(noteId) {
+        if (!window.confirm('ลบโน้ตนี้?')) return;
+        try {
+            await request(`${notesPath()}/${encodeURIComponent(noteId)}?channelId=${encodeURIComponent(state.activeConversation.channelId)}`, { method: 'DELETE' });
+            state.notes = state.notes.filter(note => note.id !== noteId); if (state.editingNote?.id === noteId) state.editingNote = null;
+            renderProfile(state.activeConversation); notify('ลบโน้ตแล้ว');
+        } catch (error) { notify(error.message, true); }
+    }
+    // ใช้ตรวจว่าข้อมูลหัวห้อง/โปรไฟล์/โน้ตถูกผู้ใช้คนอื่นเปลี่ยนหรือไม่ จะได้วาดใหม่ทันที
+    const profileSignatureOf = (info, notes) => JSON.stringify([info.displayName, info.customName, info.lineDisplayName, info.pictureUrl, info.statusMessage, info.status, info.channelName, notes.map(note => [note.id, note.body, note.updatedAt])]);
     function renderConversation(info, messages, options = {}) {
         const switched = !state.activeConversation || state.activeConversation.id !== info.id || state.activeConversation.channelId !== info.channelId;
         const oldTop = el.messageList.scrollTop;
@@ -153,6 +205,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const previousKeys = switched ? [] : state.renderedKeys;
         const keys = messages.map(messageKey);
         state.activeConversation = info; state.messages = messages;
+        if (options.notes) state.notes = options.notes;
+        if (switched) { state.noteDraft = ''; state.editingNote = null; }
+        const signature = profileSignatureOf(info, state.notes);
+        const profileChanged = signature !== state.profileSignature;
+        state.profileSignature = signature;
         renderHeader(info);
         const canAppend = previousKeys.length > 0 && previousKeys.length <= keys.length && previousKeys.every((key, index) => key === keys[index]);
         if (!messages.length) el.messageList.innerHTML = '<div class="empty-state"><b>ยังไม่มีข้อความ</b></div>';
@@ -163,7 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         observeMedia(el.messageList);
         if (!options.preserveScroll || wasNearBottom || switched) { el.messageList.scrollTop = el.messageList.scrollHeight; el.newMessageIndicator.hidden = true; }
         else { el.messageList.scrollTop = oldTop; if (added > 0) el.newMessageIndicator.hidden = false; }
-        if (switched || added !== 0 || !canAppend || options.refreshProfile) renderProfile(info, !switched);
+        if (switched || added !== 0 || !canAppend || profileChanged || options.refreshProfile) renderProfile(info);
         const enabled = state.canReply;
         el.replyInput.disabled = !enabled; el.sendButton.disabled = !enabled; el.attachButton.disabled = !enabled; el.stickerButton.disabled = !enabled;
         renderConversations();
@@ -173,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const switching = !state.activeConversation || state.activeConversation.id !== id || state.activeConversation.channelId !== channelId;
             if (switching) { state.activeConversation = null; state.renderedKeys = []; clearPendingFiles(); el.messageList.innerHTML = '<div class="empty-state"><b>กำลังโหลดข้อความ...</b></div>'; }
             const data = await request(`/api/line-oa/conversations/${encodeURIComponent(id)}?channelId=${encodeURIComponent(channelId)}`);
-            renderConversation(data.conversation, data.messages || [], { preserveScroll: !switching });
+            renderConversation(data.conversation, data.messages || [], { preserveScroll: !switching, notes: data.notes || [] });
             if (data.conversation.unreadCount) await request(`/api/line-oa/conversations/${encodeURIComponent(id)}/read`, { method: 'POST', body: JSON.stringify({ channelId }) });
         } catch (error) { notify(error.message, true); }
     }
@@ -196,7 +253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         el.viewerTitle.textContent = name;
         el.viewerMeta.textContent = `${message.direction === 'outbound' ? 'ส่งโดยทีมงาน' : state.activeConversation?.displayName || ''} · ${new Date(message.timestamp).toLocaleString('th-TH')}${message.fileSize ? ` · ${formatSize(message.fileSize)}` : ''}${state.viewerItems.length > 1 ? ` · ${state.viewerIndex + 1}/${state.viewerItems.length}` : ''}`;
         el.viewerPrev.hidden = state.viewerIndex <= 0; el.viewerNext.hidden = state.viewerIndex >= state.viewerItems.length - 1;
-        el.viewerRename.hidden = !state.canReply;
+        el.viewerRename.hidden = !state.canEdit;
         el.viewerStage.innerHTML = '<div class="viewer-loading">กำลังโหลด...</div>';
         try {
             const { url, blob } = await mediaBlobUrl(message, 'original');
@@ -248,11 +305,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!el.mediaViewer.hidden) renderViewer();
             notify('เปลี่ยนชื่อไฟล์แล้ว');
         } catch (error) { notify(error.message, true); }
-    }
-    async function saveNote() {
-        const info = state.activeConversation; const input = document.getElementById('noteInput'); if (!info || !input) return;
-        try { const data = await request(conversationPath(info), { method: 'PATCH', body: JSON.stringify({ channelId: info.channelId, note: input.value }) }); Object.assign(info, data.conversation); notify('บันทึกโน้ตแล้ว'); }
-        catch (error) { notify(error.message, true); }
     }
 
     // ---------------------------------------------------------------- send files / stickers
@@ -358,10 +410,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         else if (action === 'download' && message) downloadMessage(message);
         else if (action === 'rename-file' && message) renameFile(message);
         else if (action === 'rename-contact') renameContact();
-        else if (action === 'save-note') saveNote();
+        else if (action === 'note-add') addNote();
+        else if (action === 'note-edit') { const note = state.notes.find(item => item.id === target.dataset.note); if (note) { state.editingNote = { id: note.id, text: note.body }; renderProfile(state.activeConversation); document.getElementById('noteEdit')?.focus(); } }
+        else if (action === 'note-cancel') { state.editingNote = null; renderProfile(state.activeConversation); }
+        else if (action === 'note-update') updateNote(target.dataset.note);
+        else if (action === 'note-delete') deleteNote(target.dataset.note);
     }
     el.messageList.addEventListener('click', handleAction);
     el.conversationHeader.addEventListener('click', handleAction);
+    el.profileCard.addEventListener('input', event => { const kind = event.target.dataset?.noteInput; if (kind === 'new') state.noteDraft = event.target.value; else if (kind === 'edit' && state.editingNote) state.editingNote.text = event.target.value; });
+    el.profileCard.addEventListener('keydown', event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && event.target.dataset?.noteInput) { event.preventDefault(); if (event.target.dataset.noteInput === 'new') addNote(); else if (state.editingNote) updateNote(state.editingNote.id); } });
     el.profileCard.addEventListener('click', event => { const tab = event.target.closest('[data-tab]'); if (tab) { state.profileTab = tab.dataset.tab; if (state.activeConversation) renderProfile(state.activeConversation); return; } handleAction(event); });
     el.viewerClose.addEventListener('click', closeViewer);
     el.viewerPrev.addEventListener('click', () => moveViewer(-1));
@@ -439,7 +497,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 !isConversationEmbed &&
                 state.activeConversation &&
                 latestActive &&
-                latestActive.updatedAt !== state.activeConversation.updatedAt
+                (latestActive.updatedAt !== state.activeConversation.updatedAt ||
+                 latestActive.modifiedAt !== state.activeConversation.modifiedAt)
             ) {
                 const active = state.activeConversation;
                 const detail = await request(
@@ -450,7 +509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 renderConversation(
                     detail.conversation,
                     detail.messages || [],
-                    { preserveScroll: true }
+                    { preserveScroll: true, notes: detail.notes || [] }
                 );
             }
         } catch (error) {
@@ -463,6 +522,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         5000
     );
 
+    // กลับมาที่แท็บนี้ = ซิงก์ทันที (ระหว่างแท็บถูกซ่อนจะหยุดซิงก์เพื่อลดภาระเซิร์ฟเวอร์)
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) syncNewMessages(); });
     window.addEventListener('pagehide', () => {
         window.clearInterval(messageSyncTimer);
     });
