@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (isConversationEmbed) document.body.classList.add('is-conversation-embed');
     const apiBase = window.APP_CONFIG?.API_BASE_URL || '';
     const state = { channels: [], conversations: [], activeChannel: 'all', activeConversation: null, messages: [], renderedKeys: [], canReply: false, canEdit: true, notes: [], profileSignature: '', noteDraft: '', editingNote: null, pendingFiles: [], profileTab: 'media', viewerItems: [], viewerIndex: 0 };
-    const el = Object.fromEntries(['connectionState','refreshButton','conversationSearch','channelTabs','conversationList','conversationHeader','messageList','replyForm','replyInput','sendButton','replyHint','profileCard','toast','scrollToTopButton','scrollToBottomButton','newMessageIndicator','attachButton','stickerButton','fileInput','attachmentTray','stickerPicker','conversationPanel','dropOverlay','mediaViewer','viewerTitle','viewerMeta','viewerStage','viewerPrev','viewerNext','viewerRename','viewerDownload','viewerClose','renameDialog','renameForm','renameTitle','renameInput','renameHint','renameCancel'].map(id => [id, document.getElementById(id)]));
+    const el = Object.fromEntries(['connectionState','refreshButton','conversationSearch','channelTabs','conversationList','conversationHeader','messageList','replyForm','replyInput','sendButton','replyHint','profileCard','toast','scrollToTopButton','scrollToBottomButton','newMessageIndicator','attachButton','stickerButton','templateButton','fileInput','attachmentTray','stickerPicker','conversationPanel','dropOverlay','mediaViewer','viewerTitle','viewerMeta','viewerStage','viewerPrev','viewerNext','viewerRename','viewerDownload','viewerClose','renameDialog','renameForm','renameTitle','renameInput','renameHint','renameCancel'].map(id => [id, document.getElementById(id)]));
 
     // หน้านี้เปิดได้แบบ standalone/ฝังใน iframe โดยไม่ผ่านสคริปต์โหลดสิทธิ์ของ search.html เลย
     // จึงต้องเช็คสิทธิ์ ViewMonitoring/ReplyMonitoring เองจาก /api/session ก่อนแสดงข้อมูลใด ๆ
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         else { el.messageList.scrollTop = oldTop; if (added > 0) el.newMessageIndicator.hidden = false; }
         if (switched || added !== 0 || !canAppend || profileChanged || options.refreshProfile) renderProfile(info);
         const enabled = state.canReply;
-        el.replyInput.disabled = !enabled; el.sendButton.disabled = !enabled; el.attachButton.disabled = !enabled; el.stickerButton.disabled = !enabled;
+        el.replyInput.disabled = !enabled; el.sendButton.disabled = !enabled; el.attachButton.disabled = !enabled; el.stickerButton.disabled = !enabled; el.templateButton.disabled = !enabled;
         renderConversations();
     }
     async function openConversation(id, channelId) {
@@ -394,6 +394,84 @@ document.addEventListener('DOMContentLoaded', async () => {
         el.stickerPicker.innerHTML = `<div class="sticker-tabs">${STICKER_PACKAGES.map(item => `<button type="button" data-package="${item.packageId}" class="${item.packageId === packageId ? 'is-active' : ''}"><img src="${stickerUrl(item.from)}" alt="" loading="lazy"></button>`).join('')}</div><div class="sticker-grid">${ids.map(id => `<button type="button" data-sticker="${id}" data-sticker-package="${packageId}"><img src="${stickerUrl(id)}" alt="" loading="lazy"></button>`).join('')}</div>`;
     }
 
+    // ---------------------------------------------------------------- composer: ขยายช่องพิมพ์ 2.5 เท่าเมื่อมีข้อความ
+    let composerBaseHeight = 0;
+    function resizeComposer() {
+        if (!composerBaseHeight) composerBaseHeight = el.replyInput.offsetHeight || 44;
+        const hasContent = el.replyInput.value.length > 0;
+        el.replyInput.classList.toggle('has-content', hasContent);
+        el.replyInput.style.height = hasContent ? `${Math.round(composerBaseHeight * 2.5)}px` : '';
+        // ปุ่มเลื่อนขึ้น/ลงลอยเหนือช่องพิมพ์เสมอ ไม่ให้ทับเมื่อช่องขยาย
+        const controls = document.querySelector('.message-scroll-controls');
+        if (controls) controls.style.bottom = `${el.replyForm.offsetHeight + 12}px`;
+    }
+
+    // ---------------------------------------------------------------- "เลือกคอนเทนต์" (ข้อความสำเร็จรูปแบบ LINE OA)
+    const templateState = { items: [], loaded: false, editingId: null };
+    const templateDialog = document.getElementById('templateDialog');
+    const templateEls = Object.fromEntries(['templateSearch', 'templateList', 'templateListView', 'templateFormView', 'templateFormTitle', 'templateTitleInput', 'templateBodyInput', 'templateCount', 'templateCreateButton'].map(id => [id, document.getElementById(id)]));
+    async function loadTemplates() {
+        try { const data = await request('/api/line-oa/templates'); templateState.items = data.templates || []; templateState.loaded = true; renderTemplates(); }
+        catch (error) { templateEls.templateList.innerHTML = `<p class="muted template-empty">${escapeHtml(error.message)}</p>`; }
+    }
+    function renderTemplates() {
+        const query = templateEls.templateSearch.value.trim().toLocaleLowerCase('th');
+        const rows = templateState.items.filter(item => !query || `${item.title} ${item.body}`.toLocaleLowerCase('th').includes(query));
+        templateEls.templateCount.textContent = `${templateState.items.length} รายการ`;
+        templateEls.templateList.innerHTML = rows.length ? rows.map(item => `<li class="template-item"><button type="button" class="template-pick" data-template-pick="${escapeHtml(item.id)}"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.body)}</span></button>${state.canReply ? `<span class="template-tools"><button type="button" data-template-edit="${escapeHtml(item.id)}" title="แก้ไข">แก้ไข</button><button type="button" data-template-delete="${escapeHtml(item.id)}" title="ลบ">ลบ</button></span>` : ''}</li>`).join('')
+            : `<p class="muted template-empty">${templateState.items.length ? 'ไม่พบคอนเทนต์ที่ค้นหา' : 'ยังไม่มีคอนเทนต์ — กด "+ สร้างคอนเทนต์" เพื่อบันทึกข้อความที่ใช้ตอบบ่อย'}</p>`;
+    }
+    function showTemplateList() { templateEls.templateFormView.hidden = true; templateEls.templateListView.hidden = false; templateState.editingId = null; templateEls.templateSearch.focus(); }
+    function showTemplateForm(item = null) {
+        templateState.editingId = item?.id || null;
+        templateEls.templateFormTitle.textContent = item ? 'แก้ไขคอนเทนต์' : 'สร้างคอนเทนต์';
+        templateEls.templateTitleInput.value = item?.title || '';
+        // สร้างจากข้อความที่พิมพ์ค้างไว้ในช่องตอบได้ทันที
+        templateEls.templateBodyInput.value = item?.body || el.replyInput.value || '';
+        templateEls.templateListView.hidden = true; templateEls.templateFormView.hidden = false; templateEls.templateTitleInput.focus();
+    }
+    function openTemplates() {
+        if (!state.activeConversation) return notify('กรุณาเลือกห้องสนทนาก่อน', true);
+        templateEls.templateSearch.value = ''; showTemplateList(); renderTemplates();
+        templateDialog.showModal(); loadTemplates();
+    }
+    function insertTemplate(item) {
+        const current = el.replyInput.value;
+        el.replyInput.value = current.trim() ? `${current.replace(/\s+$/, '')}\n${item.body}` : item.body;
+        templateDialog.close(); resizeComposer();
+        el.replyInput.focus(); el.replyInput.setSelectionRange(el.replyInput.value.length, el.replyInput.value.length);
+        request(`/api/line-oa/templates/${encodeURIComponent(item.id)}/use`, { method: 'POST', body: '{}' }).catch(() => {});
+    }
+    async function saveTemplate() {
+        const payload = { title: templateEls.templateTitleInput.value, body: templateEls.templateBodyInput.value };
+        try {
+            const path = templateState.editingId ? `/api/line-oa/templates/${encodeURIComponent(templateState.editingId)}` : '/api/line-oa/templates';
+            await request(path, { method: templateState.editingId ? 'PATCH' : 'POST', body: JSON.stringify(payload) });
+            notify(templateState.editingId ? 'แก้ไขคอนเทนต์แล้ว' : 'บันทึกคอนเทนต์แล้ว');
+            showTemplateList(); await loadTemplates();
+        } catch (error) { notify(error.message, true); }
+    }
+    async function deleteTemplate(item) {
+        if (!window.confirm(`ลบคอนเทนต์ "${item.title}"?`)) return;
+        try { await request(`/api/line-oa/templates/${encodeURIComponent(item.id)}`, { method: 'DELETE' }); notify('ลบคอนเทนต์แล้ว'); await loadTemplates(); }
+        catch (error) { notify(error.message, true); }
+    }
+    templateEls.templateSearch.addEventListener('input', renderTemplates);
+    templateEls.templateList.addEventListener('click', event => {
+        const find = id => templateState.items.find(item => item.id === id);
+        const pick = event.target.closest('[data-template-pick]'); if (pick) { const item = find(pick.dataset.templatePick); if (item) insertTemplate(item); return; }
+        const edit = event.target.closest('[data-template-edit]'); if (edit) { const item = find(edit.dataset.templateEdit); if (item) showTemplateForm(item); return; }
+        const remove = event.target.closest('[data-template-delete]'); if (remove) { const item = find(remove.dataset.templateDelete); if (item) deleteTemplate(item); }
+    });
+    templateEls.templateCreateButton.addEventListener('click', () => showTemplateForm());
+    document.getElementById('templateFormCancel').addEventListener('click', showTemplateList);
+    document.getElementById('templateFormView').addEventListener('submit', event => { event.preventDefault(); saveTemplate(); });
+    document.getElementById('templateClose').addEventListener('click', () => templateDialog.close());
+    templateDialog.addEventListener('click', event => { if (event.target === templateDialog) templateDialog.close(); });
+    el.templateButton.addEventListener('click', openTemplates);
+    el.replyInput.addEventListener('input', resizeComposer);
+    requestAnimationFrame(resizeComposer);
+
     // ---------------------------------------------------------------- events
     el.channelTabs.addEventListener('click',event=>{const button=event.target.closest('[data-channel]');if(!button)return;state.activeChannel=button.dataset.channel;renderChannels();renderConversations();});
     el.conversationList.addEventListener('click',event=>{const button=event.target.closest('[data-id]');if(!button)return;if(isConversationEmbed){window.parent.postMessage({type:'open-line-conversation',conversationId:button.dataset.id,channelId:button.dataset.channel},window.location.origin);return;}openConversation(button.dataset.id,button.dataset.channel);});
@@ -457,7 +535,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if ((!text && !state.pendingFiles.length) || !state.activeConversation) return;
         el.sendButton.disabled = true;
         try {
-            if (text) { await request(`${conversationPath()}/messages`, { method: 'POST', body: JSON.stringify({ channelId: state.activeConversation.channelId, text }) }); el.replyInput.value = ''; }
+            if (text) { await request(`${conversationPath()}/messages`, { method: 'POST', body: JSON.stringify({ channelId: state.activeConversation.channelId, text }) }); el.replyInput.value = ''; resizeComposer(); }
             for (const item of [...state.pendingFiles]) {
                 if (item.status === 'sent') continue;
                 item.status = 'uploading'; renderTray();
