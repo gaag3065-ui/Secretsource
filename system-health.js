@@ -8,6 +8,7 @@
     let isAdmin = false;
     let timer = null;
     let dismissedSignature = '';
+    let lastCheckedText = '';
 
     const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
 
@@ -28,6 +29,8 @@
 #systemHealthBanner small{opacity:.8}
 #systemHealthBanner .shb-actions{display:flex;gap:6px;flex-wrap:wrap;flex:none}
 #systemHealthBanner button{border:1px solid currentColor;background:#fff;color:inherit;border-radius:7px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
+#systemHealthBanner .shb-checked{flex-basis:100%;text-align:right;font-size:11px;opacity:.75}
+#systemHealthBanner button:disabled{opacity:.6;cursor:wait}
 #systemHealthBanner button.shb-primary{background:#d93025;border-color:#d93025;color:#fff}
 @media(max-width:720px){#systemHealthBanner .shb-inner{flex-direction:column}}`;
         document.head.appendChild(style);
@@ -51,10 +54,11 @@
         const node = banner();
         const signature = problems.map(item => `${item.key}:${item.status}`).join('|');
         if (!problems.length || signature === dismissedSignature) { node.hidden = true; return; }
-        const needsDrive = problems.some(item => item.key === 'googleDrive' && item.status === 'auth_required');
+        // แสดงปุ่มเชื่อมต่อใหม่ทั้งตอนหมดอายุแล้ว (auth_required) และตอนใกล้หมดอายุ (warning)
+        const needsDrive = problems.some(item => item.key === 'googleDrive' && item.status !== 'ok');
         node.className = level === 'warning' ? 'is-warning' : 'is-error';
         node.dataset.signature = signature;
-        node.innerHTML = `<div class="shb-inner"><div class="shb-body"><b>${level === 'warning' ? '⚠️ ระบบบางส่วนต้องได้รับการดูแล' : '⛔ ระบบบางส่วนใช้งานไม่ได้ในขณะนี้'}</b><ul>${problems.map(item => `<li><strong>${escapeHtml(item.label)}</strong> — ${escapeHtml(item.message)}${item.affects?.length ? `<br><small>กระทบ: ${escapeHtml(item.affects.join(', '))}</small>` : ''}</li>`).join('')}</ul></div><div class="shb-actions">${isAdmin && needsDrive ? '<button type="button" class="shb-primary" data-shb="drive">เชื่อมต่อ Google Drive ใหม่</button>' : ''}${isAdmin ? '<button type="button" data-shb="recheck">ตรวจสอบอีกครั้ง</button>' : ''}<button type="button" data-shb="dismiss">ซ่อน</button></div></div>`;
+        node.innerHTML = `<div class="shb-inner"><div class="shb-body"><b>${level === 'warning' ? '⚠️ ระบบบางส่วนต้องได้รับการดูแล' : '⛔ ระบบบางส่วนใช้งานไม่ได้ในขณะนี้'}</b><ul>${problems.map(item => `<li><strong>${escapeHtml(item.label)}</strong> — ${escapeHtml(item.message)}${item.affects?.length ? `<br><small>กระทบ: ${escapeHtml(item.affects.join(', '))}</small>` : ''}</li>`).join('')}</ul></div><div class="shb-actions">${isAdmin && needsDrive ? '<button type="button" class="shb-primary" data-shb="drive">เชื่อมต่อ Google Drive ใหม่</button>' : ''}${isAdmin ? '<button type="button" data-shb="recheck">ตรวจสอบอีกครั้ง</button>' : ''}<button type="button" data-shb="dismiss">ซ่อน</button>${lastCheckedText ? `<small class="shb-checked">${escapeHtml(lastCheckedText)}</small>` : ''}</div></div>`;
         node.hidden = false;
     }
 
@@ -62,7 +66,16 @@
         const action = event.target.closest('[data-shb]')?.dataset.shb;
         if (!action) return;
         if (action === 'dismiss') { dismissedSignature = banner().dataset.signature || ''; banner().hidden = true; return; }
-        if (action === 'recheck') { await check(true); return; }
+        if (action === 'recheck') {
+            // แสดงให้เห็นว่ากำลังตรวจจริง และบอกผลทุกครั้ง (เดิมไม่มีการตอบสนอง ดูเหมือนกดไม่ได้)
+            const button = event.target.closest('[data-shb]');
+            button.disabled = true; button.textContent = 'กำลังตรวจสอบ...';
+            const result = await check(true);
+            if (button.isConnected) { button.disabled = false; button.textContent = 'ตรวจสอบอีกครั้ง'; }
+            if (result?.error) alert(`ตรวจสอบไม่สำเร็จ: ${result.error}`);
+            else if (result && !result.problems) alert('ตรวจสอบแล้ว: ทุกระบบทำงานปกติ');
+            return;
+        }
         if (action === 'drive') {
             // เปิดแท็บไว้ก่อน (กัน popup blocker) แล้วค่อยใส่ลิงก์ที่ได้จากเซิร์ฟเวอร์
             const popup = window.open('', '_blank');
@@ -85,12 +98,22 @@
             }
             if (!sessionStorage.getItem('accessToken') && !document.cookie) return; // ยังไม่ล็อกอิน
             const response = await window.authFetch(`${apiBase()}/api/system/health${forceRefresh && isAdmin ? '/refresh' : ''}`, { method: forceRefresh && isAdmin ? 'POST' : 'GET', cache: 'no-store' });
-            if (!response.ok) return;
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) return forceRefresh ? { error: data.message || `เซิร์ฟเวอร์ตอบกลับ ${response.status}` } : null;
             const problems = (data.components || []).filter(item => item.status !== 'ok');
             if (forceRefresh) dismissedSignature = '';
+            lastCheckedText = data.checkedAt ? `ตรวจล่าสุด ${new Date(data.checkedAt).toLocaleTimeString('th-TH')}` : '';
             render(problems, data.status === 'warning' ? 'warning' : 'error');
-        } catch { /* ไม่ให้การเฝ้าดูรบกวนการใช้งานหน้าเว็บ */ }
+            return { problems: problems.length };
+        } catch (error) {
+            /* ไม่ให้การเฝ้าดูรบกวนการใช้งานหน้าเว็บ — แจ้งเฉพาะตอนผู้ดูแลกดตรวจเอง */
+            if (forceRefresh) {
+                const button = document.querySelector('#systemHealthBanner [data-shb="recheck"]');
+                if (button) { button.disabled = false; button.textContent = 'ตรวจสอบอีกครั้ง'; }
+                return { error: error.message };
+            }
+            return null;
+        }
     }
 
     async function init() {
