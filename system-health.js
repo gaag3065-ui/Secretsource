@@ -29,6 +29,15 @@
 #systemHealthBanner small{opacity:.8}
 #systemHealthBanner .shb-actions{display:flex;gap:6px;flex-wrap:wrap;flex:none}
 #systemHealthBanner button{border:1px solid currentColor;background:#fff;color:inherit;border-radius:7px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
+#systemRestartOverlay{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:rgba(10,14,18,.55)}
+#systemRestartOverlay .sro-card{width:min(420px,calc(100vw - 32px));display:grid;justify-items:center;gap:8px;padding:26px;border-radius:16px;background:#fff;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+#systemRestartOverlay p{margin:0;font-size:14px}
+#systemRestartOverlay small{color:#667085}
+#systemRestartOverlay .sro-spinner{width:36px;height:36px;border:4px solid #e4e7ec;border-top-color:#635bff;border-radius:50%;animation:sro-spin 1s linear infinite}
+#systemRestartOverlay.is-done .sro-spinner{display:none}
+@keyframes sro-spin{to{transform:rotate(360deg)}}
+.system-restart-button{margin-left:8px;border:1px solid #d0d5dd;background:#fff;color:#344054;border-radius:999px;padding:5px 12px;font:inherit;font-size:12px;cursor:pointer}
+.system-restart-button:hover{border-color:#635bff;color:#635bff}
 #systemHealthBanner .shb-checked{flex-basis:100%;text-align:right;font-size:11px;opacity:.75}
 #systemHealthBanner button:disabled{opacity:.6;cursor:wait}
 #systemHealthBanner button.shb-primary{background:#d93025;border-color:#d93025;color:#fff}
@@ -116,6 +125,75 @@
         }
     }
 
+    // ---------------------------------------------------------------- ปุ่ม "รีสตาร์ตระบบ" (เฉพาะผู้ดูแล)
+    // สั่งให้เซิร์ฟเวอร์รีสตาร์ตทั้งหมด (backend + tunnel ใหม่ + LINE OA + push ลิงก์ใหม่ขึ้น GitHub)
+    // แล้วรอจนหน้าเว็บบน GitHub ได้ลิงก์ใหม่และเซิร์ฟเวอร์ตอบได้ จากนั้นโหลดหน้าใหม่ให้อัตโนมัติ
+    function ensureRestartButton() {
+        if (!isAdmin || document.getElementById('systemRestartButton')) return;
+        const anchor = document.querySelector('.topbar-actions .system-status');
+        if (!anchor) return;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.id = 'systemRestartButton';
+        button.className = 'system-restart-button';
+        button.textContent = 'รีสตาร์ตระบบ';
+        button.title = 'เปิดระบบใหม่ทั้งหมด (backend, ลิงก์สาธารณะ, LINE OA)';
+        button.addEventListener('click', restartSystem);
+        anchor.insertAdjacentElement('afterend', button);
+    }
+
+    function showRestartOverlay(message, done = false) {
+        let overlay = document.getElementById('systemRestartOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'systemRestartOverlay';
+            overlay.innerHTML = '<div class="sro-card"><div class="sro-spinner"></div><b>กำลังรีสตาร์ตระบบ</b><p></p><small>ใช้เวลาประมาณ 2-4 นาที — ไม่ต้องปิดหน้านี้ หน้าเว็บจะโหลดใหม่เองเมื่อพร้อม</small></div>';
+            document.body.appendChild(overlay);
+        }
+        overlay.querySelector('p').textContent = message;
+        overlay.classList.toggle('is-done', done);
+    }
+
+    const readDeployedApiUrl = async () => {
+        const text = await fetch(`config.js?ts=${Date.now()}`, { cache: 'no-store' }).then(r => r.text());
+        return (text.match(/const PRODUCTION_API_URL\s*=\s*'([^']+)'/) || [])[1] || '';
+    };
+
+    async function restartSystem() {
+        if (!window.confirm('รีสตาร์ตระบบทั้งหมดตอนนี้?\n\n• ผู้ใช้ทุกคนต้องเข้าสู่ระบบใหม่\n• ระหว่างรีสตาร์ต (2-4 นาที) ระบบจะใช้งานไม่ได้')) return;
+        let previousUrl = '';
+        try {
+            const response = await window.authFetch(`${apiBase()}/api/system/restart`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.message || `เซิร์ฟเวอร์ตอบกลับ ${response.status}`);
+            previousUrl = data.previousUrl || apiBase();
+        } catch (error) { alert(`สั่งรีสตาร์ตไม่สำเร็จ: ${error.message}`); return; }
+
+        clearInterval(timer); // หยุดเฝ้าดูระหว่างรีสตาร์ต ไม่ให้แถบเตือนเด้ง
+        showRestartOverlay('1/3 กำลังปิดและเปิด backend ใหม่...');
+        const startedAt = Date.now();
+        const poll = async () => {
+            const elapsed = Date.now() - startedAt;
+            if (elapsed > 8 * 60 * 1000) { showRestartOverlay('ใช้เวลานานกว่าปกติ — ลองกด Ctrl+F5 หรือใช้ปุ่ม "เปิดระบบ GA East ใหม่" บนเครื่องเซิร์ฟเวอร์', true); return; }
+            try {
+                const deployedUrl = await readDeployedApiUrl();
+                if (!deployedUrl || deployedUrl === previousUrl) {
+                    showRestartOverlay(elapsed < 60000 ? '1/3 กำลังปิดและเปิด backend ใหม่...' : '2/3 กำลังเปิดลิงก์สาธารณะใหม่และอัปเดตหน้าเว็บบน GitHub...');
+                } else {
+                    showRestartOverlay('3/3 ได้ลิงก์ใหม่แล้ว กำลังตรวจว่าเซิร์ฟเวอร์พร้อม...');
+                    const ping = await fetch(`${deployedUrl}/api/system/ping`, { cache: 'no-store' }).catch(() => null);
+                    if (ping?.ok) {
+                        showRestartOverlay('ระบบพร้อมใช้งานแล้ว กำลังพาไปหน้าเข้าสู่ระบบ...', true);
+                        setTimeout(() => window.location.replace(`index.html?restarted=${Date.now()}`), 1500);
+                        return;
+                    }
+                }
+            } catch { /* ยังไม่พร้อม ลองใหม่รอบหน้า */ }
+            setTimeout(poll, 5000);
+        };
+        setTimeout(poll, 8000);
+    }
+
     async function init() {
         if (typeof window.authFetch !== 'function') return;
         try {
@@ -123,6 +201,7 @@
             const data = await response.json();
             isAdmin = String(data.user?.role || '').trim().toUpperCase() === 'ADMIN';
         } catch { /* ใช้สิทธิ์ผู้ใช้ทั่วไป */ }
+        ensureRestartButton();
         check();
         timer = setInterval(check, POLL_MS);
         document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
