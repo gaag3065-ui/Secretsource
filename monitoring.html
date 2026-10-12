@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="monitoring-interactions.css?v=20260901-4">
     <link rel="stylesheet" href="monitoring-fixes.css?v=20260901-1">
     <link rel="stylesheet" href="monitoring-media.css?v=20261010-2">
+    <link rel="stylesheet" href="monitoring-oa.css?v=20261012-1">
 </head>
 <body>
     <main class="monitoring-shell">
@@ -29,6 +30,7 @@
                     <span>⌕</span>
                     <input id="conversationSearch" type="search" placeholder="ค้นหาชื่อหรือข้อความ">
                 </label>
+                <select id="conversationFilter" class="oa-list-filter" aria-label="กรองห้องสนทนา"><option value="all">ทั้งหมด</option><option value="unread">ยังไม่ได้อ่าน</option><option value="todo">ต้องดำเนินการ</option><option value="done">ดำเนินการแล้ว</option><option value="mine">ที่ฉันรับผิดชอบ</option></select>
                 <div id="channelTabs" class="channel-tabs" role="tablist"></div>
                 <button id="clearUnreadButton" class="clear-unread-button" type="button">
                     ทำเครื่องหมายว่าอ่านทั้งหมด
@@ -52,11 +54,11 @@
                 <form id="replyForm" class="reply-composer">
                     <div id="stickerPicker" class="sticker-picker" hidden></div>
                     <div id="attachmentTray" class="attachment-tray" hidden></div>
-                    <textarea id="replyInput" rows="2" maxlength="5000" placeholder="พิมพ์ข้อความตอบกลับ..." disabled></textarea>
+                    <textarea id="replyInput" rows="2" maxlength="5000" placeholder="Enter: ส่ง, Shift + Enter: ขึ้นบรรทัดใหม่" disabled></textarea>
                     <div class="composer-row">
                         <div class="composer-tools">
-                            <button id="attachButton" type="button" class="tool-button" title="แนบรูป/วิดีโอ/ไฟล์" aria-label="แนบไฟล์" disabled>📎</button>
                             <button id="stickerButton" type="button" class="tool-button" title="สติกเกอร์" aria-label="สติกเกอร์" disabled>☺</button>
+                            <button id="attachButton" type="button" class="tool-button" title="แนบรูป/วิดีโอ/ไฟล์" aria-label="แนบไฟล์" disabled>📎</button>
                             <input id="fileInput" type="file" multiple hidden>
                             <button id="templateButton" type="button" class="tool-button" title="เลือกคอนเทนต์" aria-label="เลือกคอนเทนต์" disabled><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.1A8.5 8.5 0 1 1 21 12z"/><path d="M12 8.5v7M8.5 12h7"/></svg></button>
                         </div>
@@ -123,7 +125,7 @@
         <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>
     <script src="config.js"></script>
-    <script src="monitoring.js?v=20261010-2"></script>
+    <script src="monitoring.js?v=20261012-1"></script>
     <script src="monitoring-fixes.js?v=20260901-1"></script>
 </body>
 </html>

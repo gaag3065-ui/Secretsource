@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isConversationEmbed = query.get('view') === 'conversations';
     if (isConversationEmbed) document.body.classList.add('is-conversation-embed');
     const apiBase = window.APP_CONFIG?.API_BASE_URL || '';
-    const state = { channels: [], conversations: [], activeChannel: 'all', activeConversation: null, messages: [], renderedKeys: [], canReply: false, canEdit: true, notes: [], profileSignature: '', noteDraft: '', editingNote: null, pendingFiles: [], profileTab: 'media', viewerItems: [], viewerIndex: 0 };
+    const state = { channels: [], conversations: [], activeChannel: 'all', activeConversation: null, messages: [], renderedKeys: [], canReply: false, canEdit: true, me: {}, listFilter: 'all', unreadMarkerId: null, tagInputOpen: false, assigneeEditing: false, noteComposerOpen: false, notes: [], profileSignature: '', noteDraft: '', editingNote: null, pendingFiles: [], profileTab: 'media', viewerItems: [], viewerIndex: 0 };
     const el = Object.fromEntries(['connectionState','refreshButton','conversationSearch','channelTabs','conversationList','conversationHeader','messageList','replyForm','replyInput','sendButton','replyHint','profileCard','toast','scrollToTopButton','scrollToBottomButton','newMessageIndicator','attachButton','stickerButton','templateButton','fileInput','attachmentTray','stickerPicker','conversationPanel','dropOverlay','mediaViewer','viewerTitle','viewerMeta','viewerStage','viewerPrev','viewerNext','viewerRename','viewerDownload','viewerClose','renameDialog','renameForm','renameTitle','renameInput','renameHint','renameCancel'].map(id => [id, document.getElementById(id)]));
 
     // หน้านี้เปิดได้แบบ standalone/ฝังใน iframe โดยไม่ผ่านสคริปต์โหลดสิทธิ์ของ search.html เลย
@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sessionData = await sessionResponse.json();
         if (sessionData.csrfToken) sessionStorage.setItem('csrfToken', sessionData.csrfToken);
         const isAdmin = String(sessionData.user?.role || '').trim().toUpperCase() === 'ADMIN';
+        state.me = sessionData.user || {};
         const perms = sessionData.permissions || {};
         canView = isAdmin || perms.ViewMonitoring === true;
         state.canReply = isAdmin || perms.ReplyMonitoring === true;
@@ -104,22 +105,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ---------------------------------------------------------------- render
     function renderChannels(){ const items=[{id:'all',name:'ทั้งหมด'},...state.channels]; el.channelTabs.innerHTML=items.map(item=>`<button class="channel-tab${state.activeChannel===item.id?' is-active':''}" data-channel="${escapeHtml(item.id)}" type="button">${escapeHtml(item.name)}</button>`).join(''); }
-    function filteredConversations(){ const query=el.conversationSearch.value.trim().toLocaleLowerCase('th'); return state.conversations.filter(item=>(state.activeChannel==='all'||item.channelId===state.activeChannel)&&(!query||`${item.displayName} ${item.lineDisplayName||''} ${item.lastMessage} ${item.note||''}`.toLocaleLowerCase('th').includes(query))); }
-    function renderConversations(){ const rows=filteredConversations(); el.conversationList.innerHTML=rows.length?rows.map(item=>`<button type="button" class="conversation-item${state.activeConversation?.id===item.id&&state.activeConversation?.channelId===item.channelId?' is-active':''}" data-id="${escapeHtml(item.id)}" data-channel="${escapeHtml(item.channelId)}">${avatar(item.pictureUrl,item.displayName)}<span class="conversation-copy"><strong>${escapeHtml(item.displayName||'ไม่ทราบชื่อ')}</strong><span>${escapeHtml(item.lastMessage||'ไม่มีข้อความตัวอย่าง')}</span></span><span><span class="conversation-time">${formatTime(item.updatedAt)}</span>${item.unreadCount?`<i class="unread">${item.unreadCount}</i>`:''}</span></button>`).join(''):`<div class="empty-state"><b>ไม่พบห้องสนทนา</b><span>ลองเลือกบัญชีหรือเปลี่ยนคำค้นหา</span></div>`; }
+    function filteredConversations(){ const query=el.conversationSearch.value.trim().toLocaleLowerCase('th'); return state.conversations.filter(item=>(state.activeChannel==='all'||item.channelId===state.activeChannel)&&(state.listFilter==='all'||(state.listFilter==='unread'&&item.unreadCount>0)||(state.listFilter==='todo'&&item.workflowStatus==='todo')||(state.listFilter==='done'&&item.workflowStatus==='done')||(state.listFilter==='mine'&&item.assigneeUsername&&item.assigneeUsername===state.me.username))&&(!query||`${item.displayName} ${item.lineDisplayName||''} ${item.lastMessage} ${item.note||''} ${(item.tags||[]).join(' ')} ${item.assigneeName||''}`.toLocaleLowerCase('th').includes(query))); }
+    function renderConversations(){ const rows=filteredConversations(); el.conversationList.innerHTML=rows.length?rows.map(item=>`<button type="button" class="conversation-item${state.activeConversation?.id===item.id&&state.activeConversation?.channelId===item.channelId?' is-active':''}" data-id="${escapeHtml(item.id)}" data-channel="${escapeHtml(item.channelId)}">${avatar(item.pictureUrl,item.displayName)}<span class="conversation-copy"><strong>${escapeHtml(item.displayName||'ไม่ทราบชื่อ')}</strong><span>${escapeHtml(item.lastMessage||'ไม่มีข้อความตัวอย่าง')}</span>${(item.workflowStatus||(item.tags||[]).length)?`<span class="oa-list-badges">${item.workflowStatus?`<i class="oa-status-badge is-${item.workflowStatus}">${WORKFLOW_LABELS[item.workflowStatus]}</i>`:''}${(item.tags||[]).slice(0,2).map(tag=>`<i class="oa-tag-badge">${escapeHtml(tag)}</i>`).join('')}</span>`:''}</span><span><span class="conversation-time">${formatTime(item.updatedAt)}</span>${item.unreadCount?`<i class="unread">${item.unreadCount}</i>`:''}</span></button>`).join(''):`<div class="empty-state"><b>ไม่พบห้องสนทนา</b><span>ลองเลือกบัญชีหรือเปลี่ยนคำค้นหา</span></div>`; }
 
     const fileIcon = name => { const ext = extensionOf(name); if (ext === 'pdf') return 'PDF'; if (['xls','xlsx','csv'].includes(ext)) return 'XLS'; if (['doc','docx'].includes(ext)) return 'DOC'; if (['ppt','pptx'].includes(ext)) return 'PPT'; if (['zip','rar','7z'].includes(ext)) return 'ZIP'; return (ext || 'FILE').slice(0,4).toUpperCase(); };
     const renameButton = message => state.canEdit ? `<button type="button" class="file-action" data-action="rename-file" data-id="${escapeHtml(message.id)}">เปลี่ยนชื่อ</button>` : '';
     function bubbleContent(message) {
         const payload = message.payload || {};
         const id = escapeHtml(message.id);
-        if (message.unsent) return `<div class="bubble is-unsent">ข้อความนี้ถูกยกเลิกแล้ว<time>${formatTime(message.timestamp)}</time></div>`;
-        if (message.type === 'image') return `<div class="bubble is-media"><button type="button" class="media-frame" data-action="view" data-id="${id}"><img data-load="${id}" data-variant="preview" alt="รูปภาพ"></button><time>${formatTime(message.timestamp)}</time></div>`;
-        if (message.type === 'video') return `<div class="bubble is-media"><button type="button" class="media-frame is-video" data-action="view" data-id="${id}"><img data-load="${id}" data-variant="preview" alt="วิดีโอ"><span class="play-icon">▶</span>${payload.duration ? `<span class="media-duration">${formatDuration(payload.duration)}</span>` : ''}</button><time>${formatTime(message.timestamp)}</time></div>`;
-        if (message.type === 'audio') return `<div class="bubble is-audio"><div class="media-frame audio-frame"><audio controls preload="none" data-load="${id}"></audio></div><div class="file-actions"><span>🎤 ${payload.duration ? formatDuration(payload.duration) : 'ข้อความเสียง'}</span><button type="button" class="file-action" data-action="download" data-id="${id}">ดาวน์โหลด</button></div><time>${formatTime(message.timestamp)}</time></div>`;
-        if (message.type === 'file') { const name = displayFileName(message); return `<div class="bubble is-file"><button type="button" class="file-card" data-action="view" data-id="${id}"><span class="file-icon">${escapeHtml(fileIcon(name))}</span><span class="file-copy"><strong>${escapeHtml(name)}</strong><small>${escapeHtml(formatSize(message.fileSize))}${message.originalFileName && message.originalFileName !== name ? ` · เดิม: ${escapeHtml(message.originalFileName)}` : ''}</small></span></button><div class="file-actions"><button type="button" class="file-action" data-action="download" data-id="${id}">ดาวน์โหลด</button>${renameButton(message)}</div><time>${formatTime(message.timestamp)}</time></div>`; }
-        if (message.type === 'sticker') return `<div class="bubble is-sticker"><img src="${stickerUrl(payload.stickerId)}" alt="สติกเกอร์" loading="lazy"><time>${formatTime(message.timestamp)}</time></div>`;
-        if (message.type === 'location') { const map = `https://www.google.com/maps?q=${encodeURIComponent(`${payload.latitude},${payload.longitude}`)}`; return `<div class="bubble is-location"><a href="${map}" target="_blank" rel="noopener noreferrer" class="location-card"><span class="file-icon">📍</span><span class="file-copy"><strong>${escapeHtml(payload.title || 'ตำแหน่งที่ตั้ง')}</strong><small>${escapeHtml(payload.address || `${payload.latitude}, ${payload.longitude}`)}</small></span></a><time>${formatTime(message.timestamp)}</time></div>`; }
-        return `<div class="bubble">${linkify(message.text || message.summary || '[ข้อความชนิดอื่น]')}<time>${formatTime(message.timestamp)}</time></div>`;
+        if (message.unsent) return `<div class="bubble is-unsent">ข้อความนี้ถูกยกเลิกแล้ว</div>`;
+        if (message.type === 'image') return `<div class="bubble is-media"><button type="button" class="media-frame" data-action="view" data-id="${id}"><img data-load="${id}" data-variant="preview" alt="รูปภาพ"></button></div>`;
+        if (message.type === 'video') return `<div class="bubble is-media"><button type="button" class="media-frame is-video" data-action="view" data-id="${id}"><img data-load="${id}" data-variant="preview" alt="วิดีโอ"><span class="play-icon">▶</span>${payload.duration ? `<span class="media-duration">${formatDuration(payload.duration)}</span>` : ''}</button></div>`;
+        if (message.type === 'audio') return `<div class="bubble is-audio"><div class="media-frame audio-frame"><audio controls preload="none" data-load="${id}"></audio></div><div class="file-actions"><span>🎤 ${payload.duration ? formatDuration(payload.duration) : 'ข้อความเสียง'}</span><button type="button" class="file-action" data-action="download" data-id="${id}">ดาวน์โหลด</button></div></div>`;
+        if (message.type === 'file') { const name = displayFileName(message); return `<div class="bubble is-file"><button type="button" class="file-card" data-action="view" data-id="${id}"><span class="file-icon">${escapeHtml(fileIcon(name))}</span><span class="file-copy"><strong>${escapeHtml(name)}</strong><small>${escapeHtml(formatSize(message.fileSize))}${message.originalFileName && message.originalFileName !== name ? ` · เดิม: ${escapeHtml(message.originalFileName)}` : ''}</small></span></button><div class="file-actions"><button type="button" class="file-action" data-action="download" data-id="${id}">ดาวน์โหลด</button>${renameButton(message)}</div></div>`; }
+        if (message.type === 'sticker') return `<div class="bubble is-sticker"><img src="${stickerUrl(payload.stickerId)}" alt="สติกเกอร์" loading="lazy"></div>`;
+        if (message.type === 'location') { const map = `https://www.google.com/maps?q=${encodeURIComponent(`${payload.latitude},${payload.longitude}`)}`; return `<div class="bubble is-location"><a href="${map}" target="_blank" rel="noopener noreferrer" class="location-card"><span class="file-icon">📍</span><span class="file-copy"><strong>${escapeHtml(payload.title || 'ตำแหน่งที่ตั้ง')}</strong><small>${escapeHtml(payload.address || `${payload.latitude}, ${payload.longitude}`)}</small></span></a></div>`; }
+        return `<div class="bubble">${linkify(message.text || message.summary || '[ข้อความชนิดอื่น]')}</div>`;
     }
     const messageKey = message => `${message.id}|${message.fileName}|${message.unsent ? 1 : 0}`;
     const dayKey = timestamp => new Date(timestamp).toDateString();
@@ -127,12 +128,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         return messages.slice(start).map((message, offset) => {
             const index = start + offset; const previous = messages[index - 1];
             const divider = !previous || dayKey(previous.timestamp) !== dayKey(message.timestamp) ? `<div class="day-divider"><span>${escapeHtml(formatDay(message.timestamp))}</span></div>` : '';
-            if (!MESSAGE_TYPES.has(message.type)) return `${divider}<div class="system-event">${escapeHtml(message.summary || message.type)} · ${formatTime(message.timestamp)}</div>`;
-            return `${divider}<div class="message-row ${message.direction==='outbound'?'outbound':'inbound'}" data-message="${escapeHtml(message.id)}">${bubbleContent(message)}</div>`;
+            const unread = state.unreadMarkerId === message.id ? '<div class="unread-divider"><span>ข้อความที่ยังไม่ได้อ่าน</span></div>' : '';
+            if (!MESSAGE_TYPES.has(message.type)) return `${divider}${unread}<div class="system-event">${escapeHtml(message.summary || message.type)} · ${formatTime(message.timestamp)}</div>`;
+            const info = state.activeConversation || {};
+            const outbound = message.direction === 'outbound';
+            const senderOf = item => (item?.payload || {}).sentByName || '';
+            const grouped = Boolean(previous) && !divider && !unread && previous.direction === message.direction && MESSAGE_TYPES.has(previous.type) && message.timestamp - previous.timestamp < 5 * 60 * 1000 && (!outbound || senderOf(previous) === senderOf(message));
+            const sender = outbound && !grouped ? `<div class="message-sender">${escapeHtml(senderOf(message) || info.channelName || 'ทีมงาน')}</div>` : '';
+            const meta = `<div class="message-meta">${outbound && !message.unsent ? '<span>ส่งแล้ว</span>' : ''}<time>${formatTime(message.timestamp)}</time></div>`;
+            const face = outbound ? '' : (grouped ? '<span class="message-avatar-spacer"></span>' : avatar(info.pictureUrl, info.displayName).replace('class="avatar', 'class="avatar message-avatar'));
+            return `${divider}${unread}${sender}<div class="message-row ${outbound ? 'outbound' : 'inbound'}${grouped ? ' is-grouped' : ''}" data-message="${escapeHtml(message.id)}">${outbound ? meta + bubbleContent(message) : face + bubbleContent(message) + meta}</div>`;
         }).join('');
     }
     function renderHeader(info) {
-        el.conversationHeader.innerHTML = `${avatar(info.pictureUrl,info.displayName)}<div class="header-copy"><strong>${escapeHtml(info.displayName)}${state.canEdit ? ' <button type="button" class="inline-edit" data-action="rename-contact" title="เปลี่ยนชื่อ">✎</button>' : ''}</strong><small>${escapeHtml(info.channelName)} · ${escapeHtml(info.status||'พร้อมสนทนา')}</small></div>`;
+        el.conversationHeader.innerHTML = `${avatar(info.pictureUrl,info.displayName)}<div class="header-copy"><strong>${escapeHtml(info.displayName)}${state.canEdit ? ' <button type="button" class="inline-edit" data-action="rename-contact" title="เปลี่ยนชื่อ">✎</button>' : ''}</strong><small>${escapeHtml(info.channelName)} · ${escapeHtml(info.status||'พร้อมสนทนา')}</small></div><div class="oa-header-actions">${state.canEdit ? `<button type="button" class="oa-header-button${info.workflowStatus==='todo'?' is-active is-todo':''}" data-action="workflow" data-status="todo">ต้องดำเนินการ</button><button type="button" class="oa-header-button${info.workflowStatus==='done'?' is-active is-done':''}" data-action="workflow" data-status="done">ดำเนินการแล้ว</button>` : ''}<button type="button" class="oa-header-button" data-action="chat-search">⌕ ค้นหา</button></div>`;
     }
     function renderProfile(info, keepDraft = false) {
         const focus = captureNoteFocus(); // วาดใหม่ได้โดยไม่ทำให้โน้ตที่กำลังพิมพ์หาย/เคอร์เซอร์หลุด
@@ -141,8 +150,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const gallery = state.profileTab === 'media'
             ? (media.length ? `<div class="media-grid">${media.map(message => `<button type="button" class="media-frame grid-item${message.type==='video'?' is-video':''}" data-action="view" data-id="${escapeHtml(message.id)}"><img data-load="${escapeHtml(message.id)}" data-variant="preview" alt="">${message.type==='video'?'<span class="play-icon">▶</span>':''}</button>`).join('')}</div>` : '<p class="muted">ยังไม่มีรูปภาพหรือวิดีโอ</p>')
             : (files.length ? `<ul class="file-list">${files.map(message => `<li><button type="button" class="file-link" data-action="view" data-id="${escapeHtml(message.id)}"><span class="file-icon small">${escapeHtml(message.type==='audio'?'🎤':fileIcon(displayFileName(message)))}</span><span class="file-copy"><strong>${escapeHtml(displayFileName(message))}</strong><small>${escapeHtml(formatSize(message.fileSize))} · ${escapeHtml(new Date(message.timestamp).toLocaleDateString('th-TH'))}</small></span></button><button type="button" class="icon-button" data-action="download" data-id="${escapeHtml(message.id)}" title="ดาวน์โหลด">⬇</button></li>`).join('')}</ul>` : '<p class="muted">ยังไม่มีไฟล์</p>');
-        el.profileCard.innerHTML = `${avatar(info.pictureUrl,info.displayName,true)}<h2>${escapeHtml(info.displayName)}${state.canEdit ? ' <button type="button" class="inline-edit" data-action="rename-contact" title="เปลี่ยนชื่อ">✎</button>' : ''}</h2>${info.customName ? `<p class="muted">ชื่อใน LINE: ${escapeHtml(info.lineDisplayName)}</p>` : ''}<p>${escapeHtml(info.statusMessage||'ผู้ติดต่อ LINE OA')}</p><dl class="profile-data"><dt>บัญชีที่รับข้อความ</dt><dd>${escapeHtml(info.channelName)}</dd><dt>ประเภทห้องสนทนา</dt><dd>${escapeHtml(info.sourceType||'user')}</dd><dt>สถานะ</dt><dd>${escapeHtml(info.status||'เปิดใช้งาน')}</dd></dl>
-            ${notesHtml()}
+        el.profileCard.innerHTML = `${avatar(info.pictureUrl,info.displayName,true)}<h2>${escapeHtml(info.displayName)}${state.canEdit ? ' <button type="button" class="inline-edit" data-action="rename-contact" title="เปลี่ยนชื่อ">✎</button>' : ''}</h2>${info.customName ? `<p class="profile-line-name">(${escapeHtml(info.lineDisplayName)})</p>` : ''}${info.statusMessage ? `<p class="profile-status-message">${escapeHtml(info.statusMessage)}</p>` : ''}${tagsHtml(info)}${assigneeHtml(info)}
+            ${notesHtml()}<dl class="profile-data"><dt>บัญชีที่รับข้อความ</dt><dd>${escapeHtml(info.channelName)}</dd><dt>ประเภทห้องสนทนา</dt><dd>${escapeHtml(info.sourceType||'user')}</dd><dt>สถานะ</dt><dd>${escapeHtml(info.status||'เปิดใช้งาน')}</dd></dl>
             <section class="profile-section"><div class="profile-tabs"><button type="button" data-tab="media" class="${state.profileTab==='media'?'is-active':''}">รูปภาพ/วิดีโอ (${media.length})</button><button type="button" data-tab="files" class="${state.profileTab==='files'?'is-active':''}">ไฟล์ (${files.length})</button></div><div class="profile-gallery">${gallery}</div></section>`;
         observeMedia(el.profileCard);
         restoreNoteFocus(focus);
@@ -154,10 +163,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const id = escapeHtml(note.id);
             if (state.editingNote?.id === note.id) return `<li class="note-item is-editing"><textarea id="noteEdit" data-note-input="edit" rows="3" maxlength="2000">${escapeHtml(state.editingNote.text)}</textarea><div class="note-actions"><button type="button" class="secondary-button small" data-action="note-cancel">ยกเลิก</button><button type="button" class="primary-button small" data-action="note-update" data-note="${id}">บันทึก</button></div></li>`;
             const edited = note.updatedAt ? ` · แก้ไขโดย ${escapeHtml(note.updatedByName || '')} ${escapeHtml(formatStamp(note.updatedAt))}` : '';
-            return `<li class="note-item"><p>${linkify(note.body)}</p><div class="note-meta"><span>${escapeHtml(note.createdByName || 'ไม่ทราบชื่อ')} · ${escapeHtml(formatStamp(note.createdAt))}${edited}</span>${state.canEdit ? `<span class="note-buttons"><button type="button" data-action="note-edit" data-note="${id}">แก้ไข</button><button type="button" data-action="note-delete" data-note="${id}">ลบ</button></span>` : ''}</div></li>`;
+            return `<li class="note-item"><p>${linkify(note.body)}</p><div class="note-meta"><span>${escapeHtml(note.createdByName || 'ไม่ทราบชื่อ')} · ${escapeHtml(formatStamp(note.createdAt))}${edited}</span>${state.canEdit ? `<span class="note-buttons"><button type="button" data-action="note-edit" data-note="${id}" title="แก้ไข"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button type="button" data-action="note-delete" data-note="${id}" title="ลบ"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button></span>` : ''}</div></li>`;
         }).join('');
-        const composer = state.canEdit ? `<div class="note-composer"><textarea id="noteNew" data-note-input="new" rows="2" maxlength="2000" placeholder="เพิ่มโน้ต (เห็นเฉพาะทีมงาน)">${escapeHtml(state.noteDraft)}</textarea><button type="button" class="primary-button small" data-action="note-add">บันทึก</button></div>` : '';
-        return `<section class="profile-section notes-section"><h3>โน้ต (${state.notes.length})</h3>${composer}${items ? `<ul class="note-list">${items}</ul>` : '<p class="muted">ยังไม่มีโน้ต</p>'}</section>`;
+        const composer = state.canEdit && (state.noteComposerOpen || state.noteDraft) ? `<div class="note-composer"><textarea id="noteNew" data-note-input="new" rows="2" maxlength="2000" placeholder="เพิ่มโน้ต (เห็นเฉพาะทีมงาน)">${escapeHtml(state.noteDraft)}</textarea><div class="note-actions"><button type="button" class="secondary-button small" data-action="note-close">ยกเลิก</button><button type="button" class="primary-button small" data-action="note-add">บันทึก</button></div></div>` : '';
+        return `<section class="profile-section notes-section"><div class="notes-head"><h3>โน้ต ${state.notes.length}</h3>${state.canEdit ? '<button type="button" class="notes-add" data-action="note-open" title="เพิ่มโน้ต">+</button>' : ''}</div>${composer}${items ? `<ul class="note-list">${items}</ul>` : '<p class="muted">ยังไม่มีโน้ต</p>'}</section>`;
     }
     function captureNoteFocus() {
         const active = document.activeElement;
@@ -197,7 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) { notify(error.message, true); }
     }
     // ใช้ตรวจว่าข้อมูลหัวห้อง/โปรไฟล์/โน้ตถูกผู้ใช้คนอื่นเปลี่ยนหรือไม่ จะได้วาดใหม่ทันที
-    const profileSignatureOf = (info, notes) => JSON.stringify([info.displayName, info.customName, info.lineDisplayName, info.pictureUrl, info.statusMessage, info.status, info.channelName, notes.map(note => [note.id, note.body, note.updatedAt])]);
+    const profileSignatureOf = (info, notes) => JSON.stringify([info.displayName, info.customName, info.lineDisplayName, info.pictureUrl, info.statusMessage, info.status, info.channelName, info.workflowStatus, info.tags, info.assigneeName, notes.map(note => [note.id, note.body, note.updatedAt])]);
     function renderConversation(info, messages, options = {}) {
         const switched = !state.activeConversation || state.activeConversation.id !== info.id || state.activeConversation.channelId !== info.channelId;
         const oldTop = el.messageList.scrollTop;
@@ -228,8 +237,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function openConversation(id, channelId) {
         try {
             const switching = !state.activeConversation || state.activeConversation.id !== id || state.activeConversation.channelId !== channelId;
-            if (switching) { state.activeConversation = null; state.renderedKeys = []; clearPendingFiles(); el.messageList.innerHTML = '<div class="empty-state"><b>กำลังโหลดข้อความ...</b></div>'; }
+            if (switching) { state.activeConversation = null; state.renderedKeys = []; state.unreadMarkerId = null; state.tagInputOpen = false; state.assigneeEditing = false; state.noteComposerOpen = false; closeChatSearch(); clearPendingFiles(); el.messageList.innerHTML = '<div class="empty-state"><b>กำลังโหลดข้อความ...</b></div>'; }
             const data = await request(`/api/line-oa/conversations/${encodeURIComponent(id)}?channelId=${encodeURIComponent(channelId)}`);
+            if (switching && data.conversation.unreadCount > 0) {
+                const inbound = (data.messages || []).filter(message => message.direction === 'inbound' && MESSAGE_TYPES.has(message.type));
+                state.unreadMarkerId = inbound[Math.max(0, inbound.length - data.conversation.unreadCount)]?.id || null;
+            }
             renderConversation(data.conversation, data.messages || [], { preserveScroll: !switching, notes: data.notes || [] });
             if (data.conversation.unreadCount) await request(`/api/line-oa/conversations/${encodeURIComponent(id)}/read`, { method: 'POST', body: JSON.stringify({ channelId }) });
         } catch (error) { notify(error.message, true); }
@@ -472,10 +485,103 @@ document.addEventListener('DOMContentLoaded', async () => {
     el.replyInput.addEventListener('input', resizeComposer);
     requestAnimationFrame(resizeComposer);
 
+    // ---------------------------------------------------------------- LINE OA style: สถานะงาน / แท็ก / ผู้รับผิดชอบ / ค้นหาในแชต
+    const WORKFLOW_LABELS = { todo: 'ต้องดำเนินการ', done: 'ดำเนินการแล้ว' };
+    let staffList = null;
+    async function loadStaff() {
+        if (staffList) return staffList;
+        try { staffList = (await request('/api/line-oa/staff')).staff || []; } catch { staffList = []; }
+        return staffList;
+    }
+    async function patchConversation(changes, successMessage) {
+        const info = state.activeConversation; if (!info) return;
+        try {
+            const data = await request(conversationPath(info), { method: 'PATCH', body: JSON.stringify({ channelId: info.channelId, ...changes }) });
+            Object.assign(info, data.conversation);
+            const listItem = state.conversations.find(item => item.id === info.id && item.channelId === info.channelId); if (listItem) Object.assign(listItem, data.conversation);
+            state.profileSignature = profileSignatureOf(info, state.notes);
+            renderHeader(info); renderProfile(info); renderConversations();
+            if (successMessage) notify(successMessage);
+        } catch (error) { notify(error.message, true); }
+    }
+    function toggleWorkflow(status) {
+        const info = state.activeConversation; if (!info) return;
+        const next = info.workflowStatus === status ? '' : status;
+        patchConversation({ workflowStatus: next }, next ? `ย้ายไป "${WORKFLOW_LABELS[next]}" แล้ว` : 'ยกเลิกสถานะแล้ว');
+    }
+    function addTag(value) {
+        const tag = String(value || '').trim(); const info = state.activeConversation;
+        if (!tag || !info) return;
+        if ((info.tags || []).includes(tag)) return notify('มีแท็กนี้แล้ว', true);
+        state.tagInputOpen = false;
+        patchConversation({ tags: [...(info.tags || []), tag] });
+    }
+    const removeTag = tag => patchConversation({ tags: (state.activeConversation?.tags || []).filter(item => item !== tag) });
+    async function editAssignee() {
+        state.assigneeEditing = true; await loadStaff(); renderProfile(state.activeConversation);
+        document.getElementById('assigneeSelect')?.focus();
+    }
+    function saveAssignee(username) {
+        state.assigneeEditing = false;
+        const person = (staffList || []).find(item => item.username === username);
+        patchConversation({ assignee: person ? { username: person.username, name: person.name } : null }, person ? `ผู้รับผิดชอบ: ${person.name}` : 'ยกเลิกผู้รับผิดชอบแล้ว');
+    }
+    function tagsHtml(info) {
+        const chips = (info.tags || []).map(tag => `<span class="oa-tag">${escapeHtml(tag)}${state.canEdit ? `<button type="button" data-action="tag-remove" data-tag="${escapeHtml(tag)}" aria-label="ลบแท็ก">×</button>` : ''}</span>`).join('');
+        const input = state.tagInputOpen ? `<input id="tagInput" class="oa-tag-input" maxlength="30" placeholder="พิมพ์แท็กแล้วกด Enter" autocomplete="off">` : (state.canEdit ? '<button type="button" class="oa-add-link" data-action="tag-open">+ ใส่แท็ก</button>' : '');
+        return `<div class="oa-tags">${chips}${input}</div>`;
+    }
+    function assigneeHtml(info) {
+        let value;
+        if (state.assigneeEditing) {
+            value = `<select id="assigneeSelect" class="oa-assignee-select"><option value="">— ไม่ระบุ —</option>${(staffList || []).map(item => `<option value="${escapeHtml(item.username)}"${item.username === info.assigneeUsername ? ' selected' : ''}>${escapeHtml(item.name)}</option>`).join('')}</select>`;
+        } else if (info.assigneeName) {
+            value = `<span class="oa-assignee"><span class="avatar mini placeholder">${escapeHtml(info.assigneeName.slice(0, 2))}</span>${escapeHtml(info.assigneeName)}</span>${state.canEdit ? '<button type="button" class="inline-edit" data-action="assignee-edit" title="เปลี่ยนผู้รับผิดชอบ">✎</button>' : ''}`;
+        } else {
+            value = state.canEdit ? '<button type="button" class="oa-add-link" data-action="assignee-edit">+ กำหนดผู้รับผิดชอบ</button>' : '<span class="muted">ไม่ระบุ</span>';
+        }
+        return `<div class="oa-assignee-row"><span class="oa-row-label">ผู้รับผิดชอบ</span>${value}</div>`;
+    }
+
+    // ค้นหาข้อความในห้องสนทนาที่เปิดอยู่ (ปุ่ม "ค้นหา" ที่หัวแชต)
+    const chatSearch = { hits: [], index: 0 };
+    function ensureChatSearchBar() {
+        let bar = document.getElementById('chatSearchBar');
+        if (bar) return bar;
+        bar = document.createElement('div');
+        bar.id = 'chatSearchBar'; bar.className = 'chat-search-bar'; bar.hidden = true;
+        bar.innerHTML = '<input id="chatSearchInput" type="search" placeholder="ค้นหาในแชตนี้" autocomplete="off"><span id="chatSearchCount"></span><button type="button" data-search="prev" aria-label="ก่อนหน้า">▲</button><button type="button" data-search="next" aria-label="ถัดไป">▼</button><button type="button" data-search="close" aria-label="ปิด">✕</button>';
+        el.conversationPanel.appendChild(bar);
+        bar.querySelector('input').addEventListener('input', runChatSearch);
+        bar.querySelector('input').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); moveChatSearch(event.shiftKey ? -1 : 1); } else if (event.key === 'Escape') closeChatSearch(); });
+        bar.addEventListener('click', event => { const action = event.target.closest('[data-search]')?.dataset.search; if (action === 'prev') moveChatSearch(-1); else if (action === 'next') moveChatSearch(1); else if (action === 'close') closeChatSearch(); });
+        return bar;
+    }
+    function openChatSearch() { if (!state.activeConversation) return; const bar = ensureChatSearchBar(); bar.hidden = false; bar.querySelector('input').focus(); runChatSearch(); }
+    function closeChatSearch() { const bar = document.getElementById('chatSearchBar'); if (bar) { bar.hidden = true; bar.querySelector('input').value = ''; } clearChatSearchMarks(); }
+    function clearChatSearchMarks() { el.messageList.querySelectorAll('.is-search-hit,.is-search-current').forEach(node => node.classList.remove('is-search-hit', 'is-search-current')); }
+    function runChatSearch() {
+        const input = document.getElementById('chatSearchInput'); clearChatSearchMarks();
+        const query = (input?.value || '').trim().toLocaleLowerCase('th');
+        chatSearch.hits = query ? state.messages.filter(message => !message.unsent && `${message.text || ''} ${message.fileName || ''} ${message.summary || ''}`.toLocaleLowerCase('th').includes(query)).map(message => message.id) : [];
+        chatSearch.index = chatSearch.hits.length - 1; // เริ่มจากข้อความล่าสุดแบบ LINE OA
+        chatSearch.hits.forEach(id => el.messageList.querySelector(`[data-message="${CSS.escape(id)}"]`)?.classList.add('is-search-hit'));
+        showChatSearchCurrent();
+    }
+    function moveChatSearch(step) { if (!chatSearch.hits.length) return; chatSearch.index = (chatSearch.index + step + chatSearch.hits.length) % chatSearch.hits.length; showChatSearchCurrent(); }
+    function showChatSearchCurrent() {
+        const count = document.getElementById('chatSearchCount');
+        el.messageList.querySelectorAll('.is-search-current').forEach(node => node.classList.remove('is-search-current'));
+        if (!chatSearch.hits.length) { if (count) count.textContent = document.getElementById('chatSearchInput')?.value ? 'ไม่พบ' : ''; return; }
+        if (count) count.textContent = `${chatSearch.index + 1}/${chatSearch.hits.length}`;
+        const node = el.messageList.querySelector(`[data-message="${CSS.escape(chatSearch.hits[chatSearch.index])}"]`);
+        node?.classList.add('is-search-current'); node?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+
     // ---------------------------------------------------------------- events
     el.channelTabs.addEventListener('click',event=>{const button=event.target.closest('[data-channel]');if(!button)return;state.activeChannel=button.dataset.channel;renderChannels();renderConversations();});
     el.conversationList.addEventListener('click',event=>{const button=event.target.closest('[data-id]');if(!button)return;if(isConversationEmbed){window.parent.postMessage({type:'open-line-conversation',conversationId:button.dataset.id,channelId:button.dataset.channel},window.location.origin);return;}openConversation(button.dataset.id,button.dataset.channel);});
-    el.conversationSearch.addEventListener('input',renderConversations); el.refreshButton.addEventListener('click',()=>{load();reloadActive();});
+    el.conversationSearch.addEventListener('input',renderConversations); document.getElementById('conversationFilter')?.addEventListener('change',event=>{state.listFilter=event.target.value;renderConversations();}); el.refreshButton.addEventListener('click',()=>{load();reloadActive();});
     el.scrollToTopButton.addEventListener('click',()=>el.messageList.scrollTo({top:0,behavior:'smooth'}));
     el.scrollToBottomButton.addEventListener('click',()=>{el.messageList.scrollTo({top:el.messageList.scrollHeight,behavior:'smooth'});el.newMessageIndicator.hidden=true;});
     el.messageList.addEventListener('scroll',()=>{const nearBottom=el.messageList.scrollHeight-el.messageList.scrollTop-el.messageList.clientHeight<80;if(nearBottom)el.newMessageIndicator.hidden=true;},{passive:true});
@@ -489,6 +595,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         else if (action === 'rename-file' && message) renameFile(message);
         else if (action === 'rename-contact') renameContact();
         else if (action === 'note-add') addNote();
+        else if (action === 'note-open') { state.noteComposerOpen = true; renderProfile(state.activeConversation); document.getElementById('noteNew')?.focus(); }
+        else if (action === 'note-close') { state.noteComposerOpen = false; state.noteDraft = ''; renderProfile(state.activeConversation); }
+        else if (action === 'workflow') toggleWorkflow(target.dataset.status);
+        else if (action === 'chat-search') openChatSearch();
+        else if (action === 'tag-open') { state.tagInputOpen = true; renderProfile(state.activeConversation); document.getElementById('tagInput')?.focus(); }
+        else if (action === 'tag-remove') removeTag(target.dataset.tag);
+        else if (action === 'assignee-edit') editAssignee();
         else if (action === 'note-edit') { const note = state.notes.find(item => item.id === target.dataset.note); if (note) { state.editingNote = { id: note.id, text: note.body }; renderProfile(state.activeConversation); document.getElementById('noteEdit')?.focus(); } }
         else if (action === 'note-cancel') { state.editingNote = null; renderProfile(state.activeConversation); }
         else if (action === 'note-update') updateNote(target.dataset.note);
@@ -496,6 +609,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     el.messageList.addEventListener('click', handleAction);
     el.conversationHeader.addEventListener('click', handleAction);
+    el.profileCard.addEventListener('keydown', event => { if (event.target.id === 'tagInput') { if (event.key === 'Enter') { event.preventDefault(); addTag(event.target.value); } else if (event.key === 'Escape') { state.tagInputOpen = false; renderProfile(state.activeConversation); } } });
+    el.profileCard.addEventListener('focusout', event => { if (event.target.id === 'tagInput' && !event.target.value.trim()) setTimeout(() => { if (state.tagInputOpen) { state.tagInputOpen = false; renderProfile(state.activeConversation); } }, 150); });
+    el.profileCard.addEventListener('change', event => { if (event.target.id === 'assigneeSelect') saveAssignee(event.target.value); });
     el.profileCard.addEventListener('input', event => { const kind = event.target.dataset?.noteInput; if (kind === 'new') state.noteDraft = event.target.value; else if (kind === 'edit' && state.editingNote) state.editingNote.text = event.target.value; });
     el.profileCard.addEventListener('keydown', event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && event.target.dataset?.noteInput) { event.preventDefault(); if (event.target.dataset.noteInput === 'new') addNote(); else if (state.editingNote) updateNote(state.editingNote.id); } });
     el.profileCard.addEventListener('click', event => { const tab = event.target.closest('[data-tab]'); if (tab) { state.profileTab = tab.dataset.tab; if (state.activeConversation) renderProfile(state.activeConversation); return; } handleAction(event); });

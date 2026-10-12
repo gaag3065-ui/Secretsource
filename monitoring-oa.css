@@ -1,0 +1,85 @@
+/* หน้าตาแบบ LINE Official Account Manager: บับเบิล, เวลา/สถานะนอกบับเบิล, ชื่อผู้ส่ง, หัวแชต, แท็ก, ผู้รับผิดชอบ, โน้ต */
+
+/* ----- ข้อความ ----- */
+.message-list { background: #ffffff !important; padding: 18px 22px; }
+.message-row { align-items: flex-end; gap: 6px; margin: 2px 0; }
+.message-row:not(.is-grouped) { margin-top: 10px; }
+.message-row .bubble { max-width: min(520px, 68%); border: 0; border-radius: 18px; padding: 9px 14px; font-size: 14px; line-height: 1.5; color: #111; }
+.message-row.inbound .bubble { background: #eef0f3; border-radius: 18px; }
+.message-row.outbound .bubble { background: #c4dcfa; border-radius: 18px; }
+.message-row .bubble.is-media,
+.message-row .bubble.is-sticker { background: transparent !important; padding: 0; }
+.message-row .bubble.is-file,
+.message-row .bubble.is-location,
+.message-row .bubble.is-audio { background: #fff !important; border: 1px solid #e3e6ea; }
+.message-row .bubble.is-unsent { background: #f4f5f7 !important; color: #8a939c; }
+.message-row .bubble time { display: none; } /* เวลาย้ายมาอยู่นอกบับเบิลแล้ว */
+.message-meta { flex: none; display: grid; gap: 1px; padding-bottom: 2px; font-size: 10.5px; line-height: 1.25; color: #9aa3ab; }
+.message-row.outbound .message-meta { text-align: right; }
+.message-avatar { width: 32px !important; height: 32px !important; flex: none; align-self: flex-start; font-size: 10px; }
+.message-avatar-spacer { width: 32px; flex: none; }
+.message-sender { margin: 14px 4px 3px; text-align: right; font-size: 11.5px; color: #8a939c; }
+.unread-divider { display: flex; justify-content: center; margin: 14px 0 8px; }
+.unread-divider span { width: 100%; padding: 4px 10px; border-radius: 999px; background: #d9dde2; color: #fff; text-align: center; font-size: 11px; font-weight: 700; }
+.day-divider span { background: #e9ecef; color: #5d6873; }
+.message-row.is-search-hit .bubble { box-shadow: 0 0 0 2px #ffe08a; }
+.message-row.is-search-current .bubble { box-shadow: 0 0 0 2px #f5a524; }
+
+/* ----- หัวแชต ----- */
+.conversation-header { gap: 11px; }
+.conversation-header .header-copy { flex: 1; min-width: 0; }
+.oa-header-actions { display: flex; gap: 6px; flex: none; }
+.oa-header-button { border: 1px solid #d6dbe0; background: #fff; color: #333; border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.oa-header-button:hover { background: #f5f7f9; }
+.oa-header-button.is-active.is-todo { border-color: #f08c00; background: #fff4e5; color: #b35c00; font-weight: 700; }
+.oa-header-button.is-active.is-done { border-color: #06c755; background: #ebfbf1; color: #047d3a; font-weight: 700; }
+.chat-search-bar { position: absolute; top: 68px; left: 0; right: 0; z-index: 5; display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #fff; border-bottom: 1px solid var(--border); box-shadow: 0 4px 10px rgba(0, 0, 0, .05); }
+.chat-search-bar[hidden] { display: none; }
+.chat-search-bar input { flex: 1; min-width: 0; border: 1px solid #d6dbe0; border-radius: 6px; padding: 7px 10px; font: inherit; font-size: 13px; outline: 0; }
+.chat-search-bar input:focus { border-color: #06c755; }
+.chat-search-bar span { min-width: 44px; text-align: center; font-size: 12px; color: var(--muted); }
+.chat-search-bar button { width: 30px; height: 30px; border: 1px solid #d6dbe0; border-radius: 6px; background: #fff; cursor: pointer; font-size: 11px; }
+
+/* ----- รายการแชต ----- */
+.oa-list-filter { margin: 0 14px 10px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; font: inherit; font-size: 12px; }
+.oa-list-badges { display: flex !important; flex-wrap: wrap; gap: 4px; margin-top: 5px !important; white-space: normal !important; }
+.oa-status-badge, .oa-tag-badge { display: inline-block; padding: 1px 7px; border-radius: 4px; font-style: normal; font-size: 10px; line-height: 1.6; border: 1px solid #c9ced4; color: #4a5563; background: #fff; }
+.oa-status-badge.is-todo { border-color: #f5b041; color: #b35c00; background: #fff8ec; }
+.oa-status-badge.is-done { border-color: #8fd9ad; color: #047d3a; background: #f0fbf4; }
+
+/* ----- แผงขวา ----- */
+.profile-card { text-align: left; }
+.profile-card > .avatar { margin: 0 auto 6px; }
+.profile-card > h2 { text-align: center; }
+.profile-line-name { margin: -2px 0 6px; text-align: center; color: #8a939c !important; font-size: 12px; }
+.profile-status-message { text-align: center; }
+.oa-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 12px 0 4px; }
+.oa-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 9px; border: 1px solid #c9ced4; border-radius: 4px; font-size: 11.5px; background: #fff; }
+.oa-tag button { border: 0; background: transparent; color: #8a939c; cursor: pointer; font-size: 13px; line-height: 1; padding: 0 3px; }
+.oa-tag-input { flex: 1; min-width: 120px; border: 1px solid #06c755; border-radius: 4px; padding: 4px 8px; font: inherit; font-size: 12px; outline: 0; }
+.oa-add-link { border: 0; background: transparent; color: #06c755; font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 2px 0; }
+.oa-assignee-row { display: flex; align-items: center; gap: 8px; margin: 10px 0 14px; font-size: 12.5px; }
+.oa-row-label { color: #4a5563; font-weight: 700; min-width: 72px; }
+.oa-assignee { display: inline-flex; align-items: center; gap: 6px; }
+.avatar.mini { width: 22px; height: 22px; font-size: 9px; }
+.oa-assignee-select { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid #06c755; border-radius: 6px; font: inherit; font-size: 12px; }
+.notes-section { border-top: 1px solid var(--border); }
+.notes-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.notes-head h3 { margin: 0 !important; font-size: 13px !important; color: #18212f !important; }
+.notes-add { width: 26px; height: 26px; border: 0; background: transparent; color: #06c755; font-size: 22px; line-height: 1; cursor: pointer; }
+.note-item { background: #fff !important; border: 1px solid #e3e6ea !important; border-radius: 8px !important; padding: 12px 12px 8px !important; box-shadow: 0 1px 2px rgba(0, 0, 0, .04); }
+.note-meta { align-items: center; }
+.note-buttons button { color: #6b7580 !important; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 4px; }
+.note-buttons button:hover { background: #f1f3f5; }
+.note-composer .note-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.profile-data { margin-top: 14px !important; }
+
+@media (max-width: 1100px) {
+    .oa-header-button { padding: 5px 7px; font-size: 11px; }
+}
+
+/* ----- ช่องพิมพ์ ----- */
+.reply-composer textarea { font: inherit; font-size: 14px; border-color: #e3e6ea; }
+.reply-composer textarea::placeholder { color: #a3abb3; }
+.message-row .bubble.is-media { max-width: 300px; }
+.message-row .bubble.is-media .media-frame { display: inline-block; width: auto; max-width: 100%; vertical-align: bottom; }
