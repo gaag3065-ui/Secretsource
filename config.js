@@ -18,7 +18,7 @@ const LOCAL_API_URL = `http://127.0.0.1:${localApiPort}`;
 
 
 
-const PRODUCTION_API_URL = 'https://mean-aside-scientists-occupation.trycloudflare.com';
+const PRODUCTION_API_URL = 'https://mazda-steve-narrative-cheese.trycloudflare.com';
 
 
 
@@ -214,6 +214,7 @@ window.performSecureLogout =
         }
     };
 //#endregion
+
 
 
 
