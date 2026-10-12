@@ -1292,9 +1292,11 @@ function buildInlineEditInput(config, eventItem, fallbackText) {
 
     if (config.type === 'select') {
         const source = document.getElementById('mdHospitalSelect');
+        if (source && !source.options.length) window.fillHospitalSelect?.(source);
         input = source ? source.cloneNode(true) : document.createElement('select');
         input.removeAttribute('id');
-        input.value = hasRealValue ? rawValue : fallbackText;
+        if (window.setHospitalValue) window.setHospitalValue(input, hasRealValue ? rawValue : fallbackText);
+        else input.value = hasRealValue ? rawValue : fallbackText;
     } else if (config.type === 'textarea') {
         input = document.createElement('textarea');
         input.rows = 2;
@@ -1601,7 +1603,13 @@ window.openEditModal = function (eventItem, domIndex) {
     }
 
     setVal('mdCaseId', eventItem.CaseIdNew);
-    setVal('mdHospitalSelect', eventItem.hospital);
+    const mdHospitalSelect = document.getElementById('mdHospitalSelect');
+    if (mdHospitalSelect && window.fillHospitalSelect) {
+        window.fillHospitalSelect(mdHospitalSelect);
+        window.setHospitalValue(mdHospitalSelect, eventItem.hospital);
+    } else {
+        setVal('mdHospitalSelect', eventItem.hospital);
+    }
     setVal('mdSymptomsInput', eventItem.symptoms);
     setVal('mdStatusText', eventItem.statusText || 'รอดำเนินการ');
     setVal('mdInpDentalOPD', eventItem.DentalOPD || '0');

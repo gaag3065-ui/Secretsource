@@ -147,28 +147,8 @@ function setThaiDateTime() {
 //const hospitalDistanceMap = {
 //#region
             // 1. 🎯 สร้างคลังข้อมูลรายชื่อคลินิกและระยะทางอ้างอิงจับคู่กันไว้
-                const hospitalDistanceMap = {
-                    "รอยัล อังกอร์": "1.7 กม.",               
-                    "จัสมิน คลินิก": "1.4 กม.",
-                    "เทวิน ข้างฮุยเกียร์": "1 กม.",
-                    "คลินิกโซน 3": "4.2 กม.",
-                    "คลินิก สุวิสา": "1  กม.",
-                    "คลินิกไทยช่าง (ท้ายคลัง)": "3.2 กม.",
-                    "คลินิกวงเทพ": "2.5 กม.",
-                    "คลินิกโอเคทินนา": "2.6 กม.",
-                    "คลินิกอิลิแก้นต์": "2.3 กม.",
-                    "คลินิกกาแล็คซี่": "2.7 กม.",
-                    "Durdans hospital": "300 ม.",
-                    "Clinic Dr. Menghong": "1.5 กม.",
-                    "Akea Thmey Clinic": "3.3 กม.",
-                    "Dermall Dental Clinic": "1.4 กม.",
-                    "king hospital": "4.9 กม.",
-                    "Nawaloka Hospital": "2.9 กม.",
-                    "TPR DENTAL CARE": "1.7 กม.",
-                    "คลินิกทำฟันอื่นๆ PP": "2.0 กม.",
-                    "อื่นๆ กรุงเทพและปริมณฑล": "ภาคกลาง",
-                    "อื่นๆ ต่างจังหวัด": "ตามภูมิลำเนา"
-                };
+                // ระยะทางอ้างอิงมาจากรายชื่อกลาง hospitals.js (แก้ที่ไฟล์นั้นที่เดียว)
+                const hospitalDistanceMap = window.HOSPITAL_DISTANCE || {};
 
 //#endregion
 
@@ -180,6 +160,7 @@ function initHospitalEvents() {
 
     const hospitalSelect = document.getElementById('hospitalSelect');
     if (hospitalSelect) {
+        window.fillHospitalSelect?.(hospitalSelect, { placeholder: '-- กรุณาเลือกสถานพยาบาล --' });
         // ล้าง Event เก่าออกก่อนเพื่อป้องกันการทำงานซ้ำซ้อน
         hospitalSelect.replaceWith(hospitalSelect.cloneNode(true));
 
