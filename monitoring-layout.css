@@ -1,0 +1,22 @@
+/* เลย์เอาต์เต็มจอแบบ LINE OA Manager: ไม่มีหัวข้อด้านบน ช่องแชทกินพื้นที่ทั้งหมด */
+.monitoring-shell { padding: 0 !important; grid-template-rows: minmax(0, 1fr) !important; background: #fff; }
+.chat-layout {
+    height: 100% !important;
+    min-height: 0 !important;
+    grid-template-columns: 340px minmax(0, 1fr) 300px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+.oa-panel-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px 0; }
+.oa-panel-toolbar .connection-state { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oa-panel-toolbar .secondary-button { padding: 4px 10px; font-size: 12px; }
+.oa-panel .search-box { margin-top: 8px; }
+body.is-conversation-embed .oa-panel-toolbar { display: none; }
+
+@media (max-width: 1400px) { .chat-layout { grid-template-columns: 300px minmax(0, 1fr) 260px; } }
+@media (max-width: 1050px) { .chat-layout { grid-template-columns: 285px minmax(0, 1fr); } }
+@media (max-width: 720px) {
+    .chat-layout { grid-template-columns: 1fr; }
+    .oa-panel { height: 100%; }
+}

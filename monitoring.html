@@ -10,22 +10,16 @@
     <link rel="stylesheet" href="monitoring-fixes.css?v=20260901-1">
     <link rel="stylesheet" href="monitoring-media.css?v=20261010-2">
     <link rel="stylesheet" href="monitoring-oa.css?v=20261014-1">
+    <link rel="stylesheet" href="monitoring-layout.css?v=20261014-1">
 </head>
 <body>
     <main class="monitoring-shell">
-        <header class="monitoring-header">
-            <div>
-                <p class="eyebrow">LINE OA OPERATIONS</p>
-                <h1>Monitoring System Project</h1>
-            </div>
-            <div class="header-actions">
-                <span id="connectionState" class="connection-state">กำลังเชื่อมต่อ...</span>
-                <button id="refreshButton" type="button" class="secondary-button">รีเฟรช</button>
-            </div>
-        </header>
-
         <section class="chat-layout" aria-label="ระบบติดตามข้อความ LINE OA">
             <aside class="oa-panel">
+                <div class="oa-panel-toolbar">
+                    <span id="connectionState" class="connection-state">กำลังเชื่อมต่อ...</span>
+                    <button id="refreshButton" type="button" class="secondary-button">รีเฟรช</button>
+                </div>
                 <label class="search-box">
                     <span>⌕</span>
                     <input id="conversationSearch" type="search" placeholder="ค้นหาชื่อหรือข้อความ">

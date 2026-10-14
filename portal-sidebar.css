@@ -1,0 +1,31 @@
+/* แถบเมนูซ้ายพับเก็บเหลือแค่ไอคอน — ชี้เมาส์แล้วกางออกทับเนื้อหา (ไม่ดันหน้าจอ) */
+@media (min-width: 821px) and (hover: hover) {
+    .app-body { --first-sidebar-width: 64px; }
+
+    .first-sidebar {
+        position: relative;
+        z-index: 45;
+        width: 64px;
+        overflow: hidden;
+        padding-left: 10px;
+        padding-right: 10px;
+        transition: width 180ms ease, box-shadow 180ms ease;
+    }
+    .first-sidebar:hover,
+    .first-sidebar:has(:focus-visible) {
+        width: 220px;
+        box-shadow: 8px 0 28px rgba(16, 24, 40, 0.16);
+        transition-delay: 80ms;
+    }
+
+    .first-menu-item { width: 200px; padding-left: 12px; }
+    .first-menu-item span { white-space: nowrap; }
+
+    .first-sidebar .sidebar-account { width: 200px; padding-left: 4px; }
+    .first-sidebar .account-information,
+    .first-sidebar .account-logout { opacity: 0; transition: opacity 120ms ease; }
+    .first-sidebar:hover .account-information,
+    .first-sidebar:hover .account-logout,
+    .first-sidebar:has(:focus-visible) .account-information,
+    .first-sidebar:has(:focus-visible) .account-logout { opacity: 1; }
+}
