@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const MEDIA_TYPES = new Set(['image', 'video', 'audio', 'file']);
+    // เหตุการณ์ที่ไม่ใช่ข้อความ แสดงเป็นบรรทัดกลางแชตแบบ LINE OA
+    const SYSTEM_EVENT_LABELS = { follow: 'เพิ่มเป็นเพื่อนแล้ว', unfollow: 'บล็อกบัญชีนี้', unsend: 'ยกเลิกการส่งข้อความ', join: 'เข้าร่วมกลุ่ม', leave: 'ออกจากกลุ่ม', memberJoined: 'มีสมาชิกเข้าร่วม', memberLeft: 'มีสมาชิกออกจากกลุ่ม', postback: 'กดเมนู/ปุ่ม', beacon: 'Beacon' };
     const MESSAGE_TYPES = new Set(['text', 'image', 'video', 'audio', 'file', 'sticker', 'location', 'imagemap', 'template', 'flex']);
     // แพ็กสติกเกอร์ที่ LINE อนุญาตให้บัญชี OA ส่งผ่าน Messaging API ได้
     const STICKER_PACKAGES = [
@@ -77,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         return blobCache.get(key);
     }
-    const lazyObserver = new IntersectionObserver(entries => entries.forEach(entry => { if (entry.isIntersecting) { lazyObserver.unobserve(entry.target); hydrateMedia(entry.target); } }), { rootMargin: '300px' });
+    const lazyObserver = new IntersectionObserver(entries => entries.forEach(entry => { if (entry.isIntersecting) { lazyObserver.unobserve(entry.target); startHydrate(entry.target); } }), { rootMargin: '300px' });
     async function hydrateMedia(node) {
         const message = findMessage(node.dataset.load);
         if (!message || !state.activeConversation) return;
@@ -91,7 +93,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             node.closest('.media-frame')?.setAttribute('data-error', error.code === 'MEDIA_PROCESSING' ? 'LINE กำลังเตรียมไฟล์ แตะเพื่อลองใหม่' : error.message);
         }
     }
-    function observeMedia(root) { root.querySelectorAll('[data-load]').forEach(node => lazyObserver.observe(node)); }
+    // โหลดรูป/วิดีโอที่อยู่ในหรือใกล้หน้าจอทันที และใช้ IntersectionObserver กับที่เหลือ
+    // (เดิมพึ่ง IntersectionObserver อย่างเดียว ถ้าไม่ทำงาน — แท็บถูกซ่อน/กลับมาจากโหมดพัก/บางเบราว์เซอร์ — รูปจะไม่โหลดเลย)
+    function startHydrate(node) { if (node.dataset.hydrated) return; node.dataset.hydrated = '1'; lazyObserver.unobserve(node); hydrateMedia(node); }
+    function isNearViewport(node, scroller) {
+        const rect = node.getBoundingClientRect(); if (!rect.width && !rect.height) return false;
+        const area = scroller ? scroller.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+        return rect.bottom > area.top - 600 && rect.top < area.bottom + 600;
+    }
+    function hydrateVisibleMedia(root, scroller) { root.querySelectorAll('[data-load]:not([data-hydrated])').forEach(node => { if (isNearViewport(node, scroller)) startHydrate(node); }); }
+    function observeMedia(root) {
+        root.querySelectorAll('[data-load]:not([data-hydrated])').forEach(node => lazyObserver.observe(node));
+        setTimeout(() => hydrateVisibleMedia(root, root === el.messageList ? el.messageList : null), 0); // ไม่ใช้ requestAnimationFrame เพราะหยุดทำงานเมื่อแท็บอยู่เบื้องหลัง
+    }
     async function downloadMessage(message) {
         try {
             notify('กำลังดาวน์โหลด...');
@@ -118,7 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (message.type === 'video') return `<div class="bubble is-media"><button type="button" class="media-frame is-video" data-action="view" data-id="${id}"><img data-load="${id}" data-variant="preview" alt="วิดีโอ"><span class="play-icon">▶</span>${payload.duration ? `<span class="media-duration">${formatDuration(payload.duration)}</span>` : ''}</button></div>`;
         if (message.type === 'audio') return `<div class="bubble is-audio"><div class="media-frame audio-frame"><audio controls preload="none" data-load="${id}"></audio></div><div class="file-actions"><span>🎤 ${payload.duration ? formatDuration(payload.duration) : 'ข้อความเสียง'}</span><button type="button" class="file-action" data-action="download" data-id="${id}">ดาวน์โหลด</button></div></div>`;
         if (message.type === 'file') { const name = displayFileName(message); return `<div class="bubble is-file"><button type="button" class="file-card" data-action="view" data-id="${id}"><span class="file-icon">${escapeHtml(fileIcon(name))}</span><span class="file-copy"><strong>${escapeHtml(name)}</strong><small>${escapeHtml(formatSize(message.fileSize))}${message.originalFileName && message.originalFileName !== name ? ` · เดิม: ${escapeHtml(message.originalFileName)}` : ''}</small></span></button><div class="file-actions"><button type="button" class="file-action" data-action="download" data-id="${id}">ดาวน์โหลด</button>${renameButton(message)}</div></div>`; }
-        if (message.type === 'sticker') return `<div class="bubble is-sticker"><img src="${stickerUrl(payload.stickerId)}" alt="สติกเกอร์" loading="lazy"></div>`;
+        if (message.type === 'sticker') return `<div class="bubble is-sticker"><img src="${stickerUrl(payload.stickerId)}" alt="สติกเกอร์" decoding="async"></div>`;
         if (message.type === 'location') { const map = `https://www.google.com/maps?q=${encodeURIComponent(`${payload.latitude},${payload.longitude}`)}`; return `<div class="bubble is-location"><a href="${map}" target="_blank" rel="noopener noreferrer" class="location-card"><span class="file-icon">📍</span><span class="file-copy"><strong>${escapeHtml(payload.title || 'ตำแหน่งที่ตั้ง')}</strong><small>${escapeHtml(payload.address || `${payload.latitude}, ${payload.longitude}`)}</small></span></a></div>`; }
         return `<div class="bubble">${linkify(message.text || message.summary || '[ข้อความชนิดอื่น]')}</div>`;
     }
@@ -129,7 +143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const index = start + offset; const previous = messages[index - 1];
             const divider = !previous || dayKey(previous.timestamp) !== dayKey(message.timestamp) ? `<div class="day-divider"><span>${escapeHtml(formatDay(message.timestamp))}</span></div>` : '';
             const unread = state.unreadMarkerId === message.id ? '<div class="unread-divider"><span>ข้อความที่ยังไม่ได้อ่าน</span></div>' : '';
-            if (!MESSAGE_TYPES.has(message.type)) return `${divider}${unread}<div class="system-event">${escapeHtml(message.summary || message.type)} · ${formatTime(message.timestamp)}</div>`;
+            if (!MESSAGE_TYPES.has(message.type)) return `${divider}${unread}<div class="system-event">${escapeHtml(SYSTEM_EVENT_LABELS[message.type] || message.summary || message.type)} · ${formatTime(message.timestamp)}</div>`;
             const info = state.activeConversation || {};
             const outbound = message.direction === 'outbound';
             const senderOf = item => (item?.payload || {}).sentByName || '';
@@ -226,9 +240,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         else el.messageList.innerHTML = messagesHtml(messages, 0); // วาดใหม่ทั้งหมดเฉพาะเมื่อเปลี่ยนห้อง/ข้อความเดิมถูกแก้ ไม่ให้วิดีโอ/เสียงที่กำลังเล่นหยุด
         const added = keys.length - previousKeys.length;
         state.renderedKeys = keys;
-        observeMedia(el.messageList);
         if (!options.preserveScroll || wasNearBottom || switched) { el.messageList.scrollTop = el.messageList.scrollHeight; el.newMessageIndicator.hidden = true; }
         else { el.messageList.scrollTop = oldTop; if (added > 0) el.newMessageIndicator.hidden = false; }
+        observeMedia(el.messageList);
         if (switched || added !== 0 || !canAppend || profileChanged || options.refreshProfile) renderProfile(info);
         const enabled = state.canReply;
         el.replyInput.disabled = !enabled; el.sendButton.disabled = !enabled; el.attachButton.disabled = !enabled; el.stickerButton.disabled = !enabled; el.templateButton.disabled = !enabled;
@@ -584,6 +598,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     el.conversationSearch.addEventListener('input',renderConversations); document.getElementById('conversationFilter')?.addEventListener('change',event=>{state.listFilter=event.target.value;renderConversations();}); el.refreshButton.addEventListener('click',()=>{load();reloadActive();});
     el.scrollToTopButton.addEventListener('click',()=>el.messageList.scrollTo({top:0,behavior:'smooth'}));
     el.scrollToBottomButton.addEventListener('click',()=>{el.messageList.scrollTo({top:el.messageList.scrollHeight,behavior:'smooth'});el.newMessageIndicator.hidden=true;});
+    let mediaScrollTimer = null;
+    el.messageList.addEventListener('scroll', () => { clearTimeout(mediaScrollTimer); mediaScrollTimer = setTimeout(() => hydrateVisibleMedia(el.messageList, el.messageList), 120); }, { passive: true });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { hydrateVisibleMedia(el.messageList, el.messageList); hydrateVisibleMedia(el.profileCard, null); } });
     el.messageList.addEventListener('scroll',()=>{const nearBottom=el.messageList.scrollHeight-el.messageList.scrollTop-el.messageList.clientHeight<80;if(nearBottom)el.newMessageIndicator.hidden=true;},{passive:true});
     function handleAction(event) {
         const target = event.target.closest('[data-action]'); if (!target) return;
