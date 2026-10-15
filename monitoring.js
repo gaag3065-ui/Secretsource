@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (message.type === 'location') { const map = `https://www.google.com/maps?q=${encodeURIComponent(`${payload.latitude},${payload.longitude}`)}`; return `<div class="bubble is-location"><a href="${map}" target="_blank" rel="noopener noreferrer" class="location-card"><span class="file-icon">📍</span><span class="file-copy"><strong>${escapeHtml(payload.title || 'ตำแหน่งที่ตั้ง')}</strong><small>${escapeHtml(payload.address || `${payload.latitude}, ${payload.longitude}`)}</small></span></a></div>`; }
         return `<div class="bubble">${linkify(message.text || message.summary || '[ข้อความชนิดอื่น]')}</div>`;
     }
-    const messageKey = message => `${message.id}|${message.fileName}|${message.unsent ? 1 : 0}`;
+    const messageKey = message => `${message.id}|${message.fileName}|${message.unsent ? 1 : 0}|${message.payload?.outbox?.status || ''}`;
     const dayKey = timestamp => new Date(timestamp).toDateString();
     function messagesHtml(messages, start) {
         return messages.slice(start).map((message, offset) => {
@@ -153,10 +153,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             const senderOf = item => (item?.payload || {}).sentByName || '';
             const grouped = Boolean(previous) && !divider && !unread && previous.direction === message.direction && MESSAGE_TYPES.has(previous.type) && message.timestamp - previous.timestamp < 5 * 60 * 1000 && (!outbound || senderOf(previous) === senderOf(message));
             const sender = outbound && !grouped ? `<div class="message-sender">${escapeHtml(senderOf(message) || info.channelName || 'ทีมงาน')}</div>` : '';
-            const meta = `<div class="message-meta">${outbound && !message.unsent ? '<span>ส่งแล้ว</span>' : ''}<time>${formatTime(message.timestamp)}</time></div>`;
+            const meta = `<div class="message-meta">${outbound && !message.unsent ? outboxLabel(message) : ''}<time>${formatTime(message.timestamp)}</time></div>`;
             const face = outbound ? '' : (grouped ? '<span class="message-avatar-spacer"></span>' : avatar(info.pictureUrl, info.displayName).replace('class="avatar', 'class="avatar message-avatar'));
             return `${divider}${unread}${sender}<div class="message-row ${outbound ? 'outbound' : 'inbound'}${grouped ? ' is-grouped' : ''}" data-message="${escapeHtml(message.id)}">${outbound ? meta + bubbleContent(message) : face + bubbleContent(message) + meta}</div>`;
         }).join('');
+    }
+    // ข้อความที่ส่งผ่านคิว LINE OA Manager: รอแอดมินกดส่งในหน้าแชท LINE OA ก่อนจึงถึงลูกค้า
+    function outboxLabel(message) {
+        const outbox = (message.payload || {}).outbox;
+        if (!outbox) return '<span>ส่งแล้ว</span>';
+        if (outbox.status === 'pending') return `<span class="outbox-state is-pending" title="รอกดส่งในหน้าแชท LINE OA Manager">รอส่งใน LINE OA</span>${state.canReply ? `<button type="button" class="outbox-cancel" data-action="cancel-outbox" data-outbox="${escapeHtml(outbox.id)}">ยกเลิก</button>` : ''}`;
+        if (outbox.status === 'cancelled') return '<span class="outbox-state is-cancelled">ยกเลิกแล้ว</span>';
+        if (outbox.status === 'failed') return `<span class="outbox-state is-failed" title="${escapeHtml(outbox.error || '')}">ส่งไม่สำเร็จ</span>`;
+        return '<span>ส่งแล้ว</span>';
+    }
+    async function cancelOutbox(id) {
+        if (!confirm('ยกเลิกข้อความนี้? (ลูกค้าจะไม่ได้รับ)')) return;
+        try { await request(`/api/line-oa/outbox/${encodeURIComponent(id)}/cancel`, { method: 'POST', body: '{}' }); notify('ยกเลิกข้อความแล้ว'); reloadActive(); }
+        catch (error) { notify(error.message, true); }
     }
     function renderHeader(info) {
         el.conversationHeader.innerHTML = `${avatar(info.pictureUrl,info.displayName)}<div class="header-copy"><strong>${escapeHtml(info.displayName)}${state.canEdit ? ' <button type="button" class="inline-edit" data-action="rename-contact" title="เปลี่ยนชื่อ">✎</button>' : ''}</strong><small>${escapeHtml(info.channelName)} · ${escapeHtml(info.status||'พร้อมสนทนา')}</small></div><div class="oa-header-actions">${state.canEdit ? `<button type="button" class="oa-header-button${info.workflowStatus==='todo'?' is-active is-todo':''}" data-action="workflow" data-status="todo">ต้องดำเนินการ</button><button type="button" class="oa-header-button${info.workflowStatus==='done'?' is-active is-done':''}" data-action="workflow" data-status="done">ดำเนินการแล้ว</button>` : ''}<button type="button" class="oa-header-button" data-action="chat-search">⌕ ค้นหา</button></div>`;
@@ -613,6 +627,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (frame?.querySelector('.is-error') && action === 'view') { const node = frame.querySelector('[data-load]'); frame.removeAttribute('data-error'); hydrateMedia(node); return; }
         if (action === 'view' && message) openViewer(message);
         else if (action === 'download' && message) downloadMessage(message);
+        else if (action === 'cancel-outbox') cancelOutbox(target.dataset.outbox);
         else if (action === 'rename-file' && message) renameFile(message);
         else if (action === 'rename-contact') renameContact();
         else if (action === 'note-add') addNote();
