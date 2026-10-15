@@ -20,3 +20,8 @@ body.is-conversation-embed .oa-panel-toolbar { display: none; }
     .chat-layout { grid-template-columns: 1fr; }
     .oa-panel { height: 100%; }
 }
+
+/* โควตาข้อความรายเดือนบนแท็บบัญชี */
+.quota-badge { margin-left: 4px; padding: 0 5px; border-radius: 8px; background: #eef2f4; color: #5b6875; font-size: 10px; font-weight: 600; }
+.quota-badge.is-low { background: #fff4e0; color: #a35d00; }
+.quota-badge.is-empty { background: #fde8e7; color: #b42318; }
