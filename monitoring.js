@@ -140,7 +140,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (message.type === 'location') { const map = `https://www.google.com/maps?q=${encodeURIComponent(`${payload.latitude},${payload.longitude}`)}`; return `<div class="bubble is-location"><a href="${map}" target="_blank" rel="noopener noreferrer" class="location-card"><span class="file-icon">📍</span><span class="file-copy"><strong>${escapeHtml(payload.title || 'ตำแหน่งที่ตั้ง')}</strong><small>${escapeHtml(payload.address || `${payload.latitude}, ${payload.longitude}`)}</small></span></a></div>`; }
         return `<div class="bubble">${linkify(message.text || message.summary || '[ข้อความชนิดอื่น]')}</div>`;
     }
-    const messageKey = message => `${message.id}|${message.fileName}|${message.unsent ? 1 : 0}|${message.payload?.outbox?.status || ''}`;
+    const deliveryUnconfirmed = message => message.payload?.outbox?.status === 'pending' && Date.now() - Number(message.timestamp || 0) >= 15000;
+    const messageKey = message => `${message.id}|${message.fileName}|${message.unsent ? 1 : 0}|${message.payload?.outbox?.status || ''}|${message.payload?.outbox?.error || ''}|${deliveryUnconfirmed(message) ? 1 : 0}`;
     const dayKey = timestamp => new Date(timestamp).toDateString();
     function messagesHtml(messages, start) {
         return messages.slice(start).map((message, offset) => {
@@ -158,14 +159,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             return `${divider}${unread}${sender}<div class="message-row ${outbound ? 'outbound' : 'inbound'}${grouped ? ' is-grouped' : ''}" data-message="${escapeHtml(message.id)}">${outbound ? meta + bubbleContent(message) : face + bubbleContent(message) + meta}</div>`;
         }).join('');
     }
-    // ข้อความที่ส่งผ่านคิว LINE OA Manager: รอแอดมินกดส่งในหน้าแชท LINE OA ก่อนจึงถึงลูกค้า
+    // แสดงส่งแล้วเฉพาะเมื่อยืนยันสำเร็จ; หากยังยืนยันไม่ได้เกิน 15 วินาทีให้เตือน
     function outboxLabel(message) {
         const outbox = (message.payload || {}).outbox;
         if (!outbox) return '<span>ส่งแล้ว</span>';
-        if (outbox.status === 'pending') return `<span class="outbox-state is-pending" title="รอกดส่งในหน้าแชท LINE OA Manager">รอส่งใน LINE OA</span>${state.canReply ? `<button type="button" class="outbox-cancel" data-action="cancel-outbox" data-outbox="${escapeHtml(outbox.id)}">ยกเลิก</button>` : ''}`;
+        if (outbox.status === 'pending') return deliveryUnconfirmed(message)
+            ? `<span class="outbox-state is-failed" role="status" title="ยังไม่ได้รับการยืนยันจาก LINE กรุณาตรวจหน้า LINE OA ก่อนส่งซ้ำ">⚠ ยังยืนยันการส่งไม่ได้</span>${state.canReply ? `<button type="button" class="outbox-cancel" data-action="cancel-outbox" data-outbox="${escapeHtml(outbox.id)}">ยกเลิก</button>` : ''}`
+            : '';
         if (outbox.status === 'cancelled') return '<span class="outbox-state is-cancelled">ยกเลิกแล้ว</span>';
-        if (outbox.status === 'failed') return `<span class="outbox-state is-failed" title="${escapeHtml(outbox.error || '')}">ส่งไม่สำเร็จ</span>`;
-        return '<span>ส่งแล้ว</span>';
+        if (outbox.status === 'failed') return `<span class="outbox-state is-failed" role="status" title="${escapeHtml(outbox.error || '')}">⚠ ส่งไม่สำเร็จ</span>`;
+        if (outbox.status === 'sent') return '<span>ส่งแล้ว</span>';
+        return '<span class="outbox-state is-failed" role="status">⚠ ไม่ทราบสถานะการส่ง</span>';
     }
     async function cancelOutbox(id) {
         if (!confirm('ยกเลิกข้อความนี้? (ลูกค้าจะไม่ได้รับ)')) return;
@@ -708,6 +712,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function syncNewMessages() {
         if (document.hidden) return;
+
+        // เวลาเตือนต้องเดินต่อได้แม้ไม่มีข้อความใหม่หรือเซิร์ฟเวอร์ขาดการเชื่อมต่อ
+        if (state.activeConversation && state.messages.some((message, index) => messageKey(message) !== state.renderedKeys[index])) {
+            renderConversation(state.activeConversation, state.messages, { preserveScroll: true });
+        }
 
         try {
             const data = await request('/api/line-oa/monitoring');
