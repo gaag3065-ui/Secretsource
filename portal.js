@@ -71,7 +71,7 @@ const services = [
                 title: 'งานประกันทั้งหมด',
                 icon: 'shield',
                 page:
-                    'search.html?v=20261010-insurance-all-1' +
+                    'search.html?v=20261016-contact-01' +
                     '#all'
             }
         ]

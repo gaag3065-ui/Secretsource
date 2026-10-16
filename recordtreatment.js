@@ -429,7 +429,8 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
                 if (document.getElementById('hospitalSelect')) document.getElementById('hospitalSelect').value = ''; 
                 if (document.getElementById('distanceInput')) document.getElementById('distanceInput').value = '-'; 
                 if (document.getElementById('symptomsInput')) document.getElementById('symptomsInput').value = ''; 
-                if (document.getElementById('notesInput')) document.getElementById('notesInput').value = ''; 
+                if (document.getElementById('notesInput')) document.getElementById('notesInput').value = '';
+                if (document.getElementById('contactInput')) document.getElementById('contactInput').value = '';
 
                 if (document.getElementById('imageUpload')) document.getElementById('imageUpload').value = '';
                 if (document.getElementById('fileNameDisplay')) document.getElementById('fileNameDisplay').innerText = 'ยังไม่ได้เลือกไฟล์';
@@ -587,6 +588,7 @@ function copyClaimDetailsToClipboard() {
         const hospital = document.getElementById('hospitalSelect')?.value || '-';
         const symptoms = document.getElementById('symptomsInput')?.value || '-';
         const notes = document.getElementById('notesInput')?.value || '-';
+        const contact = document.getElementById('contactInput')?.value.trim() || '';
 
         // 🎯 3. ประกอบร่างข้อความเรียงแถวตามโครงสร้างระเบียบโจทย์
         const templateText = 
@@ -597,7 +599,7 @@ SIZE : ${empSize}
 InsuranceId : ${insuranceId}
 อาการป่วย : ${symptoms}
 คลินิกหรือสถานพยาบาล : ${hospital}
-เบอร์โทรติดต่อพนักงาน : 
+เบอร์โทรติดต่อพนักงานหรือ ID Line : ${contact}
 หมายเหตุ : ${notes}`;
 
         // 🚀 4. สั่งสั่งงานยัดก้อนข้อความเข้าสู่หน่วยความจำเบราว์เซอร์จริง (Clipboard API)
