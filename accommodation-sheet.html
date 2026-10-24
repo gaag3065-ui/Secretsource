@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>ภาพรวมที่พัก | GA Operations</title>
+    <link rel="stylesheet" href="accommodation-sheet.css?v=20261024-1">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+</head>
+<body>
+    <main class="as-page">
+        <header class="as-header">
+            <div>
+                <p class="as-eyebrow">ACCOMMODATION REGISTRY · GOOGLE SHEET</p>
+                <h1>ภาพรวมที่พัก</h1>
+                <p class="as-sub">นับจากแท็บ "ข้อมูลเบื้องต้น" (เฉพาะสถานะ on work) แบบเรียลไทม์ — <span id="asUpdated">กำลังโหลด...</span></p>
+            </div>
+            <div class="as-actions">
+                <a id="asSheetLink" class="as-btn as-btn-ghost" href="#" target="_blank" rel="noopener" hidden>เปิด Google Sheet ↗</a>
+                <button id="asRefresh" class="as-btn as-btn-ghost" type="button">รีเฟรชตอนนี้</button>
+                <button id="asCreate" class="as-btn as-btn-primary" type="button">+ สร้างที่พักใหม่</button>
+            </div>
+        </header>
+
+        <section class="as-stats" id="asStats" aria-label="สรุป"></section>
+
+        <section class="as-toolbar">
+            <div class="as-chips" id="asAreaChips"></div>
+            <div class="as-chips" id="asStatusChips">
+                <button type="button" data-status="all" class="is-on">ทั้งหมด</button>
+                <button type="button" data-status="has">มีพนักงาน</button>
+                <button type="button" data-status="empty">ยังไม่มีพนักงาน</button>
+            </div>
+            <input id="asSearch" type="search" placeholder="ค้นหาชื่อที่พัก หรือชื่อพนักงาน..." autocomplete="off">
+        </section>
+
+        <section class="as-card">
+            <div class="as-card-head"><h2>รายการที่พัก</h2><span id="asListCount"></span></div>
+            <div id="asList" class="as-list"><p class="as-empty">กำลังโหลด...</p></div>
+        </section>
+
+        <section class="as-card as-warn-card" id="asUnmatchedCard" hidden>
+            <div class="as-card-head"><h2>ชื่อที่พักใน "ข้อมูลเบื้องต้น" ที่ยังไม่อยู่ในรายการ</h2><span id="asUnmatchedCount"></span></div>
+            <p class="as-hint">ชื่อเหล่านี้พิมพ์ไม่ตรงกับที่พักในรายการ — เลือก "รวมกับที่พัก" ถ้าเป็นที่พักเดิมที่สะกดต่างกัน หรือ "สร้างเป็นที่พักใหม่"</p>
+            <div id="asUnmatched"></div>
+        </section>
+
+        <section class="as-card">
+            <details id="asNoAccDetails">
+                <summary><h2>พนักงาน on work ที่ยังไม่ระบุที่พัก</h2><span id="asNoAccCount"></span></summary>
+                <p class="as-hint">คอลัมน์ "ชื่อตึกพัก" (L) ในแท็บข้อมูลเบื้องต้นว่างหรือเป็น "-"</p>
+                <div id="asNoAcc"></div>
+            </details>
+        </section>
+    </main>
+
+    <dialog id="asDialog" class="as-dialog">
+        <form id="asForm" method="dialog">
+            <h2>สร้างที่พักใหม่</h2>
+            <p class="as-hint">บันทึกลงแท็บ "ข้อมูลที่พัก" ใน Google Sheet ทันที</p>
+            <label>พื้นที่ <select name="area" required><option value="">เลือกพื้นที่</option><option>GE</option><option>ML</option><option>PP</option><option>SL</option><option>TH</option></select></label>
+            <label>ชื่อที่พัก <input name="name" required maxlength="200" placeholder="เช่น Sky Plus"></label>
+            <label>ชื่อเรียกอื่น (ถ้ามี) <input name="aliases" maxlength="600" placeholder="ชื่อที่พิมพ์ในชีตข้อมูลเบื้องต้น คั่นด้วย ;"></label>
+            <div class="as-form-row">
+                <label>จำนวนชั้น <input name="floors" inputmode="numeric" pattern="\d*" maxlength="4"></label>
+                <label>จำนวนห้อง <input name="rooms" inputmode="numeric" pattern="\d*" maxlength="5"></label>
+            </div>
+            <label>ที่อยู่ / หมายเหตุ <textarea name="note" maxlength="500" rows="2"></textarea></label>
+            <p id="asFormError" class="as-error" hidden></p>
+            <div class="as-dialog-actions">
+                <button type="button" class="as-btn as-btn-ghost" id="asCancel">ยกเลิก</button>
+                <button type="submit" class="as-btn as-btn-primary" id="asSave">บันทึกลง Google Sheet</button>
+            </div>
+        </form>
+    </dialog>
+
+    <div id="asToast" class="as-toast" role="status"></div>
+
+    <script src="config.js"></script>
+    <script src="accommodation-sheet.js?v=20261024-1"></script>
+</body>
+</html>

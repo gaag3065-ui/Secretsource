@@ -94,6 +94,13 @@ const services = [
                 page:
                     'accommodation.html' +
                     '?view=search'
+            },
+            {
+                // ทะเบียนที่พักบน Google Sheet + จำนวนพนักงานแต่ละที่พักแบบเรียลไทม์ (ไม่ต้องกดซิงก์)
+                route: 'accommodation-sheet',
+                title: 'ภาพรวมที่พัก (Google Sheet)',
+                icon: 'building',
+                page: 'accommodation-sheet.html?v=20261024-1'
             }
         ]
     },
