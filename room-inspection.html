@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>ตรวจรับห้องพัก | GA Operations</title>
-    <link rel="stylesheet" href="room-inspection.css?v=20261028-2">
+    <link rel="stylesheet" href="room-inspection.css?v=20261028-3">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
@@ -126,7 +126,11 @@
                     <h2>รูปภาพ</h2>
                     <span id="riPhotoCount"></span>
                 </div>
-                <p class="ri-hint">เลือกรูปในแต่ละกล่อง (เลือกหลายรูปพร้อมกันได้) กดที่รูปเพื่อดูขนาดใหญ่ ใช้ปุ่มขึ้น/ลงเพื่อจัดลำดับ</p>
+                <div class="ri-folder">
+                    <label class="ri-btn ri-btn-primary">เลือกทั้งโฟลเดอร์ (OneDrive)<input type="file" id="riFolder" webkitdirectory multiple></label>
+                    <span>เลือกโฟลเดอร์รูปของยูนิตจาก OneDrive ในหน้าต่างเลือกไฟล์ ระบบจะเพิ่มทุกรูปเรียงตามเวลาถ่าย แล้วพิมพ์คำบรรยายใต้แต่ละรูปได้เลย</span>
+                </div>
+                <p class="ri-hint">หรือเลือกรูปในแต่ละกล่อง (เลือกหลายรูปพร้อมกันได้) กดที่รูปเพื่อดูขนาดใหญ่ ใช้ปุ่มขึ้น/ลงเพื่อจัดลำดับ</p>
                 <div id="riPhotoGrid" class="ri-photo-grid"></div>
                 <button type="button" class="ri-add" data-action="add-photo">+ เพิ่มรูปภาพ</button>
             </section>
@@ -158,6 +162,6 @@
     <div id="riToast" class="ri-toast" role="status"></div>
 
     <script src="config.js"></script>
-    <script src="room-inspection.js?v=20261028-2"></script>
+    <script src="room-inspection.js?v=20261028-3"></script>
 </body>
 </html>

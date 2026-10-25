@@ -90,9 +90,24 @@
         });
     }
 
-    async function upload(file) {
+    /** ย่อรูปให้ด้านยาวไม่เกิน 2000px (คมพอสำหรับ PDF) — เลือกทั้งโฟลเดอร์อาจมีเป็นร้อยรูป อัปโหลดรูปเต็มจะช้ามาก */
+    async function shrink(file, max = 2000) {
+        try {
+            const bitmap = await createImageBitmap(file);
+            const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+            const canvas = Object.assign(document.createElement('canvas'), { width: Math.round(bitmap.width * scale), height: Math.round(bitmap.height * scale) });
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+            bitmap.close();
+            return canvas.toDataURL('image/jpeg', 0.88);
+        } catch { return null; }
+    }
+
+    async function upload(file, resize = false) {
         if (/heic|heif/i.test(file.type) || /\.hei[cf]$/i.test(file.name)) throw new Error(`${file.name}: รูป HEIC ต้องแปลงเป็น JPG ก่อน`);
-        const dataUrl = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
+        const dataUrl = (resize && await shrink(file)) || await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
         const result = await request('/upload', { method: 'POST', body: JSON.stringify({ name: file.name, dataUrl }) });
         return result.url;
     }
@@ -244,6 +259,42 @@
         } catch (error) { toast(error.message, true); }
         finally { busy(''); renderPhotos(); }
     });
+    // เลือกทั้งโฟลเดอร์ (เช่นโฟลเดอร์ OneDrive ที่ซิงก์ไว้ในเครื่อง) → เพิ่มทุกรูปต่อท้าย เรียงตามเวลาไฟล์ (≈ ลำดับที่เดินถ่าย)
+    $('riFolder').addEventListener('change', async event => {
+        const input = event.target;
+        const all = [...input.files];
+        input.value = '';
+        const images = all
+            .filter(file => /^image\/(jpeg|png|webp)$/.test(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name))
+            .sort((a, b) => a.lastModified - b.lastModified || a.webkitRelativePath.localeCompare(b.webkitRelativePath, 'th', { numeric: true }));
+        const heic = all.filter(file => /\.hei[cf]$/i.test(file.name)).length;
+        if (!images.length) return toast(heic ? `โฟลเดอร์นี้มีแต่รูป HEIC ${heic} รูป — ต้องแปลงเป็น JPG ก่อน` : 'ไม่พบรูปในโฟลเดอร์นี้', true);
+        if (!confirm(`พบรูป ${images.length} รูป${heic ? ` (ข้ามรูป HEIC ${heic} รูป)` : ''}\nเพิ่มทั้งหมดต่อท้ายรายงาน?`)) return;
+
+        const results = new Array(images.length);
+        const failed = [];
+        let next = 0, done = 0;
+        busy(`กำลังอัปโหลด 0/${images.length} รูป...`);
+        const worker = async () => {
+            while (next < images.length) {
+                const i = next++;
+                try { results[i] = { ...blankPhoto(), url: await upload(images[i], true), title: images[i].name.replace(/\.[^.]+$/, '') }; }
+                catch { failed.push(images[i].name); }
+                busy(`กำลังอัปโหลด ${++done}/${images.length} รูป...`);
+            }
+        };
+        try { await Promise.all([worker(), worker(), worker()]); }
+        finally {
+            state.photos = [...state.photos.filter(photo => photo.url || photo.description.trim()), ...results.filter(Boolean)];
+            if (!state.photos.length) state.photos.push(blankPhoto());
+            markDirty(); busy(''); renderPhotos();
+        }
+        const added = images.length - failed.length;
+        if (failed.length) toast(`เพิ่มแล้ว ${added} รูป, ไม่สำเร็จ ${failed.length} รูป: ${failed.slice(0, 3).join(', ')}${failed.length > 3 ? ' ...' : ''}`, true);
+        else toast(`เพิ่ม ${added} รูปแล้ว — พิมพ์คำบรรยายใต้รูปได้เลย`);
+        if (added && !failed.length) save('photos').catch(() => { /* บันทึกเองภายหลังได้ */ });
+    });
+
     $('riPhotoGrid').addEventListener('input', event => {
         const field = event.target.closest('[data-desc]');
         if (field) { state.photos[Number(field.dataset.desc)].description = field.value; markDirty(); }
