@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>ตรวจรับห้องพัก | GA Operations</title>
-    <link rel="stylesheet" href="room-inspection.css?v=20261028-1">
+    <link rel="stylesheet" href="room-inspection.css?v=20261028-2">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
@@ -40,11 +40,11 @@
                         <label>ระยะสัญญา<input name="contractTerm" placeholder="เช่น 1 ปี"></label>
                         <label>ประเภทห้อง<input name="roomType" placeholder="เช่น 3 ห้องนอน 2 ห้องน้ำ"></label>
                         <label>เข้าพักได้วันที่<input type="date" name="availableDate"></label>
-                        <label>พักได้จำนวน (คน)<input name="capacity" data-number></label>
-                        <label>ค่าเช่าต่อเดือน<input name="rentMonth" data-number></label>
-                        <label>ค่าเช่าต่อคน<input name="rentPerson" data-number></label>
-                        <label>ค่าจองมัดจำ<input name="booking" data-number></label>
-                        <label>ค่ามัดจำประกัน<input name="securityDeposit" data-number></label>
+                        <label>พักได้จำนวน<span class="ri-unit-row"><input name="capacity" data-number><input name="capacityUnit" class="ri-unit" maxlength="6" list="riCurrencies" placeholder="คน" autocomplete="off"></span></label>
+                        <label>ค่าเช่าต่อเดือน<span class="ri-unit-row"><input name="rentMonth" data-number><input data-currency name="rentMonthUnit" class="ri-unit" maxlength="6" list="riCurrencies" placeholder="LKR" autocomplete="off"></span></label>
+                        <label>ค่าเช่าต่อคน<span class="ri-unit-row"><input name="rentPerson" data-number><input data-currency name="rentPersonUnit" class="ri-unit" maxlength="6" list="riCurrencies" placeholder="LKR" autocomplete="off"></span></label>
+                        <label>ค่าจองมัดจำ<span class="ri-unit-row"><input name="booking" data-number><input data-currency name="bookingUnit" class="ri-unit" maxlength="6" list="riCurrencies" placeholder="LKR" autocomplete="off"></span></label>
+                        <label>ค่ามัดจำประกัน<span class="ri-unit-row"><input name="securityDeposit" data-number><input data-currency name="securityDepositUnit" class="ri-unit" maxlength="6" list="riCurrencies" placeholder="LKR" autocomplete="off"></span></label>
                         <label>ค่าเช่าล่วงหน้า<input name="advanceRent" placeholder="เช่น 4 เดือน"></label>
                         <label>ระยะทางถึง MT (กม.)<input name="distanceMT" data-number></label>
                         <label>ระยะทางถึง OR (กม.)<input name="distanceOR" data-number></label>
@@ -147,6 +147,8 @@
         </section>
     </main>
 
+    <datalist id="riCurrencies"><option value="LKR"><option value="THB"><option value="USD"><option value="คน"></datalist>
+
     <dialog id="riLightbox" class="ri-lightbox">
         <button type="button" class="ri-lightbox-close" aria-label="ปิด">×</button>
         <img alt="รูปภาพขยาย">
@@ -156,6 +158,6 @@
     <div id="riToast" class="ri-toast" role="status"></div>
 
     <script src="config.js"></script>
-    <script src="room-inspection.js?v=20261028-1"></script>
+    <script src="room-inspection.js?v=20261028-2"></script>
 </body>
 </html>

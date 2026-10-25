@@ -155,6 +155,17 @@
         markDirty();
     });
     form.addEventListener('change', markDirty);
+    // สกุลเงิน: พิมพ์ช่องเดียว ช่องเงินอื่นที่ยังว่างจะได้สกุลเดียวกันอัตโนมัติ
+    form.addEventListener('input', event => {
+        const field = event.target;
+        if (!field.classList.contains('ri-unit')) return;
+        field.value = field.value.toUpperCase().replace(/\s+/g, '');
+        if (!field.hasAttribute('data-currency')) return;
+        form.querySelectorAll('.ri-unit[data-currency]').forEach(other => {
+            if (other !== field && (!other.value || other.dataset.auto === '1')) { other.value = field.value; other.dataset.auto = '1'; }
+        });
+        delete field.dataset.auto;
+    });
     $('riSections').addEventListener('click', event => {
         const button = event.target.closest('[data-check-all]');
         if (!button) return;

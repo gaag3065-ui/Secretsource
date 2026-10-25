@@ -109,3 +109,7 @@ button, input, select, textarea { font: inherit; }
 .ri-sig .ri-thumb img { object-fit: contain; }
 .ri-sig .ri-thumb.is-empty { font-size: 11.5px; }
 .ri-sig-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.ri-unit-row { display: flex; gap: 6px; }
+.ri-unit-row input:first-child { flex: 1; min-width: 0; }
+.ri-page .ri-unit-row .ri-unit { width: 74px; flex: 0 0 74px; text-align: center; text-transform: uppercase; font-weight: 700; color: var(--ri-brand); }
