@@ -57,13 +57,13 @@
         return response;
     }
 
-    async function download(path, payload, busyText) {
+    async function download(path, payload, busyText, fileName = '') {
         busy(busyText);
         try {
             const response = await request(path, { method: 'POST', body: JSON.stringify(payload) });
             const disposition = response.headers.get('content-disposition') || '';
             const match = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
-            const name = match ? decodeURIComponent(match[1]) : 'เอกสาร.pdf';
+            const name = fileName || (match ? decodeURIComponent(match[1]) : 'เอกสาร.pdf');
             const url = URL.createObjectURL(await response.blob());
             const link = Object.assign(document.createElement('a'), { href: url, download: name });
             document.body.append(link); link.click(); link.remove();
@@ -391,10 +391,21 @@
         toast('บันทึกแล้ว');
     }
 
+    /** ชื่อไฟล์: แบบตรวจรับห้องพัก_<ชื่อที่พัก> <เลขยูนิต>.pdf (ตัดเฉพาะอักขระที่ Windows ห้ามใช้ในชื่อไฟล์) */
+    function checklistFileName(data) {
+        const place = [data.building, data.unit].map(value => String(value || '').trim()).filter(Boolean).join(' ');
+        const clean = place.replace(/[<>:"/\\|?*\u0000-\u001F]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+        return `แบบตรวจรับห้องพัก${clean ? `_${clean}` : ''}.pdf`;
+    }
+
     const actions = {
         'save-checklist': () => save('checklist'),
         'save-photos': () => save('photos'),
-        'pdf-checklist': async () => { await save('checklist'); await download('/pdf', { kind: 'checklist', data: checklistData() }, 'กำลังสร้าง PDF แบบตรวจรับ...'); },
+        'pdf-checklist': async () => {
+            await save('checklist');
+            const data = checklistData();
+            await download('/pdf', { kind: 'checklist', data }, 'กำลังสร้าง PDF แบบตรวจรับ...', checklistFileName(data));
+        },
         'pdf-photos': async () => {
             const data = photoData();
             if (!data.photos.length) return toast('ยังไม่มีรูปในรายงาน', true);
