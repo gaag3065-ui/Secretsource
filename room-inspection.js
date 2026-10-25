@@ -140,12 +140,14 @@
     }
     function fillChecklist(data) {
         form.reset();
+        form.querySelectorAll('.ri-sig input[type=hidden]').forEach(input => { input.value = ''; });
         Object.entries(data || {}).forEach(([key, value]) => {
             form.querySelectorAll(`[name="${CSS.escape(key)}"]`).forEach(field => {
                 if (field.type === 'checkbox') field.checked = [].concat(value).includes(field.value);
                 else field.value = field.hasAttribute('data-number') ? formatThousands(value) : value ?? '';
             });
         });
+        renderSignatures();
     }
 
     form.addEventListener('input', event => {
@@ -161,6 +163,39 @@
         boxes.forEach(box => { box.checked = value; });
         button.textContent = value ? 'ล้างทั้งหมด' : 'ติ๊กทั้งหมด';
         markDirty();
+    });
+
+    // ---------------------------------------------------------------- รูปลายเซ็น (3 ผู้ลงนาม)
+    function renderSignatures() {
+        form.querySelectorAll('.ri-sig').forEach(box => {
+            const input = box.querySelector('input[type=hidden]');
+            const url = input.value;
+            box.querySelectorAll(':scope > :not(input)').forEach(node => node.remove());
+            box.insertAdjacentHTML('beforeend', `<span class="ri-sig-label">รูปลายเซ็น</span>
+                ${url ? `<button type="button" class="ri-thumb" data-sig-open title="กดเพื่อดูขนาดใหญ่"><img data-src="${esc(url)}" alt="ลายเซ็น"></button>` : '<div class="ri-thumb is-empty">ยังไม่มีรูปลายเซ็น</div>'}
+                <div class="ri-sig-actions">
+                    <label class="ri-pick">${url ? 'เปลี่ยนรูป' : 'อัปโหลดรูปลายเซ็น'}<input type="file" accept="image/jpeg,image/png,image/webp" data-sig-upload></label>
+                    ${url ? '<button type="button" class="ri-btn ri-btn-ghost ri-btn-sm ri-btn-danger" data-sig-remove>ลบรูป</button>' : ''}
+                </div>`);
+            hydrateImages(box);
+        });
+    }
+    form.addEventListener('change', async event => {
+        const input = event.target.closest('[data-sig-upload]');
+        if (!input || !input.files[0]) return;
+        event.stopPropagation();
+        const hidden = input.closest('.ri-sig').querySelector('input[type=hidden]');
+        busy('กำลังอัปโหลดรูปลายเซ็น...');
+        try { hidden.value = await upload(input.files[0]); markDirty(); }
+        catch (error) { toast(error.message, true); }
+        finally { busy(''); renderSignatures(); }
+    }, true);
+    form.addEventListener('click', event => {
+        const box = event.target.closest('.ri-sig');
+        if (!box) return;
+        const hidden = box.querySelector('input[type=hidden]');
+        if (event.target.closest('[data-sig-open]')) showImage(hidden.value);
+        else if (event.target.closest('[data-sig-remove]')) { hidden.value = ''; markDirty(); renderSignatures(); }
     });
 
     // ---------------------------------------------------------------- รายงานรูปภาพ
@@ -356,6 +391,7 @@
 
     (async () => {
         renderSections();
+        renderSignatures();
         renderPhotos(); renderMaps();
         showTab(location.hash === '#photos' ? 'photos' : 'checklist');
         const [checklist, photos] = await Promise.all([loadDraft('checklist'), loadDraft('photos')]);

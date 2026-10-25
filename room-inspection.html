@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>ตรวจรับห้องพัก | GA Operations</title>
-    <link rel="stylesheet" href="room-inspection.css?v=20261025-3">
+    <link rel="stylesheet" href="room-inspection.css?v=20261028-1">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
@@ -88,16 +88,19 @@
 
                 <section class="ri-card">
                     <h2>การลงนาม</h2>
-                    <p class="ri-hint">ชื่อผู้ลงนามที่มีลายเซ็นประจำตัวในระบบ จะใส่ลายเซ็นใน PDF ให้อัตโนมัติ</p>
+                    <p class="ri-hint">อัปโหลดรูปลายเซ็นได้สำหรับผู้ตรวจสอบก่อนมัดจำ ผู้ตรวจเช็ค และผู้ตรวจสอบก่อนทำสัญญา (แนะนำเซ็นบนกระดาษขาวแล้วถ่ายรูป หรือไฟล์ PNG พื้นใส) — ถ้าไม่อัปโหลด ชื่อที่มีลายเซ็นประจำตัวในระบบจะใส่ลายเซ็นให้อัตโนมัติ</p>
                     <div class="ri-grid ri-grid-2">
                         <label>ผู้ตรวจสอบก่อนมัดจำ<input name="sign.bookingInspector"></label>
                         <label>วันที่<input type="date" name="sign.bookingInspectorDate"></label>
+                        <div class="ri-full ri-sig" data-sig="sign.bookingInspector"><input type="hidden" name="sign.bookingInspectorImage"></div>
                         <label>ผู้ตรวจเช็ค<input name="sign.checker"></label>
                         <label>วันที่<input type="date" name="sign.checkerDate"></label>
+                        <div class="ri-full ri-sig" data-sig="sign.checker"><input type="hidden" name="sign.checkerImage"></div>
                         <label>ผู้อนุมัติการมัดจำ<input name="sign.approver"></label>
                         <label>วันที่<input type="date" name="sign.approverDate"></label>
                         <label>ผู้ตรวจสอบก่อนทำสัญญา<input name="sign.contractInspector"></label>
                         <label>วันที่<input type="date" name="sign.contractInspectorDate"></label>
+                        <div class="ri-full ri-sig" data-sig="sign.contractInspector"><input type="hidden" name="sign.contractInspectorImage"></div>
                     </div>
                 </section>
             </form>
@@ -153,6 +156,6 @@
     <div id="riToast" class="ri-toast" role="status"></div>
 
     <script src="config.js"></script>
-    <script src="room-inspection.js?v=20261025-3"></script>
+    <script src="room-inspection.js?v=20261028-1"></script>
 </body>
 </html>
