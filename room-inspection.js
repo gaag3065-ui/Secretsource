@@ -433,9 +433,15 @@
     async function checkHealth(force = false) {
         try {
             const result = await request(`/health${force ? '?refresh=1' : ''}`);
-            $('riHealth').hidden = result.ready;
-            $('riHealthList').innerHTML = (result.problems || []).map(problem => `<li>${esc(problem)}</li>`).join('');
-            if (force && result.ready) toast('เครื่องหลังบ้านพร้อมสร้าง PDF แล้ว');
+            const problems = [...(result.problems || [])];
+            // หลังบ้านเวอร์ชันเก่าไม่ส่ง features มา หรือสคริปต์ PDF ยังไม่ได้อัปเดต → รูปลายเซ็น/สกุลเงินจะไม่ออกใน PDF
+            const features = result.features || {};
+            if (!features.signatureImage || !features.currencyUnit) {
+                problems.push('เครื่องหลังบ้านยังเป็นเวอร์ชันเก่า: รูปลายเซ็นและสกุลเงินจะไม่แสดงใน PDF — ที่เครื่องหลังบ้านให้รัน git pull ในโฟลเดอร์ secretsource-backend แล้วปิด/เปิดเซิร์ฟเวอร์ใหม่');
+            }
+            $('riHealth').hidden = problems.length === 0;
+            $('riHealthList').innerHTML = problems.map(problem => `<li>${esc(problem)}</li>`).join('');
+            if (force && !problems.length) toast('เครื่องหลังบ้านพร้อมสร้าง PDF แล้ว');
         } catch (error) {
             if (force) toast(error.message, true);
         }
