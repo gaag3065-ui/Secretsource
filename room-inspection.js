@@ -52,6 +52,7 @@
             if (!response.ok || data.success === false) throw new Error(data.message || `ทำรายการไม่สำเร็จ (${response.status})`);
             return data;
         }
+        if (response.status === 404) throw new Error('เครื่องหลังบ้านยังไม่ได้อัปเดตเป็นเวอร์ชันที่มีหน้าตรวจรับห้องพัก (git pull แล้วรีสตาร์ทหลังบ้าน)');
         if (!response.ok) throw new Error(`ทำรายการไม่สำเร็จ (${response.status})`);
         return response;
     }
