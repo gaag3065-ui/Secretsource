@@ -101,6 +101,13 @@ const services = [
                 title: 'ภาพรวมที่พัก (Google Sheet)',
                 icon: 'building',
                 page: 'accommodation-sheet.html?v=20261024-1'
+            },
+            {
+                // แบบตรวจรับห้องพัก + รายงานรูปภาพ → PDF (ย้ายมาจากระบบในเครื่อง "ตรวจสอบที่พัก")
+                route: 'room-inspection',
+                title: 'ตรวจรับห้องพัก',
+                icon: 'shield',
+                page: 'room-inspection.html?v=20261025-1'
             }
         ]
     },
@@ -320,6 +327,10 @@ if (basePage === 'accommodation.html') {
         permissions.ManageAccommodation ===
         true
     );
+}
+
+if (basePage === 'room-inspection.html') {
+    return permissions.ManageAccommodation === true;
 }
 
 if (basePage === 'assets.html') {

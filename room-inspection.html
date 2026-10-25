@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>ตรวจรับห้องพัก | GA Operations</title>
+    <link rel="stylesheet" href="room-inspection.css?v=20261025-1">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+</head>
+<body>
+    <main class="ri-page">
+        <header class="ri-header">
+            <div>
+                <p class="ri-eyebrow">ROOM INSPECTION · ก่อนวางมัดจำและก่อนทำสัญญาเช่า</p>
+                <h1>ตรวจรับห้องพัก</h1>
+                <p class="ri-sub">กรอกแบบตรวจรับ จัดรายงานรูปภาพ แล้วดาวน์โหลดเป็น PDF — <span id="riSaved">ยังไม่ได้บันทึก</span></p>
+            </div>
+            <nav class="ri-tabs" role="tablist">
+                <button type="button" role="tab" data-tab="checklist" class="is-on">1 แบบตรวจรับห้องพัก</button>
+                <button type="button" role="tab" data-tab="photos">2 รายงานรูปภาพ</button>
+            </nav>
+        </header>
+
+        <!-- ================= แบบตรวจรับ ================= -->
+        <section id="tab-checklist" class="ri-tab">
+            <form id="riChecklist" autocomplete="off">
+                <section class="ri-card">
+                    <h2>ข้อมูลที่พักและสัญญา</h2>
+                    <div class="ri-grid">
+                        <label>ชื่อตึกพัก<input name="building"></label>
+                        <label>ชั้น<input name="floor"></label>
+                        <label>หมายเลขยูนิต<input name="unit"></label>
+                        <label>ระยะสัญญา<input name="contractTerm" placeholder="เช่น 1 ปี"></label>
+                        <label>ประเภทห้อง<input name="roomType" placeholder="เช่น 3 ห้องนอน 2 ห้องน้ำ"></label>
+                        <label>เข้าพักได้วันที่<input type="date" name="availableDate"></label>
+                        <label>พักได้จำนวน (คน)<input name="capacity" data-number></label>
+                        <label>ค่าเช่าต่อเดือน<input name="rentMonth" data-number></label>
+                        <label>ค่าเช่าต่อคน<input name="rentPerson" data-number></label>
+                        <label>ค่าจองมัดจำ<input name="booking" data-number></label>
+                        <label>ค่ามัดจำประกัน<input name="securityDeposit" data-number></label>
+                        <label>ค่าเช่าล่วงหน้า<input name="advanceRent" placeholder="เช่น 4 เดือน"></label>
+                        <label>ระยะทางถึง MT (กม.)<input name="distanceMT" data-number></label>
+                        <label>ระยะทางถึง OR (กม.)<input name="distanceOR" data-number></label>
+                    </div>
+                </section>
+
+                <section class="ri-card">
+                    <h2>ข้อมูลการตรวจและติดตาม</h2>
+                    <div class="ri-grid">
+                        <label>วันที่ตรวจก่อนวางมัดจำ<input type="date" name="bookingInspectDate"></label>
+                        <label>จำนวนปัญหาที่ต้องติดตาม<input name="bookingIssueCount" data-number></label>
+                        <label>วันที่จะแก้ไขเสร็จ<input type="date" name="bookingFixDate"></label>
+                        <label class="ri-full">ปัญหาก่อนวางมัดจำ <small>(บรรทัดละ 1 ข้อ เช่น "1. ...")</small><textarea name="bookingIssues" rows="4"></textarea></label>
+                        <label>วันที่ตรวจก่อนเข้าอยู่อาศัย<input type="date" name="contractInspectDate"></label>
+                        <label>จำนวนปัญหาที่ต้องติดตาม<input name="contractIssueCount" data-number></label>
+                        <label>วันที่จะแก้ไขเสร็จ<input type="date" name="contractFixDate"></label>
+                        <label class="ri-full">ปัญหาก่อนทำสัญญาเช่า<textarea name="contractIssues" rows="4"></textarea></label>
+                    </div>
+                    <p class="ri-hint"><b>เกณฑ์:</b> ปัญหาก่อนมัดจำต้องแก้ภายใน 5 วันทำการ และปัญหาต้องแก้เสร็จก่อนเซ็นสัญญา</p>
+                    <div class="ri-grid ri-grid-2">
+                        <label>สรุปก่อนวางมัดจำ
+                            <select name="bookingSummary">
+                                <option value="">เลือกสถานะ</option>
+                                <option>พร้อมวางมัดจำ</option>
+                                <option>พร้อม แต่แก้ภายใน 5 วัน</option>
+                                <option>ไม่พร้อม / ไม่มัดจำ</option>
+                            </select>
+                        </label>
+                        <label>สรุปก่อนทำสัญญา
+                            <select name="contractSummary">
+                                <option value="">เลือกสถานะ</option>
+                                <option>พร้อมอยู่ / ทำสัญญา</option>
+                                <option>พร้อม แต่แก้ก่อนทำสัญญา</option>
+                                <option>ไม่พร้อม / ไม่ทำสัญญา</option>
+                            </select>
+                        </label>
+                    </div>
+                </section>
+
+                <div id="riSections"></div>
+
+                <section class="ri-card">
+                    <h2>การลงนาม</h2>
+                    <p class="ri-hint">ชื่อผู้ลงนามที่มีลายเซ็นประจำตัวในระบบ จะใส่ลายเซ็นใน PDF ให้อัตโนมัติ</p>
+                    <div class="ri-grid ri-grid-2">
+                        <label>ผู้ตรวจสอบก่อนมัดจำ<input name="sign.bookingInspector"></label>
+                        <label>วันที่<input type="date" name="sign.bookingInspectorDate"></label>
+                        <label>ผู้ตรวจเช็ค<input name="sign.checker"></label>
+                        <label>วันที่<input type="date" name="sign.checkerDate"></label>
+                        <label>ผู้อนุมัติการมัดจำ<input name="sign.approver"></label>
+                        <label>วันที่<input type="date" name="sign.approverDate"></label>
+                        <label>ผู้ตรวจสอบก่อนทำสัญญา<input name="sign.contractInspector"></label>
+                        <label>วันที่<input type="date" name="sign.contractInspectorDate"></label>
+                    </div>
+                </section>
+            </form>
+            <div class="ri-bar">
+                <button type="button" class="ri-btn ri-btn-ghost" data-action="clear-checklist">ล้างแบบฟอร์ม</button>
+                <span class="ri-spacer"></span>
+                <button type="button" class="ri-btn ri-btn-ghost" data-action="save-checklist">บันทึก</button>
+                <button type="button" class="ri-btn ri-btn-primary" data-action="pdf-checklist">ดาวน์โหลด PDF แบบตรวจรับ</button>
+            </div>
+        </section>
+
+        <!-- ================= รายงานรูปภาพ ================= -->
+        <section id="tab-photos" class="ri-tab" hidden>
+            <section class="ri-card">
+                <div class="ri-grid ri-grid-2">
+                    <label>ชื่อที่พัก/โครงการ<input id="riProject"></label>
+                    <label>วันที่ตรวจ<input id="riInspectionDate" type="date"></label>
+                </div>
+            </section>
+
+            <section class="ri-card">
+                <div class="ri-card-head">
+                    <h2>รูปภาพ</h2>
+                    <span id="riPhotoCount"></span>
+                </div>
+                <p class="ri-hint">เลือกรูปในแต่ละกล่อง (เลือกหลายรูปพร้อมกันได้) กดที่รูปเพื่อดูขนาดใหญ่ ใช้ปุ่มขึ้น/ลงเพื่อจัดลำดับ</p>
+                <div id="riPhotoGrid" class="ri-photo-grid"></div>
+                <button type="button" class="ri-add" data-action="add-photo">+ เพิ่มรูปภาพ</button>
+            </section>
+
+            <section class="ri-card">
+                <h2>แผนที่และระยะทางจากสถานที่ทำงานมายังที่พัก</h2>
+                <p class="ri-hint">กรอกสถานที่ทำงาน ที่พัก ระยะทาง และเวลาเดินทาง เปิดเส้นทางใน Google Maps แล้วอัปโหลดภาพเส้นทางเพื่อใส่ใน PDF</p>
+                <div id="riMaps" class="ri-maps"></div>
+            </section>
+
+            <div class="ri-bar">
+                <button type="button" class="ri-btn ri-btn-ghost" data-action="clear-photos">ล้างรายงาน</button>
+                <span class="ri-spacer"></span>
+                <button type="button" class="ri-btn ri-btn-ghost" data-action="save-photos">บันทึก</button>
+                <button type="button" class="ri-btn ri-btn-ghost" data-action="xlsx-photos">ดาวน์โหลด Excel</button>
+                <button type="button" class="ri-btn ri-btn-primary" data-action="pdf-photos">ดาวน์โหลด PDF รายงานรูปภาพ</button>
+            </div>
+        </section>
+    </main>
+
+    <dialog id="riLightbox" class="ri-lightbox">
+        <button type="button" class="ri-lightbox-close" aria-label="ปิด">×</button>
+        <img alt="รูปภาพขยาย">
+    </dialog>
+
+    <div id="riBusy" class="ri-busy" hidden><div><span class="ri-spinner"></span><p id="riBusyText">กำลังสร้าง PDF...</p></div></div>
+    <div id="riToast" class="ri-toast" role="status"></div>
+
+    <script src="config.js"></script>
+    <script src="room-inspection.js?v=20261025-1"></script>
+</body>
+</html>
