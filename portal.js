@@ -750,6 +750,7 @@ function renderTaskContent(
 
     elements.catalogView.hidden = true;
     elements.workspaceView.hidden = false;
+    document.getElementById('topbarBackButton').hidden = false;
     elements.workspaceView.classList.toggle(
         'is-open-treatment',
         service.id === 'insurance' &&
@@ -912,6 +913,7 @@ function renderTaskContent(
         );
         elements.workspaceView.hidden = true;
         elements.catalogView.hidden = false;
+        document.getElementById('topbarBackButton').hidden = true;
     }
 
     function openMobileNavigation() {
@@ -1036,6 +1038,11 @@ document
 
     document
         .getElementById('workspaceBackButton')
+        .addEventListener('click', closeWorkspace);
+
+    // ปุ่มย้อนกลับบนแถบบน (แทนเมนูซ้ายที่ถูกซ่อน) — กลับไปหน้าศูนย์รวมงาน
+    document
+        .getElementById('topbarBackButton')
         .addEventListener('click', closeWorkspace);
 
     document

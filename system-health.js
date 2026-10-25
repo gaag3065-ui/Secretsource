@@ -201,7 +201,7 @@
             const data = await response.json();
             isAdmin = String(data.user?.role || '').trim().toUpperCase() === 'ADMIN';
         } catch { /* ใช้สิทธิ์ผู้ใช้ทั่วไป */ }
-        ensureRestartButton();
+        // ปุ่ม "รีสตาร์ตระบบ" ถูกแทนด้วยปุ่ม "ย้อนกลับ" บนแถบบน (portal.html) จึงไม่สร้างปุ่มนี้แล้ว
         check();
         timer = setInterval(check, POLL_MS);
         document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });

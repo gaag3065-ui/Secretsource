@@ -1,31 +1,26 @@
-/* แถบเมนูซ้ายพับเก็บเหลือแค่ไอคอน — ชี้เมาส์แล้วกางออกทับเนื้อหา (ไม่ดันหน้าจอ) */
+/* เมนูซ้ายเลิกใช้บนจอคอมพิวเตอร์ — เข้างานจากการ์ดหน้าศูนย์รวมงานอย่างเดียว และกลับด้วยปุ่ม "ย้อนกลับ" บนแถบบน
+   คงแถบว่างกว้าง 64px สีเดิมไว้ให้หน้าตาเหมือนเดิม แต่ไม่มีไอคอน ไม่กดได้ และชี้เมาส์แล้วไม่กางออก */
 @media (min-width: 821px) and (hover: hover) {
     .app-body { --first-sidebar-width: 64px; }
 
     .first-sidebar {
-        position: relative;
-        z-index: 45;
         width: 64px;
         overflow: hidden;
-        padding-left: 10px;
-        padding-right: 10px;
-        transition: width 180ms ease, box-shadow 180ms ease;
+        pointer-events: none;
     }
-    .first-sidebar:hover,
-    .first-sidebar:has(:focus-visible) {
-        width: 220px;
-        box-shadow: 8px 0 28px rgba(16, 24, 40, 0.16);
-        transition-delay: 80ms;
-    }
-
-    .first-menu-item { width: 200px; padding-left: 12px; }
-    .first-menu-item span { white-space: nowrap; }
-
-    .first-sidebar .sidebar-account { width: 200px; padding-left: 4px; }
-    .first-sidebar .account-information,
-    .first-sidebar .account-logout { opacity: 0; transition: opacity 120ms ease; }
-    .first-sidebar:hover .account-information,
-    .first-sidebar:hover .account-logout,
-    .first-sidebar:has(:focus-visible) .account-information,
-    .first-sidebar:has(:focus-visible) .account-logout { opacity: 1; }
+    .first-sidebar > * { visibility: hidden; }
 }
+
+.topbar-back-button {
+    margin-left: 8px;
+    border: 1px solid #d0d5dd;
+    background: #fff;
+    color: #344054;
+    border-radius: 999px;
+    padding: 5px 12px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+.topbar-back-button:hover { border-color: #635bff; color: #635bff; }
+.topbar-back-button[hidden] { display: none; }
