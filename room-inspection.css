@@ -97,3 +97,8 @@ button, input, select, textarea { font: inherit; }
     .ri-grid-2 { grid-template-columns: 1fr; }
     .ri-page { padding: 12px 12px 96px; }
 }
+
+.ri-warn { border-color: #f3d9a4; background: #fffcf5; }
+.ri-warn h2 { color: #a35d00; }
+.ri-warn ul { margin: 0 0 10px; padding-left: 20px; font-size: 13px; }
+.ri-warn li { margin-bottom: 4px; word-break: break-word; }

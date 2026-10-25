@@ -305,6 +305,7 @@
             await download('/pdf', { kind: 'photos', data }, `กำลังสร้าง PDF รายงานรูปภาพ (${data.photos.length} รูป)...`);
         },
         'xlsx-photos': () => download('/xlsx', { kind: 'photos', data: photoData() }, 'กำลังสร้างไฟล์ Excel...'),
+        recheck: () => checkHealth(true),
         'add-photo': () => { state.photos.push(blankPhoto()); markDirty(); renderPhotos(); },
         'clear-checklist': () => { if (confirm('ล้างข้อมูลแบบตรวจรับทั้งหมด? (ข้อมูลที่บันทึกไว้จะยังอยู่จนกว่าจะกดบันทึก)')) { fillChecklist({}); markDirty(); } },
         'clear-photos': () => { if (confirm('ล้างรายงานรูปภาพทั้งหมด? (รูปที่อัปโหลดแล้วยังเก็บอยู่ในระบบ)')) { fillPhotos(null); markDirty(); } }
@@ -331,6 +332,18 @@
         if (button) showTab(button.dataset.tab);
     });
 
+    // ---------------------------------------------------------------- ความพร้อมสร้าง PDF ของเครื่องหลังบ้าน
+    async function checkHealth(force = false) {
+        try {
+            const result = await request(`/health${force ? '?refresh=1' : ''}`);
+            $('riHealth').hidden = result.ready;
+            $('riHealthList').innerHTML = (result.problems || []).map(problem => `<li>${esc(problem)}</li>`).join('');
+            if (force && result.ready) toast('เครื่องหลังบ้านพร้อมสร้าง PDF แล้ว');
+        } catch (error) {
+            if (force) toast(error.message, true);
+        }
+    }
+
     // ---------------------------------------------------------------- เริ่มต้น
     async function loadDraft(kind) {
         try {
@@ -348,6 +361,7 @@
         const [checklist, photos] = await Promise.all([loadDraft('checklist'), loadDraft('photos')]);
         if (checklist.data) fillChecklist(checklist.data);
         if (photos.data) fillPhotos(photos.data);
+        checkHealth();
         const latest = [checklist.savedAt, photos.savedAt].filter(Boolean).sort().pop();
         markSaved(latest);
     })();
