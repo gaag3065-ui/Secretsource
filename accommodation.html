@@ -8,6 +8,7 @@
 
     <link rel="stylesheet" href="accommodation.css?v=20260902-accommodation-audit-01">
     <link rel="stylesheet" href="responsive.css?v=20260902-mobile-layout-02">
+    <link rel="stylesheet" href="accommodation-header.css?v=20261025-1">
         <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -22,7 +23,34 @@
 <body>
     <main class="page-main">
         <div class="accommodation-layout">
-        <section class="dashboard-summary-section dashboard-summary-top" aria-labelledby="dashboardSummaryTitle">
+        <!-- หัวหน้า: ภาพรวมจาก Google Sheet (แทนส่วนหัวเดิม) — accommodation-header.js -->
+        <section class="as-head" aria-labelledby="asTitle">
+            <header class="as-header">
+                <div>
+                    <p class="as-eyebrow">ACCOMMODATION REGISTRY · GOOGLE SHEET</p>
+                    <h1 id="asTitle">จัดการห้องพักพนักงาน</h1>
+                    <p class="as-sub">นับจากแท็บ "ข้อมูลเบื้องต้น" (เฉพาะสถานะ on work) แบบเรียลไทม์ — <span id="asUpdated">กำลังโหลด...</span></p>
+                </div>
+                <div class="as-actions">
+                    <a id="asSheetLink" class="as-btn as-btn-ghost" href="#" target="_blank" rel="noopener" hidden>เปิด Google Sheet ↗</a>
+                    <button id="asRefresh" class="as-btn as-btn-ghost" type="button">รีเฟรชตอนนี้</button>
+                    <button id="asCreate" class="as-btn as-btn-primary" type="button">+ สร้างที่พักใหม่</button>
+                </div>
+            </header>
+            <div class="as-stats" id="asStats" aria-label="สรุป"></div>
+            <div class="as-toolbar">
+                <div class="as-chips" id="asAreaChips"></div>
+                <div class="as-chips" id="asStatusChips">
+                    <button type="button" data-status="all" class="is-on">ทั้งหมด</button>
+                    <button type="button" data-status="has">มีพนักงาน</button>
+                    <button type="button" data-status="empty">ยังไม่มีพนักงาน</button>
+                </div>
+                <input id="asSearch" type="search" placeholder="ค้นหาชื่อที่พัก หรือชื่อพนักงาน..." autocomplete="off">
+            </div>
+        </section>
+
+        <!-- ส่วนหัวเดิม ซ่อนไว้ (ยังอยู่ใน DOM ให้ accommodation.js ทำงานได้ตามเดิม) -->
+        <section class="dashboard-summary-section dashboard-summary-top accommodation-legacy-head" aria-labelledby="dashboardSummaryTitle" hidden>
             <div class="summary-sidebar-heading">
                 <span class="section-label">PORTFOLIO OVERVIEW</span>
                 <h2 id="dashboardSummaryTitle">ภาพรวมวันนี้</h2>
@@ -41,8 +69,8 @@
         <div class="accommodation-shell">
         <div class="workspace-main">
             <section id="accommodationDataPanel" class="accommodation-data-panel" aria-labelledby="accommodationDataTitle">
-                <div id="summaryCompanyFilters" class="summary-company-filters" aria-label="กรองตามบริษัท (เลือกได้หลายบริษัท)"></div>
-                <div class="accommodation-data-heading">
+                <div id="summaryCompanyFilters" class="summary-company-filters accommodation-legacy-head" aria-label="กรองตามบริษัท (เลือกได้หลายบริษัท)" hidden></div>
+                <div class="accommodation-data-heading accommodation-legacy-head" hidden>
                     <div>
                         <span class="section-label">ACCOMMODATION OVERVIEW</span>
                         <h2 id="accommodationDataTitle">จำนวนตึก</h2>
@@ -62,6 +90,27 @@
         </div>
         </div>
     </main>
+
+    <dialog id="asDialog" class="as-dialog">
+        <form id="asForm" method="dialog">
+            <h2>สร้างที่พักใหม่</h2>
+            <p class="as-hint">บันทึกลงแท็บ "ข้อมูลที่พัก" ใน Google Sheet ทันที</p>
+            <label>พื้นที่ <select name="area" required><option value="">เลือกพื้นที่</option><option>GE</option><option>ML</option><option>PP</option><option>SL</option><option>TH</option></select></label>
+            <label>ชื่อที่พัก <input name="name" required maxlength="200" placeholder="เช่น Sky Plus"></label>
+            <label>ชื่อเรียกอื่น (ถ้ามี) <input name="aliases" maxlength="600" placeholder="ชื่อที่พิมพ์ในชีตข้อมูลเบื้องต้น คั่นด้วย ;"></label>
+            <div class="as-form-row">
+                <label>จำนวนชั้น <input name="floors" inputmode="numeric" pattern="\d*" maxlength="4"></label>
+                <label>จำนวนห้อง <input name="rooms" inputmode="numeric" pattern="\d*" maxlength="5"></label>
+            </div>
+            <label>ที่อยู่ / หมายเหตุ <textarea name="note" maxlength="500" rows="2"></textarea></label>
+            <p id="asFormError" class="as-error" hidden></p>
+            <div class="as-dialog-actions">
+                <button type="button" class="as-btn as-btn-ghost" id="asCancel">ยกเลิก</button>
+                <button type="submit" class="as-btn as-btn-primary" id="asSave">บันทึกลง Google Sheet</button>
+            </div>
+        </form>
+    </dialog>
+    <div id="asToast" class="as-toast" role="status"></div>
 
     <div id="managementModal" class="modal-overlay" hidden>
         <section class="management-modal" role="dialog" aria-modal="true" aria-labelledby="managementModalTitle">
@@ -152,7 +201,8 @@
     </div>
 
     <script src="config.js"></script>
-    <script src="accommodation.js?v=20260902-accommodation-audit-01"></script>
+    <script src="accommodation.js?v=20261025-1"></script>
+    <script src="accommodation-header.js?v=20261025-1"></script>
     <script src="pwa.js"></script>
 </body>
 </html>

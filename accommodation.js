@@ -18,6 +18,9 @@ const accommodationState = {
     // ตัวกรองภายในการ์ดแต่ละตึก (จำนวนชั้น/ห้องทะเบียน/ห้องมีผู้พัก/ห้องว่าง/พนักงาน
     // จับคู่แล้ว/พนักงานต้นทาง/รอตรวจสอบ) แยกสถานะต่อตึก คีย์ = building.id
     buildingCardFilters: new Map(),
+    // ตัวกรองจากหัวหน้า (หัวแบบ Google Sheet ใน accommodation-header.js): มี/ไม่มีพนักงาน + คำค้น
+    headerStatus: 'all',
+    headerSearch: '',
     expandedSummaryRecord: null,
     buildingFilter: '',
     refreshTimer: null,
@@ -678,7 +681,8 @@ function renderAccommodationDataPanel() {
         unmatched: ['รอตรวจสอบการจับคู่', 'พนักงานที่ยังจับคู่กับทะเบียนห้องไม่ได้', data.unmatched, renderAccommodationEmployeeCard]
     }[view] || ['จำนวนตึก', 'อาคารทั้งหมด 1 กล่องต่อ 1 ตึก', data.buildings, renderAccommodationBuildingCard];
 
-    const [heading, helper, items, renderCard] = viewConfig;
+    const [heading, helper, allItems, renderCard] = viewConfig;
+    const items = view === 'buildings' ? allItems.filter(matchesHeaderFilter) : allItems;
     title.textContent = heading;
     description.textContent = `${helper} · พบ ${items.length.toLocaleString()} รายการ`;
     grid.replaceChildren();
@@ -717,6 +721,32 @@ function renderAccommodationDataPanel() {
         grid.appendChild(card);
     });
 }
+
+// การ์ดตึกผ่านตัวกรองบนหัวหน้าหรือไม่ — นับพนักงานแบบเดียวกับในการ์ด (ต้นทาง หรือที่จับคู่ห้องแล้ว)
+function matchesHeaderFilter(item) {
+    const { building, area, rooms } = item;
+    const sameBuilding = employee => employee.workArea === area &&
+        normalizeBuildingName(employee.building) === normalizeBuildingName(building.name);
+    const occupants = rooms.flatMap(room => room.occupants || []);
+    const people = [...occupants, ...accommodationState.records.filter(sameBuilding)];
+    const status = accommodationState.headerStatus;
+    if (status === 'has' && !people.length) return false;
+    if (status === 'empty' && people.length) return false;
+    const query = accommodationState.headerSearch.normalize('NFKC').toLowerCase();
+    if (!query) return true;
+    return [building.name, ...people.flatMap(person => [person.employeeName, person.employeeId])]
+        .some(text => String(text || '').normalize('NFKC').toLowerCase().includes(query));
+}
+
+// ให้หัวหน้า (accommodation-header.js) สั่งกรองการ์ดตึกได้: { area, status, search }
+window.applyAccommodationHeaderFilter = ({ area, status, search } = {}) => {
+    if (area !== undefined) accommodationState.summaryAreaFilter = area === 'all' ? 'ALL' : area;
+    if (status !== undefined) accommodationState.headerStatus = status;
+    if (search !== undefined) accommodationState.headerSearch = search;
+    accommodationState.activeSummaryView = 'buildings';
+    accommodationState.expandedSummaryRecord = null;
+    renderAccommodationDataPanel();
+};
 
 function renderAccommodationBuildingCard(item, expanded) {
     const { building, area, rooms, unmatched = [], areaUnmatchedCount = 0 } = item;

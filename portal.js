@@ -89,18 +89,10 @@ const services = [
         tasks: [
             {
                 route: 'room-search',
-                title: 'ค้นหาห้องพัก',
-                icon: 'search',
-                page:
-                    'accommodation.html' +
-                    '?view=search'
-            },
-            {
-                // ทะเบียนที่พักบน Google Sheet + จำนวนพนักงานแต่ละที่พักแบบเรียลไทม์ (ไม่ต้องกดซิงก์)
-                route: 'accommodation-sheet',
-                title: 'ภาพรวมที่พัก (Google Sheet)',
+                // หัวหน้าเป็นภาพรวมจาก Google Sheet (เดิมเป็นเมนู "ภาพรวมที่พัก (Google Sheet)" แยก)
+                title: 'จัดการห้องพักพนักงาน',
                 icon: 'building',
-                page: 'accommodation-sheet.html?v=20261024-1'
+                page: 'accommodation.html?v=20261025-1'
             },
             {
                 // แบบตรวจรับห้องพัก + รายงานรูปภาพ → PDF (ย้ายมาจากระบบในเครื่อง "ตรวจสอบที่พัก")
