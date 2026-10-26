@@ -46,7 +46,7 @@
             const occupied = unit.rooms.reduce((sum, room) => sum + room.occupied, 0);
             const companies = {};
             unit.rooms.forEach(room => Object.entries(room.companies).forEach(([company, n]) => { companies[company] = (companies[company] || 0) + n; }));
-            return { building: building.building, address: building.address, unit: unit.unit, level: unit.level, rooms: unit.rooms.length, beds, occupied, companies, utility: unit.utility, contract: contractOf.get(`${building.building}|${unit.unit}`) || null };
+            return { building: building.building, address: building.address, unit: unit.unit, level: unit.level, rooms: unit.rooms.length, roomList: unit.rooms, beds, occupied, companies, utility: unit.utility, contract: contractOf.get(`${building.building}|${unit.unit}`) || null };
         }));
         const buildings = raw.buildings.map(building => {
             const own = units.filter(unit => unit.building === building.building);
@@ -62,6 +62,7 @@
     // ---------------------------------------------------------------- ชิ้นส่วน HTML
     const code = name => `<span class="lg-code" style="--c:${state.data.color[name] || '#6c7280'}">${esc(state.data.codes[name] || '---')}</span>`;
     const focusAttr = name => `data-b="${esc(name)}"`; // คลาส is-focus ใส่ทีหลังใน render()
+    const viewButton = name => `<button type="button" class="lg-view" data-view="${esc(name)}">ดูห้องพัก →</button>`;
     const section = (no, title, intro, body, legend = '') => `<section class="lg-sec">
             <div class="lg-rule"><b>${String(no).padStart(2, '0')}</b><i></i></div>
             <div class="lg-head"><div><h2>${title}</h2>${intro ? `<p>${intro}</p>` : ''}</div>${legend}</div>
@@ -103,7 +104,7 @@
         const rows = d.buildingsSum.slice().sort((a, b) => b.occupied - a.occupied || a.name.localeCompare(b.name)).map(b => {
             const pct = b.beds ? b.occupied / b.beds * 100 : 0;
             return `<div class="lg-bar-row" ${focusAttr(b.name)}>
-                    <div class="lg-who">${code(b.name)}<span><b>${esc(b.name)}</b><small>${b.units} ยูนิต · ${b.rooms} ห้อง</small></span></div>
+                    <div class="lg-who">${code(b.name)}<span><b>${esc(b.name)}</b><small>${b.units} ยูนิต · ${b.rooms} ห้อง</small>${viewButton(b.name)}</span></div>
                     <div class="lg-track" style="--c:${d.color[b.name]}"><span style="width:${pct}%;background:var(--lg-hot)"></span><i style="left:${pct}%"></i></div>
                     <span class="lg-num is-hot">${b.occupied}</span><span class="lg-num is-teal">${b.beds - b.occupied}</span><span class="lg-num is-strong">${b.beds}</span>
                 </div>`;
@@ -138,7 +139,7 @@
         const list = d.units.slice().sort((a, b) => { const x = pick(a), y = pick(b); return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'th', { numeric: true })) * (asc ? 1 : -1); });
         const th = (k, label, num) => `<th data-sort="${k}" class="${num ? 'lg-n ' : ''}${key === k ? `is-sorted${asc ? ' is-asc' : ''}` : ''}">${label}</th>`;
         const rows = list.map(u => `<tr ${focusAttr(u.building)}>
-                <td>${code(u.building)} ${esc(u.building)}<small>${esc(u.address)}</small></td>
+                <td>${code(u.building)} ${esc(u.building)}<small>${esc(u.address)}</small>${viewButton(u.building)}</td>
                 <td class="lg-n">${esc(u.unit)}<small>ชั้น ${esc(u.level)}</small></td>
                 <td class="lg-n">${u.rooms}</td><td class="lg-n">${u.beds}</td><td class="lg-n">${u.occupied}</td>
                 <td class="lg-n ${u.beds - u.occupied ? '' : 'lg-dim'}">${u.beds - u.occupied}</td>
@@ -188,7 +189,90 @@
         host.querySelectorAll('[data-b]').forEach(node => node.classList.toggle('is-focus', node.dataset.b === state.focus));
     }
 
+    // ---------------------------------------------------------------- หน้าต่างรายละเอียดที่พักทีละแห่ง (ปุ่ม "ดูห้องพัก")
+    const dialog = Object.assign(document.createElement('dialog'), { className: 'lg lg-dialog' });
+    dialog.setAttribute('aria-label', 'รายละเอียดที่พัก');
+    document.body.append(dialog);
+    dialog.addEventListener('click', event => {
+        if (event.target === dialog || event.target.closest('[data-close]')) dialog.close();
+    });
+
+    // งวดค่าเช่า: ถ้ามีเกิน 6 งวด (สัญญาจ่ายรายเดือน) พับไว้ แสดงงวดถัดไปบนหัวข้อแทน
+    function paymentTable(item, rows) {
+        const table = `<table class="lg-mini"><thead><tr><th>งวด</th><th>ช่วงเดือน</th><th class="lg-n">กำหนดจ่าย</th><th class="lg-n">ยอด</th></tr></thead><tbody>${rows}</tbody></table>`;
+        const list = item.payments || [];
+        if (list.length <= 6) return table;
+        const next = list.find(p => p.due && parseDate(p.due) >= today());
+        return `<details class="lg-pay"><summary>งวดค่าเช่า ${list.length} งวด${next ? ` · งวดถัดไป ${thDate(next.due)} (${money(next.amount)})` : ''}</summary>${table}</details>`;
+    }
+
+    function contractBlock(item) {
+        if (!item) return '<p class="lg-dim lg-unit-note">ยังไม่มีสัญญาเช่าที่จับคู่กับยูนิตนี้</p>';
+        const now = today();
+        const end = parseDate(item.end);
+        const left = end ? Math.round((end - now) / DAY) : null;
+        const cls = left === null ? '' : left < 0 ? 'is-over' : left <= 60 ? 'is-soon' : left <= 120 ? 'is-near' : '';
+        const payer = { 'ผู้เช่า': 'ผู้เช่าจ่าย', 'เจ้าของ': 'เจ้าของจ่าย' };
+        const kinds = { electricity: 'ค่าไฟ', water: 'ค่าน้ำ', maintenance: 'ค่าส่วนกลาง' };
+        const utilities = Object.entries(item.utilities || {}).filter(([, v]) => v).map(([k, v]) => `${kinds[k] || k}: ${payer[v] || v}`);
+        const facts = [
+            ['บริษัท', `<span class="lg-co">${esc(item.company)}</span>`],
+            ['ระยะสัญญา', `${thDate(item.start)} – ${thDate(item.end)} <span class="lg-left ${cls}">${left === null ? '' : left < 0 ? 'หมดแล้ว' : `เหลือ ${left} วัน`}</span>`],
+            ['ค่าเช่า/เดือน', item.rent ? `<span class="lg-num">${money(item.rent)}</span>` : '-'],
+            ['มัดจำ', item.deposit ? `<span class="lg-num">${money(item.deposit)}</span>` : '-'],
+            ['ที่อยู่', esc(item.address || '-')],
+            ['ผู้ให้เช่า', esc(item.lessor || '-')],
+            ['ค่าสาธารณูปโภค', esc(utilities.join(' · ') || '-')],
+            ['ออกก่อนกำหนด', esc(item.earlyExit || '-')]
+        ];
+        const payments = (item.payments || []).map(p => {
+            const done = p.atSigning || (p.due && parseDate(p.due) < now);
+            return `<tr class="${done ? 'lg-dim' : ''}"><td>งวด ${p.no}</td><td>${esc(p.period || '')}</td><td class="lg-n">${p.atSigning ? 'วันเซ็นสัญญา' : thDate(p.due)}</td><td class="lg-n">${money(p.amount)}</td></tr>`;
+        }).join('');
+        return `<dl class="lg-facts">${facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+            ${payments ? paymentTable(item, payments) : ''}
+            ${(item.flags || []).length ? `<ul class="lg-flags">${item.flags.map(flag => `<li>${esc(flag)}</li>`).join('')}</ul>` : ''}`;
+    }
+
+    function openBuilding(name) {
+        const d = state.data;
+        const units = d.units.filter(u => u.building === name);
+        const unitKeys = new Set(units.map(u => u.unit));
+        // สัญญาของที่พักนี้ที่ยูนิตไม่อยู่ในผังห้องรอบบิล (เช่น เลขยูนิตไม่ตรง หรือเพิ่งเริ่มสัญญา)
+        const others = d.contracts.filter(item => (item.housingBuilding || item.building) === name && !unitKeys.has(item.unitKey));
+        const sum = f => units.reduce((s, u) => s + f(u), 0);
+        const beds = sum(u => u.beds), occupied = sum(u => u.occupied);
+        const rent = sum(u => u.contract?.rent || 0) + others.reduce((s, item) => s + (item.rent || 0), 0);
+        const stats = [['ยูนิต', units.length], ['ห้อง', sum(u => u.rooms)], ['เตียง', beds], ['ผู้พัก', occupied], ['ว่าง', beds - occupied],
+            [`ค่าน้ำ·ไฟ (${esc(d.currency)})`, money(sum(u => u.utility?.total || 0))], [`ค่าเช่า/เดือน (${esc(d.currency)})`, money(rent)]];
+        const unitCards = units.map(u => {
+            const rooms = u.roomList.map(room => `<tr><td>ห้อง ${esc(room.room)}</td><td class="lg-n">${room.beds}</td><td class="lg-n">${room.occupied}</td><td class="lg-n ${room.beds - room.occupied ? 'is-free' : 'lg-dim'}">${room.beds - room.occupied}</td><td>${Object.entries(room.companies).map(([c, n]) => `<span class="lg-co">${esc(c)} ${n}</span>`).join('') || '<span class="lg-dim">ว่าง</span>'}</td></tr>`).join('');
+            const util = u.utility
+                ? `<div class="lg-util">${UTIL.filter(([key]) => u.utility[key]).map(([key, label, c]) => `<span style="--c:${c}">${label} <b class="lg-num">${money(u.utility[key])}</b></span>`).join('')}<span class="is-total">รวม <b class="lg-num">${money(u.utility.total)}</b></span>${u.utility.note ? `<small>${esc(u.utility.note)}</small>` : ''}</div>`
+                : '<p class="lg-dim lg-unit-note">ไม่มีข้อมูลค่าน้ำค่าไฟรอบนี้</p>';
+            return `<article class="lg-unit">
+                    <header><h3>ยูนิต ${esc(u.unit)}</h3><span>ชั้น ${esc(u.level)} · ${u.rooms} ห้อง · ผู้พัก ${u.occupied}/${u.beds}</span></header>
+                    <div class="lg-unit-grid">
+                        <div><h4>ห้องและเตียง</h4><table class="lg-mini"><thead><tr><th>ห้อง</th><th class="lg-n">เตียง</th><th class="lg-n">ผู้พัก</th><th class="lg-n">ว่าง</th><th>บริษัท</th></tr></thead><tbody>${rooms}</tbody></table>
+                            <h4>ค่าน้ำ · ค่าไฟ รอบบิล</h4>${util}</div>
+                        <div><h4>สัญญาเช่า</h4>${contractBlock(u.contract)}</div>
+                    </div>
+                </article>`;
+        }).join('');
+        const otherCards = others.map(item => `<article class="lg-unit"><header><h3>ยูนิต ${esc(item.unit)}</h3><span>มีสัญญา แต่ไม่อยู่ในผังห้องรอบบิล ${esc(d.month)}</span></header><h4>สัญญาเช่า</h4>${contractBlock(item)}</article>`).join('');
+        dialog.innerHTML = `<div class="lg-dialog-head">
+                <div>${code(name)}<h2>${esc(name)}</h2><p>${esc(units[0]?.address || others[0]?.address || '')}</p></div>
+                <button type="button" class="lg-close" data-close aria-label="ปิด">×</button>
+            </div>
+            <div class="lg-dialog-stats">${stats.map(([k, v]) => `<div><small>${k}</small><strong class="lg-num">${v}</strong></div>`).join('')}</div>
+            <div class="lg-dialog-body">${unitCards}${otherCards}${unitCards || otherCards ? '' : '<p class="lg-dim">ไม่มีข้อมูลยูนิต</p>'}</div>`;
+        dialog.showModal();
+        dialog.scrollTop = 0;
+    }
+
     host.addEventListener('click', event => {
+        const view = event.target.closest('[data-view]');
+        if (view) return openBuilding(view.dataset.view);
         const focus = event.target.closest('[data-focus]');
         if (focus) { state.focus = state.focus === focus.dataset.focus ? '' : focus.dataset.focus; return render(); }
         const sort = event.target.closest('th[data-sort]');

@@ -121,3 +121,46 @@ html, body { height: auto; min-height: 100%; overflow: visible auto; }
 .accommodation-layout .accommodation-shell { height: auto; }
 .workspace-main { display: block; height: auto; }
 .accommodation-data-panel { height: auto; overflow: visible; }
+
+/* ---- ปุ่ม "ดูห้องพัก" และหน้าต่างรายละเอียดที่พัก ---- */
+.lg-view { display: inline-block; margin-top: 4px; padding: 2px 10px; border: 1px solid var(--lg-ink); border-radius: 999px; background: #fff; color: var(--lg-ink); font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.lg-view:hover { background: var(--lg-ink); color: #fff; }
+.lg td .lg-view { display: table; }
+
+.lg.lg-dialog { width: min(1080px, calc(100vw - 32px)); max-height: calc(100vh - 40px); margin: auto; padding: 0; border: 0; border-radius: 14px; overflow: auto; box-shadow: 0 24px 70px rgba(16, 24, 40, .3); }
+.lg-dialog::backdrop { background: rgba(16, 24, 40, .45); }
+.lg-dialog-head { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; gap: 16px; padding: 18px 22px 14px; background: var(--lg-bg); border-bottom: 2px solid var(--lg-ink); }
+.lg-dialog-head h2 { display: inline; margin: 0 0 0 8px; font-family: Anuphan, "IBM Plex Sans Thai", sans-serif; font-size: 24px; vertical-align: middle; }
+.lg-dialog-head p { margin: 4px 0 0; font-size: 12px; color: var(--lg-muted); }
+.lg-close { width: 36px; height: 36px; flex: none; border: 1px solid var(--lg-line); border-radius: 50%; background: #fff; font-size: 22px; line-height: 1; cursor: pointer; }
+.lg-dialog-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0; border-bottom: 1px solid var(--lg-line); }
+.lg-dialog-stats div { padding: 12px 22px; border-right: 1px solid var(--lg-line); }
+.lg-dialog-stats small { display: block; font-family: var(--lg-mono); font-size: 10.5px; letter-spacing: .1em; color: var(--lg-muted); }
+.lg-dialog-stats strong { font-size: 20px; }
+.lg-dialog-body { display: grid; gap: 14px; padding: 18px 22px 24px; }
+.lg-unit { border: 1px solid var(--lg-line); border-radius: 10px; background: #fff; padding: 14px 16px; }
+.lg-unit header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--lg-line); }
+.lg-unit h3 { margin: 0; font-size: 17px; }
+.lg-unit header span { font-family: var(--lg-mono); font-size: 11px; color: var(--lg-muted); }
+.lg-unit h4 { margin: 10px 0 6px; font-family: var(--lg-mono); font-size: 10.5px; font-weight: 500; letter-spacing: .12em; color: var(--lg-muted); text-transform: uppercase; }
+.lg-unit-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; }
+.lg-unit-note { margin: 4px 0; font-size: 12px; }
+.lg table.lg-mini { font-size: 12px; }
+.lg table.lg-mini th { position: static; padding: 5px 8px; border-bottom-width: 1px; }
+.lg table.lg-mini td { padding: 5px 8px; }
+.lg td.is-free { color: var(--lg-teal); font-weight: 700; }
+.lg-util { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; }
+.lg-util span { display: inline-flex; align-items: center; gap: 5px; }
+.lg-util span::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--c, var(--lg-ink)); }
+.lg-util span.is-total { font-weight: 700; }
+.lg-util small { flex-basis: 100%; color: var(--lg-muted); }
+.lg-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 0 0 8px; font-size: 12.5px; }
+.lg-facts dt { color: var(--lg-muted); }
+.lg-facts dd { margin: 0; overflow-wrap: anywhere; }
+.lg-flags { margin: 8px 0 0; padding-left: 18px; font-size: 12px; color: #8a4b0f; }
+@media (max-width: 760px) {
+    .lg-unit-grid { grid-template-columns: 1fr; }
+    .lg-dialog-head, .lg-dialog-body { padding-left: 14px; padding-right: 14px; }
+}
+.lg-pay summary { cursor: pointer; padding: 6px 0; font-size: 12px; font-weight: 600; color: var(--lg-ink); }
+.lg-pay summary::marker { color: var(--lg-muted); }
