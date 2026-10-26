@@ -1,0 +1,113 @@
+/* ส่วนรายงานทะเบียนที่พัก (ใต้กล่องตึก) — สไตล์แบบแดชบอร์ด TRANSIT:
+   พื้นครีม ตัวหนังสือกรมท่า หัวข้อมีเลขลำดับกล่องดำ เส้นบาง ตัวเลขเป็นฟอนต์ mono
+   ใช้เฉพาะคลาส .lg-* เพื่อไม่กระทบสไตล์ของหน้าเดิม */
+.lg {
+    --lg-bg: #f8f6f1;
+    --lg-band: #f1eee6;
+    --lg-ink: #1c2433;
+    --lg-muted: #6c7280;
+    --lg-line: #d9d5ca;
+    --lg-hot: #e8452c;
+    --lg-teal: #0e7c86;
+    --lg-navy: #3b4ba8;
+    --lg-gold: #c98a12;
+    --lg-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+    margin-top: 18px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--lg-bg);
+    color: var(--lg-ink);
+    font: 14px/1.55 "IBM Plex Sans Thai", "Noto Sans Thai", system-ui, sans-serif;
+}
+.lg * { box-sizing: border-box; }
+.lg button { font: inherit; }
+.lg-num, .lg td.lg-n, .lg th.lg-n { font-family: var(--lg-mono); font-variant-numeric: tabular-nums; }
+
+/* ---- แถบตัวเลขหลัก ---- */
+.lg-top { padding: 22px 28px 18px; border-bottom: 1px solid var(--lg-line); }
+.lg-eyebrow { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-family: var(--lg-mono); font-size: 11px; letter-spacing: .18em; color: var(--lg-muted); text-transform: uppercase; }
+.lg-eyebrow::before { content: ''; width: 22px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--lg-hot) 0 50%, var(--lg-teal) 50%); }
+.lg-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 18px 28px; }
+.lg-kpi small { display: flex; align-items: center; gap: 6px; font-family: var(--lg-mono); font-size: 11px; letter-spacing: .12em; color: var(--lg-muted); }
+.lg-kpi small::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--dot, var(--lg-muted)); }
+.lg-kpi strong { display: block; margin-top: 4px; font-family: var(--lg-mono); font-size: clamp(24px, 2.6vw, 36px); font-weight: 700; line-height: 1.1; color: var(--tone, var(--lg-ink)); }
+.lg-kpi strong em { font-style: normal; font-size: 12px; font-weight: 500; color: var(--lg-muted); margin-left: 4px; }
+.lg-kpi span { display: block; margin-top: 2px; font-size: 12px; color: var(--lg-muted); }
+
+/* ---- หัวข้อแต่ละส่วน (เลขกล่องดำ + เส้นบางลากยาว + จุดปลายเส้น) ---- */
+.lg-sec { padding: 26px 28px 30px; border-bottom: 1px solid var(--lg-line); }
+.lg-sec:nth-of-type(even) { background: var(--lg-band); }
+.lg-rule { display: flex; align-items: center; gap: 0; margin-bottom: 14px; }
+.lg-rule b { font-family: var(--lg-mono); font-size: 11px; background: var(--lg-ink); color: #fff; padding: 3px 7px; border-radius: 2px; }
+.lg-rule i { flex: 1; height: 1px; background: var(--lg-line); position: relative; }
+.lg-rule i::after { content: ''; position: absolute; right: 0; top: -3px; width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--lg-muted); background: var(--lg-bg); }
+.lg-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.lg-head h2 { margin: 0; font-family: Anuphan, "IBM Plex Sans Thai", sans-serif; font-size: clamp(20px, 2.1vw, 28px); font-weight: 700; letter-spacing: -.01em; }
+.lg-head p { margin: 6px 0 0; max-width: 680px; font-size: 13px; color: var(--lg-muted); }
+.lg-legend { display: flex; flex-wrap: wrap; gap: 14px; padding-top: 8px; border-top: 2px solid var(--lg-ink); font-family: var(--lg-mono); font-size: 11px; letter-spacing: .1em; }
+.lg-legend span { display: inline-flex; align-items: center; gap: 6px; color: var(--c); }
+.lg-legend span::before { content: ''; width: 26px; height: 8px; border-radius: 4px; background: var(--c); }
+
+/* ---- รหัสที่พัก ---- */
+.lg-code { display: inline-block; min-width: 34px; padding: 1px 5px; border-radius: 2px; background: var(--c); color: #fff; font-family: var(--lg-mono); font-size: 10px; font-weight: 700; text-align: center; letter-spacing: .04em; }
+.lg-chips { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.lg-chip { display: inline-flex; align-items: center; gap: 7px; border: 0; background: none; padding: 3px 4px; cursor: pointer; color: var(--lg-ink); font-size: 12.5px; border-radius: 4px; }
+.lg-chip small { font-family: var(--lg-mono); font-size: 11px; color: var(--lg-muted); }
+.lg-chip:hover { background: rgba(28, 36, 51, .06); }
+.lg-chip.is-on { outline: 2px solid var(--c); outline-offset: 1px; }
+.lg-clear { margin-left: auto; border: 1px solid var(--lg-line); background: #fff; border-radius: 999px; padding: 3px 12px; font-size: 12px; cursor: pointer; }
+
+/* เน้นที่พักที่เลือก: แถวอื่นจางลงทุกส่วน */
+.lg.has-focus [data-b]:not(.is-focus) { opacity: .26; }
+.lg [data-b] { transition: opacity .15s; }
+
+/* ---- แถวแบบกราฟแท่ง ---- */
+.lg-bars { display: grid; }
+.lg-bars-head, .lg-bar-row { display: grid; grid-template-columns: minmax(170px, 1.2fr) minmax(160px, 2.4fr) repeat(3, minmax(60px, .45fr)); gap: 14px; align-items: center; }
+.lg-bars-head { padding-bottom: 8px; border-bottom: 2px solid var(--lg-ink); font-family: var(--lg-mono); font-size: 11px; letter-spacing: .12em; color: var(--lg-muted); }
+.lg-bars-head span:nth-child(n+3), .lg-bar-row .lg-num { text-align: right; }
+.lg-bar-row { padding: 10px 0; border-bottom: 1px solid var(--lg-line); }
+.lg-who { display: flex; gap: 8px; align-items: flex-start; min-width: 0; }
+.lg-who b { display: block; font-size: 13px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.lg-who small { display: block; font-family: var(--lg-mono); font-size: 10.5px; color: var(--lg-muted); }
+.lg-track { position: relative; display: flex; height: 9px; border-radius: 5px; overflow: visible; background: #e6e2d8; }
+.lg-track > span { height: 100%; }
+.lg-track > span:first-child { border-radius: 5px 0 0 5px; }
+.lg-track > span:last-of-type { border-radius: 0 5px 5px 0; }
+.lg-track > i { position: absolute; top: 50%; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%; background: #fff; border: 3px solid var(--c, var(--lg-navy)); }
+.lg-num.is-hot { color: var(--lg-hot); }
+.lg-num.is-teal { color: var(--lg-teal); }
+.lg-num.is-strong { font-weight: 700; }
+
+/* ---- ตาราง ---- */
+.lg-table-wrap { overflow-x: auto; }
+.lg table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.lg th { position: sticky; top: 0; padding: 8px 10px; text-align: left; font-family: var(--lg-mono); font-size: 10.5px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--lg-muted); border-bottom: 2px solid var(--lg-ink); background: inherit; white-space: nowrap; }
+.lg th[data-sort] { cursor: pointer; }
+.lg th[data-sort]:hover { color: var(--lg-ink); }
+.lg th.is-sorted::after { content: ' ↓'; }
+.lg th.is-sorted.is-asc::after { content: ' ↑'; }
+.lg td { padding: 9px 10px; border-bottom: 1px solid var(--lg-line); vertical-align: top; }
+.lg td.lg-n, .lg th.lg-n { text-align: right; white-space: nowrap; }
+.lg td small { display: block; font-size: 10.5px; color: var(--lg-muted); }
+.lg tfoot td { border-top: 2px solid var(--lg-ink); border-bottom: 3px double var(--lg-ink); font-weight: 700; }
+.lg-co { display: inline-block; margin: 0 4px 2px 0; padding: 0 5px; border: 1px solid var(--lg-line); border-radius: 3px; background: #fff; font-family: var(--lg-mono); font-size: 10.5px; }
+.lg-dim { color: var(--lg-muted); }
+
+/* แถบระยะสัญญา: ส่วนที่ผ่านไปแล้ว + จุดวันนี้ */
+.lg-span { position: relative; height: 6px; min-width: 120px; margin-top: 6px; border-radius: 3px; background: #e6e2d8; }
+.lg-span > span { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--c, var(--lg-teal)); }
+.lg-left { font-family: var(--lg-mono); font-weight: 700; }
+.lg-left.is-soon { color: var(--lg-hot); }
+.lg-left.is-near { color: var(--lg-gold); }
+.lg-left.is-over { color: var(--lg-muted); text-decoration: line-through; }
+
+.lg-note { margin: 12px 0 0; font-size: 11.5px; color: var(--lg-muted); }
+.lg-empty { padding: 26px 28px; color: var(--lg-muted); }
+
+@media (max-width: 760px) {
+    .lg-top, .lg-sec { padding-left: 16px; padding-right: 16px; }
+    .lg-bars-head { display: none; }
+    .lg-bar-row { grid-template-columns: 1fr repeat(3, auto); }
+    .lg-bar-row .lg-track { grid-column: 1 / -1; grid-row: 2; }
+}
