@@ -17,15 +17,6 @@
         return data;
     }
 
-    let toastTimer = null;
-    function toast(text, isError = false) {
-        const node = $('asToast');
-        node.textContent = text;
-        node.className = `as-toast is-visible${isError ? ' is-error' : ''}`;
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => { node.className = 'as-toast'; }, 4500);
-    }
-
     async function load(force = false) {
         if (state.loading) return;
         state.loading = true;
@@ -45,7 +36,6 @@
         const data = state.data;
         const totals = data.totals;
         $('asUpdated').textContent = `อัปเดต ${new Date(data.fetchedAt).toLocaleTimeString('th-TH')} · รีเฟรชเองทุก 30 วินาที`;
-        if (data.sheetUrl) { $('asSheetLink').href = data.sheetUrl; $('asSheetLink').hidden = false; }
         $('asStats').innerHTML = [
             ['พนักงาน on work', totals.onWork],
             ['มีที่พักในรายการ', totals.housed],
@@ -78,35 +68,15 @@
     });
     $('asRefresh').addEventListener('click', () => load(true));
 
-    // ---------------------------------------------------------------- สร้างที่พักใหม่ (บันทึกลงแท็บ "ข้อมูลที่พัก")
-    function openDialog() {
-        const form = $('asForm');
-        form.reset();
-        $('asFormError').hidden = true;
-        $('asDialog').showModal();
-        form.elements.area.focus();
-    }
-    $('asCreate').addEventListener('click', openDialog);
-    $('asCancel').addEventListener('click', () => $('asDialog').close());
-    $('asForm').addEventListener('submit', async event => {
-        event.preventDefault();
-        const body = Object.fromEntries(new FormData(event.target).entries());
-        $('asSave').disabled = true;
-        $('asFormError').hidden = true;
-        try {
-            const result = await request('', { method: 'POST', body: JSON.stringify(body) });
-            $('asDialog').close();
-            toast(`สร้างที่พัก ${result.accommodation.id} "${result.accommodation.name}" ใน Google Sheet แล้ว`);
-            await load(true);
-        } catch (error) {
-            $('asFormError').textContent = error.message;
-            $('asFormError').hidden = false;
-        } finally { $('asSave').disabled = false; }
+    // ---------------------------------------------------------------- เช่าที่พักใหม่ → เปิดหน้า "ตรวจรับห้องพัก" ในพอร์ทัล
+    $('asCreate').addEventListener('click', () => {
+        if (window.parent !== window) window.parent.postMessage({ type: 'open-task', serviceId: 'accommodation', route: 'room-inspection' }, window.location.origin);
+        else window.location.href = 'room-inspection.html';
     });
 
     // ---------------------------------------------------------------- เรียลไทม์
     renderAreaChips();
     load();
-    setInterval(() => { if (!document.hidden && !$('asDialog').open) load(); }, REFRESH_MS);
+    setInterval(() => { if (!document.hidden) load(); }, REFRESH_MS);
     document.addEventListener('visibilitychange', () => { if (!document.hidden && state.data && Date.now() - state.data.fetchedAt > REFRESH_MS) load(); });
 })();

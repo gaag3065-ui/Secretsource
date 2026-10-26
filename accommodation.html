@@ -35,9 +35,8 @@
                     <p class="as-sub">นับจากแท็บ "ข้อมูลเบื้องต้น" (เฉพาะสถานะ on work) แบบเรียลไทม์ — <span id="asUpdated">กำลังโหลด...</span></p>
                 </div>
                 <div class="as-actions">
-                    <a id="asSheetLink" class="as-btn as-btn-ghost" href="#" target="_blank" rel="noopener" hidden>เปิด Google Sheet ↗</a>
                     <button id="asRefresh" class="as-btn as-btn-ghost" type="button">รีเฟรชตอนนี้</button>
-                    <button id="asCreate" class="as-btn as-btn-primary" type="button">+ สร้างที่พักใหม่</button>
+                    <button id="asCreate" class="as-btn as-btn-primary" type="button">เช่าที่พักใหม่</button>
                 </div>
             </header>
             <div class="as-stats" id="asStats" aria-label="สรุป"></div>
@@ -97,26 +96,6 @@
         </div>
     </main>
 
-    <dialog id="asDialog" class="as-dialog">
-        <form id="asForm" method="dialog">
-            <h2>สร้างที่พักใหม่</h2>
-            <p class="as-hint">บันทึกลงแท็บ "ข้อมูลที่พัก" ใน Google Sheet ทันที</p>
-            <label>พื้นที่ <select name="area" required><option value="">เลือกพื้นที่</option><option>GE</option><option>ML</option><option>PP</option><option>SL</option><option>TH</option></select></label>
-            <label>ชื่อที่พัก <input name="name" required maxlength="200" placeholder="เช่น Sky Plus"></label>
-            <label>ชื่อเรียกอื่น (ถ้ามี) <input name="aliases" maxlength="600" placeholder="ชื่อที่พิมพ์ในชีตข้อมูลเบื้องต้น คั่นด้วย ;"></label>
-            <div class="as-form-row">
-                <label>จำนวนชั้น <input name="floors" inputmode="numeric" pattern="\d*" maxlength="4"></label>
-                <label>จำนวนห้อง <input name="rooms" inputmode="numeric" pattern="\d*" maxlength="5"></label>
-            </div>
-            <label>ที่อยู่ / หมายเหตุ <textarea name="note" maxlength="500" rows="2"></textarea></label>
-            <p id="asFormError" class="as-error" hidden></p>
-            <div class="as-dialog-actions">
-                <button type="button" class="as-btn as-btn-ghost" id="asCancel">ยกเลิก</button>
-                <button type="submit" class="as-btn as-btn-primary" id="asSave">บันทึกลง Google Sheet</button>
-            </div>
-        </form>
-    </dialog>
-    <div id="asToast" class="as-toast" role="status"></div>
 
     <div id="managementModal" class="modal-overlay" hidden>
         <section class="management-modal" role="dialog" aria-modal="true" aria-labelledby="managementModalTitle">
@@ -208,7 +187,7 @@
 
     <script src="config.js"></script>
     <script src="accommodation.js?v=20261025-1"></script>
-    <script src="accommodation-header.js?v=20261025-1"></script>
+    <script src="accommodation-header.js?v=20261026-5"></script>
     <script src="accommodation-ledger.js?v=20261026-4"></script>
     <script src="pwa.js"></script>
 </body>

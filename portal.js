@@ -86,13 +86,17 @@ const services = [
         color: '#087f74',
         soft: '#e5f7f4',
         tags: [],
+        // กดการ์ดแล้วเข้า "จัดการห้องพักพนักงาน" ทันที ไม่แสดงรายการเมนูย่อยด้านซ้าย
+        // ("ตรวจรับห้องพัก" เข้าจากปุ่ม "เช่าที่พักใหม่" ในหน้านั้น — ส่ง postMessage open-task มา)
+        directOpen: true,
+        directTask: 'room-search',
         tasks: [
             {
                 route: 'room-search',
                 // หัวหน้าเป็นภาพรวมจาก Google Sheet (เดิมเป็นเมนู "ภาพรวมที่พัก (Google Sheet)" แยก)
                 title: 'จัดการห้องพักพนักงาน',
                 icon: 'building',
-                page: 'accommodation.html?v=20261026-4'
+                page: 'accommodation.html?v=20261026-5'
             },
             {
                 // แบบตรวจรับห้องพัก + รายงานรูปภาพ → PDF (ย้ายมาจากระบบในเครื่อง "ตรวจสอบที่พัก")
@@ -619,11 +623,14 @@ function tryAutoOpenOnlyAccessibleTask(service) {
     }
 
     const accessibleTasks = getAccessibleTasks(service);
-    if (accessibleTasks.length !== 1) {
+    // directTask: มีหลายงานแต่ให้เปิดงานหลักทันที (งานอื่นเปิดจากปุ่มภายในหน้า)
+    const directTask = service.directTask &&
+        accessibleTasks.find(task => task.route === service.directTask);
+    if (!directTask && accessibleTasks.length !== 1) {
         return false;
     }
 
-    const onlyTask = accessibleTasks[0];
+    const onlyTask = directTask || accessibleTasks[0];
     const taskIndex = service.tasks.indexOf(onlyTask);
     openSecondarySidebar(service.id);
     openTask(service, onlyTask, taskIndex);
@@ -1121,6 +1128,16 @@ window.addEventListener('popstate', event => {
         state.taskIndex,
         false
     );
+});
+
+// หน้าในกรอบขอเปิดงานอื่น เช่น ปุ่ม "เช่าที่พักใหม่" → ตรวจรับห้องพัก (เฉพาะงานที่ผู้ใช้มีสิทธิ์)
+window.addEventListener('message', event => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type !== 'open-task') return;
+    const service = services.find(item => item.id === event.data.serviceId);
+    const task = service && getAccessibleTasks(service).find(item => item.route === event.data.route);
+    if (!task) return;
+    openTask(service, task, service.tasks.indexOf(task));
 });
 
 window.addEventListener('message', event => {
