@@ -137,3 +137,11 @@ button, input, select, textarea { font: inherit; }
 .ri-page input.is-neg, .ri-red { color: #d00000; }
 .ri-cover { margin-top: 14px; }
 .ri-cover .ri-inv-items th { background: #8f8f8f; }
+.ri-dialog { width: min(640px, calc(100vw - 32px)); border: 0; border-radius: 14px; padding: 18px 20px; box-shadow: 0 20px 60px rgba(16, 24, 40, .25); }
+.ri-dialog::backdrop { background: rgba(16, 24, 40, .4); }
+.ri-dialog h2 { margin: 0 0 6px; font-size: 17px; }
+.ri-itemize-row { display: flex; gap: 10px; align-items: flex-start; padding: 10px 4px; border-top: 1px solid var(--ri-line); cursor: pointer; }
+.ri-itemize-row input { margin-top: 3px; accent-color: var(--ri-brand); }
+.ri-itemize-row em { font-style: normal; color: var(--ri-brand); font-weight: 700; margin-left: 6px; }
+.ri-itemize-row small { display: block; margin-top: 2px; color: var(--ri-muted); font-size: 12px; }
+.ri-dialog-actions { display: flex; justify-content: flex-end; margin-top: 12px; }

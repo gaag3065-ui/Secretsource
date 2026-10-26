@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>ตรวจรับห้องพัก | GA Operations</title>
-    <link rel="stylesheet" href="room-inspection.css?v=20261026-6">
+    <link rel="stylesheet" href="room-inspection.css?v=20261026-8">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
@@ -171,6 +171,7 @@
 
             <div class="ri-bar">
                 <button type="button" class="ri-btn ri-btn-ghost" data-invoice-action="invoice-clear">ล้าง Invoice</button>
+                <button type="button" class="ri-btn ri-btn-ghost" data-invoice-action="invoice-itemize">แจกแจงรายละเอียด</button>
                 <span class="ri-spacer"></span>
                 <button type="button" class="ri-btn ri-btn-ghost" data-invoice-action="invoice-save">บันทึก</button>
                 <button type="button" class="ri-btn ri-btn-primary" data-invoice-action="invoice-cover">สร้างใบปะหน้า (PDF)</button>
@@ -179,6 +180,14 @@
     </main>
 
     <datalist id="riCurrencies"><option value="LKR"><option value="THB"><option value="USD"><option value="คน"></datalist>
+
+    <!-- เลือก Invoice ที่จะแจกแจงเป็นรายการย่อยในใบปะหน้า (room-inspection-invoice.js) -->
+    <dialog id="riItemizeDialog" class="ri-dialog">
+        <h2>แจกแจงรายละเอียดในใบปะหน้า</h2>
+        <p class="ri-hint">ติ๊ก Invoice ที่ต้องการแยกเป็นทีละรายการ (เช่น ค่าเช่าล่วงหน้า, ค่าทนายความ, ค่าธรรมเนียมภาษี) แทนยอดรวมแถวเดียว — ยอด Grand Total ไม่เปลี่ยน</p>
+        <div id="riItemizeList"></div>
+        <div class="ri-dialog-actions"><button type="button" class="ri-btn ri-btn-primary" data-itemize-close>เสร็จ</button></div>
+    </dialog>
 
     <dialog id="riLightbox" class="ri-lightbox">
         <button type="button" class="ri-lightbox-close" aria-label="ปิด">×</button>
@@ -190,6 +199,6 @@
 
     <script src="config.js"></script>
     <script src="room-inspection.js?v=20261026-7"></script>
-    <script src="room-inspection-invoice.js?v=20261026-7"></script>
+    <script src="room-inspection-invoice.js?v=20261026-8"></script>
 </body>
 </html>

@@ -18,7 +18,7 @@
     const blankInvoice = () => ({
         building: '', unit: '', invoiceNo: '', invoiceNoManual: false, company: 'EAST GROUP', department: 'Call Center SL',
         issueDate: today(), dueDate: today(), items: [blankItem()], paymentMethod: 'Paid by cash', payee: 'THE LANDLORD',
-        paymentDate: today(), coverDescription: '', coverRemark: '', bank: 'เงินสด', inCover: true
+        paymentDate: today(), coverDescription: '', coverRemark: '', bank: 'เงินสด', inCover: true, coverItemize: false
     });
     const defaultCover = () => ({ month: today().slice(0, 7), company: 'EAST GROUP', department: 'Call Center', fileName: '' });
     const state = { invoices: [blankInvoice()], cover: defaultCover() };
@@ -97,16 +97,26 @@
         renderCover();
     }
 
+    /** แถวในใบปะหน้า: ใบที่เลือก "แจกแจงรายละเอียด" แยกเป็นทีละรายการ (รายการ + ที่พัก) ใบอื่นเป็นยอดรวม 1 แถว */
+    function coverRows() {
+        return state.invoices.filter(inv => inv.inCover).flatMap(inv => {
+            const base = { bank: inv.bank || 'เงินสด', accountNo: '-', accountName: '-', remark: coverRemark(inv) };
+            if (!inv.coverItemize) return [{ ...base, description: coverDescription(inv), amount: total(inv) }];
+            return inv.items.filter(item => String(item.description).trim() || num(item.amount))
+                .map(item => ({ ...base, description: [String(item.description).trim(), location(inv)].filter(Boolean).join(' '), amount: num(item.amount) }));
+        });
+    }
+
     function renderCover() {
-        const picked = state.invoices.filter(inv => inv.inCover);
-        const sum = picked.reduce((s, inv) => s + total(inv), 0);
+        const rows = coverRows();
+        const sum = rows.reduce((s, row) => s + row.amount, 0);
         $('riCoverMonth').value = state.cover.month;
         $('riCoverCompany').value = state.cover.company;
         $('riCoverDepartment').value = state.cover.department;
         $('riCoverFile').value = state.cover.fileName;
         $('riCoverFile').placeholder = coverFileName();
-        $('riCoverSummary').innerHTML = picked.length
-            ? `<table class="ri-inv-items"><thead><tr><th>No</th><th>Description</th><th class="ri-num">Amount (LKR)</th><th>Remark</th></tr></thead><tbody>${picked.map((inv, n) => `<tr><td>${n + 1}</td><td>${esc(coverDescription(inv))}</td><td class="ri-num">LKR ${money(total(inv))}</td><td class="ri-red">${esc(coverRemark(inv))}</td></tr>`).join('')}</tbody><tfoot><tr><td></td><th>Grand Total</th><th class="ri-num">LKR ${money(sum)}</th><td></td></tr></tfoot></table>`
+        $('riCoverSummary').innerHTML = rows.length
+            ? `<table class="ri-inv-items"><thead><tr><th>No</th><th>Description</th><th class="ri-num">Amount (LKR)</th><th>Remark</th></tr></thead><tbody>${rows.map((row, n) => `<tr><td>${n + 1}</td><td>${esc(row.description)}</td><td class="ri-num${row.amount < 0 ? ' ri-red' : ''}">LKR ${money(row.amount)}</td><td class="ri-red">${esc(row.remark)}</td></tr>`).join('')}</tbody><tfoot><tr><td></td><th>Grand Total</th><th class="ri-num">LKR ${money(sum)}</th><td></td></tr></tfoot></table>`
             : '<p class="ri-hint">ยังไม่ได้เลือก Invoice — ติ๊ก "รวมในใบปะหน้า" ที่ Invoice ที่ต้องการ</p>';
     }
 
@@ -194,12 +204,32 @@
             const data = {
                 title: `ตารางสรุปค่าใช้จ่าย (LKR) ประจำเดือน  ${month.th}`.trim(), company: state.cover.company, department: state.cover.department, currency: 'LKR',
                 fileName: coverFileName(),
-                rows: picked.map(inv => ({ description: coverDescription(inv), amount: total(inv), bank: inv.bank || 'เงินสด', accountNo: '-', accountName: '-', remark: coverRemark(inv) }))
+                rows: coverRows()
             };
             await download('/pdf', { kind: 'invoice-cover', data }, `กำลังสร้างใบปะหน้า (${picked.length} ใบ)...`, `${coverFileName()}.pdf`);
         },
+        'invoice-itemize': () => {
+            const picked = state.invoices.map((inv, i) => ({ inv, i })).filter(({ inv }) => inv.inCover);
+            if (!picked.length) return toast('ยังไม่ได้เลือก Invoice สำหรับใบปะหน้า', true);
+            $('riItemizeList').innerHTML = picked.map(({ inv, i }) => `<label class="ri-itemize-row">
+                    <input type="checkbox" data-itemize="${i}" ${inv.coverItemize ? 'checked' : ''}>
+                    <span><b>${esc(inv.invoiceNo)} · ${esc(location(inv) || 'ยังไม่ระบุที่พัก')}</b> <em>LKR ${money(total(inv))}</em>
+                        <small>${inv.items.filter(item => String(item.description).trim() || num(item.amount)).map(item => `${esc(item.description || '-')} ${money(num(item.amount))}`).join(' · ')}</small></span>
+                </label>`).join('');
+            $('riItemizeDialog').showModal();
+        },
         'invoice-clear': () => { if (confirm('ล้าง Invoice ทั้งหมด? (ข้อมูลที่บันทึกไว้จะยังอยู่จนกว่าจะกดบันทึก)')) { state.invoices = [blankInvoice()]; state.cover = defaultCover(); markDirty(); render(); } }
     };
+    $('riItemizeDialog').addEventListener('change', event => {
+        const box = event.target.closest('[data-itemize]');
+        if (!box) return;
+        state.invoices[Number(box.dataset.itemize)].coverItemize = box.checked;
+        markDirty(); renderCover();
+    });
+    $('riItemizeDialog').addEventListener('click', event => {
+        if (event.target === $('riItemizeDialog') || event.target.closest('[data-itemize-close]')) $('riItemizeDialog').close();
+    });
+
     $('tab-invoice').addEventListener('click', async event => {
         const button = event.target.closest('[data-invoice-action]');
         if (!button) return;
