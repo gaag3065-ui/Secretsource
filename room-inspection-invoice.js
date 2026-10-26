@@ -171,10 +171,15 @@
     });
 
     // ---------------------------------------------------------------- บันทึก / ปุ่มด้านล่าง
+    const OUTDATED = 'เครื่องหลังบ้านยังไม่ได้อัปเดตเป็นเวอร์ชันที่มีตั้งเบิก Invoice — ที่เครื่องหลังบ้านให้รัน git pull ในโฟลเดอร์ secretsource-backend แล้วปิด/เปิดเซิร์ฟเวอร์ใหม่ (ข้อมูลที่กรอกเก็บไว้ในเครื่องนี้แล้ว)';
     async function save(notify = true) {
         const data = { invoices: state.invoices, cover: state.cover };
         try { localStorage.setItem(LOCAL_KEY('invoices'), JSON.stringify(data)); } catch { /* พื้นที่เต็ม — ข้าม */ }
-        const result = await request('/draft/invoices', { method: 'PUT', body: JSON.stringify({ data }) });
+        // หลังบ้านเวอร์ชันเก่ายังไม่รู้จักแบบร่างชนิด invoices → ตอบ "ประเภทเอกสารไม่ถูกต้อง"
+        const result = await request('/draft/invoices', { method: 'PUT', body: JSON.stringify({ data }) }).catch(error => {
+            if (/ประเภทเอกสารไม่ถูกต้อง/.test(error.message)) throw new Error(OUTDATED);
+            throw error;
+        });
         markSaved(result.savedAt);
         if (notify) toast('บันทึกแล้ว');
     }

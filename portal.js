@@ -103,7 +103,7 @@ const services = [
                 route: 'room-inspection',
                 title: 'ตรวจรับห้องพัก',
                 icon: 'shield',
-                page: 'room-inspection.html?v=20261026-6'
+                page: 'room-inspection.html?v=20261026-7'
             }
         ]
     },
