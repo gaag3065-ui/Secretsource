@@ -2126,3 +2126,12 @@ body {
 
 
 
+
+/* ปุ่มลิงก์ไฟล์ Google Sheet บนแถบหัว (เป็นแท็ก a จึงต้องจัดให้เหมือนปุ่ม) */
+a.button {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    text-decoration: none;
+    font-size: 13.3px;
+}
