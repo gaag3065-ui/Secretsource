@@ -117,3 +117,23 @@ button, input, select, textarea { font: inherit; }
 .ri-unit-row { display: flex; gap: 6px; }
 .ri-unit-row input:first-child { flex: 1; min-width: 0; }
 .ri-page .ri-unit-row .ri-unit { width: 74px; flex: 0 0 74px; text-align: center; text-transform: uppercase; font-weight: 700; color: var(--ri-brand); }
+
+/* ---- แท็บตั้งเบิก Invoice ---- */
+.ri-tabs { flex-wrap: wrap; }
+.ri-inv-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 10px; }
+.ri-inv-head h2 { margin: 0; }
+.ri-inv-head h2 small { margin-left: 6px; color: var(--ri-muted); font-size: 12px; font-weight: 600; }
+.ri-inv-pick { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--ri-brand); cursor: pointer; }
+.ri-inv-pick input { accent-color: var(--ri-brand); }
+.ri-inv-items { width: 100%; margin: 12px 0; border-collapse: collapse; font-size: 13px; }
+.ri-inv-items th { padding: 7px 8px; background: #0b3864; color: #fff; font-weight: 700; text-align: left; }
+.ri-inv-items td { padding: 5px 6px; border-bottom: 1px solid var(--ri-line); vertical-align: middle; }
+.ri-inv-items td:first-child { width: 34px; text-align: center; color: var(--ri-muted); }
+.ri-inv-items tfoot th, .ri-inv-items tfoot td { background: #f2f2f2; color: #0b3864; border: 0; }
+.ri-inv-items tfoot th.ri-num { background: #b39461; color: #000; }
+.ri-inv-items tfoot small { color: var(--ri-muted); font-size: 11px; }
+.ri-page .ri-inv-items input { margin: 0; }
+.ri-num { text-align: right !important; white-space: nowrap; }
+.ri-page input.is-neg, .ri-red { color: #d00000; }
+.ri-cover { margin-top: 14px; }
+.ri-cover .ri-inv-items th { background: #8f8f8f; }

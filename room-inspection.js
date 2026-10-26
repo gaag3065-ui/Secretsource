@@ -431,8 +431,7 @@
     function showTab(tab) {
         state.tab = tab;
         document.querySelectorAll('.ri-tabs [data-tab]').forEach(button => button.classList.toggle('is-on', button.dataset.tab === tab));
-        $('tab-checklist').hidden = tab !== 'checklist';
-        $('tab-photos').hidden = tab !== 'photos';
+        ['checklist', 'photos', 'invoice'].forEach(name => { $(`tab-${name}`).hidden = tab !== name; });
         try { history.replaceState(null, '', `#${tab}`); } catch { /* iframe sandbox */ }
     }
     document.querySelector('.ri-tabs').addEventListener('click', event => {
@@ -468,11 +467,14 @@
         return { data: null, savedAt: null };
     }
 
+    // ให้แท็บ "ตั้งเบิก Invoice" (room-inspection-invoice.js) ใช้ตัวช่วยชุดเดียวกัน
+    window.RoomInspection = { request, download, toast, busy, markDirty, markSaved, loadDraft, LOCAL_KEY, esc };
+
     (async () => {
         renderSections();
         renderSignatures();
         renderPhotos(); renderMaps();
-        showTab(location.hash === '#photos' ? 'photos' : 'checklist');
+        showTab(['#photos', '#invoice'].includes(location.hash) ? location.hash.slice(1) : 'checklist');
         const [checklist, photos] = await Promise.all([loadDraft('checklist'), loadDraft('photos')]);
         if (checklist.data) fillChecklist(checklist.data);
         if (photos.data) fillPhotos(photos.data);
