@@ -111,3 +111,13 @@
     .lg-bar-row { grid-template-columns: 1fr repeat(3, auto); }
     .lg-bar-row .lg-track { grid-column: 1 / -1; grid-row: 2; }
 }
+
+/* หน้าเดิมล็อกความสูงเท่าจอและเลื่อนเฉพาะในกล่องตึก ทำให้ส่วนทะเบียนด้านล่างบีบกล่องตึกจนเหลือแถบเดียว
+   เปลี่ยนเป็นเลื่อนทั้งหน้า: กล่องตึกแสดงเต็มเหมือนเดิม แล้วส่วนทะเบียนต่อท้ายด้านล่าง */
+html, body { height: auto; min-height: 100%; overflow: visible auto; }
+.page-main { position: static; inset: auto; height: auto; overflow: visible; }
+.accommodation-layout { display: block; height: auto; }
+.accommodation-layout > * + * { margin-top: 14px; }
+.accommodation-layout .accommodation-shell { height: auto; }
+.workspace-main { display: block; height: auto; }
+.accommodation-data-panel { height: auto; overflow: visible; }
