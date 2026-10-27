@@ -9,7 +9,15 @@
     // source: 'new' = ระบบใหม่ (ฐานข้อมูลบน Drive), 'legacy' = อ่านจากชีตรายคนของระบบเดิม (Apps Script)
     const state = { data: null, legacy: null, source: 'new', type: '', images: new Map(), detail: null };
 
+    // หน้านี้เปิดตรง/ฝังใน iframe ได้โดยไม่ผ่านหน้าที่เก็บ csrfToken ไว้ → ขอจาก /api/session ก่อนส่ง POST ครั้งแรก
+    async function ensureCsrf() {
+        if (window.getCsrfToken()) return;
+        const response = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/session`, { cache: 'no-store' });
+        const data = await response.json().catch(() => ({}));
+        if (data.csrfToken) sessionStorage.setItem('csrfToken', data.csrfToken);
+    }
     async function request(path, options = {}) {
+        if (options.method && options.method !== 'GET') await ensureCsrf();
         const response = await window.authFetch(api(path), { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
         const data = await response.json().catch(() => ({}));
         if (response.status === 404 && !data.message) throw new Error('เครื่องหลังบ้านยังไม่ได้อัปเดต (git pull แล้วรีสตาร์ทหลังบ้าน)');
