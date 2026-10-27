@@ -85,6 +85,7 @@
     /* รูปตัวอย่างในหน้าบันทึกกิจกรรม */
     .upload-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:11px}.upload-preview:empty{display:none}.upload-preview-card{overflow:hidden;border:1px solid rgba(72,186,255,.5);border-radius:10px;background:#061627}.upload-preview-card.pending{border-color:var(--gold);box-shadow:0 0 0 1px rgba(245,196,90,.14)}.upload-preview-card img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#0a2540;cursor:zoom-in}.upload-preview-card span{display:block;padding:6px 7px;color:#d7eafd;font-size:11px;line-height:1.35}.upload-preview-card.pending span{color:var(--gold2)}.day-slot.has-thumbnails{min-height:107px}.day-thumb-row{display:flex;gap:4px;margin-top:7px}.day-thumb{flex:1;min-width:0;height:29px;object-fit:cover;border:1px solid rgba(189,208,231,.5);border-radius:5px;background:#0a2540;cursor:zoom-in}
   </style>
+  <style>/* ขยายเต็มความกว้างจอ (เดิมจำกัด 1180px บนคอม / 680px บนมือถือ) */.layout{width:calc(100% - 48px);max-width:1760px}@media(max-width:800px){.layout{width:calc(100% - 20px);max-width:none}}</style>
 </head>
 <body>
   <main class="layout">
