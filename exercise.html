@@ -400,8 +400,9 @@
     (() => {
       const API = window.APP_CONFIG.API_BASE_URL + '/api/fitness/public';
       const TOKEN_KEY = 'fitness-token';
-      const getToken = () => { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch (error) { return ''; } };
-      const setToken = value => { try { value ? sessionStorage.setItem(TOKEN_KEY, value) : sessionStorage.removeItem(TOKEN_KEY); } catch (error) { /* ignore */ } };
+      // เก็บใน localStorage → รีเฟรช/ปิดแท็บแล้วเปิดใหม่ยังอยู่ในระบบ (token หมดอายุเองใน 12 ชั่วโมง, กดออกจากระบบแล้วลบทิ้ง)
+      const getToken = () => { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (error) { return ''; } };
+      const setToken = value => { try { value ? localStorage.setItem(TOKEN_KEY, value) : (localStorage.removeItem(TOKEN_KEY), localStorage.removeItem('fitness-user')); } catch (error) { /* ignore */ } };
       // รูปจากหลังบ้านเป็น path /api/... → เติมที่อยู่เซิร์ฟเวอร์
       const absolute = url => typeof url === 'string' && url.startsWith('/api/') ? window.APP_CONFIG.API_BASE_URL + url : url;
       async function call(name, args) {
@@ -427,6 +428,7 @@
       });
       window.google = { script: { run: runner() } };
       window.__fitnessClearToken = () => setToken('');
+      window.__fitnessHasToken = () => Boolean(getToken());
     })();
   </script>
   <script>
@@ -1027,6 +1029,25 @@
     (() => {
       const baseLogout = window.logout;
       window.logout = function () { window.__fitnessClearToken(); return baseLogout.apply(this, arguments); };
+
+      // จำผู้ใช้ไว้หลังเข้าสู่ระบบ → รีเฟรชหน้าแล้วกลับเข้าหน้าหลักได้เลย ไม่ต้องกรอกรหัสใหม่
+      const USER_KEY = 'fitness-user';
+      const baseShowDashboard = window.showDashboard;
+      window.showDashboard = function () {
+        const output = baseShowDashboard.apply(this, arguments);
+        try { localStorage.setItem(USER_KEY, JSON.stringify({ fullname: currentUser.fullname, company: currentUser.company, insuranceCode: currentUser.insurance, ID: currentUser.ID })); } catch (error) { /* ignore */ }
+        return output;
+      };
+      (() => {
+        let saved = null;
+        try { saved = JSON.parse(localStorage.getItem(USER_KEY) || 'null'); } catch (error) { saved = null; }
+        if (!saved || !saved.ID || !window.__fitnessHasToken()) return;
+        baseShowDashboard(saved, saved.ID);
+        // ตรวจว่า token ยังใช้ได้ (หมดอายุ → กลับหน้าเข้าสู่ระบบ) พร้อมโหลดความคืบหน้า
+        google.script.run.withSuccessHandler(result => setProgress(result || {})).withFailureHandler(error => {
+          if (/เซสชัน|ไม่พบข้อมูลพนักงาน/.test((error && error.message) || '')) { window.logout(); const status = $('loginStatus'); if (status) status.textContent = 'กรุณาเข้าสู่ระบบอีกครั้ง'; }
+        }).getFormStatus(saved.ID);
+      })();
       window.appendSavedImageLink = function (host, src, caption) {
         if (!host || !src) return;
         const card = document.createElement('div');
