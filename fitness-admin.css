@@ -5,7 +5,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--fa-bg); color: var(--fa-ink); font: 14px/1.5 "Noto Sans Thai", "Segoe UI", sans-serif; }
 button, input, select, textarea { font: inherit; }
-.fa-page { max-width: 1400px; margin: 0 auto; padding: 18px 18px 40px; }
+.fa-page { margin: 0 auto; padding: 18px 24px 40px; }
 .fa-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .fa-eyebrow { margin: 0; color: var(--fa-brand); font-size: 11px; font-weight: 800; letter-spacing: .12em; }
 .fa-head h1 { margin: 2px 0; font-size: 24px; }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>ออกกำลังกายและฟิตเนส 15 ครั้ง | GA Operations</title>
-    <link rel="stylesheet" href="fitness-admin.css?v=20261027-3">
+    <link rel="stylesheet" href="fitness-admin.css?v=20261027-4">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
@@ -21,17 +21,10 @@
             </div>
         </header>
 
-        <nav class="fa-source" id="faSource" aria-label="แหล่งข้อมูล">
-            <button type="button" data-source="new" class="is-on">ระบบใหม่ (ลิงก์ exercise.html)</button>
-            <button type="button" data-source="legacy">ข้อมูลจากชีตเดิม (ลิงก์ Netlify / Apps Script)</button>
-            <span id="faSourceNote"></span>
-        </nav>
-
         <section class="fa-stats" id="faStats"></section>
 
         <section class="fa-toolbar">
             <label id="faMonthLabel">เดือน <select id="faMonth"></select></label>
-            <button type="button" class="fa-btn fa-btn-ghost" data-action="reload-legacy" id="faReloadLegacy" hidden>โหลดจากชีตเดิมใหม่</button>
             <div class="fa-chips" id="faTypeChips">
                 <button type="button" data-type="" class="is-on">ทุกแบบฟอร์ม</button>
                 <button type="button" data-type="กิจกรรม30วัน">กิจกรรม 30 วัน</button>
@@ -69,6 +62,6 @@
     <div id="faBusy" class="fa-busy" hidden><div><span class="fa-spinner"></span><b id="faBusyTitle">กำลังสร้างไฟล์…</b><p id="faBusyText"></p><div class="fa-progress"><i id="faBusyBar"></i></div></div></div>
 
     <script src="config.js"></script>
-    <script src="fitness-admin.js?v=20261027-5"></script>
+    <script src="fitness-admin.js?v=20261027-6"></script>
 </body>
 </html>

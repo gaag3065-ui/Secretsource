@@ -231,7 +231,8 @@
         $('faTypeChips').querySelectorAll('button').forEach(b => b.classList.toggle('is-on', b === button));
         render();
     });
-    $('faSource').addEventListener('click', event => { const button = event.target.closest('[data-source]'); if (button) setSource(button.dataset.source); });
+    // ข้อมูลระบบเดิมนำเข้าฐานข้อมูลใหม่แล้ว — ไม่มีปุ่มสลับไปอ่านชีตเดิมอีก
+    $('faSource')?.addEventListener('click', event => { const button = event.target.closest('[data-source]'); if (button) setSource(button.dataset.source); });
     $('faStatus').addEventListener('change', render);
     $('faSearch').addEventListener('input', render);
     $('faMonth').addEventListener('change', event => load(event.target.value));
