@@ -1168,6 +1168,9 @@ window.addEventListener('message', event => {
     );
 });
 
+    // ให้ portal-split.js (เปิดหน้าอื่นคู่กับแชท) ใช้รายการส่วนงานและสิทธิ์ชุดเดียวกัน
+    window.PortalApi = { services, getAccessibleTasks };
+
     try {
         await loadSession();
     } catch (error) {

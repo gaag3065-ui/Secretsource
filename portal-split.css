@@ -1,0 +1,40 @@
+/* แบ่งจอทำงานคู่กับหน้าแชท (portal-split.js) */
+
+/* ปุ่มส่วนงานบนแถบบน — แสดงเฉพาะตอนเปิดหน้าแชท */
+@media (min-width: 821px) { .topbar-spacer { display: flex; align-items: center; justify-content: center; min-width: 0; } }
+.split-nav { display: flex; align-items: center; gap: 6px; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 0 8px; }
+.split-nav[hidden] { display: none; }
+.split-nav span { flex: none; color: #667085; font-size: 11.5px; }
+.split-nav button { flex: none; border: 1px solid #d0d5dd; border-radius: 999px; padding: 4px 12px; background: #fff; color: #344054; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.split-nav button:hover { border-color: var(--c); color: var(--c); }
+.split-nav button.is-on { background: var(--c); border-color: var(--c); color: #fff; }
+
+/* พื้นที่ทำงานแบ่ง 2 ฝั่ง: หน้าที่เลือก (ซ้าย) | แชท (ขวา) */
+.workspace-frame-container.is-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.split-pane[hidden] { display: none; }
+.split-pane { display: flex; min-width: 0; min-height: 0; flex-direction: column; border-right: 1px solid #e4e7ec; background: #fff; }
+.split-head { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 8px; height: 36px; padding: 0 10px 0 14px; border-bottom: 1px solid #e4e7ec; background: #f9fafb; font-size: 12.5px; }
+.split-close { border: 1px solid #d0d5dd; border-radius: 8px; padding: 2px 10px; background: #fff; font: inherit; font-size: 11.5px; cursor: pointer; }
+.split-close:hover { border-color: #b42318; color: #b42318; }
+.workspace-view .workspace-frame-container .split-pane iframe { flex: 1; width: 100%; height: auto !important; min-height: 0 !important; }
+.workspace-view .workspace-frame-container.is-split > iframe { min-width: 0; }
+
+/* ปุ่มกลมลอยสำหรับมือถือ (ลากย้ายได้) */
+.split-fab { position: fixed; right: 16px; bottom: 96px; z-index: 70; }
+.split-fab[hidden] { display: none; }
+.split-fab-button { width: 54px; height: 54px; border: 0; border-radius: 50%; background: #0f766e; color: #fff; font-size: 22px; box-shadow: 0 8px 22px rgba(16, 24, 40, .28); cursor: grab; touch-action: none; }
+.split-fab-menu { position: absolute; right: 0; bottom: 62px; display: grid; gap: 6px; min-width: 190px; padding: 8px; border: 1px solid #e4e7ec; border-radius: 14px; background: #fff; box-shadow: 0 12px 30px rgba(16, 24, 40, .2); }
+.split-fab-menu[hidden] { display: none; }
+.split-fab-menu button { border: 1px solid #e4e7ec; border-radius: 10px; padding: 9px 12px; background: #fff; text-align: left; font: inherit; font-size: 13px; font-weight: 600; color: #344054; }
+.split-fab-menu button.is-on { background: var(--c); border-color: var(--c); color: #fff; }
+
+@media (min-width: 821px) {
+    .split-fab { display: none; }
+}
+/* มือถือ: หน้าที่เลือกครึ่งบน แชทครึ่งล่าง */
+@media (max-width: 820px) {
+    .split-nav { display: none; }
+    .workspace-frame-container.is-split { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); height: calc(100dvh - var(--topbar-height)) !important; }
+    .split-pane { border-right: 0; border-bottom: 2px solid #0f766e; }
+    .workspace-view .workspace-frame-container.is-split > iframe { height: 100% !important; min-height: 0 !important; }
+}
