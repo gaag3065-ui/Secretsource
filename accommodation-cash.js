@@ -19,11 +19,34 @@
         }
         return parts.join(' ');
     }
+    // ภาษาไทย (แบบเดียวกับการอ่านจำนวนเงินบาท): 2,721,370 → สองล้านเจ็ดแสนสองหมื่นหนึ่งพันสามร้อยเจ็ดสิบ
+    const TH_DIGIT = ['', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า'];
+    const TH_PLACE = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน'];
+    function thaiUnder1m(n, hasHigher = false) {
+        const digits = String(n).split('').reverse();
+        return digits.map((ch, i) => {
+            const d = Number(ch);
+            if (!d) return '';
+            if (i === 0 && d === 1 && (digits.length > 1 || hasHigher)) return 'เอ็ด';
+            if (i === 1 && d === 1) return 'สิบ';
+            if (i === 1 && d === 2) return 'ยี่สิบ';
+            return TH_DIGIT[d] + TH_PLACE[i];
+        }).reverse().join('');
+    }
+    function thaiWords(n) {
+        if (!n) return 'ศูนย์';
+        const millions = Math.floor(n / 1e6), rest = n % 1e6;
+        return (millions ? thaiWords(millions) + 'ล้าน' : '') + (rest ? thaiUnder1m(rest, millions > 0) : '');
+    }
+    // 2 บรรทัด: ภาษาไทย / ภาษาอังกฤษ
     function amountInWords(value) {
         const amount = Number(String(value || '').replace(/,/g, ''));
         if (!Number.isFinite(amount) || amount <= 0) return '';
         const rupees = Math.floor(amount), cents = Math.round((amount - rupees) * 100);
-        return `${words(rupees)} Rupees${cents ? ` and ${words(cents)} Cents` : ''} Only`;
+        const thai = `${thaiWords(rupees)}รูปี${cents ? thaiWords(cents) + 'เซนต์' : 'ถ้วน'}`;
+        const english = `${words(rupees)} Rupees${cents ? ` and ${words(cents)} Cents` : ''} Only`;
+        return `${thai}
+${english}`;
     }
 
     // ---------------------------------------------------------------- ปุ่ม + ป็อปอัป
@@ -46,6 +69,7 @@
         .cr-form label small { font-weight: 400; color: #6b7785; }
         .cr-form input, .cr-form textarea { width: 100%; box-sizing: border-box; border: 1px solid #d0d5dd; border-radius: 9px; padding: 8px 10px; font: inherit; font-size: 14px; }
         .cr-form textarea { min-height: 64px; resize: vertical; }
+        .cr-form textarea[name="amountWords"] { min-height: 58px; }
         .cr-full { grid-column: 1 / -1; }
         .cr-method { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; }
         .cr-method label { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
@@ -67,7 +91,7 @@
             <label>วันที่ / Date<input type="date" name="date" required></label>
             <label>จำนวนเงิน / Amount (LKR)<input type="number" name="amount" min="0" step="0.01" inputmode="decimal" placeholder="เช่น 15000" required></label>
             <label class="cr-full">รายละเอียด / Details<textarea name="details" placeholder="เช่น ค่าทำความสะอาดห้องพัก Bagatale Court 5/2 (ขึ้นบรรทัดใหม่ได้ 1 ครั้ง)" required></textarea></label>
-            <label class="cr-full">จำนวนเงินเป็นตัวหนังสือ / Amount in Words <small>ระบบเติมให้จากจำนวนเงิน — แก้เองได้</small><input name="amountWords" placeholder="Fifteen Thousand Rupees Only"></label>
+            <label class="cr-full">จำนวนเงินเป็นตัวหนังสือ / Amount in Words <small>ระบบเติมให้จากจำนวนเงิน (บรรทัดแรกภาษาไทย บรรทัดที่สองภาษาอังกฤษ) — แก้เองได้</small><textarea name="amountWords" rows="2" placeholder="หนึ่งหมื่นห้าพันรูปีถ้วน&#10;Fifteen Thousand Rupees Only"></textarea></label>
             <div class="cr-full"><div class="cr-section">วิธีการรับเงิน / Method of Payment</div>
                 <div class="cr-method"><label><input type="radio" name="method" value="cash" checked> เงินสด / Cash</label><label><input type="radio" name="method" value="bank"> ใบถอนเงินฝากธนาคาร / Bank Withdrawal Slip</label></div></div>
             <div class="cr-full cr-section">โดยได้ส่งมอบให้กับ / The payment has been made to</div>
@@ -96,7 +120,9 @@
         for (const [k, v] of Object.entries(draft)) { const el = field(k); if (el && el.type !== 'radio' && typeof el.value === 'string') el.value = v; }
         if (draft.method) form.querySelectorAll('input[name="method"]').forEach(r => { r.checked = r.value === draft.method; });
         if (!field('date').value) field('date').value = today();
-        wordsEdited = Boolean(draft.amountWords && draft.amountWords !== amountInWords(draft.amount));
+        // ข้อความเก่าบรรทัดเดียว (ก่อนมีภาษาไทย) ให้ระบบเติมใหม่
+        wordsEdited = Boolean(draft.amountWords && draft.amountWords.includes('\n') && draft.amountWords !== amountInWords(draft.amount));
+        if (!wordsEdited && draft.amount) field('amountWords').value = amountInWords(draft.amount);
     }
     form.addEventListener('input', event => {
         if (event.target.name === 'amountWords') wordsEdited = Boolean(event.target.value.trim());
