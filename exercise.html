@@ -937,7 +937,7 @@
       if(!summary)return false;
       if(summary.dataset.multiProgress==='ready')return true;
       const section=summary.closest('section'),heading=section&&section.querySelector('.section-title');
-      if(heading)heading.innerHTML='📈 ความคืบหน้ากิจกรรม <small>แยกตาม 3 แบบฟอร์ม</small>';
+      if(heading)heading.innerHTML='📈 ความคืบหน้ากิจกรรม';
       summary.className='progress-summary progress-grid';
       summary.innerHTML=PROGRESS_FORMS.map(progressCardMarkup).join('');
       summary.dataset.multiProgress='ready';
@@ -1083,6 +1083,6 @@
       };
     })();
   </script>
-  <script src="exercise-days.js?v=20261027-1"></script>
+  <script src="exercise-days.js?v=20261027-2"></script>
 </body>
 </html>

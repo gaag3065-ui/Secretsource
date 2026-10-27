@@ -47,6 +47,7 @@
     .dx-card input[type=date],.dx-card input[type=text]{width:100%;padding:8px 9px;border:1px solid rgba(72,186,255,.56);border-radius:9px;background:#071b31;color:#fff;font:14px inherit;min-width:0}
     .dx-card label.dx-field{display:grid;gap:3px;color:var(--gold2);font-size:11.5px;font-weight:bold}
     .dx-help{margin:0 0 12px;color:var(--muted);font-size:13px}
+    @media(min-width:641px){.progress-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>`);
 
   // ช่องกรอกเดิม (เลือกครั้ง → กรอกด้านล่าง) ไม่ใช้แล้ว: ซ่อนไว้ เหลือใบเสร็จ ลายเซ็น และปุ่มบันทึก
