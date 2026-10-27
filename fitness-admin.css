@@ -89,3 +89,13 @@ tr:hover td { background: #fafbfc; }
 .fa-source button { border: 1px solid var(--fa-line); background: #fff; border-radius: 10px; padding: 7px 14px; font-weight: 700; cursor: pointer; }
 .fa-source button.is-on { background: var(--fa-ink); border-color: var(--fa-ink); color: #fff; }
 .fa-source span { color: var(--fa-muted); font-size: 12px; }
+
+.fa-busy[hidden] { display: none; }
+.fa-busy { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(244, 247, 248, .8); }
+.fa-busy > div { width: min(380px, calc(100vw - 32px)); background: #fff; border: 1px solid var(--fa-line); border-radius: 14px; padding: 22px; text-align: center; box-shadow: 0 10px 34px rgba(0, 0, 0, .1); }
+.fa-busy b { display: block; margin-top: 8px; }
+.fa-busy p { margin: 4px 0 10px; color: var(--fa-muted); font-size: 12.5px; }
+.fa-spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid var(--fa-brand-soft); border-top-color: var(--fa-brand); border-radius: 50%; animation: fa-spin .9s linear infinite; }
+@keyframes fa-spin { to { transform: rotate(360deg); } }
+.fa-progress { height: 7px; border-radius: 4px; background: #edf0f2; overflow: hidden; }
+.fa-progress i { display: block; height: 100%; width: 0; background: var(--fa-brand); transition: width .3s; }

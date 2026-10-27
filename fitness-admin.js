@@ -33,8 +33,6 @@
         try {
             state.data = await request(`/forms${month ? `?month=${encodeURIComponent(month)}` : ''}`);
             $('faMonth').innerHTML = state.data.months.map(m => `<option value="${m}" ${m === state.data.month ? 'selected' : ''}>${m}</option>`).join('');
-            const links = state.data.links;
-            if (links) { $('faSheetLink').href = links.sheet; $('faFolderLink').href = links.folder; $('faSheetLink').hidden = $('faFolderLink').hidden = false; }
             renderLock();
             $('faUpdated').textContent = `· อัปเดต ${new Date().toLocaleTimeString('th-TH')}`;
             render();
@@ -232,10 +230,6 @@
     $('faPublicLink').href = publicUrl();
 
     const actions = {
-        async 'copy-link'() {
-            try { await navigator.clipboard.writeText(publicUrl()); toast('คัดลอกลิงก์แล้ว: ' + publicUrl()); }
-            catch { prompt('คัดลอกลิงก์นี้ส่งให้พนักงาน', publicUrl()); }
-        },
         async 'toggle-lock'() {
             const locked = !state.data?.locked;
             if (!confirm(locked ? 'ปิดรับการเข้าสู่ระบบของพนักงานชั่วคราว?' : 'เปิดรับการเข้าสู่ระบบของพนักงาน?')) return;
@@ -245,18 +239,36 @@
             toast(result.locked ? '🔒 ปิดระบบแล้ว' : '🔓 เปิดระบบแล้ว');
         },
         'reload-legacy'() { return loadLegacy(true); },
-        export() {
-            const rows = filtered();
-            const header = ['เดือน', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'บริษัท', 'รหัสประกัน', 'แบบฟอร์ม', 'รูป', 'วันที่', 'ลายเซ็น', 'สถานะส่ง', 'ผลตรวจ', 'หมายเหตุ', 'ผู้ตรวจ'];
-            const cell = value => `"${String(value ?? '').replace(/"/g, '""').replace(/^([=+\-@])/, "'$1")}"`;
-            const lines = rows.map(f => [f.month || 'ชีตเดิม', f.employee_id || '', f.fullname, f.company, f.insurance_code, TYPE_LABEL[f.form_type] || f.form_type,
-                `${f.images}/${f.required?.slots}`, `${f.dates}/${f.required?.days}`, f.has_signature ? 'มี' : 'ไม่มี', f.complete ? 'ส่งครบ' : 'ยังไม่ครบ',
-                (REVIEW[f.review_status] || REVIEW.pending)[0], f.review_note, f.reviewed_by].map(cell).join(','));
-            const blob = new Blob(['﻿' + [header.map(cell).join(','), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' });
-            const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `ออกกำลังกาย-${state.source === 'legacy' ? 'ชีตเดิม' : state.data?.month || ''}.csv` });
-            document.body.append(link); link.click(); link.remove();
-        }
+        'export-pdf'() { return exportFile('pdf'); },
+        'export-xlsx'() { return exportFile('xlsx'); }
     };
+    // ดาวน์โหลด PDF/XLSX ของรายการที่แสดงอยู่: หลังบ้านสร้างไฟล์เบื้องหลัง (ดึงรูปจาก Drive) แล้วหน้าเว็บถามความคืบหน้าทุก 2 วินาที
+    async function exportFile(format) {
+        const rows = filtered();
+        if (!rows.length) return toast('ไม่มีแบบฟอร์มในรายการ', true);
+        if (rows.length > 80) return toast('ดาวน์โหลดได้ครั้งละไม่เกิน 80 แบบฟอร์ม — กรองรายการให้น้อยลงก่อน', true);
+        const legacy = state.source === 'legacy';
+        const label = legacy ? 'ชีตเดิม' : state.data?.month || '';
+        const name = rows.length === 1 ? `ออกกำลังกาย-${rows[0].fullname}-${label}` : `ออกกำลังกาย-${label}-${rows.length}คน`;
+        const busy = (title, text, pct) => { $('faBusy').hidden = !title; if (title) { $('faBusyTitle').textContent = title; $('faBusyText').textContent = text || ''; $('faBusyBar').style.width = (pct || 0) + '%'; } };
+        busy(`กำลังสร้าง ${format.toUpperCase()}…`, `${rows.length} แบบฟอร์ม`, 2);
+        try {
+            let { job } = await request('/export', { method: 'POST', body: JSON.stringify({ format, source: state.source, ids: rows.map(f => legacy ? f.key : f.id), name }) });
+            while (job.status === 'running') {
+                await new Promise(r => setTimeout(r, 2000));
+                ({ job } = await request(`/export/${job.id}`));
+                const pct = job.total ? Math.round(job.done / job.total * 90) : 5;
+                busy(`กำลังสร้าง ${format.toUpperCase()}…`, `${job.stage} ${job.total ? `(รูป ${job.done}/${job.total})` : ''}`, job.status === 'running' && job.done >= job.total && job.total ? 95 : pct);
+            }
+            if (job.status !== 'done') throw new Error(job.error || 'สร้างไฟล์ไม่สำเร็จ');
+            const response = await window.authFetch(api(`/export/${job.id}/file`));
+            if (!response.ok) throw new Error('ดาวน์โหลดไฟล์ไม่สำเร็จ');
+            const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(await response.blob()), download: job.name });
+            document.body.append(link); link.click(); link.remove();
+            toast(`ดาวน์โหลด ${job.name} แล้ว${job.missing ? ` (เปิดรูปไม่ได้ ${job.missing} รูป)` : ''}`);
+        } finally { busy(''); }
+    }
+
     document.addEventListener('click', async event => {
         const button = event.target.closest('[data-action]');
         if (!button || !actions[button.dataset.action]) return;
