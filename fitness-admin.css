@@ -84,3 +84,8 @@ tr:hover td { background: #fafbfc; }
 .fa-toast.is-visible { opacity: 1; transform: none; }
 .fa-toast.is-error { background: var(--fa-bad); }
 @media (max-width: 640px) { .fa-page { padding: 12px 16px 32px; } .fa-days { grid-template-columns: 1fr; } }
+
+.fa-source { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; }
+.fa-source button { border: 1px solid var(--fa-line); background: #fff; border-radius: 10px; padding: 7px 14px; font-weight: 700; cursor: pointer; }
+.fa-source button.is-on { background: var(--fa-ink); border-color: var(--fa-ink); color: #fff; }
+.fa-source span { color: var(--fa-muted); font-size: 12px; }

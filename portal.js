@@ -190,7 +190,7 @@ const services = [
                 route: 'fitness-admin',
                 title: 'ออกกำลังกายและฟิตเนส 15 ครั้ง',
                 icon: 'health',
-                page: 'fitness-admin.html?v=20261027-1'
+                page: 'fitness-admin.html?v=20261027-2'
             }
         ]
     },

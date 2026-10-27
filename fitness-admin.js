@@ -6,7 +6,8 @@
     const api = path => `${window.APP_CONFIG.API_BASE_URL}/api/fitness/admin${path}`;
     const TYPE_LABEL = { 'กิจกรรม30วัน': 'กิจกรรม 30 วัน', 'ออกกำลังกายทั่วไป15ครั้ง': 'ทั่วไป 15 ครั้ง', 'ค่าฟิตเนสรายเดือน': 'ฟิตเนสรายเดือน' };
     const REVIEW = { pending: ['รอตรวจ', 'wait'], approved: ['ผ่าน', 'ok'], rejected: ['ไม่ผ่าน', 'bad'] };
-    const state = { data: null, type: '', images: new Map(), detail: null };
+    // source: 'new' = ระบบใหม่ (ฐานข้อมูลบน Drive), 'legacy' = อ่านจากชีตรายคนของระบบเดิม (Apps Script)
+    const state = { data: null, legacy: null, source: 'new', type: '', images: new Map(), detail: null };
 
     async function request(path, options = {}) {
         const response = await window.authFetch(api(path), { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
@@ -28,6 +29,7 @@
 
     // ---------------------------------------------------------------- รายการ
     async function load(month = $('faMonth').value) {
+        if (state.source === 'legacy') return loadLegacy();
         try {
             state.data = await request(`/forms${month ? `?month=${encodeURIComponent(month)}` : ''}`);
             $('faMonth').innerHTML = state.data.months.map(m => `<option value="${m}" ${m === state.data.month ? 'selected' : ''}>${m}</option>`).join('');
@@ -41,6 +43,29 @@
             $('faLock').textContent = 'สถานะระบบไม่ทราบ';
         }
     }
+    async function loadLegacy(refresh = false) {
+        $('faRows').innerHTML = '<tr><td colspan="9" class="fa-empty">กำลังอ่านชีตเดิม… (ครั้งแรกอาจใช้เวลาสักครู่)</td></tr>';
+        try {
+            state.legacy = await request(refresh ? '/legacy?refresh=1' : '/legacy');
+            $('faSourceNote').innerHTML = 'ไฟล์ <a href="' + esc(state.legacy.url) + '" target="_blank" rel="noopener">' + esc(state.legacy.title) + ' ↗</a> · อ่านเมื่อ '
+                + new Date(state.legacy.fetchedAt).toLocaleTimeString('th-TH') + ' · ไม่แก้ไฟล์เดิม ผลตรวจเก็บในชีตฐานข้อมูลใหม่';
+            render();
+        } catch (error) {
+            state.legacy = null;
+            $('faStats').innerHTML = '';
+            $('faRows').innerHTML = '<tr><td colspan="9" class="fa-empty">' + esc(error.message) + '</td></tr>';
+        }
+    }
+    const currentForms = () => (state.source === 'legacy' ? state.legacy?.forms : state.data?.forms) || [];
+    function setSource(source) {
+        state.source = source;
+        $('faSource').querySelectorAll('[data-source]').forEach(b => b.classList.toggle('is-on', b.dataset.source === source));
+        $('faMonthLabel').hidden = source === 'legacy';
+        $('faReloadLegacy').hidden = source !== 'legacy';
+        if (source === 'new') $('faSourceNote').textContent = '';
+        if (source === 'legacy' && !state.legacy) loadLegacy(); else render();
+    }
+
     function renderLock() {
         const locked = state.data.locked;
         $('faLock').textContent = locked ? '🔒 ปิดรับพนักงานอยู่ — กดเพื่อเปิด' : '🔓 เปิดรับพนักงานอยู่ — กดเพื่อปิด';
@@ -49,12 +74,12 @@
     function filtered() {
         const status = $('faStatus').value;
         const query = $('faSearch').value.trim().toLowerCase();
-        return state.data.forms.filter(f => (!state.type || f.form_type === state.type)
+        return currentForms().filter(f => (!state.type || f.form_type === state.type)
             && (!status || (status === 'complete' ? f.complete : status === 'incomplete' ? !f.complete : f.review_status === status))
             && (!query || [f.fullname, f.employee_id, f.company, f.insurance_code].some(v => String(v || '').toLowerCase().includes(query))));
     }
     function render() {
-        const all = state.data.forms.filter(f => !state.type || f.form_type === state.type);
+        const all = currentForms().filter(f => !state.type || f.form_type === state.type);
         const count = fn => all.filter(fn).length;
         $('faStats').innerHTML = [
             ['แบบฟอร์มทั้งหมด', all.length], ['ส่งครบแล้ว', count(f => f.complete)], ['รอตรวจ (ส่งครบ)', count(f => f.complete && f.review_status === 'pending')],
@@ -66,24 +91,25 @@
             const bar = (n, max) => `<div class="fa-bar"><i class="${n >= max ? 'is-full' : ''}" style="width:${max ? Math.min(100, n / max * 100) : 0}%"></i></div>`;
             const [label, cls] = REVIEW[f.review_status] || REVIEW.pending;
             return `<tr>
-                <td><b>${esc(f.fullname)}</b><small>${esc(f.employee_id)} · ${esc(f.company)}</small></td>
+                <td><b>${esc(f.fullname)}</b><small>${esc(f.employee_id || f.insurance_code || '')} · ${esc(f.company)}</small></td>
                 <td><span class="fa-type">${esc(TYPE_LABEL[f.form_type] || f.form_type)}</span></td>
                 <td>${f.images}/${req.slots}${bar(f.images, req.slots)}${f.bad_images ? `<small style="color:var(--fa-bad)">ติดธง ${f.bad_images} รูป</small>` : ''}</td>
                 <td>${f.dates}/${req.days}${bar(f.dates, req.days)}</td>
                 <td>${f.has_signature ? '✔' : '<span class="fa-badge dim">ยังไม่ลงชื่อ</span>'}</td>
                 <td>${f.complete ? '<span class="fa-badge ok">ส่งครบ</span>' : '<span class="fa-badge dim">ยังไม่ครบ</span>'}</td>
                 <td><span class="fa-badge ${cls}">${label}</span>${f.reviewed_by ? `<small>${esc(f.reviewed_by)}</small>` : ''}</td>
-                <td><small>${when(f.updated_at)}</small></td>
-                <td><button type="button" class="fa-btn fa-btn-primary" data-open="${f.id}">ตรวจ</button></td>
+                <td><small>${state.source === 'legacy' ? esc(f.status_text || '-') : when(f.updated_at)}</small></td>
+                <td><button type="button" class="fa-btn fa-btn-primary" data-open="${esc(state.source === 'legacy' ? f.key : f.id)}">ตรวจ</button></td>
             </tr>`;
         }).join('') : '<tr><td colspan="9" class="fa-empty">ไม่มีแบบฟอร์มตามเงื่อนไข</td></tr>';
     }
 
     // ---------------------------------------------------------------- รูป (ดึงผ่าน authFetch เพราะต้องแนบสิทธิ์)
-    function imageUrl(formId, slot, stamp) {
-        const key = `${formId}/${slot}/${stamp}`;
+    // key: "<เลขฟอร์ม>/<ช่อง>/<เวลา>" (ระบบใหม่) หรือ "L:<Drive file id>" (ชีตเดิม)
+    function imageUrl(key) {
         if (!state.images.has(key)) {
-            state.images.set(key, window.authFetch(api(`/image/${formId}/${slot}`))
+            const path = key.startsWith('L:') ? '/legacy/image/' + encodeURIComponent(key.slice(2)) : '/image/' + key.split('/').slice(0, 2).join('/');
+            state.images.set(key, window.authFetch(api(path))
                 .then(r => { if (!r.ok) throw new Error(); return r.blob(); })
                 .then(blob => URL.createObjectURL(blob))
                 .catch(() => { state.images.delete(key); return ''; }));
@@ -92,8 +118,7 @@
     }
     function hydrate(root) {
         root.querySelectorAll('img[data-src]').forEach(async img => {
-            const [formId, slot, stamp] = img.dataset.src.split('/');
-            const src = await imageUrl(formId, slot, stamp);
+            const src = await imageUrl(img.dataset.src);
             if (src) img.src = src; else img.replaceWith(Object.assign(document.createElement('div'), { className: 'fa-missing', textContent: 'เปิดรูปไม่ได้' }));
         });
     }
@@ -103,13 +128,13 @@
         const s = slots.get(slot);
         if (!s) return `<div class="fa-shot"><div class="fa-missing">${esc(caption)}: ยังไม่อัปโหลด</div></div>`;
         return `<div class="fa-shot ${s.review_flag || ''}" title="${esc(caption)} · อัปโหลด ${esc(when(s.uploaded_at))}">
-            <img data-src="${form.id}/${slot}/${s.stamp}" data-zoom alt="${esc(caption)}">
+            <img data-src="${esc(s.file_id ? 'L:' + s.file_id : form.id + '/' + slot + '/' + s.stamp)}" data-zoom alt="${esc(caption)}">
             <div class="fa-flags"><button type="button" class="${s.review_flag === 'ok' ? 'on-ok' : ''}" data-flag="ok" data-slot="${slot}">ผ่าน</button><button type="button" class="${s.review_flag === 'bad' ? 'on-bad' : ''}" data-flag="bad" data-slot="${slot}">ไม่ผ่าน</button></div>
         </div>`;
     }
     async function openDetail(id) {
         try {
-            const data = await request(`/forms/${id}`);
+            const data = await request(state.source === 'legacy' ? '/legacy/form?key=' + encodeURIComponent(id) : '/forms/' + id);
             state.detail = data;
             renderDetail();
             $('faDialog').showModal();
@@ -130,11 +155,13 @@
         }).join('');
         const bill = form.form_type === 'ค่าฟิตเนสรายเดือน' ? `<div><h3>🧾 ใบเสร็จค่าฟิตเนส</h3>${shot(form, slots, 31, 'ใบเสร็จ')}</div>` : '';
         const signature = form.has_signature
-            ? `<div class="fa-shot" style="background:#fff"><img data-src="${form.id}/0/${form.signature_stamp}" data-zoom alt="ลายเซ็น" style="object-fit:contain"></div>`
+            ? `<div class="fa-shot" style="background:#fff"><img data-src="${esc(form.signature ? 'L:' + form.signature : form.id + '/0/' + form.signature_stamp)}" data-zoom alt="ลายเซ็น" style="object-fit:contain"></div>`
             : '<div class="fa-shot"><div class="fa-missing">ยังไม่ลงชื่อ</div></div>';
         $('faDetail').innerHTML = `<div class="fa-detail-head">
                 <div><h2>${esc(form.fullname)} · <span class="fa-type">${esc(TYPE_LABEL[form.form_type] || form.form_type)}</span></h2>
-                <p>${esc(form.employee_id)} · ${esc(form.company)} · รหัสประกัน ${esc(form.insurance_code || '-')} · เดือน ${esc(form.month)} · ${form.completed_at ? `ส่งครบเมื่อ ${esc(when(form.completed_at))}` : 'ยังส่งไม่ครบ'}</p></div>
+                <p>${state.source === 'legacy'
+                    ? 'ข้อมูลจากชีตเดิม "' + esc(form.key) + '" · ' + esc(form.company) + ' · รหัสประกัน ' + esc(form.insurance_code || '-') + ' · ' + esc(form.status_text || '') + ' · ' + (form.complete ? 'ส่งครบ' : 'ยังส่งไม่ครบ')
+                    : `${esc(form.employee_id)} · ${esc(form.company)} · รหัสประกัน ${esc(form.insurance_code || '-')} · เดือน ${esc(form.month)} · ${form.completed_at ? `ส่งครบเมื่อ ${esc(when(form.completed_at))}` : 'ยังส่งไม่ครบ'}`}</p></div>
                 <button type="button" class="fa-close" data-close aria-label="ปิด">×</button>
             </div>
             <div class="fa-detail-body">
@@ -165,7 +192,9 @@
             const item = slots.find(s => s.slot === slot);
             const next = item.review_flag === flag.dataset.flag ? '' : flag.dataset.flag;
             try {
-                await request(`/forms/${form.id}/slots/${slot}`, { method: 'PUT', body: JSON.stringify({ flag: next }) });
+                await (state.source === 'legacy'
+                    ? request('/legacy/flag', { method: 'PUT', body: JSON.stringify({ key: form.key, slot, flag: next }) })
+                    : request(`/forms/${form.id}/slots/${slot}`, { method: 'PUT', body: JSON.stringify({ flag: next }) }));
                 item.review_flag = next;
                 renderDetail();
             } catch (error) { toast(error.message, true); }
@@ -175,7 +204,10 @@
             const status = document.querySelector('input[name="faReview"]:checked')?.value;
             if (!status) return toast('เลือกผลการตรวจก่อน', true);
             try {
-                await request(`/forms/${state.detail.form.id}/review`, { method: 'PUT', body: JSON.stringify({ status, note: $('faReviewNote').value }) });
+                const form = state.detail.form, note = $('faReviewNote').value;
+                await (state.source === 'legacy'
+                    ? request('/legacy/review', { method: 'PUT', body: JSON.stringify({ key: form.key, status, note }) })
+                    : request(`/forms/${form.id}/review`, { method: 'PUT', body: JSON.stringify({ status, note }) }));
                 toast('บันทึกผลตรวจแล้ว');
                 $('faDialog').close();
                 load();
@@ -193,6 +225,7 @@
         $('faTypeChips').querySelectorAll('button').forEach(b => b.classList.toggle('is-on', b === button));
         render();
     });
+    $('faSource').addEventListener('click', event => { const button = event.target.closest('[data-source]'); if (button) setSource(button.dataset.source); });
     $('faStatus').addEventListener('change', render);
     $('faSearch').addEventListener('input', render);
     $('faMonth').addEventListener('change', event => load(event.target.value));
@@ -211,15 +244,16 @@
             renderLock();
             toast(result.locked ? '🔒 ปิดระบบแล้ว' : '🔓 เปิดระบบแล้ว');
         },
+        'reload-legacy'() { return loadLegacy(true); },
         export() {
             const rows = filtered();
             const header = ['เดือน', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'บริษัท', 'รหัสประกัน', 'แบบฟอร์ม', 'รูป', 'วันที่', 'ลายเซ็น', 'สถานะส่ง', 'ผลตรวจ', 'หมายเหตุ', 'ผู้ตรวจ'];
             const cell = value => `"${String(value ?? '').replace(/"/g, '""').replace(/^([=+\-@])/, "'$1")}"`;
-            const lines = rows.map(f => [f.month, f.employee_id, f.fullname, f.company, f.insurance_code, TYPE_LABEL[f.form_type] || f.form_type,
+            const lines = rows.map(f => [f.month || 'ชีตเดิม', f.employee_id || '', f.fullname, f.company, f.insurance_code, TYPE_LABEL[f.form_type] || f.form_type,
                 `${f.images}/${f.required?.slots}`, `${f.dates}/${f.required?.days}`, f.has_signature ? 'มี' : 'ไม่มี', f.complete ? 'ส่งครบ' : 'ยังไม่ครบ',
                 (REVIEW[f.review_status] || REVIEW.pending)[0], f.review_note, f.reviewed_by].map(cell).join(','));
             const blob = new Blob(['﻿' + [header.map(cell).join(','), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' });
-            const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `ออกกำลังกาย-${state.data?.month || ''}.csv` });
+            const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `ออกกำลังกาย-${state.source === 'legacy' ? 'ชีตเดิม' : state.data?.month || ''}.csv` });
             document.body.append(link); link.click(); link.remove();
         }
     };
