@@ -117,6 +117,9 @@ const services = [
         color: '#2563eb',
         soft: '#eaf2ff',
         tags: [],
+        // กดการ์ดแล้วเข้า "ค้นหาทรัพย์สิน" ทันที ไม่แสดงรายการเมนูย่อยด้านซ้าย
+        directOpen: true,
+        directTask: 'asset-search',
         tasks: [
             {
                 route: 'asset-search',
