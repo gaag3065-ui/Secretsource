@@ -152,14 +152,14 @@
         const slots = new Map(slotList.map(s => [s.slot, s]));
         const days = new Map(dayList.map(d => [d.day, d]));
         const label = form.form_type === 'ออกกำลังกายทั่วไป15ครั้ง' ? 'ครั้งที่' : 'วันที่';
-        const dayCards = Array.from({ length: req.days }, (_, i) => {
+        const dayCards = Array.from({ length: req.maxDays || req.days }, (_, i) => {
             const d = days.get(i + 1) || {};
             const done = slots.has(i * 2 + 1) && slots.has(i * 2 + 2) && d.date;
             return `<article class="fa-day ${done ? 'is-done' : ''}"><header><b>${label} ${i + 1}</b><span>${esc(d.date || 'ยังไม่ระบุวันที่')}</span></header>
                 ${req.details ? `<p>${esc(d.description || '—')}</p>` : ''}
                 <div class="fa-shots">${shot(form, slots, i * 2 + 1, 'รูปที่ 1')}${shot(form, slots, i * 2 + 2, 'รูปที่ 2')}</div></article>`;
         }).join('');
-        const bill = form.form_type === 'ค่าฟิตเนสรายเดือน' ? `<div><h3>🧾 ใบเสร็จค่าฟิตเนส</h3>${shot(form, slots, 31, 'ใบเสร็จ')}</div>` : '';
+        const bill = form.form_type === 'ค่าฟิตเนสรายเดือน' ? `<div><h3>🧾 ใบเสร็จค่าฟิตเนส</h3>${shot(form, slots, req.billSlot || 31, 'ใบเสร็จ')}</div>` : '';
         const signature = form.has_signature
             ? `<div class="fa-shot" style="background:#fff"><img data-src="${esc(form.signature ? 'L:' + form.signature : form.id + '/0/' + form.signature_stamp)}" data-zoom alt="ลายเซ็น" style="object-fit:contain"></div>`
             : '<div class="fa-shot"><div class="fa-missing">ยังไม่ลงชื่อ</div></div>';
