@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>ออกกำลังกายและฟิตเนส 15 ครั้ง | GA Operations</title>
+    <link rel="stylesheet" href="fitness-admin.css?v=20261027-1">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+</head>
+<body>
+    <main class="fa-page">
+        <header class="fa-head">
+            <div>
+                <p class="fa-eyebrow">EXERCISE &amp; FITNESS · หลังบ้าน</p>
+                <h1>ออกกำลังกายและฟิตเนส 15 ครั้ง</h1>
+                <p class="fa-sub">ตรวจรูปหลักฐาน วันที่ และลายเซ็นของพนักงาน — ข้อมูลเก็บที่ Google Drive <span id="faUpdated"></span></p>
+            </div>
+            <div class="fa-actions">
+                <button type="button" class="fa-btn fa-btn-ghost" data-action="copy-link" title="คัดลอกลิงก์สำหรับส่งให้พนักงาน">คัดลอกลิงก์พนักงาน</button>
+                <a id="faPublicLink" class="fa-btn fa-btn-ghost" href="exercise.html" target="_blank" rel="noopener">เปิดหน้าพนักงาน ↗</a>
+                <a id="faSheetLink" class="fa-btn fa-btn-ghost" href="#" target="_blank" rel="noopener" hidden>ชีตฐานข้อมูล ↗</a>
+                <a id="faFolderLink" class="fa-btn fa-btn-ghost" href="#" target="_blank" rel="noopener" hidden>โฟลเดอร์รูป ↗</a>
+                <button id="faLock" type="button" class="fa-btn" data-action="toggle-lock">…</button>
+            </div>
+        </header>
+
+        <section class="fa-stats" id="faStats"></section>
+
+        <section class="fa-toolbar">
+            <label>เดือน <select id="faMonth"></select></label>
+            <div class="fa-chips" id="faTypeChips">
+                <button type="button" data-type="" class="is-on">ทุกแบบฟอร์ม</button>
+                <button type="button" data-type="กิจกรรม30วัน">กิจกรรม 30 วัน</button>
+                <button type="button" data-type="ออกกำลังกายทั่วไป15ครั้ง">ทั่วไป 15 ครั้ง</button>
+                <button type="button" data-type="ค่าฟิตเนสรายเดือน">ฟิตเนสรายเดือน</button>
+            </div>
+            <select id="faStatus">
+                <option value="">ทุกสถานะ</option>
+                <option value="complete">ส่งครบแล้ว</option>
+                <option value="incomplete">ยังส่งไม่ครบ</option>
+                <option value="pending">รอตรวจ</option>
+                <option value="approved">ผ่าน</option>
+                <option value="rejected">ไม่ผ่าน</option>
+            </select>
+            <input id="faSearch" type="search" placeholder="ค้นหาชื่อ รหัสพนักงาน บริษัท…" autocomplete="off">
+            <button type="button" class="fa-btn fa-btn-ghost" data-action="export">ดาวน์โหลด CSV</button>
+        </section>
+
+        <section class="fa-card">
+            <div class="fa-table-wrap">
+                <table>
+                    <thead><tr><th>พนักงาน</th><th>แบบฟอร์ม</th><th>รูป</th><th>วันที่</th><th>ลายเซ็น</th><th>สถานะส่ง</th><th>ผลตรวจ</th><th>อัปเดต</th><th></th></tr></thead>
+                    <tbody id="faRows"><tr><td colspan="9" class="fa-empty">กำลังโหลด…</td></tr></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <dialog id="faDialog" class="fa-dialog">
+        <div id="faDetail"></div>
+    </dialog>
+    <dialog id="faLightbox" class="fa-lightbox"><button type="button" class="fa-close" data-close-lightbox aria-label="ปิด">×</button><img alt="รูปขยาย"></dialog>
+    <div id="faToast" class="fa-toast" role="status"></div>
+
+    <script src="config.js"></script>
+    <script src="fitness-admin.js?v=20261027-1"></script>
+</body>
+</html>

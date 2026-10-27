@@ -176,21 +176,21 @@ const services = [
     {
         id: 'fitness',
         category: 'wellbeing',
-        title: 'ฟิตเนส',
-        shortTitle: 'ฟิตเนส',
-        description: 'ระบบจองและจัดการฟิตเนสพนักงาน (เตรียมเปิดใช้งาน)',
+        title: 'ออกกำลังกายและฟิตเนส 15 ครั้ง',
+        shortTitle: 'ออกกำลังกายและฟิตเนส',
+        description: 'ตรวจรูปและข้อมูลออกกำลังกาย 15 ครั้ง / กิจกรรม 30 วัน / ฟิตเนสรายเดือนของพนักงาน',
         icon: 'health',
         color: '#e04f9a',
         soft: '#fff0f7',
         tags: [],
-        planned: true,
+        // หลังบ้านของหน้าพนักงาน exercise.html (ย้ายมาจาก Google Apps Script เดิม) — กดการ์ดแล้วเปิดเลย
+        directOpen: true,
         tasks: [
             {
-                route: 'pending',
-                title: 'รอดำเนินการ',
+                route: 'fitness-admin',
+                title: 'ออกกำลังกายและฟิตเนส 15 ครั้ง',
                 icon: 'health',
-                planned: true,
-                page: ''
+                page: 'fitness-admin.html?v=20261027-1'
             }
         ]
     },
@@ -323,6 +323,10 @@ if (basePage === 'accommodation.html') {
         permissions.ManageAccommodation ===
         true
     );
+}
+
+if (basePage === 'fitness-admin.html') {
+    return permissions.ManageFitness === true;
 }
 
 if (basePage === 'room-inspection.html') {
