@@ -79,17 +79,9 @@
     .general-exercise-card .day-slot.done strong{color:#a9f3c9}
     @media(max-width:760px){.program-rules .section-title{display:block;line-height:1.45}.program-rules .section-title small{display:block;margin:5px 0 0}.program-rule-grid{grid-template-columns:1fr}.program-rule-card{padding:16px}}
     /* ปุ่มผู้ดูแลมุมซ้ายบน และหน้าต่างรหัสผ่านแบบสั้น */
-    .admin-access{position:fixed;z-index:31;top:14px;left:14px;display:inline-flex;align-items:center;justify-content:center;gap:7px;margin:0;padding:9px 14px;border:1px solid rgba(189,208,231,.42);border-radius:10px;color:#cde7ff;background:rgba(5,24,43,.72);font:700 12px Arial,"Noto Sans Thai",sans-serif;cursor:pointer;transition:.2s}
+    .admin-access{position:fixed;z-index:31;top:14px;left:14px;display:inline-flex;align-items:center;justify-content:center;gap:7px;margin:0;padding:9px 14px;border:1px solid rgba(189,208,231,.42);border-radius:10px;color:#cde7ff;background:rgba(5,24,43,.72);font:700 12px Arial,"Noto Sans Thai",sans-serif;text-decoration:none;cursor:pointer;transition:.2s}
     .admin-access:hover{transform:translateY(-1px);border-color:var(--blue);color:#fff;box-shadow:0 7px 18px rgba(72,186,255,.16)}
-    .admin-modal{position:fixed;z-index:60;inset:0;display:none;place-items:center;padding:18px;background:rgba(0,7,16,.84);backdrop-filter:blur(7px)}
-    .admin-modal.open{display:grid}
-    .admin-dialog{position:relative;width:min(360px,100%);padding:23px;text-align:left}
-    .admin-close{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:34px;height:34px;padding:0;border:1px solid rgba(189,208,231,.42);border-radius:50%;color:#e9f4ff;background:rgba(3,15,29,.55);font-size:21px;cursor:pointer}
-    .admin-dialog .field{margin:0 0 12px}
-    .admin-dialog .field label{margin-bottom:7px}
-    .admin-dialog .field input{padding:13px}
-    .admin-toggle{width:100%;margin:0}
-    @media(max-width:420px){.admin-access{top:10px;left:10px;padding:8px 11px}.admin-dialog{padding:20px 16px}}
+    @media(max-width:420px){.admin-access{top:10px;left:10px;padding:8px 11px}}
     /* รูปตัวอย่างในหน้าบันทึกกิจกรรม */
     .upload-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:11px}.upload-preview:empty{display:none}.upload-preview-card{overflow:hidden;border:1px solid rgba(72,186,255,.5);border-radius:10px;background:#061627}.upload-preview-card.pending{border-color:var(--gold);box-shadow:0 0 0 1px rgba(245,196,90,.14)}.upload-preview-card img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#0a2540;cursor:zoom-in}.upload-preview-card span{display:block;padding:6px 7px;color:#d7eafd;font-size:11px;line-height:1.35}.upload-preview-card.pending span{color:var(--gold2)}.day-slot.has-thumbnails{min-height:107px}.day-thumb-row{display:flex;gap:4px;margin-top:7px}.day-thumb{flex:1;min-width:0;height:29px;object-fit:cover;border:1px solid rgba(189,208,231,.5);border-radius:5px;background:#0a2540;cursor:zoom-in}
   </style>
@@ -107,17 +99,8 @@
       </form>
       <div id="loginStatus" class="login-status"></div>
       <p class="login-help">Project Sports 08092026 </p>
-      <button id="adminAccessButton" class="admin-access" type="button" onclick="openAdminLockModal()">⚙️ ผู้ดูแลระบบ</button>
-    </section>
-
-    <section id="adminLockModal" class="admin-modal" aria-hidden="true" onclick="closeAdminLockByBackdrop(event)">
-      <div class="admin-dialog card" role="dialog" aria-modal="true" aria-label="ผู้ดูแลระบบ">
-        <button class="admin-close" type="button" aria-label="ปิดหน้าผู้ดูแล" onclick="closeAdminLockModal()">×</button>
-        <form onsubmit="submitAdminLockToggle(event)">
-          <div class="field"><label for="adminPassword">รหัสผ่านผู้ดูแล</label><input id="adminPassword" type="password" placeholder="รหัสผ่านผู้ดูแล" autocomplete="current-password" required></div>
-          <button id="adminToggleButton" class="btn btn-gold admin-toggle" type="submit">ยืนยัน</button>
-        </form>
-      </div>
+      <!-- ผู้ดูแลเข้าสู่ระบบเว็บด้วยบัญชีของตัวเอง (ชื่อผู้ใช้ + รหัสผ่าน + Google Authenticator) แล้วเปิด-ปิดระบบที่เมนู "ออกกำลังกายและฟิตเนส" -->
+      <a id="adminAccessButton" class="admin-access" href="index.html" title="เข้าสู่ระบบผู้ดูแลเพื่อเปิด-ปิดระบบและตรวจรูป">⚙️ ผู้ดูแลระบบ</a>
     </section>
 
 <!-- DASHBOARD: แสดงหลัง login สำเร็จ -->
@@ -1022,10 +1005,9 @@
     }
 
     function updateAdminLockUI(locked){
-      const button=$('adminToggleButton'),field=$('empID'),loginButton=$('btnLogin'),message=$('loginStatus');
-      if(typeof locked!=='boolean'){if(button){button.disabled=!hasAppsScript();button.textContent='ยืนยัน'}return}
+      const field=$('empID'),loginButton=$('btnLogin'),message=$('loginStatus');
+      if(typeof locked!=='boolean')return;
       loginLockState=locked;
-      if(button){button.disabled=false;button.textContent='ยืนยัน'}
       if(field)field.disabled=locked;
       if(loginButton)loginButton.disabled=locked;
       if(message){if(locked)message.textContent='ระบบปิดรับการเข้าสู่ระบบชั่วคราว';else if(message.textContent==='ระบบปิดรับการเข้าสู่ระบบชั่วคราว')message.textContent=''}
@@ -1034,37 +1016,7 @@
       if(!hasAppsScript()){updateAdminLockUI(null);return null}
       try{const locked=await api('checkLoginLock');updateAdminLockUI(!!locked);return !!locked}catch(error){updateAdminLockUI(null);return null}
     }
-    function openAdminLockModal(){
-      const modal=$('adminLockModal');
-      if(!modal)return;
-      modal.classList.add('open');modal.setAttribute('aria-hidden','false');
-      if($('adminPassword'))$('adminPassword').value='';
-      refreshLoginLockState();
-      setTimeout(()=>{$('adminPassword')?.focus()},60);
-    }
-    function closeAdminLockModal(){
-      const modal=$('adminLockModal');
-      if(!modal)return;
-      modal.classList.remove('open');modal.setAttribute('aria-hidden','true');
-      if($('adminPassword'))$('adminPassword').value='';
-    }
-    function closeAdminLockByBackdrop(event){if(event&&event.target&&event.target.id==='adminLockModal')closeAdminLockModal()}
-    async function submitAdminLockToggle(event){
-      if(event)event.preventDefault();
-      const password=(($('adminPassword')&&$('adminPassword').value)||''),button=$('adminToggleButton');
-      if(!hasAppsScript()){toast('กรุณาเปิดผ่าน Google Apps Script');return}
-      if(!password){$('adminPassword')?.focus();return}
-      if(button){button.disabled=true;button.textContent='⏳'}
-      try{
-        const result=await api('toggleLoginLock',password);
-        if(!result||result.error)throw new Error((result&&result.error)||'ไม่สามารถเปลี่ยนสถานะได้');
-        updateAdminLockUI(!!result.locked);
-        toast(result.locked?'🔒 ปิดระบบแล้ว':'🔓 เปิดระบบแล้ว');
-        closeAdminLockModal();
-      }catch(error){toast((error&&error.message)||'ไม่สามารถเปลี่ยนสถานะได้')}finally{if(button&&typeof loginLockState==='boolean'){button.disabled=false;button.textContent='ยืนยัน'}}
-    }
-
-    document.addEventListener('keydown',event=>{if(event.key==='Escape'){closePreview();closeAdminLockModal()}});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape')closePreview()});
     ensureActivityRules();
     updateActivity30DashboardCopy();
     bindFlexibleUploadUI();
