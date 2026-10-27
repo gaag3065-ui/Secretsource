@@ -96,7 +96,7 @@ const services = [
                 // หัวหน้าเป็นภาพรวมจาก Google Sheet (เดิมเป็นเมนู "ภาพรวมที่พัก (Google Sheet)" แยก)
                 title: 'จัดการห้องพักพนักงาน',
                 icon: 'building',
-                page: 'accommodation.html?v=20261026-5'
+                page: 'accommodation.html?v=20261027-1'
             },
             {
                 // แบบตรวจรับห้องพัก + รายงานรูปภาพ → PDF (ย้ายมาจากระบบในเครื่อง "ตรวจสอบที่พัก")
