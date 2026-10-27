@@ -1,4 +1,4 @@
-﻿document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const categoryNames = {
         all: 'à¸ªà¹ˆà¸§à¸™à¸‡à¸²à¸™',
         insurance: 'à¸‡à¸²à¸™à¸›à¸£à¸°à¸à¸±à¸™',
