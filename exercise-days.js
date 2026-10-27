@@ -6,6 +6,7 @@
    - เอากิจกรรม 30 วัน และแถบปุ่มด้านล่างออกจากหน้าพนักงาน */
 (() => {
   const BILL_SLOT = 99;
+  const FITNESS_CAP = 1500;
   const MIN_DAYS = 15;
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
@@ -47,6 +48,14 @@
     .dx-card input[type=date],.dx-card input[type=text]{width:100%;padding:8px 9px;border:1px solid rgba(72,186,255,.56);border-radius:9px;background:#071b31;color:#fff;font:14px inherit;min-width:0}
     .dx-card label.dx-field{display:grid;gap:3px;color:var(--gold2);font-size:11.5px;font-weight:bold}
     .dx-help{margin:0 0 12px;color:var(--muted);font-size:13px}
+    .dx-bill{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr);gap:14px;align-items:start;margin-top:8px}
+    .dx-bill .dx-pick{aspect-ratio:3/4}
+    .dx-bill-side{display:grid;gap:8px}
+    .dx-bill-side input{width:100%;padding:11px 12px;border:1px solid rgba(72,186,255,.56);border-radius:10px;background:#071b31;color:#fff;font:16px inherit}
+    .dx-bill-side input.dx-invalid{border-color:#ff8a8a;box-shadow:0 0 0 2px rgba(255,138,138,.25)}
+    .dx-bill-rule{padding:9px 11px;border:1px solid rgba(245,196,90,.45);border-radius:10px;background:rgba(245,196,90,.08);color:var(--gold2);font-size:13px;line-height:1.5}
+    .dx-bill-pay{color:#a9f3c9;font-size:13px;font-weight:700}
+    @media(max-width:520px){.dx-bill{grid-template-columns:1fr}.dx-bill .dx-shot{max-width:260px}}
     /* ความคืบหน้า: เหลือ 2 แบบฟอร์ม → 2 กล่องเต็มแถว ขนาดใหญ่ขึ้น (มือถือ 1 กล่องต่อแถว) */
     #menuCard .progress-summary.progress-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
     #menuCard .form-progress-card{gap:16px;padding:20px}
@@ -88,9 +97,11 @@
   document.querySelectorAll('.general-steps span')[0]?.replaceChildren('1. กดกรอบรูปในการ์ดของครั้งนั้น');
 
   // ---------------------------------------------------------------- สถานะของหน้า
-  const state = { data: null, count: 0, files: new Map(), previews: new Map(), dates: new Map(), descs: new Map(), dirty: new Set() };
+  const state = { data: null, count: 0, files: new Map(), previews: new Map(), dates: new Map(), descs: new Map(), dirty: new Set(), billFile: null, billPreview: '' };
   function resetPending() {
     state.previews.forEach(url => URL.revokeObjectURL(url));
+    if (state.billPreview) URL.revokeObjectURL(state.billPreview);
+    state.billFile = null; state.billPreview = '';
     state.files.clear(); state.previews.clear(); state.dates.clear(); state.descs.clear(); state.dirty.clear();
   }
 
@@ -127,8 +138,29 @@
     grid.innerHTML = Array.from({ length: state.count }, (_, i) => cardMarkup(i + 1)).join('');
     const help = formField('help');
     if (help) { help.className = 'dx-help'; help.textContent = `บันทึกได้ทุกวันของเดือนนี้ (สูงสุด ${state.count} ครั้ง) ต้องส่งครบอย่างน้อย ${MIN_DAYS} ครั้ง — กดที่กรอบรูปในการ์ดเพื่อเลือกรูป กรอกวันที่ แล้วกดบันทึกด้านล่าง`; }
-    const billHint = $('fitnessBillHint');
-    if (billHint && isFitnessForm()) billHint.textContent = state.data?.bill ? '✓ แนบใบเสร็จค่าฟิตเนสแล้ว · เลือกรูปใหม่เพื่อแทนที่ได้' : 'แนบ 1 รูปต่อเดือน';
+    renderBill();
+  }
+  const payable = amount => Math.min(Number(amount) || 0, FITNESS_CAP);
+  function renderBill() {
+    const box = $('fitnessBillUpload');
+    if (!box || !isFitnessForm()) return;
+    const url = state.billPreview || state.data?.bill || '';
+    const typed = $('fitnessBillAmount')?.value;
+    const amount = typed !== undefined ? typed : (state.data?.billAmount || '');
+    box.innerHTML = `<b>🧾 ใบเสร็จค่าฟิตเนสรายเดือน</b>
+      <div class="dx-bill">
+        <div class="dx-shot${url ? ' has' : ''}${state.billFile ? ' pending' : ''}">
+          <label class="dx-pick" title="กดเพื่อเลือกรูปใบเสร็จ"><input id="fitnessBillImage" type="file" accept="image/*">
+            ${url ? `<img src="${esc(url)}" alt="ใบเสร็จค่าฟิตเนส">` : '<span>🧾 รูปใบเสร็จ<br><small>แตะเพื่อเลือกรูป</small></span>'}</label>
+          <div class="dx-cap"><span>${state.billFile ? 'รอบันทึก' : url ? 'ใบเสร็จค่าฟิตเนส' : 'ยังไม่มีรูป'}</span>${url ? `<button type="button" class="dx-zoom" data-zoom="${esc(url)}" aria-label="ดูรูปใบเสร็จขนาดใหญ่">🔍</button>` : ''}</div>
+        </div>
+        <div class="dx-bill-side">
+          <div class="dx-bill-rule">ค่าฟิตเนสเบิกได้ <b>ตามบิล แต่ไม่เกิน ${FITNESS_CAP.toLocaleString('th-TH')} บาท / เดือน</b><br>แนบรูปใบเสร็จ 1 รูปต่อเดือน และกรอกยอดตามบิล — ต้องกรอกยอดก่อนจึงจะกดบันทึกกิจกรรมได้</div>
+          <label class="dx-field">ยอดค่าฟิตเนสตามบิล (บาท) *<input id="fitnessBillAmount" type="number" min="1" step="0.01" inputmode="decimal" placeholder="เช่น 1500" value="${esc(amount)}"></label>
+          <span class="dx-bill-pay" id="fitnessBillPay">${amount ? `ยอดที่เบิกได้ ${payable(amount).toLocaleString('th-TH')} บาท` : ''}</span>
+        </div>
+      </div>`;
+    box.classList.remove('hidden');
   }
   const rerenderCard = day => { const card = document.querySelector(`.dx-card[data-day="${day}"]`); if (card) card.outerHTML = cardMarkup(day); };
 
@@ -139,18 +171,27 @@
       state.data = data && !data.error ? data : { images: [], dates: [], details: [] };
       state.count = Number(state.data.maxDays) || monthDays();
       activityState = { images: state.data.images || [], dates: state.data.dates || [] };
+      if ($('fitnessBillAmount')) $('fitnessBillAmount').remove();
       render();
-      if (isFitnessForm()) renderOneUploadPreview?.($('fitnessBillImage'), state.data.bill || '');
       return;
     }
   };
   // ไม่ใช้การเลือกครั้งแบบเดิมแล้ว
   window.selectDay = () => {};
-  window.renderUploadPreviews = () => { if (isFitnessForm()) renderOneUploadPreview?.($('fitnessBillImage'), state.data?.bill || ''); };
+  window.renderUploadPreviews = () => renderBill();
 
   // ---------------------------------------------------------------- เลือกรูป / กรอกข้อมูลในการ์ด
   document.addEventListener('change', event => {
     const input = event.target;
+    if (input.id === 'fitnessBillImage') {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      if (!/^image\//.test(file.type)) { toast('กรุณาเลือกไฟล์รูปภาพ'); return; }
+      if (state.billPreview) URL.revokeObjectURL(state.billPreview);
+      state.billFile = file; state.billPreview = URL.createObjectURL(file);
+      renderBill();
+      return;
+    }
     if (input.matches?.('.dx-pick input[type=file]')) {
       const file = input.files && input.files[0];
       const slot = Number(input.dataset.slot);
@@ -164,6 +205,12 @@
   });
   document.addEventListener('input', event => {
     const t = event.target;
+    if (t.id === 'fitnessBillAmount') {
+      t.classList.remove('dx-invalid');
+      const pay = $('fitnessBillPay');
+      if (pay) pay.textContent = t.value ? `ยอดที่เบิกได้ ${payable(t.value).toLocaleString('th-TH')} บาท` : '';
+      return;
+    }
     const day = Number(t.dataset?.date || t.dataset?.desc);
     if (!day) return;
     (t.dataset.date ? state.dates : state.descs).set(day, t.value);
@@ -198,12 +245,19 @@
     if (event) event.preventDefault();
     const fitness = isFitnessForm(), button = formField('saveButton'), status = formField('saveStatus');
     const show = (message, type = '') => { if (status) { status.textContent = message; status.className = 'save-status ' + type; } if ($('loadingDetail')) $('loadingDetail').textContent = message; };
-    const billInput = $('fitnessBillImage');
-    const billFile = fitness && billInput && billInput.files && billInput.files[0];
+    const billFile = fitness ? state.billFile : null;
+    const amountInput = $('fitnessBillAmount');
+    const billAmount = fitness && amountInput ? amountInput.value.trim() : '';
+    const amountChanged = fitness && billAmount !== String(state.data?.billAmount || '');
+    if (fitness && !(Number(billAmount) > 0)) {
+      show('✕ กรุณากรอกยอดค่าฟิตเนสตามบิล (บาท) ก่อนบันทึก — เบิกได้ตามบิลแต่ไม่เกิน 1,500 บาท', 'error');
+      if (amountInput) { amountInput.classList.add('dx-invalid'); amountInput.focus(); amountInput.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+      return;
+    }
     const slots = [...state.files.keys()].sort((x, y) => x - y);
     const days = [...state.dirty].sort((x, y) => x - y);
     const hasSignature = signatureHasInk;
-    if (!slots.length && !days.length && !billFile && !hasSignature) { show('ยังไม่มีข้อมูลใหม่ให้บันทึก — กดกรอบรูปในการ์ด กรอกวันที่ หรือวาดลายเซ็นก่อน'); return; }
+    if (!slots.length && !days.length && !billFile && !amountChanged && !hasSignature) { show('ยังไม่มีข้อมูลใหม่ให้บันทึก — กดกรอบรูปในการ์ด กรอกวันที่ หรือวาดลายเซ็นก่อน'); return; }
     showLoading('กำลังบันทึก ' + activeFormLabel() + '…', 'โปรดอย่าปิดหน้าจอ');
     const label = button ? button.textContent : '';
     if (button) { button.disabled = true; button.textContent = '⏳ กำลังบันทึก…'; }
@@ -231,7 +285,11 @@
         show('กำลังอัปโหลดใบเสร็จค่าฟิตเนส…');
         const result = await api('uploadSingleImage', currentUser, await compress(billFile), BILL_SLOT, activeFormType);
         if (apiFailed(result)) throw new Error(result);
-        clearSelectedFile?.(billInput);
+      }
+      if (amountChanged) {
+        show('กำลังบันทึกยอดค่าฟิตเนส…');
+        const result = await api('saveBillAmount', currentUser, billAmount, activeFormType);
+        if (apiFailed(result)) throw new Error(result);
       }
       if (hasSignature) {
         show('กำลังอัปโหลดลายเซ็น…');

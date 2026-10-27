@@ -164,7 +164,9 @@
                 ${req.details ? `<p>${esc(d.description || '—')}</p>` : ''}
                 <div class="fa-shots">${shot(form, slots, i * 2 + 1, 'รูปที่ 1')}${shot(form, slots, i * 2 + 2, 'รูปที่ 2')}</div></article>`;
         }).join('');
-        const bill = form.form_type === 'ค่าฟิตเนสรายเดือน' ? `<div><h3>🧾 ใบเสร็จค่าฟิตเนส</h3>${shot(form, slots, req.billSlot || 31, 'ใบเสร็จ')}</div>` : '';
+        // ใบเสร็จ + ยอดตามบิล (ผู้ดูแลแก้ได้ — เบิกได้ไม่เกิน 1,500 บาท)
+        const billAmount = form.bill_amount ? Number(form.bill_amount) : '';
+        const bill = form.form_type === 'ค่าฟิตเนสรายเดือน' ? `<div><h3>🧾 ใบเสร็จค่าฟิตเนส</h3>${shot(form, slots, req.billSlot || 31, 'ใบเสร็จ')}${state.source === 'legacy' ? '' : `<label class="fa-bill">ยอดตามบิล (บาท) <input id="faBillAmount" type="number" min="0" step="0.01" value="${esc(billAmount)}"> <button type="button" class="fa-btn fa-btn-ghost" data-action="save-bill">บันทึกยอด</button></label><small class="fa-bill-pay">เบิกได้ ${billAmount ? Math.min(billAmount, 1500).toLocaleString('th-TH') : '-'} บาท (ตามบิล ไม่เกิน 1,500)</small>`}</div>` : '';
         const signature = form.has_signature
             ? `<div class="fa-shot" style="background:#fff"><img data-src="${esc(form.signature ? 'L:' + form.signature : form.id + '/0/' + form.signature_stamp)}" data-zoom alt="ลายเซ็น" style="object-fit:contain"></div>`
             : '<div class="fa-shot"><div class="fa-missing">ยังไม่ลงชื่อ</div></div>';
@@ -208,6 +210,17 @@
                     : request(`/forms/${form.id}/slots/${slot}`, { method: 'PUT', body: JSON.stringify({ flag: next }) }));
                 item.review_flag = next;
                 renderDetail();
+            } catch (error) { toast(error.message, true); }
+            return;
+        }
+        if (t.closest('[data-action="save-bill"]')) {
+            try {
+                const form = state.detail.form, amount = $('faBillAmount').value;
+                await request(`/forms/${form.id}/bill-amount`, { method: 'PUT', body: JSON.stringify({ amount }) });
+                form.bill_amount = amount;
+                toast('บันทึกยอดบิลแล้ว');
+                renderDetail();
+                load();
             } catch (error) { toast(error.message, true); }
             return;
         }
