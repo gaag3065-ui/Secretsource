@@ -47,7 +47,37 @@
     .dx-card input[type=date],.dx-card input[type=text]{width:100%;padding:8px 9px;border:1px solid rgba(72,186,255,.56);border-radius:9px;background:#071b31;color:#fff;font:14px inherit;min-width:0}
     .dx-card label.dx-field{display:grid;gap:3px;color:var(--gold2);font-size:11.5px;font-weight:bold}
     .dx-help{margin:0 0 12px;color:var(--muted);font-size:13px}
-    @media(min-width:641px){.progress-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    /* ความคืบหน้า: เหลือ 2 แบบฟอร์ม → 2 กล่องเต็มแถว ขนาดใหญ่ขึ้น (มือถือ 1 กล่องต่อแถว) */
+    #menuCard .progress-summary.progress-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+    #menuCard .form-progress-card{gap:16px;padding:20px}
+    #menuCard .progress-card-icon{flex-basis:46px;width:46px;height:46px;font-size:24px}
+    #menuCard .progress-card-copy b{font-size:18px}
+    #menuCard .progress-card-copy small{font-size:12.5px}
+    #menuCard .progress-state{font-size:12px;padding:5px 10px}
+    #menuCard .progress-card-body{grid-template-columns:116px minmax(0,1fr);gap:20px}
+    #menuCard .mini-ring{width:112px;height:112px}
+    #menuCard .mini-ring:before{inset:10px}
+    #menuCard .mini-ring strong{font-size:22px}
+    #menuCard .metrics{gap:11px}
+    #menuCard .metric-line{grid-template-columns:24px minmax(0,1fr) auto;gap:10px;font-size:14px}
+    #menuCard .metric-line b{font-size:14px}
+    #menuCard .progress-note{font-size:13px}
+    #menuCard .progress-action{padding:12px 14px;font-size:15px}
+    /* ตัวอย่างภาพ: แสดงเต็มทั้งภาพ (เดิมครอบเป็นสี่เหลี่ยมจัตุรัส ตัดข้อความซ้าย-ขวา) · กดขยายได้ใหญ่ขึ้น */
+    .sample{aspect-ratio:4/3;display:grid;place-items:center}
+    .sample img{width:100%;height:100%;object-fit:contain}
+    .sample:hover img{transform:none;filter:brightness(1.08)}
+    .modal img{max-width:min(1400px,100%);max-height:88vh;object-fit:contain}
+    @media(max-width:720px){
+      .modal{padding:10px}
+      .modal button{top:10px;right:10px}
+      #menuCard .progress-summary.progress-grid{grid-template-columns:1fr}
+      #menuCard .form-progress-card{padding:16px}
+      #menuCard .progress-card-body{grid-template-columns:88px minmax(0,1fr);gap:14px}
+      #menuCard .mini-ring{width:86px;height:86px}
+      #menuCard .mini-ring strong{font-size:18px}
+      #menuCard .metric-line,#menuCard .metric-line b{font-size:12.5px}
+    }
   </style>`);
 
   // ช่องกรอกเดิม (เลือกครั้ง → กรอกด้านล่าง) ไม่ใช้แล้ว: ซ่อนไว้ เหลือใบเสร็จ ลายเซ็น และปุ่มบันทึก
