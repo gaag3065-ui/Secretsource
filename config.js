@@ -95,6 +95,20 @@ window.authFetch = async function (url, options = {}) {
     ]);
 
     if (unsafeMethods.has(method)) {
+        // แท็บนี้ยังไม่มี CSRF Token (เช่น เปิดหน้าในแท็บใหม่) → ขอจาก /api/session ก่อน แทนที่จะส่งไม่ได้เลย
+        if (!window.getCsrfToken()) {
+            try {
+                const sessionResponse = await fetch(
+                    `${window.APP_CONFIG?.API_BASE_URL || ''}/api/session`,
+                    { headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {}, credentials: 'include', cache: 'no-store' }
+                );
+                const sessionData = await sessionResponse.json();
+                if (sessionData.csrfToken) sessionStorage.setItem('csrfToken', sessionData.csrfToken);
+            } catch (error) {
+                // ไม่สำเร็จก็แจ้งข้อความเดิมด้านล่าง
+            }
+        }
+
         const csrfToken =
             window.getCsrfToken();
 
