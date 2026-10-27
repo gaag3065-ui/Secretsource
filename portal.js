@@ -120,6 +120,8 @@ const services = [
         // กดการ์ดแล้วเข้า "ค้นหาทรัพย์สิน" ทันที ไม่แสดงรายการเมนูย่อยด้านซ้าย
         directOpen: true,
         directTask: 'asset-search',
+        // หน้าทรัพย์สินมีหัวและปุ่มกลับ/ออกจากระบบของตัวเอง → เปิดเต็มหน้าต่างแทนการฝังในกรอบ
+        fullPage: true,
         tasks: [
             {
                 route: 'asset-search',
@@ -701,6 +703,10 @@ function setCategory(category) {
 
 
 function openTask(service, task, taskIndex = 0) {
+    if (service.fullPage && !task.planned) {
+        window.location.href = task.page;
+        return;
+    }
     renderTaskContent(
         service,
         task,
