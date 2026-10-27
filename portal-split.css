@@ -15,7 +15,8 @@
 .split-nav button.is-on { background: var(--c); border-color: var(--c); color: #fff; }
 
 /* พื้นที่ทำงานแบ่ง 2 ฝั่ง: หน้าที่เลือก (ซ้าย) | แชท (ขวา) */
-.workspace-frame-container.is-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+/* แชทกว้างอย่างน้อย 1060px (หน้าแชทซ่อนช่องโปรไฟล์เมื่อแคบกว่า 1050px) แต่เหลือให้หน้าที่เลือกอย่างน้อย 420px */
+.workspace-frame-container.is-split { display: grid; grid-template-columns: minmax(0, 1fr) clamp(50%, 1060px, calc(100% - 420px)); }
 .split-pane[hidden] { display: none; }
 .split-pane { display: flex; min-width: 0; min-height: 0; flex-direction: column; border-right: 1px solid #e4e7ec; background: #fff; }
 .split-head { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 8px; height: 36px; padding: 0 10px 0 14px; border-bottom: 1px solid #e4e7ec; background: #f9fafb; font-size: 12.5px; }
