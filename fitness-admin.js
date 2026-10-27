@@ -80,12 +80,17 @@
     function filtered() {
         const status = $('faStatus').value;
         const query = $('faSearch').value.trim().toLowerCase();
-        return currentForms().filter(f => (!state.type || f.form_type === state.type)
+        const company = $('faCompany').value;
+        return currentForms().filter(f => (!state.type || f.form_type === state.type) && (!company || f.company === company)
             && (!status || (status === 'complete' ? f.complete : status === 'incomplete' ? !f.complete : f.review_status === status))
             && (!query || [f.fullname, f.employee_id, f.company, f.insurance_code].some(v => String(v || '').toLowerCase().includes(query))));
     }
     function render() {
-        const all = currentForms().filter(f => !state.type || f.form_type === state.type);
+        // รายชื่อบริษัทในตัวกรอง = บริษัทที่มีในเดือนนี้ (คงค่าที่เลือกไว้)
+        const companies = [...new Set(currentForms().map(f => f.company).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th', { numeric: true }));
+        const picked = $('faCompany').value;
+        $('faCompany').innerHTML = '<option value="">ทุกบริษัท</option>' + companies.map(c => `<option value="${esc(c)}" ${c === picked ? 'selected' : ''}>${esc(c)}</option>`).join('');
+        const all = currentForms().filter(f => (!state.type || f.form_type === state.type) && (!$('faCompany').value || f.company === $('faCompany').value));
         const count = fn => all.filter(fn).length;
         $('faStats').innerHTML = [
             ['แบบฟอร์มทั้งหมด', all.length], ['ส่งครบแล้ว', count(f => f.complete)], ['รอตรวจ (ส่งครบ)', count(f => f.complete && f.review_status === 'pending')],
@@ -234,6 +239,7 @@
     // ข้อมูลระบบเดิมนำเข้าฐานข้อมูลใหม่แล้ว — ไม่มีปุ่มสลับไปอ่านชีตเดิมอีก
     $('faSource')?.addEventListener('click', event => { const button = event.target.closest('[data-source]'); if (button) setSource(button.dataset.source); });
     $('faStatus').addEventListener('change', render);
+    $('faCompany').addEventListener('change', render);
     $('faSearch').addEventListener('input', render);
     $('faMonth').addEventListener('change', event => load(event.target.value));
     $('faPublicLink').href = publicUrl();
@@ -248,21 +254,40 @@
             toast(result.locked ? '🔒 ปิดระบบแล้ว' : '🔓 เปิดระบบแล้ว');
         },
         'reload-legacy'() { return loadLegacy(true); },
-        'export-pdf'() { return exportFile('pdf'); },
-        'export-xlsx'() { return exportFile('xlsx'); }
+        'export-pdf'() { return chooseExport('pdf'); },
+        'export-xlsx'() { return chooseExport('xlsx'); }
     };
     // ดาวน์โหลด PDF/XLSX ของรายการที่แสดงอยู่: หลังบ้านสร้างไฟล์เบื้องหลัง (ดึงรูปจาก Drive) แล้วหน้าเว็บถามความคืบหน้าทุก 2 วินาที
-    async function exportFile(format) {
+    // เลือกสิ่งที่จะดาวน์โหลด: ใบปะหน้า / เอกสารรายคน / ทั้งคู่
+    function chooseExport(format) {
+        const rows = filtered();
+        if (!rows.length) return toast('ไม่มีแบบฟอร์มในรายการ', true);
+        const dialog = $('faExportDialog');
+        $('faExportTitle').textContent = `ดาวน์โหลด ${format.toUpperCase()}`;
+        $('faExportInfo').textContent = `ตามรายการที่แสดงอยู่ ${rows.length} แบบฟอร์ม${$('faCompany').value ? ` · บริษัท ${$('faCompany').value}` : ''}`;
+        // ไม่พึ่งเหตุการณ์ close ของ dialog (บางเบราว์เซอร์ไม่ส่ง) — จัดการที่การกดปุ่มโดยตรง
+        dialog.onclick = event => {
+            const button = event.target.closest('button[value]');
+            if (!button) { if (event.target === dialog) dialog.close(); return; }
+            event.preventDefault();
+            dialog.close();
+            if (button.value) exportFile(format, button.value);
+        };
+        dialog.showModal();
+    }
+    async function exportFile(format, part = 'forms') {
         const rows = filtered();
         if (!rows.length) return toast('ไม่มีแบบฟอร์มในรายการ', true);
         if (rows.length > 80) return toast('ดาวน์โหลดได้ครั้งละไม่เกิน 80 แบบฟอร์ม — กรองรายการให้น้อยลงก่อน', true);
         const legacy = state.source === 'legacy';
         const label = legacy ? 'ชีตเดิม' : state.data?.month || '';
-        const name = rows.length === 1 ? `ออกกำลังกาย-${rows[0].fullname}-${label}` : `ออกกำลังกาย-${label}-${rows.length}คน`;
+        const company = $('faCompany').value ? `-${$('faCompany').value}` : '';
+        const prefix = part === 'cover' ? 'ใบปะหน้า-ออกกำลังกาย' : part === 'both' ? 'ใบปะหน้าและเอกสาร-ออกกำลังกาย' : 'ออกกำลังกาย';
+        const name = rows.length === 1 && part === 'forms' ? `${prefix}-${rows[0].fullname}-${label}` : `${prefix}-${label}${company}-${rows.length}คน`;
         const busy = (title, text, pct) => { $('faBusy').hidden = !title; if (title) { $('faBusyTitle').textContent = title; $('faBusyText').textContent = text || ''; $('faBusyBar').style.width = (pct || 0) + '%'; } };
         busy(`กำลังสร้าง ${format.toUpperCase()}…`, `${rows.length} แบบฟอร์ม`, 2);
         try {
-            let { job } = await request('/export', { method: 'POST', body: JSON.stringify({ format, source: state.source, ids: rows.map(f => legacy ? f.key : f.id), name }) });
+            let { job } = await request('/export', { method: 'POST', body: JSON.stringify({ format, part, company: $('faCompany').value, source: state.source, ids: rows.map(f => legacy ? f.key : f.id), name }) });
             while (job.status === 'running') {
                 await new Promise(r => setTimeout(r, 2000));
                 ({ job } = await request(`/export/${job.id}`));

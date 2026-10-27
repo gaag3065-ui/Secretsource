@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>ออกกำลังกายและฟิตเนส 15 ครั้ง | GA Operations</title>
-    <link rel="stylesheet" href="fitness-admin.css?v=20261027-4">
+    <link rel="stylesheet" href="fitness-admin.css?v=20261027-5">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
@@ -31,6 +31,7 @@
                 <button type="button" data-type="ออกกำลังกายทั่วไป15ครั้ง">ทั่วไป 15 ครั้ง</button>
                 <button type="button" data-type="ค่าฟิตเนสรายเดือน">ฟิตเนสรายเดือน</button>
             </div>
+            <select id="faCompany" title="กรองตามบริษัท"><option value="">ทุกบริษัท</option></select>
             <select id="faStatus">
                 <option value="">ทุกสถานะ</option>
                 <option value="complete">ส่งครบแล้ว</option>
@@ -57,11 +58,23 @@
     <dialog id="faDialog" class="fa-dialog">
         <div id="faDetail"></div>
     </dialog>
+    <dialog id="faExportDialog" class="fa-export-dialog">
+        <form method="dialog">
+            <h3 id="faExportTitle">ดาวน์โหลด</h3>
+            <p id="faExportInfo"></p>
+            <div class="fa-export-options">
+                <button type="submit" value="cover" class="fa-btn"><b>ใบปะหน้า</b><small>สรุปรายชื่อ จำนวนครั้ง สถานะส่ง และผลตรวจ พร้อมช่องลงนาม</small></button>
+                <button type="submit" value="forms" class="fa-btn"><b>เอกสารออกกำลังกายและฟิตเนสที่เลือก</b><small>แบบฟอร์มรายคน พร้อมรูปทุกครั้งและลายเซ็น</small></button>
+                <button type="submit" value="both" class="fa-btn fa-btn-primary"><b>ดาวน์โหลดทั้งคู่</b><small>ใบปะหน้า + เอกสารรายคน ในไฟล์เดียว</small></button>
+            </div>
+            <button type="submit" value="" class="fa-btn fa-btn-ghost fa-export-cancel">ยกเลิก</button>
+        </form>
+    </dialog>
     <dialog id="faLightbox" class="fa-lightbox"><button type="button" class="fa-close" data-close-lightbox aria-label="ปิด">×</button><img alt="รูปขยาย"></dialog>
     <div id="faToast" class="fa-toast" role="status"></div>
     <div id="faBusy" class="fa-busy" hidden><div><span class="fa-spinner"></span><b id="faBusyTitle">กำลังสร้างไฟล์…</b><p id="faBusyText"></p><div class="fa-progress"><i id="faBusyBar"></i></div></div></div>
 
     <script src="config.js"></script>
-    <script src="fitness-admin.js?v=20261027-6"></script>
+    <script src="fitness-admin.js?v=20261027-8"></script>
 </body>
 </html>
