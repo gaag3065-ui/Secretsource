@@ -90,7 +90,7 @@ ${english}`;
         <div class="cr-grid">
             <label>วันที่ / Date<input type="date" name="date" required></label>
             <label>จำนวนเงิน / Amount (LKR)<input type="number" name="amount" min="0" step="0.01" inputmode="decimal" placeholder="เช่น 15000" required></label>
-            <label class="cr-full">รายละเอียด / Details<textarea name="details" placeholder="เช่น ค่าทำความสะอาดห้องพัก Bagatale Court 5/2 (ขึ้นบรรทัดใหม่ได้ 1 ครั้ง)" required></textarea></label>
+            <label class="cr-full">รายละเอียด / Details<textarea name="details" rows="4" placeholder="เช่น ตึก Wimbledon Tower Unit 9/4 ตกเบิกค่าเน็ต จำนวน 20,213 LKR (ตั้งเบิกคืนเงินให้บัญชี) ตึก Seagull … — พิมพ์ต่อกันหรือขึ้นบรรทัดใหม่ก็ได้ ระบบแยกให้รายการละบรรทัด" required></textarea></label>
             <label class="cr-full">จำนวนเงินเป็นตัวหนังสือ / Amount in Words <small>ระบบเติมให้จากจำนวนเงิน (บรรทัดแรกภาษาไทย บรรทัดที่สองภาษาอังกฤษ) — แก้เองได้</small><textarea name="amountWords" rows="2" placeholder="หนึ่งหมื่นห้าพันรูปีถ้วน&#10;Fifteen Thousand Rupees Only"></textarea></label>
             <div class="cr-full"><div class="cr-section">วิธีการรับเงิน / Method of Payment</div>
                 <div class="cr-method"><label><input type="radio" name="method" value="cash" checked> เงินสด / Cash</label><label><input type="radio" name="method" value="bank"> ใบถอนเงินฝากธนาคาร / Bank Withdrawal Slip</label></div></div>
