@@ -44,3 +44,5 @@
     .ro-cards { grid-template-columns: 1fr; }
     .ro-toolbar input { min-width: 0; flex: 1 1 100%; }
 }
+
+.ro-diag { flex-basis: 100%; color: #b42318; font-size: 12.5px; }

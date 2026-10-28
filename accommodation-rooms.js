@@ -49,6 +49,7 @@
             </div>
             <div class="ro-check ${c.issues || c.employeesUnmatched ? 'has-issue' : ''}">
                 <b>${c.issues || c.employeesUnmatched ? '⚠️ ตรวจสอบความถูกต้องของข้อมูล' : '✅ ตรวจสอบความถูกต้องของข้อมูล: ไม่พบจุดผิดปกติ'}</b>
+                ${!c.employeesOnWork ? `<span class="ro-diag">อ่านรายชื่อพนักงาน on work ไม่ได้ — ${esc(c.employeeDiag || 'เครื่องหลังบ้านยังไม่ได้อัปเดต')}</span>` : ''}
                 <span>จุดที่ต้องตรวจในทะเบียน ${num(c.issues)} · พนักงานที่จับคู่ห้องไม่ได้ ${num(c.employeesUnmatched)} · ยังไม่มีที่พัก ${num(c.employeesWithoutRoom)}</span>
                 ${issues.length || unmatched.length ? '<button type="button" data-ro-toggle-check>ดูรายละเอียด</button>' : ''}
                 <div class="ro-check-list" hidden>
