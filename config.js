@@ -18,7 +18,7 @@ const LOCAL_API_URL = `http://127.0.0.1:${localApiPort}`;
 
 
 
-const PRODUCTION_API_URL = 'https://commissions-effort-cpu-viewpicture.trycloudflare.com';
+const PRODUCTION_API_URL = 'https://answer-holdem-music-doubt.trycloudflare.com';
 
 
 
@@ -228,6 +228,7 @@ window.performSecureLogout =
         }
     };
 //#endregion
+
 
 
 
