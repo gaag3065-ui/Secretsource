@@ -2478,7 +2478,7 @@ async function openModal() {
         }
 
         // เดือนที่มีข้อมูลจริง (value = month:YYYY-MM)
-        const monthMatch = /^month:(d{4})-(d{2})$/.exec(preset);
+        const monthMatch = /^month:(\d{4})-(\d{2})$/.exec(preset);
         if (monthMatch) {
             const year = Number(monthMatch[1]);
             const month = Number(monthMatch[2]) - 1;

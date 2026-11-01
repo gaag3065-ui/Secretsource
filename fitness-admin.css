@@ -120,3 +120,8 @@ tr:hover td { background: #fafbfc; }
 .fa-replace:hover { border-color: #d6407d; color: #d6407d; }
 .fa-replace input { display: none; }
 .fa-shot .fa-missing + .fa-replace { top: auto; bottom: 6px; left: 50%; right: auto; transform: translateX(-50%); }
+
+/* ฟิตเนสรายเดือน → ฟอร์ม 15 ครั้งที่ระบบสร้างให้ */
+.fa-companion { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; vertical-align: middle; }
+.fa-companion.is-ok { background: #e7f6ec; color: #067647; border: 1px solid #a6e0bb; }
+.fa-companion.is-wait { background: #fff4e0; color: #a35d00; border: 1px solid #f5d199; }

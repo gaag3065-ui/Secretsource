@@ -85,6 +85,23 @@
             && (!status || (status === 'complete' ? f.complete : status === 'incomplete' ? !f.complete : f.review_status === status))
             && (!query || [f.fullname, f.employee_id, f.company, f.insurance_code].some(v => String(v || '').toLowerCase().includes(query))));
     }
+    // ฟิตเนสรายเดือนที่ผ่าน → ฟอร์มออกกำลังกายทั่วไป 15 ครั้งที่ระบบสร้างให้ (ใช้รูปเดียวกัน)
+    function companionChip(f) {
+        if (state.source === 'legacy') return '';
+        if (f.form_type === 'ค่าฟิตเนสรายเดือน') {
+            if (f.companion_id) return '<span class="fa-companion is-ok" title="ระบบสร้างแบบฟอร์มออกกำลังกายทั่วไป 15 ครั้งจากรูปชุดเดียวกันแล้ว">✓ สร้างฟอร์ม 15 ครั้งแล้ว</span>';
+            if (f.review_status === 'approved' && f.companion_reason) return `<span class="fa-companion is-wait" title="${esc(f.companion_reason)}">ยังไม่สร้างฟอร์ม 15 ครั้ง</span>`;
+            return '';
+        }
+        if (f.source_form_id) return `<span class="fa-companion ${f.source_ok ? 'is-ok' : 'is-wait'}" title="สร้างอัตโนมัติจากฟิตเนสรายเดือน แบบฟอร์มเลขที่ ${esc(f.source_form_id)}">สร้างจากฟิตเนสรายเดือน</span>`;
+        return '';
+    }
+    function companionToast(result) {
+        if (!result) return;
+        if (result.created) toast('สร้างฟอร์มออกกำลังกายทั่วไป 15 ครั้งแล้ว (ใช้รูปชุดเดียวกัน)');
+        else if (result.reason && document.querySelector('input[name="faReview"]:checked')?.value === 'approved') toast(`ยังไม่สร้างฟอร์ม 15 ครั้ง: ${result.reason}`, true);
+    }
+
     function render() {
         // รายชื่อบริษัทในตัวกรอง = บริษัทที่มีในเดือนนี้ (คงค่าที่เลือกไว้)
         const companies = [...new Set(currentForms().map(f => f.company).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th', { numeric: true }));
@@ -108,7 +125,7 @@
                 <td>${f.dates}/${req.days}${bar(f.dates, req.days)}</td>
                 <td>${f.has_signature ? '✔' : '<span class="fa-badge dim">ยังไม่ลงชื่อ</span>'}</td>
                 <td>${f.complete ? '<span class="fa-badge ok">ส่งครบ</span>' : '<span class="fa-badge dim">ยังไม่ครบ</span>'}</td>
-                <td><span class="fa-badge ${cls}">${label}</span>${f.reviewed_by ? `<small>${esc(f.reviewed_by)}</small>` : ''}</td>
+                <td><span class="fa-badge ${cls}">${label}</span>${companionChip(f)}${f.reviewed_by ? `<small>${esc(f.reviewed_by)}</small>` : ''}</td>
                 <td><small>${state.source === 'legacy' ? esc(f.status_text || '-') : when(f.updated_at)}</small></td>
                 <td><button type="button" class="fa-btn fa-btn-primary" data-open="${esc(state.source === 'legacy' ? f.key : f.id)}">ตรวจ</button></td>
             </tr>`;
@@ -188,7 +205,7 @@
             <div class="fa-detail-body">
                 <section class="fa-review"><h3>ผลการตรวจ</h3>
                     <div class="fa-review-row">
-                        ${Object.entries(REVIEW).map(([key, [text]]) => `<label><input type="radio" name="faReview" value="${key}" ${form.review_status === key ? 'checked' : ''}> ${text}</label>`).join('')}
+                        ${Object.entries(REVIEW).map(([key, [text]]) => `<label><input type="radio" name="faReview" value="${key}" ${form.review_status === key ? 'checked' : ''}> ${text}${key === 'approved' ? companionChip(form) : ''}</label>`).join('')}
                         <span style="flex:1"></span>
                         <button type="button" class="fa-btn fa-btn-primary" data-action="save-review">บันทึกผลตรวจ</button>
                     </div>
@@ -213,10 +230,12 @@
             const item = slots.find(s => s.slot === slot);
             const next = item.review_flag === flag.dataset.flag ? '' : flag.dataset.flag;
             try {
-                await (state.source === 'legacy'
+                const result = await (state.source === 'legacy'
                     ? request('/legacy/flag', { method: 'PUT', body: JSON.stringify({ key: form.key, slot, flag: next }) })
                     : request(`/forms/${form.id}/slots/${slot}`, { method: 'PUT', body: JSON.stringify({ flag: next }) }));
                 item.review_flag = next;
+                if (result.companion?.created && !form.companion_id) { form.companion_id = result.companion.id; companionToast(result.companion); load(); }
+                if (result.companion && !result.companion.created && form.companion_id) { form.companion_id = null; form.companion_reason = result.companion.reason; load(); }
                 renderDetail();
             } catch (error) { toast(error.message, true); }
             return;
@@ -237,10 +256,11 @@
             if (!status) return toast('เลือกผลการตรวจก่อน', true);
             try {
                 const form = state.detail.form, note = $('faReviewNote').value;
-                await (state.source === 'legacy'
+                const result = await (state.source === 'legacy'
                     ? request('/legacy/review', { method: 'PUT', body: JSON.stringify({ key: form.key, status, note }) })
                     : request(`/forms/${form.id}/review`, { method: 'PUT', body: JSON.stringify({ status, note }) }));
                 toast('บันทึกผลตรวจแล้ว');
+                companionToast(result.companion);
                 $('faDialog').close();
                 load();
             } catch (error) { toast(error.message, true); }
