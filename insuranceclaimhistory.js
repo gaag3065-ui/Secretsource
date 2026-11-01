@@ -229,7 +229,16 @@ function renderHistoryTable(historyData) {
             createEvidenceDocumentsCell(
                 combinedCaseEvidence,
                 latestEvent.statusText,
-                true
+                true,
+                latestEvent.targetRowNumber
+                    ? {
+                        caseId: latestEvent.CaseIdNew || caseId,
+                        rowNumber: latestEvent.targetRowNumber,
+                        employeeName: latestEvent.employeeName,
+                        event: latestEvent,
+                        combine: () => combineCaseEvidenceDocuments(timelines)
+                    }
+                    : null
             );
 
         parentTr.children[18].replaceWith(
@@ -278,7 +287,16 @@ function renderHistoryTable(historyData) {
             const childEvidenceCell =
                 createEvidenceDocumentsCell(
                     event.DocumentsAttached,
-                    event.statusText
+                    event.statusText,
+                    false,
+                    event.targetRowNumber
+                        ? {
+                            caseId: event.CaseIdNew || caseId,
+                            rowNumber: event.targetRowNumber,
+                            employeeName: event.employeeName,
+                            event
+                        }
+                        : null
                 );
 
             childTr.children[18].replaceWith(
@@ -355,6 +373,10 @@ function renderHistoryTable(historyData) {
 //function resetUpdateEvidenceFiles() {
 //#region
 function resetUpdateEvidenceFiles() {
+    window.AdditionalEvidence?.clear(
+        document.getElementById('ocOpenCaseAdditional')
+    );
+
     const inputIds = [
         'openCaseEvidenceFile',
         'updateReceiptFile',
@@ -524,12 +546,25 @@ window.uploadAllUpdateEvidence = async function () {
             document.getElementById('openCaseEvidenceFile')
                 ?.files?.[0] || null;
 
+        const openCaseUrl = await uploadOpenCaseEvidence(openCaseFile);
+        const additionalFiles = window.AdditionalEvidence?.files(
+            document.getElementById('ocOpenCaseAdditional')
+        ) || [];
+        const numericCaseId = String(currentActiveCaseId || '').replace(/[^0-9]/g, '');
+        const additionalUrls = additionalFiles.length
+            ? await window.AdditionalEvidence.upload(additionalFiles, {
+                caseId: ' ',
+                employeeName: getSafeUpdateEmployeeName(),
+                buildName: (n, ext) => `Opencase ${numericCaseId}_${getSafeUpdateEmployeeName()}_Additional_${n}.${ext}`
+            })
+            : [];
+
         return {
-            openCaseUrl:
-                await uploadOpenCaseEvidence(openCaseFile),
+            openCaseUrl,
             receiptUrl: '',
             medicalCertificateUrl: '',
-            closeCaseUrl: ''
+            closeCaseUrl: '',
+            additionalUrls
         };
     }
 
@@ -1219,7 +1254,7 @@ function renderEditEvidenceEditor(eventItem, editorEl) {
     }
 }
 
-async function collectEditedEvidenceDocuments(editorEl) {
+async function collectEditedEvidenceDocuments(editorEl, originalRaw = '') {
     const editor = editorEl || document.getElementById('mdEvidenceEditor');
     const cards = editor
         ? editor.querySelectorAll('.edit-evidence-card')
@@ -1249,6 +1284,11 @@ async function collectEditedEvidenceDocuments(editorEl) {
                 `${card.dataset.evidenceType}|${url}`
             );
         }
+    }
+
+    // รูปเพิ่มเติม (Additional) ไม่มีช่องแก้ในฟอร์มนี้ — คงไว้ตามเดิม
+    for (const url of parseAdditionalEvidence(originalRaw)) {
+        lines.push(`ADDITIONAL|${url}`);
     }
 
     return lines.join('\n') || '-';
@@ -1408,7 +1448,7 @@ async function saveInlineRowEdit(row, eventItem) {
         let editedDocuments = eventItem.DocumentsAttached || '-';
         const evidenceEditor = row.querySelector('.inline-evidence-editor');
         if (evidenceEditor) {
-            editedDocuments = await collectEditedEvidenceDocuments(evidenceEditor);
+            editedDocuments = await collectEditedEvidenceDocuments(evidenceEditor, eventItem.DocumentsAttached);
         }
 
         let loggedInAdminName = '';
@@ -1661,7 +1701,10 @@ function initHistoryModalEvents() {
 
                 try {
                     editedDocuments =
-                        await collectEditedEvidenceDocuments();
+                        await collectEditedEvidenceDocuments(
+                            null,
+                            document.getElementById('mdInpDocs')?.value || ''
+                        );
                 } catch (error) {
                     alert(
                         `อัปโหลดรูปสำหรับแก้ไขไม่สำเร็จ: ${error.message}`
@@ -2045,7 +2088,11 @@ if (response.ok && result.success) {
 
             evidenceUrls.closeCaseUrl
                 ? `CLOSE_CASE|${evidenceUrls.closeCaseUrl}`
-                : ''
+                : '',
+
+            ...(evidenceUrls.additionalUrls || []).map(
+                (url) => `ADDITIONAL|${url}`
+            )
         ]
             .filter(Boolean)
             .join('\n') ||
@@ -2870,7 +2917,29 @@ function getEvidencePreviewUrl(url, size = 'w320') {
 
 // แยกเอกสารแนบออกเป็นหลักฐานเปิดเคส ใบเสร็จ ใบรับรองแพทย์ และหลักฐานปิดเคส
 //#region parseEvidenceDocuments
+function parseAdditionalEvidence(rawValue) {
+    return String(rawValue || '')
+        .split(/\r?\n/)
+        .map((line) => /^ADDITIONAL\|(.+)$/i.exec(line.trim())?.[1]?.trim())
+        .filter(Boolean);
+}
+
 function parseEvidenceDocuments(
+    rawValue,
+    statusText = '',
+    showCompleteCase = false
+) {
+    return [
+        ...parseBaseEvidenceDocuments(rawValue, statusText, showCompleteCase),
+        ...parseAdditionalEvidence(rawValue).map((url, index) => ({
+            label: `เพิ่มเติม (Additional) ${index + 1}`,
+            url,
+            additional: true
+        }))
+    ];
+}
+
+function parseBaseEvidenceDocuments(
     rawValue,
     statusText = '',
     showCompleteCase = false
@@ -2924,6 +2993,8 @@ function parseEvidenceDocuments(
     const unlabeledUrls = [];
 
     for (const line of lines) {
+        if (/^ADDITIONAL\|/i.test(line)) continue;
+
         const labeledMatch = line.match(
             /^(OPEN_CASE|RECEIPT|MEDICAL_CERTIFICATE|CLOSE_CASE)\|(.+)$/i
         );
@@ -3034,19 +3105,30 @@ function combineCaseEvidenceDocuments(timelines) {
         ['รูปหลักฐานการปิดเคส', 'CLOSE_CASE']
     ];
 
-    return labels
-        .filter(([label]) => combined.has(label))
-        .map(
-            ([label, type]) =>
-                `${type}|${combined.get(label)}`
+    const additional = [
+        ...new Set(
+            (timelines || []).flatMap((event) =>
+                parseAdditionalEvidence(event.DocumentsAttached)
+            )
         )
-        .join('\n');
+    ];
+
+    return [
+        ...labels
+            .filter(([label]) => combined.has(label))
+            .map(
+                ([label, type]) =>
+                    `${type}|${combined.get(label)}`
+            ),
+        ...additional.map((url) => `ADDITIONAL|${url}`)
+    ].join('\n');
 }
 
 function createEvidenceDocumentsCell(
     rawValue,
     statusText = '',
-    showCompleteCase = false
+    showCompleteCase = false,
+    addContext = null
 ) {
     const cell = document.createElement('td');
     cell.className = 'history-evidence-cell';
@@ -3064,7 +3146,10 @@ function createEvidenceDocumentsCell(
             showCompleteCase
         );
 
-    let documents = parsedDocuments;
+    const additionalDocuments =
+        parsedDocuments.filter((item) => item.additional);
+    let documents =
+        parsedDocuments.filter((item) => !item.additional);
 
     if (showCompleteCase) {
         const documentsByLabel = new Map(
@@ -3095,6 +3180,11 @@ function createEvidenceDocumentsCell(
                 ? 'treatment-update'
                 : 'open-case'
     );
+
+    documents = [...documents, ...additionalDocuments];
+    if (additionalDocuments.length || addContext) {
+        container.classList.add('has-additional');
+    }
 
     documents.forEach((documentItem) => {
         const section = document.createElement('div');
@@ -3159,6 +3249,35 @@ function createEvidenceDocumentsCell(
 
         container.appendChild(section);
     });
+
+    // ปุ่ม + เพิ่มรูปเพิ่มเติม (เลือกได้หลายรูป) ข้างกล่องรูปของเคส
+    if (
+        addContext &&
+        window.AdditionalEvidence &&
+        window.hasPermission?.('UploadFiles') === true
+    ) {
+        container.appendChild(
+            window.AdditionalEvidence.cardTile({
+                ...addContext,
+                existingCount: additionalDocuments.length,
+                onDone: (rowDocuments) => {
+                    const target = addContext.event;
+                    if (target) target.DocumentsAttached = rowDocuments;
+                    const nextRaw = addContext.combine
+                        ? addContext.combine()
+                        : rowDocuments;
+                    cell.replaceWith(
+                        createEvidenceDocumentsCell(
+                            nextRaw,
+                            statusText,
+                            showCompleteCase,
+                            addContext
+                        )
+                    );
+                }
+            })
+        );
+    }
 
     cell.appendChild(container);
     return cell;

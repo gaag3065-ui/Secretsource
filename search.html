@@ -462,6 +462,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         // =====================================================
         // 5. โหลด Script ฝั่งขวา
         // =====================================================
+                if (canCreate || canViewHistory) {
+                    await loadScript('additional-evidence.js');
+                }
+
                 if (canCreate) {
                 await loadScript('recordtreatment.js');
 

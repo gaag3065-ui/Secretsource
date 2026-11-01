@@ -374,6 +374,28 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
 
 
 
+
+        // รูปเพิ่มเติม (Additional) — ชื่อไฟล์ตามรูปเปิดเคส + _Additional_ลำดับ
+        let additionalUrls = [];
+        const additionalZone = document.getElementById('openCaseAdditional');
+        const additionalFiles = window.AdditionalEvidence?.files(additionalZone) || [];
+        if (additionalFiles.length) {
+            try {
+                claimStatus.innerText = `กำลังอัปโหลดรูปเพิ่มเติม ${additionalFiles.length} รูป...`;
+                const numericCaseId = String(caseId).replace(/[^0-9]/g, '');
+                additionalUrls = await window.AdditionalEvidence.upload(additionalFiles, {
+                    caseId: ' ',
+                    employeeName: empNameInput,
+                    buildName: (n, ext) => `Opencase ${numericCaseId}_${cleanEmpName}_Additional_${n}.${ext}`
+                });
+            } catch (err) {
+                alert(`❌ อัปโหลดรูปเพิ่มเติมไม่สำเร็จ: ${err.message}`);
+                claimStatus.innerText = '❌ อัปโหลดรูปเพิ่มเติมไม่สำเร็จ บันทึกระบบหยุดทำงาน';
+                claimStatus.style.color = 'red';
+                return;
+            }
+        }
+
         claimStatus.innerText = 'กำลังบันทึกข้อมูลลงฐานข้อมูล...';
         claimStatus.style.color = 'blue';
 
@@ -398,9 +420,10 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
             size: document.getElementById('hiddenSize').value,
             employeeName: document.getElementById('hiddenEmpName').value,
             statusText: "เปิดเคสและแจ้งประกันแล้ว รอเข้ารับการรักษา",
-            DocumentsAttached: driveFileUrl
-                ? `OPEN_CASE|${driveFileUrl}`
-                : '-',
+            DocumentsAttached: [
+                driveFileUrl ? `OPEN_CASE|${driveFileUrl}` : '',
+                ...additionalUrls.map(url => `ADDITIONAL|${url}`)
+            ].filter(Boolean).join('\n') || '-',
             notes: document.getElementById('notesInput').value
         };
 
@@ -434,6 +457,7 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
 
                 if (document.getElementById('imageUpload')) document.getElementById('imageUpload').value = '';
                 if (document.getElementById('fileNameDisplay')) document.getElementById('fileNameDisplay').innerText = 'ยังไม่ได้เลือกไฟล์';
+                window.AdditionalEvidence?.clear(document.getElementById('openCaseAdditional'));
 
                 // 🎯 [แก้ไขจุดบั๊กที่ 1]: สั่งรันฟังก์ชันกลางในการฟอร์แมตวันเวลาไทย เพื่อคงรูปเล่ม วัน เดือน ปี ไว้ให้เหมือนเดิม ไม่หดสั้นเหลือแค่เวลา
                 setThaiDateTime();
