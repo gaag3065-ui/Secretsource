@@ -484,6 +484,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // =====================================================
             if (canViewHistory) {
                 await loadScript('insuranceclaimhistory.js');
+                await loadScript('history-claim-report.js');
 
                 if (typeof initHistoryModalEvents === 'function') {
                     initHistoryModalEvents();

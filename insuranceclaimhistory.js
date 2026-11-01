@@ -3522,9 +3522,12 @@ function initHistoryReportEvent() {
 
     if (!reportButton) return;
 
+    // เปิดป๊อปอัปเลือกพื้นที่/บริษัท/ประเภท + ลายเซ็น (history-claim-report.js) — ไม่มีไฟล์นั้นใช้แบบเดิม
     reportButton.addEventListener(
         'click',
-        downloadFilteredHistoryReport
+        () => window.openClaimReportDialog
+            ? window.openClaimReportDialog()
+            : downloadFilteredHistoryReport()
     );
 }
 //#endregion
