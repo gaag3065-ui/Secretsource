@@ -829,21 +829,18 @@ function applyAssetPermissions() {
             !hasPermission('ManageAssetMasters');
     }
 
-    // เอกสารขึ้นทะเบียน / แจ้งทำลายทรัพย์สิน (asset-docs.html)
-    const registerDocButton =
-        document.getElementById('registerAssetDocButton');
+    // ปุ่มเดียวไปหน้าเอกสาร ขึ้นทะเบียน / ทำลายทรัพย์สิน (asset-docs.html สลับแบบได้ด้านใน)
+    // มีสิทธิ์อย่างใดอย่างหนึ่งก็เห็นปุ่ม — มีแค่สิทธิ์ทำลายให้เปิดหน้าทำลายก่อน
+    const assetDocsButton =
+        document.getElementById('assetDocsButton');
 
-    if (registerDocButton) {
-        registerDocButton.hidden =
-            !hasPermission('CreateAssets');
-    }
+    if (assetDocsButton) {
+        const canRegister = hasPermission('CreateAssets');
+        const canDispose = hasPermission('DisposeAssets');
 
-    const disposeDocButton =
-        document.getElementById('disposeAssetDocButton');
-
-    if (disposeDocButton) {
-        disposeDocButton.hidden =
-            !hasPermission('DisposeAssets');
+        assetDocsButton.hidden = !canRegister && !canDispose;
+        assetDocsButton.href =
+            `asset-docs.html?type=${canRegister ? 'register' : 'dispose'}`;
     }
 
 }
