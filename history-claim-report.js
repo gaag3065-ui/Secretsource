@@ -48,7 +48,7 @@
             <div class="hcr-grid">
                 <label>พื้นที่<select name="area"></select></label>
                 <label>บริษัท<select name="company"></select></label>
-                <label>ประเภทการเบิก<select name="type"><option value="all">ทั้งหมด</option><option value="medical">ค่ารักษาพยาบาล</option><option value="dental">ค่าเบิกทันตกรรม</option></select></label>
+                <label>ประเภทการเบิก<select name="type"><option value="all">ทั้งหมด</option><option value="opd">ค่ารักษาพยาบาล OPD</option><option value="ipd">ค่ารักษาพยาบาล IPD</option><option value="dental">ค่าเบิกทันตกรรม</option></select></label>
             </div>
             <div class="hcr-count"></div>
             <div class="hcr-sign">
@@ -58,9 +58,8 @@
                     <label>ลงวันที่<input type="date" name="${who}Date"></label></fieldset>`).join('')}
             </div>
             <div class="hcr-actions">
-                <button type="button" value="pdf" class="is-main"><b>ดาวน์โหลด PDF</b><small>ใบสรุปการเบิก + รายละเอียดการเบิก พร้อมลายเซ็น</small></button>
+                <button type="button" value="pdf" class="is-main"><b>ดาวน์โหลด PDF</b><small>ใบสรุปการเบิก + รายละเอียด แยกค่ารักษา OPD / IPD / ทันตกรรม พร้อมลายเซ็น</small></button>
                 <button type="button" value="xlsx"><b>ดาวน์โหลด XLSX</b><small>รูปแบบเดียวกัน แก้ไขต่อใน Excel ได้</small></button>
-                <button type="button" value="raw"><b>ดาวน์โหลดประวัติทั้งหมด (XLSX แบบเดิม)</b><small>ทุกคอลัมน์ของประวัติที่กรองไว้</small></button>
                 <button type="button" value="cancel"><b>ยกเลิก</b></button>
             </div></form>`;
         document.body.appendChild(dialog);
@@ -132,7 +131,6 @@
 
     async function download(button) {
         const format = button.value;
-        if (format === 'raw') { dialog.close(); return window.downloadFilteredHistoryReport?.(); }
         const items = selected();
         if (!items.length) { alert('ไม่พบประวัติตามพื้นที่/บริษัทที่เลือก'); return; }
         const get = name => dialog.querySelector(`[name=${name}]`).value;

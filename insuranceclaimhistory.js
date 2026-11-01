@@ -2425,6 +2425,16 @@ async function openModal() {
             return;
         }
 
+        // เดือนที่มีข้อมูลจริง (value = month:YYYY-MM)
+        const monthMatch = /^month:(d{4})-(d{2})$/.exec(preset);
+        if (monthMatch) {
+            const year = Number(monthMatch[1]);
+            const month = Number(monthMatch[2]) - 1;
+            startInput._flatpickr?.setDate(new Date(year, month, 1), true);
+            endInput._flatpickr?.setDate(new Date(year, month + 1, 0), true);
+            return;
+        }
+
         let startDate;
 
         if (preset === 'thisMonth') {
@@ -2508,6 +2518,57 @@ function updateFilterSelectOptions(
 
 let historyFilterOptionsLoaded = false;
 
+// ตัวเลือกทุกช่องในป๊อปอัป "กรองประวัติการรักษา" มาจากข้อมูลจริงในชีต พร้อมจำนวนรายการ
+const HISTORY_MONTHS_TH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+
+function applyHistoryFilterOptions(data) {
+    const counts = data.optionCounts || {};
+    const withCount = (selectId, values, countMap) => {
+        updateFilterSelectOptions(selectId, values || [], 'ทั้งหมด');
+        const select = document.getElementById(selectId);
+        if (!select || !countMap) return;
+        for (const option of select.options) {
+            if (option.value && countMap[option.value]) {
+                option.textContent = `${option.value} (${Number(countMap[option.value]).toLocaleString('th-TH')})`;
+            }
+        }
+    };
+    withCount('historyAreaFilter', data.options?.areas?.length ? data.options.areas : ['PP', 'SLK'], counts.areas);
+    withCount('historyTreatmentResultFilter', data.options?.treatmentResults, counts.treatmentResults);
+    withCount('historyHospitalFilter', data.options?.hospitals, counts.hospitals);
+
+    const documents = document.getElementById('historyDocumentFilter');
+    if (documents && counts.documents) {
+        for (const option of documents.options) {
+            const n = counts.documents[option.value];
+            if (option.value) option.textContent = `${option.value === 'hasDocument' ? 'มีเอกสารแนบ' : 'ไม่มีเอกสารแนบ'} (${Number(n || 0).toLocaleString('th-TH')})`;
+        }
+    }
+
+    // ช่วงเวลาแบบด่วน: เพิ่มเดือนที่มีข้อมูลจริง (ใหม่สุดก่อน)
+    const preset = document.getElementById('historyPeriodPreset');
+    if (preset && counts.months) {
+        const current = preset.value;
+        preset.querySelectorAll('option[data-month]').forEach(option => option.remove());
+        let group = preset.querySelector('optgroup[data-months]');
+        if (!group) {
+            group = document.createElement('optgroup');
+            group.label = 'เดือนที่มีข้อมูล';
+            group.dataset.months = '1';
+            preset.appendChild(group);
+        }
+        group.replaceChildren(...Object.keys(counts.months).sort().reverse().map(ym => {
+            const [year, month] = ym.split('-').map(Number);
+            const option = document.createElement('option');
+            option.value = `month:${ym}`;
+            option.dataset.month = ym;
+            option.textContent = `${HISTORY_MONTHS_TH[month - 1]} ${year} (${Number(counts.months[ym]).toLocaleString('th-TH')})`;
+            return option;
+        }));
+        if ([...preset.options].some(option => option.value === current)) preset.value = current;
+    }
+}
+
 async function loadHistoryFilterOptions() {
     // โหลดใหม่ทุกครั้งที่เปิด เพื่อให้ตัวเลือกตรงกับข้อมูลล่าสุดในชีต
 
@@ -2535,23 +2596,7 @@ async function loadHistoryFilterOptions() {
             );
         }
 
-        updateFilterSelectOptions(
-            'historyAreaFilter',
-            data.options?.areas || ['PP', 'SLK'],
-            'ทั้งหมด'
-        );
-
-        updateFilterSelectOptions(
-            'historyTreatmentResultFilter',
-            data.options?.treatmentResults || [],
-            'ทั้งหมด'
-        );
-
-        updateFilterSelectOptions(
-            'historyHospitalFilter',
-            data.options?.hospitals || [],
-            'ทั้งหมด'
-        );
+        applyHistoryFilterOptions(data);
 
         historyFilterOptionsLoaded = true;
     } catch (error) {
@@ -2643,23 +2688,7 @@ async function loadFilteredAllHistory() {
         window.currentFilteredHistory =
             data.history || [];
 
-        updateFilterSelectOptions(
-            'historyAreaFilter',
-            data.options?.areas || ['PP', 'SLK'],
-            'ทั้งหมด'
-        );
-
-        updateFilterSelectOptions(
-            'historyTreatmentResultFilter',
-            data.options?.treatmentResults,
-            'ทั้งหมด'
-        );
-
-        updateFilterSelectOptions(
-            'historyHospitalFilter',
-            data.options?.hospitals,
-            'ทั้งหมด'
-        );
+        applyHistoryFilterOptions(data);
 
         summary.textContent =
             `พบประวัติทั้งหมด ${data.total} รายการ`;
