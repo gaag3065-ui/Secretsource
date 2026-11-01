@@ -2339,6 +2339,11 @@ function initHistoryFilterDates() {
         }
     });
 
+    // เปลี่ยนวันที่ → โหลดตัวเลือกพื้นที่/บริษัท/ผลการรักษา/คลินิก ที่มีในช่วงวันที่นั้นใหม่
+    [startPicker, endPicker].forEach(picker => picker.config.onChange.push(
+        () => typeof scheduleHistoryFilterOptions === 'function' && scheduleHistoryFilterOptions()
+    ));
+
     endPicker.config.onChange.push(
         function (selectedDates) {
             const selectedDate =
@@ -2575,7 +2580,7 @@ function applyHistoryFilterOptions(data) {
         const select = document.getElementById(selectId);
         if (!select || !countMap) return;
         for (const option of select.options) {
-            if (option.value && countMap[option.value]) {
+            if (option.value && option.value in countMap) {
                 option.textContent = `${option.value} (${Number(countMap[option.value]).toLocaleString('th-TH')})`;
             }
         }
@@ -2617,6 +2622,25 @@ function applyHistoryFilterOptions(data) {
     }
 }
 
+// ค่าตัวกรองปัจจุบัน — ใช้ขอตัวเลือกที่มีอยู่จริงในชีต "บันทึกประวัติการรักษา" ตามช่วงวันที่และช่องอื่นที่เลือก
+function currentHistoryFilterValues() {
+    const value = id => document.getElementById(id)?.value || '';
+    return {
+        startDate: value('historyStartDate'),
+        endDate: value('historyEndDate'),
+        area: value('historyAreaFilter'),
+        company: value('historyCompanyFilter'),
+        treatmentResult: value('historyTreatmentResultFilter'),
+        hospital: value('historyHospitalFilter')
+    };
+}
+
+let historyOptionsTimer = null;
+function scheduleHistoryFilterOptions() {
+    clearTimeout(historyOptionsTimer);
+    historyOptionsTimer = setTimeout(loadHistoryFilterOptions, 250);
+}
+
 async function loadHistoryFilterOptions() {
     // โหลดใหม่ทุกครั้งที่เปิด เพื่อให้ตัวเลือกตรงกับข้อมูลล่าสุดในชีต
 
@@ -2630,7 +2654,8 @@ async function loadHistoryFilterOptions() {
                         'application/json'
                 },
                 body: JSON.stringify({
-                    optionsOnly: true
+                    optionsOnly: true,
+                    ...currentHistoryFilterValues()
                 })
             }
         );
@@ -2790,6 +2815,21 @@ function initHistoryFilterApplyEvent() {
     if (!applyButton) return;
 
     loadHistoryFilterOptions();
+
+    // เปลี่ยนวันที่หรือช่องใดช่องหนึ่ง → ตัวเลือกช่องอื่นเหลือเฉพาะค่าที่มีข้อมูลจริง
+    [
+        'historyStartDate',
+        'historyEndDate',
+        'historyAreaFilter',
+        'historyCompanyFilter',
+        'historyTreatmentResultFilter',
+        'historyHospitalFilter'
+    ].forEach(id => {
+        document.getElementById(id)?.addEventListener(
+            'change',
+            scheduleHistoryFilterOptions
+        );
+    });
 
     applyButton.addEventListener(
         'click',
