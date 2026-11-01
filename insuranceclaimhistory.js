@@ -2509,7 +2509,7 @@ function updateFilterSelectOptions(
 let historyFilterOptionsLoaded = false;
 
 async function loadHistoryFilterOptions() {
-    if (historyFilterOptionsLoaded) return;
+    // โหลดใหม่ทุกครั้งที่เปิด เพื่อให้ตัวเลือกตรงกับข้อมูลล่าสุดในชีต
 
     try {
         const response = await window.authFetch(
@@ -2534,6 +2534,12 @@ async function loadHistoryFilterOptions() {
                 'โหลดตัวเลือกไม่สำเร็จ'
             );
         }
+
+        updateFilterSelectOptions(
+            'historyAreaFilter',
+            data.options?.areas || ['PP', 'SLK'],
+            'ทั้งหมด'
+        );
 
         updateFilterSelectOptions(
             'historyTreatmentResultFilter',
@@ -2636,6 +2642,12 @@ async function loadFilteredAllHistory() {
 
         window.currentFilteredHistory =
             data.history || [];
+
+        updateFilterSelectOptions(
+            'historyAreaFilter',
+            data.options?.areas || ['PP', 'SLK'],
+            'ทั้งหมด'
+        );
 
         updateFilterSelectOptions(
             'historyTreatmentResultFilter',
