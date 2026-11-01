@@ -2534,6 +2534,7 @@ function applyHistoryFilterOptions(data) {
         }
     };
     withCount('historyAreaFilter', data.options?.areas?.length ? data.options.areas : ['PP', 'SLK'], counts.areas);
+    withCount('historyCompanyFilter', data.options?.companies, counts.companies);
     withCount('historyTreatmentResultFilter', data.options?.treatmentResults, counts.treatmentResults);
     withCount('historyHospitalFilter', data.options?.hospitals, counts.hospitals);
 
@@ -2611,7 +2612,7 @@ async function loadHistoryFilterOptions() {
 async function loadFilteredAllHistory() {
     const applyButton =
         document.getElementById(
-            'applyHistoryFilterButton'
+            'advancedHistoryFilterButton'
         );
 
     const reportButton =
@@ -2648,7 +2649,12 @@ async function loadFilteredAllHistory() {
         documentStatus:
             document.getElementById(
                 'historyDocumentFilter'
-            ).value || '',
+            )?.value || '',
+
+        company:
+            document.getElementById(
+                'historyCompanyFilter'
+            )?.value || '',
 
         hospital:
             document.getElementById(
@@ -2723,17 +2729,20 @@ async function loadFilteredAllHistory() {
     } finally {
         applyButton.disabled = false;
         applyButton.textContent =
-            'แสดงประวัติตามเงื่อนไข';
+            '🔎 กรองประวัติ';
     }
 }
 
 function initHistoryFilterApplyEvent() {
+    // ตัวกรองอยู่ด้านนอกแล้ว: ปุ่ม "กรองประวัติ" กรองทันที และโหลดตัวเลือกจากข้อมูลจริงตอนเปิดหน้า
     const applyButton =
         document.getElementById(
-            'applyHistoryFilterButton'
+            'advancedHistoryFilterButton'
         );
 
     if (!applyButton) return;
+
+    loadHistoryFilterOptions();
 
     applyButton.addEventListener(
         'click',

@@ -16,6 +16,8 @@
 .hcr-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .hcr label { display: grid; gap: 4px; font-size: 12.5px; font-weight: 600; color: #344054; }
 .hcr select, .hcr input[type=date] { border: 1px solid #d0d5dd; border-radius: 10px; padding: 8px 10px; font: inherit; font-size: 13px; background: #fff; }
+.hcr-check { display: flex !important; grid-template-columns: none; align-items: center; gap: 8px; font-weight: 600; }
+.hcr-check input { width: 18px; height: 18px; }
 .hcr-count { padding: 8px 12px; border-radius: 10px; background: #f2f4f7; font-size: 13px; }
 .hcr-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .hcr-sign fieldset { border: 1px solid #e4e7ec; border-radius: 12px; padding: 10px 12px; display: grid; gap: 8px; margin: 0; }
@@ -51,6 +53,7 @@
                 <label>ประเภทการเบิก<select name="type"><option value="all">ทั้งหมด</option><option value="opd">ค่ารักษาพยาบาล OPD</option><option value="ipd">ค่ารักษาพยาบาล IPD</option><option value="dental">ค่าเบิกทันตกรรม</option></select></label>
             </div>
             <div class="hcr-count"></div>
+            <label class="hcr-check"><input type="checkbox" name="withEvidence" checked> แนบรูปหลักฐาน ใบเสร็จ ใบรับรองแพทย์ ต่อท้าย PDF (หน้าละ 4 รูป แยกทีละคน)</label>
             <div class="hcr-sign">
                 ${['preparer', 'approver'].map(who => `<fieldset data-who="${who}"><legend>${who === 'preparer' ? 'ผู้จัดเตรียมเอกสาร (บริษัท)' : 'ผู้อนุมัติ GM ขึ้นไป'}</legend>
                     <label class="hcr-pick"><span>แตะเพื่อเลือกรูปลายเซ็น</span><input type="file" accept="image/*"></label>
@@ -122,8 +125,11 @@
         if (!history().length) { alert('ยังไม่มีข้อมูลสำหรับสร้างรายงาน — กดกรองประวัติก่อน'); return; }
         if (!dialog) build();
         const area = dialog.querySelector('[name=area]'), company = dialog.querySelector('[name=company]');
-        fill(area, [...new Set([...AREAS, ...options('workLocation')])], area.value);
-        fill(company, options('company'), company.value);
+        // ตั้งต้นตามตัวกรองด้านนอกที่เลือกไว้
+        const outerArea = document.getElementById('historyAreaFilter')?.value || '';
+        const outerCompany = document.getElementById('historyCompanyFilter')?.value || '';
+        fill(area, [...new Set([...AREAS, ...options('workLocation'), outerArea].filter(Boolean))], outerArea || area.value);
+        fill(company, options('company'), outerCompany || company.value);
         dialog.querySelectorAll('input[type=date]').forEach(input => { if (!input.value) input.value = today(); });
         updateCount();
         dialog.showModal();
@@ -145,6 +151,7 @@
                 body: JSON.stringify({
                     rowNumbers: items.map(item => Number(item.targetRowNumber)),
                     area: get('area'), company: get('company'), type: get('type'), format,
+                    withEvidence: dialog.querySelector('[name=withEvidence]').checked,
                     preparer: { signature: dialog.signatures.preparer || '', date: thaiShort(get('preparerDate')) },
                     approver: { signature: dialog.signatures.approver || '', date: thaiShort(get('approverDate')) }
                 })

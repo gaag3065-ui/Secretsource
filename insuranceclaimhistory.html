@@ -1092,6 +1092,9 @@
         grid-template-columns: 1fr !important;
     }
 }
+/* ตัวกรองด้านนอก: กว้างพอให้อ่านชื่อ เลื่อนลงบรรทัดใหม่ได้บนจอแคบ */
+.history-filter-toolbar { flex-wrap: wrap !important; }
+#table-box-placeholder .history-filter-select { min-width: 150px; max-width: 240px; padding: 0 10px !important; cursor: pointer; }
 </style>
 
 <!-- 📦 กล่องรวมขนาดใหญ่ด้านล่าง (Full Width Container) -->
@@ -1129,12 +1132,30 @@
         >
     </div>
 
+    <!-- ตัวกรองจากข้อมูลจริงในชีต (พร้อมจำนวนรายการ) -->
+    <div class="history-date-group">
+        <label for="historyAreaFilter">เลือกพื้นที่</label>
+        <select id="historyAreaFilter" class="history-date-input history-filter-select"><option value="">ทั้งหมด</option></select>
+    </div>
+    <div class="history-date-group">
+        <label for="historyCompanyFilter">เลือกบริษัท</label>
+        <select id="historyCompanyFilter" class="history-date-input history-filter-select"><option value="">ทั้งหมด</option></select>
+    </div>
+    <div class="history-date-group">
+        <label for="historyTreatmentResultFilter">เลือกผลการรักษา</label>
+        <select id="historyTreatmentResultFilter" class="history-date-input history-filter-select"><option value="">ทั้งหมด</option></select>
+    </div>
+    <div class="history-date-group">
+        <label for="historyHospitalFilter">เลือกคลินิก/สถานพยาบาล</label>
+        <select id="historyHospitalFilter" class="history-date-input history-filter-select"><option value="">ทั้งหมด</option></select>
+    </div>
+
     <button
         type="button"
         id="advancedHistoryFilterButton"
         class="history-filter-button"
     >
-        ⚙️ กรองประวัติ
+        🔎 กรองประวัติ
     </button>
 
     <span
@@ -1619,102 +1640,6 @@
 
 
 <!-- ================================ สร้างแถบกรองวันที่และปุ่มกรองขั้นสูง ============================ -->
-<div id="historyFilterModal" class="history-filter-modal">
-    <div class="history-filter-dialog">
-        <div class="history-filter-dialog-header">
-            <div>
-                <h3>🔎 กรองประวัติการรักษา</h3>
-                <p>ช่องที่ไม่เลือกจะไม่ถูกนำมาเป็นเงื่อนไข</p>
-            </div>
-
-            <button
-                type="button"
-                id="closeHistoryFilterButton"
-                class="history-filter-close"
-            >
-                &times;
-            </button>
-        </div>
-
-        <div class="history-filter-grid">
-            <div class="history-filter-field">
-                <label for="historyPeriodPreset">
-                    ช่วงเวลาแบบด่วน
-                </label>
-
-                <select id="historyPeriodPreset">
-                    <option value="">กำหนดจากวันที่ด้านนอก</option>
-                    <option value="all">ประวัติทั้งหมด</option>
-                    <option value="thisMonth">เดือนนี้</option>
-                    <option value="thisYear">ปีนี้</option>
-                </select>
-            </div>
-
-            <div class="history-filter-field">
-                <label for="historyAreaFilter">
-                    พื้นที่/ประเภทประกัน
-                </label>
-
-                <select id="historyAreaFilter">
-                    <option value="">ทั้งหมด</option>
-                    <option value="PP">PP</option>
-                    <option value="SLK">SLK</option>
-                </select>
-            </div>
-
-            <div class="history-filter-field">
-                <label for="historyTreatmentResultFilter">
-                    ผลการรักษา
-                </label>
-
-                <select id="historyTreatmentResultFilter">
-                    <option value="">ทั้งหมด</option>
-                </select>
-            </div>
-
-            <div class="history-filter-field">
-                <label for="historyDocumentFilter">
-                    เอกสารแนบ
-                </label>
-
-                <select id="historyDocumentFilter">
-                    <option value="">ทั้งหมด</option>
-                    <option value="hasDocument">มีเอกสารแนบ</option>
-                    <option value="noDocument">ไม่มีเอกสารแนบ</option>
-                </select>
-            </div>
-
-            <div class="history-filter-field history-filter-field-full">
-                <label for="historyHospitalFilter">
-                    คลินิกหรือสถานพยาบาล
-                </label>
-
-                <select id="historyHospitalFilter">
-                    <option value="">ทั้งหมด</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="history-filter-dialog-footer">
-            <button
-                type="button"
-                id="resetHistoryFilterButton"
-                class="history-filter-reset"
-            >
-                ล้างเงื่อนไข
-            </button>
-
-            <button
-                type="button"
-                id="applyHistoryFilterButton"
-                class="history-filter-apply"
-            >
-                แสดงประวัติตามเงื่อนไข
-            </button>
-        </div>
-    </div>
-</div>
-
 <!-- ================================ สร้างแถบกรองวันที่และปุ่มกรองขั้นสูง ============================ -->
 
 
