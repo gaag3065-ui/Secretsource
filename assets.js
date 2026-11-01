@@ -829,6 +829,23 @@ function applyAssetPermissions() {
             !hasPermission('ManageAssetMasters');
     }
 
+    // เอกสารขึ้นทะเบียน / แจ้งทำลายทรัพย์สิน (asset-docs.html)
+    const registerDocButton =
+        document.getElementById('registerAssetDocButton');
+
+    if (registerDocButton) {
+        registerDocButton.hidden =
+            !hasPermission('CreateAssets');
+    }
+
+    const disposeDocButton =
+        document.getElementById('disposeAssetDocButton');
+
+    if (disposeDocButton) {
+        disposeDocButton.hidden =
+            !hasPermission('DisposeAssets');
+    }
+
 }
 
 async function loadAssetMasterData() {

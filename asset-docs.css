@@ -1,0 +1,20 @@
+/* เอกสารทรัพย์สิน (asset-docs.js) — ใช้หน้าตาเดียวกับหน้าตรวจรับห้องพัก (room-inspection.css) */
+.ad-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ad-head-actions a { text-decoration: none; }
+.ad-table-wrap { overflow-x: auto; border: 1px solid var(--ri-line); border-radius: 12px; margin-bottom: 10px; }
+.ad-table { border-collapse: collapse; min-width: 100%; font-size: 12.5px; }
+.ad-table th { position: sticky; top: 0; background: #0070c0; color: #fff; font-weight: 700; padding: 6px 6px; white-space: nowrap; text-align: center; }
+.ad-table td { border-bottom: 1px solid #eef1f3; padding: 4px; vertical-align: top; }
+.ad-table td.ad-no { text-align: center; color: var(--ri-muted); font-weight: 700; padding-top: 10px; }
+.ad-table input { width: 100%; min-width: 90px; border: 1px solid var(--ri-line); border-radius: 7px; padding: 5px 7px; background: #fff; }
+.ad-table input[data-k="description"], .ad-table input[data-k="status"], .ad-table input[data-k="note"] { min-width: 210px; }
+.ad-table input[data-k="no"], .ad-table input[data-k="amount"], .ad-table input[data-k="price"], .ad-table input[data-k="company"] { min-width: 64px; }
+.ad-table input[type="date"] { min-width: 130px; }
+.ad-row-actions { display: flex; gap: 4px; white-space: nowrap; }
+.ad-row-actions button { border: 1px solid var(--ri-line); background: #fff; border-radius: 7px; padding: 4px 8px; cursor: pointer; }
+.ad-row-actions button.is-danger { color: var(--ri-danger); }
+.ad-photo-kind { width: 100%; border: 1px solid var(--ri-brand); border-radius: 9px; padding: 6px 8px; background: var(--ri-brand-soft); font-weight: 600; }
+.ri-photo.is-document { border-color: #0070c0; box-shadow: inset 0 3px 0 #0070c0; }
+.ri-photo.is-unset { border-color: #f79009; box-shadow: inset 0 3px 0 #f79009; }
+.ri-folder .ri-btn input { display: none; }
+@media (max-width: 760px) { .ad-head-actions { width: 100%; } }

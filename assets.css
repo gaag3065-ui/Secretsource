@@ -2135,3 +2135,16 @@ a.button {
     text-decoration: none;
     font-size: 13.3px;
 }
+
+/* ปุ่มลิงก์ไปหน้าเอกสารทรัพย์สิน (ขึ้นทะเบียน / ทำลาย) ให้หน้าตาเหมือนปุ่มรอง */
+a.asset-secondary-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+a.asset-secondary-button[hidden] {
+    display: none;
+}

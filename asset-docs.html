@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>เอกสารทรัพย์สิน | GA Operations</title>
+    <link rel="stylesheet" href="room-inspection.css?v=20261027-1">
+    <link rel="stylesheet" href="asset-docs.css?v=20261101-1">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+</head>
+<body>
+    <main class="ri-page">
+        <header class="ri-header">
+            <div>
+                <p class="ri-eyebrow" id="adEyebrow">ASSET DOCUMENTS · ทะเบียนทรัพย์สิน</p>
+                <h1 id="adTitle">ขึ้นทะเบียนทรัพย์สิน</h1>
+                <p class="ri-sub">กรอกรายการ เลือกรูปจาก OneDrive ระบุว่าแต่ละรูปคืออะไร จัดเรียง แล้วดาวน์โหลด PDF / XLSX — <span id="riSaved">ยังไม่ได้บันทึก</span></p>
+            </div>
+            <div class="ad-head-actions">
+                <a class="ri-btn ri-btn-ghost" href="assets.html">← กลับทะเบียนทรัพย์สิน</a>
+                <nav class="ri-tabs" role="tablist">
+                    <button type="button" role="tab" data-kind="register" class="is-on">ขึ้นทะเบียนทรัพย์สิน</button>
+                    <button type="button" role="tab" data-kind="dispose">ทำลายทรัพย์สิน (ชำรุด)</button>
+                </nav>
+            </div>
+        </header>
+
+        <section class="ri-card">
+            <div class="ri-card-head"><h2>ข้อมูลเอกสาร</h2><span>ใช้ตั้งชื่อไฟล์และเติมให้แถวใหม่อัตโนมัติ</span></div>
+            <div class="ri-grid" id="adDefaults"></div>
+        </section>
+
+        <section class="ri-card">
+            <div class="ri-card-head"><h2>รายการทรัพย์สิน</h2><span id="adItemCount"></span></div>
+            <p class="ri-hint">กรอกทีละแถว (แถวใหม่เติมค่าจากข้อมูลเอกสารให้) — ปุ่ม ⧉ คัดลอกแถวสำหรับทรัพย์สินรุ่นเดียวกันหลายชิ้น</p>
+            <div class="ad-table-wrap"><table class="ad-table" id="adItems"></table></div>
+            <button type="button" class="ri-add" data-action="add-item">+ เพิ่มแถว</button>
+        </section>
+
+        <section class="ri-card">
+            <div class="ri-card-head">
+                <h2>รูปภาพ</h2>
+                <span id="riPhotoCount"></span>
+            </div>
+            <div class="ri-folder">
+                <label class="ri-btn ri-btn-primary">เลือกทั้งโฟลเดอร์ (OneDrive)<input type="file" id="adFolder" webkitdirectory multiple></label>
+                <label class="ri-btn ri-btn-ghost">เลือกรูป (หลายรูป)<input type="file" id="adFiles" accept="image/jpeg,image/png,image/webp" multiple></label>
+                <span>เลือกโฟลเดอร์รูปจาก OneDrive ในหน้าต่างเลือกไฟล์ ระบบเพิ่มทุกรูปเรียงตามเวลาถ่าย แล้วเลือกว่าแต่ละรูปคืออะไร</span>
+                <button type="button" class="ri-btn ri-btn-ghost" data-action="arrange">⇅ จัดเรียงตามตัวอย่าง</button>
+            </div>
+            <p class="ri-hint" id="adArrangeHint"></p>
+            <div id="adPhotoGrid" class="ri-photo-grid"></div>
+        </section>
+
+        <div class="ri-bar">
+            <button type="button" class="ri-btn ri-btn-ghost" data-action="clear">ล้างเอกสาร</button>
+            <span class="ri-spacer"></span>
+            <button type="button" class="ri-btn ri-btn-ghost" data-action="save">บันทึก</button>
+            <button type="button" class="ri-btn ri-btn-ghost" data-action="xlsx">ดาวน์โหลด XLSX</button>
+            <button type="button" class="ri-btn ri-btn-primary" data-action="pdf">ดาวน์โหลด PDF</button>
+        </div>
+    </main>
+
+    <dialog id="riLightbox" class="ri-lightbox">
+        <button type="button" class="ri-lightbox-close" aria-label="ปิด">×</button>
+        <img alt="รูปภาพขยาย">
+    </dialog>
+    <div id="riBusy" class="ri-busy" hidden><div><span class="ri-spinner"></span><p id="riBusyText">กำลังสร้างไฟล์...</p></div></div>
+    <div id="riToast" class="ri-toast" role="status"></div>
+
+    <script src="config.js"></script>
+    <script src="asset-docs.js?v=20261101-1"></script>
+</body>
+</html>

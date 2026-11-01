@@ -17,7 +17,7 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png">
 
     <link rel="stylesheet" href="responsive.css?v=20260902-mobile-layout-02">
-    <link rel="stylesheet" href="assets.css?v=20261026-1">
+    <link rel="stylesheet" href="assets.css?v=20261101-1">
 </head>
 
 <body>
@@ -118,6 +118,24 @@
                 </div>
 
                 <div class="asset-primary-actions">
+                    <a
+                        id="disposeAssetDocButton"
+                        class="asset-secondary-button"
+                        href="asset-docs.html?type=dispose"
+                        hidden
+                    >
+                        <span aria-hidden="true">🗑</span> ทำลายทรัพย์สิน(ชำรุด)
+                    </a>
+
+                    <a
+                        id="registerAssetDocButton"
+                        class="asset-secondary-button"
+                        href="asset-docs.html?type=register"
+                        hidden
+                    >
+                        <span aria-hidden="true">📝</span> ขึ้นทะเบียนทรัพย์สิน
+                    </a>
+
                     <button
                         type="button"
                         id="scanAssetButton"
@@ -1687,7 +1705,7 @@
 
     <script src="version.js"></script>
     <script src="config.js"></script>
-    <script src="assets.js"></script>
+    <script src="assets.js?v=20261101-1"></script>
     <script src="pwa.js"></script>
 </body>
 </html>
