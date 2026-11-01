@@ -13,9 +13,14 @@
 .hcr form { display: grid; gap: 14px; padding: 20px; }
 .hcr h3 { margin: 0; font-size: 18px; }
 .hcr p.hcr-sub { margin: 2px 0 0; color: #667085; font-size: 12.5px; }
-.hcr-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.hcr-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: start; }
 .hcr label { display: grid; gap: 4px; font-size: 12.5px; font-weight: 600; color: #344054; }
 .hcr select, .hcr input[type=date] { border: 1px solid #d0d5dd; border-radius: 10px; padding: 8px 10px; font: inherit; font-size: 13px; background: #fff; }
+.hcr-company { display: grid; gap: 6px; }
+.hcr-split { display: grid; gap: 3px; }
+.hcr-split label { display: flex !important; align-items: center; gap: 6px; font-weight: 500; font-size: 12px; }
+.hcr-split input { width: 15px; height: 15px; margin: 0; }
+.hcr-split.is-off { opacity: .45; }
 .hcr-check { display: flex !important; grid-template-columns: none; align-items: center; gap: 8px; font-weight: 600; }
 .hcr-check input { width: 18px; height: 18px; }
 .hcr-count { padding: 8px 12px; border-radius: 10px; background: #f2f4f7; font-size: 13px; }
@@ -49,7 +54,11 @@
             <div><h3>📊 สร้างรายงาน — ใบสรุปการเบิกค่ารักษาพยาบาล</h3><p class="hcr-sub">ใช้ประวัติตามช่วงวันที่ที่กรองไว้ด้านนอก แล้วเลือกเพิ่มด้านล่าง</p></div>
             <div class="hcr-grid">
                 <label>พื้นที่<select name="area"></select></label>
-                <label>บริษัท<select name="company"></select></label>
+                <div class="hcr-company"><label>บริษัท<select name="company"></select></label>
+                    <div class="hcr-split" title="ใช้เมื่อเลือกบริษัท = ทั้งหมด">
+                        <label><input type="radio" name="split" value="one" checked> รวมไฟล์เดียว</label>
+                        <label><input type="radio" name="split" value="each"> แยกไฟล์ละ 1 บริษัท</label>
+                    </div></div>
                 <label>ประเภทการเบิก<select name="type"><option value="all">ทั้งหมด</option><option value="opd">ค่ารักษาพยาบาล OPD</option><option value="ipd">ค่ารักษาพยาบาล IPD</option><option value="dental">ค่าเบิกทันตกรรม</option></select></label>
             </div>
             <div class="hcr-count"></div>
@@ -116,6 +125,10 @@
     }
 
     function updateCount() {
+        const allCompanies = !dialog.querySelector('[name=company]').value;
+        const split = dialog.querySelector('.hcr-split');
+        split.classList.toggle('is-off', !allCompanies);
+        split.querySelectorAll('input').forEach(input => { input.disabled = !allCompanies; });
         const items = selected();
         const cases = new Set(items.map(item => clean(item.CaseIdNew) || item.targetRowNumber)).size;
         dialog.querySelector('.hcr-count').textContent = `ตรงเงื่อนไข ${cases.toLocaleString('th-TH')} เคส (${items.length.toLocaleString('th-TH')} รายการ) — ในใบสรุปแสดงเฉพาะเคสที่มียอดเบิก`;
@@ -135,38 +148,61 @@
         dialog.showModal();
     }
 
+    async function requestFile(format, items, company) {
+        const get = name => dialog.querySelector(`[name=${name}]`).value;
+        const response = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/history/claim-summary`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                rowNumbers: items.map(item => Number(item.targetRowNumber)),
+                area: get('area'), company, type: get('type'), format,
+                withEvidence: dialog.querySelector('[name=withEvidence]').checked,
+                preparer: { signature: dialog.signatures.preparer || '', date: thaiShort(get('preparerDate')) },
+                approver: { signature: dialog.signatures.approver || '', date: thaiShort(get('approverDate')) }
+            })
+        });
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            const error = new Error(response.status === 404 && !data.message ? 'เครื่องหลังบ้านยังไม่ได้อัปเดต (git pull แล้วรีสตาร์ท)' : data.message || 'สร้างรายงานไม่สำเร็จ');
+            error.noAmount = response.status === 404 && Boolean(data.message);
+            throw error;
+        }
+        const blob = await response.blob();
+        const link = document.createElement('a');
+        const name = ['ใบสรุปการเบิกค่ารักษาพยาบาล', get('area'), company, today()].filter(Boolean).join('_');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${name}.${format}`;
+        document.body.appendChild(link); link.click(); link.remove();
+        setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+    }
+
+    // รวมไฟล์เดียว หรือแยกไฟล์ละ 1 บริษัท (ดาวน์โหลดทีละไฟล์ — บริษัทที่ไม่มียอดเบิกข้ามไป)
     async function download(button) {
         const format = button.value;
         const items = selected();
         if (!items.length) { alert('ไม่พบประวัติตามพื้นที่/บริษัทที่เลือก'); return; }
-        const get = name => dialog.querySelector(`[name=${name}]`).value;
+        const company = dialog.querySelector('[name=company]').value;
+        const each = !company && dialog.querySelector('[name=split]:checked')?.value === 'each';
+        const companies = each ? [...new Set(items.map(item => clean(item.company)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th')) : [company];
         const buttons = dialog.querySelectorAll('.hcr-actions button');
         const label = button.querySelector('b').textContent;
         buttons.forEach(b => { b.disabled = true; });
-        button.querySelector('b').textContent = 'กำลังสร้างไฟล์…';
+        const done = [], skipped = [];
         try {
-            const response = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/history/claim-summary`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    rowNumbers: items.map(item => Number(item.targetRowNumber)),
-                    area: get('area'), company: get('company'), type: get('type'), format,
-                    withEvidence: dialog.querySelector('[name=withEvidence]').checked,
-                    preparer: { signature: dialog.signatures.preparer || '', date: thaiShort(get('preparerDate')) },
-                    approver: { signature: dialog.signatures.approver || '', date: thaiShort(get('approverDate')) }
-                })
-            });
-            if (!response.ok) {
-                const data = await response.json().catch(() => ({}));
-                throw new Error(response.status === 404 && !data.message ? 'เครื่องหลังบ้านยังไม่ได้อัปเดต (git pull แล้วรีสตาร์ท)' : data.message || 'สร้างรายงานไม่สำเร็จ');
+            for (const [index, name] of companies.entries()) {
+                button.querySelector('b').textContent = each ? `กำลังสร้างไฟล์ ${index + 1}/${companies.length} (${name})…` : 'กำลังสร้างไฟล์…';
+                const rows = each ? items.filter(item => clean(item.company) === name) : items;
+                try {
+                    await requestFile(format, rows, name);
+                    done.push(name || 'ทุกบริษัท');
+                } catch (error) {
+                    if (!each || !error.noAmount) throw error;
+                    skipped.push(name);
+                }
+                if (each) await new Promise(resolve => setTimeout(resolve, 400));
             }
-            const blob = await response.blob();
-            const link = document.createElement('a');
-            const name = ['ใบสรุปการเบิกค่ารักษาพยาบาล', get('area'), get('company'), today()].filter(Boolean).join('_');
-            link.href = URL.createObjectURL(blob);
-            link.download = `${name}.${format}`;
-            document.body.appendChild(link); link.click(); link.remove();
-            setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+            if (each) alert(`ดาวน์โหลดแล้ว ${done.length} ไฟล์: ${done.join(', ') || '-'}${skipped.length ? `
+ไม่มียอดเบิก (ไม่สร้างไฟล์): ${skipped.join(', ')}` : ''}`);
         } catch (error) {
             alert(error.message);
         } finally {

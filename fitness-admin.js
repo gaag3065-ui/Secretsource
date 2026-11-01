@@ -135,11 +135,15 @@
     }
 
     // ---------------------------------------------------------------- รายละเอียด / ตรวจ
+    // ปุ่มเปลี่ยนรูป: อัปโหลดแทนในแบบฟอร์มเดียวกับที่พนักงานส่ง (พนักงานเห็นรูปใหม่ด้วย)
+    const replaceButton = (slot, text) => state.source === 'legacy' ? ''
+        : `<label class="fa-replace" title="${esc(text)}">${esc(text)}<input type="file" accept="image/jpeg,image/png,image/webp" data-replace="${slot}"></label>`;
     function shot(form, slots, slot, caption) {
         const s = slots.get(slot);
-        if (!s) return `<div class="fa-shot"><div class="fa-missing">${esc(caption)}: ยังไม่อัปโหลด</div></div>`;
+        if (!s) return `<div class="fa-shot"><div class="fa-missing">${esc(caption)}: ยังไม่อัปโหลด</div>${replaceButton(slot, '＋ อัปโหลดรูป')}</div>`;
         return `<div class="fa-shot ${s.review_flag || ''}" title="${esc(caption)} · อัปโหลด ${esc(when(s.uploaded_at))}">
             <img data-src="${esc(s.file_id ? 'L:' + s.file_id : form.id + '/' + slot + '/' + s.stamp)}" data-zoom alt="${esc(caption)}">
+            ${replaceButton(slot, '⟳ เปลี่ยนรูป')}
             <div class="fa-flags"><button type="button" class="${s.review_flag === 'ok' ? 'on-ok' : ''}" data-flag="ok" data-slot="${slot}">ผ่าน</button><button type="button" class="${s.review_flag === 'bad' ? 'on-bad' : ''}" data-flag="bad" data-slot="${slot}">ไม่ผ่าน</button></div>
         </div>`;
     }
@@ -160,7 +164,11 @@
         const dayCards = Array.from({ length: req.maxDays || req.days }, (_, i) => {
             const d = days.get(i + 1) || {};
             const done = slots.has(i * 2 + 1) && slots.has(i * 2 + 2) && d.date;
-            return `<article class="fa-day ${done ? 'is-done' : ''}"><header><b>${label} ${i + 1}</b><span>${esc(d.date || 'ยังไม่ระบุวันที่')}</span></header>
+            const iso = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(d.date || '');
+            const dateCell = state.source === 'legacy'
+                ? `<span>${esc(d.date || 'ยังไม่ระบุวันที่')}</span>`
+                : `<input type="date" class="fa-date-input" data-day="${i + 1}" value="${iso ? `${iso[3]}-${iso[2]}-${iso[1]}` : ''}" title="แก้วันที่ ${label} ${i + 1}">`;
+            return `<article class="fa-day ${done ? 'is-done' : ''}"><header><b>${label} ${i + 1}</b>${dateCell}</header>
                 ${req.details ? `<p>${esc(d.description || '—')}</p>` : ''}
                 <div class="fa-shots">${shot(form, slots, i * 2 + 1, 'รูปที่ 1')}${shot(form, slots, i * 2 + 2, 'รูปที่ 2')}</div></article>`;
         }).join('');
@@ -235,6 +243,55 @@
                 toast('บันทึกผลตรวจแล้ว');
                 $('faDialog').close();
                 load();
+            } catch (error) { toast(error.message, true); }
+        }
+    });
+    // ย่อรูปด้านยาวไม่เกิน 1600px เป็น JPEG ก่อนส่ง (หลังบ้านรับไม่เกิน 6 MB)
+    async function shrinkImage(file) {
+        const bitmap = await createImageBitmap(file);
+        const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+        const canvas = Object.assign(document.createElement('canvas'), { width: Math.round(bitmap.width * scale), height: Math.round(bitmap.height * scale) });
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        bitmap.close();
+        return canvas.toDataURL('image/jpeg', 0.88);
+    }
+    $('faDetail').addEventListener('change', async event => {
+        const t = event.target;
+        const form = state.detail?.form;
+        if (!form || state.source === 'legacy') return;
+        if (t.matches('.fa-date-input')) {
+            if (!t.value) return;
+            t.disabled = true;
+            try {
+                const result = await request(`/forms/${form.id}/days/${t.dataset.day}`, { method: 'PUT', body: JSON.stringify({ date: t.value }) });
+                const day = Number(t.dataset.day);
+                const item = state.detail.days.find(d => d.day === day);
+                if (item) item.date = result.date; else state.detail.days.push({ day, date: result.date, description: '' });
+                toast(`บันทึกวันที่ ${result.date} แล้ว`);
+                renderDetail(); load();
+            } catch (error) { toast(error.message, true); renderDetail(); }
+            return;
+        }
+        const input = t.closest('[data-replace]');
+        if (input && input.files[0]) {
+            const slot = Number(input.dataset.replace);
+            const file = input.files[0];
+            input.value = '';
+            if (/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name)) return toast('รูป HEIC ต้องแปลงเป็น JPG ก่อน', true);
+            if (!confirm(`เปลี่ยนรูปตำแหน่งที่ ${slot} ของ ${form.fullname}?
+รูปเดิมจะถูกย้ายไปถังขยะ Google Drive และผลตรวจรูปนี้จะเริ่มใหม่`)) return;
+            toast('กำลังอัปโหลดรูป…');
+            try {
+                const image = await shrinkImage(file);
+                const result = await request(`/forms/${form.id}/images/${slot}`, { method: 'PUT', body: JSON.stringify({ image }) });
+                const list = state.detail.slots;
+                const item = list.find(s => s.slot === slot);
+                const next = { slot, uploaded_at: result.uploaded_at, stamp: result.stamp, review_flag: '', review_note: '' };
+                if (item) Object.assign(item, next); else list.push(next);
+                toast('เปลี่ยนรูปแล้ว');
+                renderDetail(); load();
             } catch (error) { toast(error.message, true); }
         }
     });

@@ -112,3 +112,11 @@ tr:hover td { background: #fafbfc; }
 .fa-bill { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; font-weight: 600; }
 .fa-bill input { width: 130px; border: 1px solid var(--fa-line); border-radius: 8px; padding: 6px 8px; }
 .fa-bill-pay { display: block; margin-top: 4px; color: var(--fa-muted); font-size: 12px; }
+
+/* แก้วันที่ / เปลี่ยนรูปในหน้าตรวจ */
+.fa-date-input { border: 1px solid var(--fa-line, #e1e7ea); border-radius: 7px; padding: 1px 4px; font: inherit; font-size: 12px; color: #344054; background: #fff; cursor: pointer; max-width: 128px; }
+.fa-date-input:hover, .fa-date-input:focus { border-color: #d6407d; outline: none; }
+.fa-replace { position: absolute; top: 4px; right: 4px; z-index: 2; white-space: nowrap; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,.92); border: 1px solid #d0d5dd; font-size: 11px; font-weight: 700; color: #344054; cursor: pointer; }
+.fa-replace:hover { border-color: #d6407d; color: #d6407d; }
+.fa-replace input { display: none; }
+.fa-shot .fa-missing + .fa-replace { top: auto; bottom: 6px; left: 50%; right: auto; transform: translateX(-50%); }
