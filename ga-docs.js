@@ -7,6 +7,16 @@
     const API = `${window.APP_CONFIG.API_BASE_URL}/api/ga-docs/public`;
     const TOKEN_KEY = 'gaDocsSession';
     const state = { config: null, session: null, form: null, files: {} };
+    // หัวข้อที่ยังเป็นแนวคิด (ยังไม่มีฟอร์มที่หลังบ้าน) — กดแล้วแสดงแนวคิดของระบบ
+    const CONCEPTS = [
+        {
+            key: 'quests', icon: '📣', color: '#4f46e5', title: 'ข่าวและภารกิจจากบริษัทถึงคุณ', short: 'ข่าวและภารกิจถึงคุณ',
+            description: 'งานที่บริษัทมอบหมาย และข่าวสารเฉพาะคุณ (เร็ว ๆ นี้)',
+            concept: 'แสดงข่าวสารเฉพาะบุคคลนั้น ๆ ที่แสดงงาน หรือรายการที่บริษัทมอบหมายให้ทำ เป็นเหมือนการทำเควส เพื่อสะสมความร่วมมือระหว่างบริษัทกับพนักงาน มีรายละเอียดแจกแจงสำหรับแต่ละเควส และมีปุ่มสำหรับกดรับทราบว่าเห็นแล้ว',
+            points: ['ข่าวสารเฉพาะบุคคล', 'งาน / รายการที่บริษัทมอบหมาย', 'ทำเป็นเควส สะสมความร่วมมือ', 'รายละเอียดแจกแจงของแต่ละเควส', 'ปุ่ม "รับทราบแล้ว"']
+        }
+    ];
+    const menuItems = () => [...state.config.forms, ...CONCEPTS];
 
     const store = {
         get() { try { return JSON.parse(sessionStorage.getItem(TOKEN_KEY) || 'null'); } catch { return null; } },
@@ -66,7 +76,7 @@
         const e = state.session.employee;
         $('gdName').textContent = e.fullname;
         $('gdMeta').textContent = [e.ID, e.insuranceCode, e.company].filter(Boolean).join(' · ');
-        $('gdMenu').innerHTML = state.config.forms.map(f => `
+        $('gdMenu').innerHTML = menuItems().map(f => `
             <button type="button" class="gd-tile" style="--c:${esc(f.color)}" data-open="${esc(f.key)}">
                 <span class="gd-tile-icon" aria-hidden="true">${esc(f.icon)}</span>
                 <b>${esc(f.title)}</b>
@@ -94,9 +104,12 @@
 
     // ---------------------------------------------------------------- แบบฟอร์ม
     function openForm(key) {
-        const form = state.config.forms.find(f => f.key === key);
+        const form = menuItems().find(f => f.key === key);
         if (!form) return;
         if (form.link) { location.href = form.link; return; }
+        if (form.concept) return openConcept(form);
+        document.querySelector('.gd-submit').hidden = false;
+        $('gdFields').hidden = false;
         state.form = form;
         state.files = {};
         $('gdFormTitle').textContent = form.short || form.title;
@@ -107,6 +120,20 @@
         refreshVisibility();
         msg($('gdFormMsg'), '');
         $('gdProgress').hidden = true;
+        show('gdForm');
+        window.scrollTo(0, 0);
+    }
+    function openConcept(item) {
+        state.form = null;
+        $('gdFormTitle').textContent = item.short || item.title;
+        $('gdFormHead').innerHTML = `<span class="gd-tile-icon" style="--c:${esc(item.color)}">${esc(item.icon)}</span><div><h2>${esc(item.title)}</h2><p>${esc(item.description)}</p></div>`;
+        $('gdInfo').innerHTML = `<div class="gd-concept"><span class="gd-concept-badge">เตรียมระบบ · กำลังออกแบบ</span><h3>แนวคิด</h3><p>${esc(item.concept)}</p>
+            <ul>${item.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>`;
+        $('gdFields').innerHTML = '';
+        $('gdFields').hidden = true;
+        document.querySelector('.gd-submit').hidden = true;
+        $('gdProgress').hidden = true;
+        msg($('gdFormMsg'), '');
         show('gdForm');
         window.scrollTo(0, 0);
     }

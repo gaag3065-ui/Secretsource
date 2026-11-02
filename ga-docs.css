@@ -123,6 +123,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gd-progress { height: 8px; margin-top: 12px; border-radius: 99px; background: #e6eaf2; overflow: hidden; }
 .gd-progress i { display: block; height: 100%; width: 0; background: var(--gd-brand); transition: width .2s; }
 
+/* ---------- หัวข้อที่ยังเป็นแนวคิด ---------- */
+.gd-concept { background: #fff; border: 1px solid var(--gd-line); border-radius: 16px; padding: 18px; }
+.gd-concept-badge { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #fff6e5; color: #9a5b00; border: 1px solid #f5d08b; font-size: 12px; font-weight: 700; }
+.gd-concept h3 { margin: 12px 0 6px; font-size: 16px; color: #4f46e5; }
+.gd-concept p { margin: 0 0 12px; line-height: 1.8; }
+.gd-concept ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.gd-concept li { padding: 10px 12px; border-radius: 10px; background: #eef0ff; font-size: 14px; }
+.gd-concept li::before { content: '✦ '; color: #4f46e5; }
+
 /* ---------- ส่งสำเร็จ ---------- */
 .gd-done { text-align: center; padding-top: 60px; }
 .gd-done-icon { width: 76px; height: 76px; margin: 0 auto 14px; border-radius: 50%; display: grid; place-items: center; font-size: 38px; color: #fff; background: var(--gd-ok); box-shadow: 0 0 0 8px #e3f4ea; }
