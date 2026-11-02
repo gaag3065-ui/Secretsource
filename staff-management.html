@@ -21,6 +21,9 @@
         .points { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
         .points div { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: var(--soft); font-size: 14.5px; line-height: 1.5; }
         .points b { color: var(--brand); }
+        .sub { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+        .link-btn { display: inline-flex; align-items: center; gap: 4px; padding: 8px 16px; border-radius: 10px; background: var(--brand); color: #fff; font-weight: 700; font-size: 14px; text-decoration: none; box-shadow: 0 6px 14px rgba(79, 70, 229, .25); }
+        .link-btn:hover { background: #4338ca; }
         .note { margin-top: 16px; color: var(--muted); font-size: 13px; }
     </style>
 </head>
@@ -28,7 +31,9 @@
     <main>
         <span class="badge">เตรียมระบบ · กำลังออกแบบ</span>
         <h1>จัดการพนักงาน</h1>
-        <p class="sub">นำข้อมูลพนักงานแต่ละคนมาจัดการงานให้เป็นระบบ</p>
+        <p class="sub">นำข้อมูลพนักงานแต่ละคนมาจัดการงานให้เป็นระบบ
+            <a class="link-btn" href="https://gaag3065-ui.github.io/Secretsource/ga-docs.html" target="_blank" rel="noopener">กิจการภายใน ↗</a>
+        </p>
 
         <section class="card">
             <h2>แนวคิด</h2>

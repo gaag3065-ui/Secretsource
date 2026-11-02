@@ -237,7 +237,7 @@ const services = [
                 route: 'staff-management',
                 title: 'จัดการพนักงาน',
                 icon: 'users',
-                page: 'staff-management.html?v=20261102-1'
+                page: 'staff-management.html?v=20261102-2'
             }
         ]
     }
