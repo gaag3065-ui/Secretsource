@@ -108,6 +108,16 @@ tr:hover td { background: #fafbfc; }
 .fa-export-options .fa-btn { display: grid; gap: 2px; width: 100%; padding: 11px 14px; text-align: left; }
 .fa-export-options .fa-btn small { font-weight: 400; font-size: 11.5px; opacity: .8; }
 .fa-export-cancel { margin-top: 10px; width: 100%; }
+.fa-preparer { margin: 0 0 12px; padding: 10px 12px 12px; border: 1px solid var(--fa-border, #e4e7ec); border-radius: 10px; }
+.fa-preparer legend { padding: 0 4px; font-weight: 700; font-size: 13px; }
+.fa-preparer legend small { font-weight: 400; color: var(--fa-muted); }
+.fa-preparer-row { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; }
+.fa-preparer-sign { flex: 1 1 200px; cursor: pointer; }
+.fa-preparer-preview { display: flex; align-items: center; justify-content: center; height: 78px; border: 1.5px dashed #c9ced6; border-radius: 8px; color: var(--fa-muted); font-size: 12.5px; background: #fafbfc; overflow: hidden; }
+.fa-preparer-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.fa-preparer-side { display: grid; gap: 6px; flex: 0 1 170px; font-size: 12.5px; }
+.fa-preparer-side label { display: grid; gap: 3px; }
+.fa-preparer-side input { padding: 6px 8px; border: 1px solid #d0d5dd; border-radius: 8px; font: inherit; }
 
 .fa-bill { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; font-weight: 600; }
 .fa-bill input { width: 130px; border: 1px solid var(--fa-line); border-radius: 8px; padding: 6px 8px; }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>ออกกำลังกายและฟิตเนส 15 ครั้ง | GA Operations</title>
-    <link rel="stylesheet" href="fitness-admin.css?v=20261101-2">
+    <link rel="stylesheet" href="fitness-admin.css?v=20261102-2">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
@@ -62,6 +62,19 @@
         <form method="dialog">
             <h3 id="faExportTitle">ดาวน์โหลด</h3>
             <p id="faExportInfo"></p>
+            <fieldset class="fa-preparer">
+                <legend>ผู้จัดเตรียมเอกสาร <small>(แสดงในใบปะหน้า)</small></legend>
+                <div class="fa-preparer-row">
+                    <label class="fa-preparer-sign">
+                        <span id="faPrepPreview" class="fa-preparer-preview">+ แนบรูปลายเซ็น</span>
+                        <input id="faPrepSign" type="file" accept="image/*" hidden>
+                    </label>
+                    <div class="fa-preparer-side">
+                        <label>วันที่<input id="faPrepDate" type="date"></label>
+                        <button type="button" id="faPrepClear" class="fa-btn fa-btn-ghost">ล้างลายเซ็น</button>
+                    </div>
+                </div>
+            </fieldset>
             <div class="fa-export-options">
                 <button type="submit" value="cover" class="fa-btn"><b>ใบปะหน้า</b><small>สรุปรายชื่อ จำนวนครั้ง สถานะส่ง และผลตรวจ พร้อมช่องลงนาม</small></button>
                 <button type="submit" value="forms" class="fa-btn"><b>เอกสารออกกำลังกายและฟิตเนสที่เลือก</b><small>แบบฟอร์มรายคน พร้อมรูปทุกครั้งและลายเซ็น</small></button>
@@ -75,6 +88,6 @@
     <div id="faBusy" class="fa-busy" hidden><div><span class="fa-spinner"></span><b id="faBusyTitle">กำลังสร้างไฟล์…</b><p id="faBusyText"></p><div class="fa-progress"><i id="faBusyBar"></i></div></div></div>
 
     <script src="config.js"></script>
-    <script src="fitness-admin.js?v=20261102-1"></script>
+    <script src="fitness-admin.js?v=20261102-2"></script>
 </body>
 </html>

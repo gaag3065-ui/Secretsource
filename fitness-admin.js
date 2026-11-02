@@ -348,6 +348,54 @@
         'export-xlsx'() { return chooseExport('xlsx'); }
     };
     // ดาวน์โหลด PDF/XLSX ของรายการที่แสดงอยู่: หลังบ้านสร้างไฟล์เบื้องหลัง (ดึงรูปจาก Drive) แล้วหน้าเว็บถามความคืบหน้าทุก 2 วินาที
+    // ผู้จัดเตรียมเอกสาร (ใบปะหน้า): รูปลายเซ็น + วันที่ — จำลายเซ็นไว้ในเครื่องนี้ ไม่ต้องแนบใหม่ทุกครั้ง
+    const PREP_KEY = 'fitnessPreparerSignature';
+    const preparer = { signature: '' };
+    try { preparer.signature = localStorage.getItem(PREP_KEY) || ''; } catch { /* ไม่มีที่เก็บก็แนบใหม่ได้ */ }
+    const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+    function renderPreparer() {
+        const box = $('faPrepPreview');
+        box.replaceChildren();
+        if (preparer.signature) box.append(Object.assign(document.createElement('img'), { src: preparer.signature, alt: 'ลายเซ็นผู้จัดเตรียมเอกสาร' }));
+        else box.textContent = '+ แนบรูปลายเซ็น';
+        $('faPrepClear').hidden = !preparer.signature;
+    }
+    // ย่อรูปลายเซ็นให้กว้างไม่เกิน 800px (PNG คงพื้นโปร่งใส) เพื่อให้ส่งไปหลังบ้านได้เร็ว
+    function shrinkSignature(file) {
+        return new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                const scale = Math.min(1, 800 / img.width, 400 / img.height);
+                const canvas = Object.assign(document.createElement('canvas'), { width: Math.round(img.width * scale), height: Math.round(img.height * scale) });
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                URL.revokeObjectURL(url);
+                resolve(canvas.toDataURL('image/png'));
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('เปิดรูปลายเซ็นไม่ได้')); };
+            img.src = url;
+        });
+    }
+    $('faPrepSign').addEventListener('change', async event => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+        try {
+            preparer.signature = await shrinkSignature(file);
+            try { localStorage.setItem(PREP_KEY, preparer.signature); } catch { /* เก็บไม่ได้ก็ใช้ครั้งนี้ */ }
+            renderPreparer();
+        } catch (error) { toast(error.message, true); }
+    });
+    $('faPrepClear').addEventListener('click', () => {
+        preparer.signature = '';
+        try { localStorage.removeItem(PREP_KEY); } catch { /* ไม่เป็นไร */ }
+        renderPreparer();
+    });
+    const preparerPayload = () => {
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec($('faPrepDate').value || '');
+        return { signature: preparer.signature, date: m ? `${m[3]}/${m[2]}/${m[1]}` : '' };
+    };
+
     // เลือกสิ่งที่จะดาวน์โหลด: ใบปะหน้า / เอกสารรายคน / ทั้งคู่
     function chooseExport(format) {
         const rows = filtered();
@@ -355,8 +403,11 @@
         const dialog = $('faExportDialog');
         $('faExportTitle').textContent = `ดาวน์โหลด ${format.toUpperCase()}`;
         $('faExportInfo').textContent = `ตามรายการที่แสดงอยู่ ${rows.length} แบบฟอร์ม${$('faCompany').value ? ` · บริษัท ${$('faCompany').value}` : ''}`;
+        if (!$('faPrepDate').value) $('faPrepDate').value = today();
+        renderPreparer();
         // ไม่พึ่งเหตุการณ์ close ของ dialog (บางเบราว์เซอร์ไม่ส่ง) — จัดการที่การกดปุ่มโดยตรง
         dialog.onclick = event => {
+            if (event.target.closest('.fa-preparer')) return;
             const button = event.target.closest('button[value]');
             if (!button) { if (event.target === dialog) dialog.close(); return; }
             event.preventDefault();
@@ -377,7 +428,7 @@
         const busy = (title, text, pct) => { $('faBusy').hidden = !title; if (title) { $('faBusyTitle').textContent = title; $('faBusyText').textContent = text || ''; $('faBusyBar').style.width = (pct || 0) + '%'; } };
         busy(`กำลังสร้าง ${format.toUpperCase()}…`, `${rows.length} แบบฟอร์ม`, 2);
         try {
-            let { job } = await request('/export', { method: 'POST', body: JSON.stringify({ format, part, company: $('faCompany').value, source: state.source, ids: rows.map(f => legacy ? f.key : f.id), name }) });
+            let { job } = await request('/export', { method: 'POST', body: JSON.stringify({ format, part, company: $('faCompany').value, source: state.source, ids: rows.map(f => legacy ? f.key : f.id), name, preparer: part === 'forms' ? null : preparerPayload() }) });
             while (job.status === 'running') {
                 await new Promise(r => setTimeout(r, 2000));
                 ({ job } = await request(`/export/${job.id}`));
