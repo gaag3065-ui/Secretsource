@@ -100,8 +100,10 @@ ${english}`;
             <label>2. ชื่อ / Name<input name="person2Name"></label>
             <label>ตำแหน่ง / Position<input name="person2Position"></label>
             <div class="cr-full cr-section">ผู้ลงลายมือชื่อ <small style="font-weight:400;color:#6b7785">(ชื่อพิมพ์ใต้เส้นลายมือชื่อ — เว้นว่างได้)</small></div>
-            <label>ผู้ส่งมอบ / Paid By<input name="paidByName"></label>
-            <label>ผู้รับมอบ / Received By<input name="receivedByName"></label>
+            <label>ผู้ส่งมอบ คนที่ 1 / Paid By<input name="paidByName"></label>
+            <label>ผู้รับมอบ คนที่ 1 / Received By<input name="receivedByName"></label>
+            <label>ผู้ส่งมอบ คนที่ 2 / Paid By<input name="paidByName2"></label>
+            <label>ผู้รับมอบ คนที่ 2 / Received By<input name="receivedByName2"></label>
         </div>
         <div class="cr-foot"><span class="cr-status" role="status"></span><button type="button" data-cr-reset>ล้างข้อมูล</button><button type="submit" class="cr-download">ดาวน์โหลด PDF</button></div>
     </form>`;
