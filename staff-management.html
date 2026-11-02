@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>จัดการพนักงาน</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --ink: #172033; --muted: #667085; --line: #e4e8f0; --brand: #4f46e5; --soft: #eef0ff; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Noto Sans Thai', system-ui, sans-serif; background: #f5f7fb; color: var(--ink); }
+        main { max-width: 860px; margin: 0 auto; padding: 28px 16px 48px; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #fff6e5; color: #9a5b00; border: 1px solid #f5d08b; font-size: 12px; font-weight: 700; }
+        h1 { margin: 10px 0 4px; font-size: 26px; }
+        .sub { margin: 0 0 22px; color: var(--muted); }
+        .card { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 22px 22px 18px; box-shadow: 0 10px 30px rgba(23, 32, 51, .06); }
+        .card h2 { margin: 0 0 10px; font-size: 17px; color: var(--brand); }
+        .card p { margin: 0 0 16px; line-height: 1.8; font-size: 15.5px; }
+        .points { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+        .points div { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: var(--soft); font-size: 14.5px; line-height: 1.5; }
+        .points b { color: var(--brand); }
+        .note { margin-top: 16px; color: var(--muted); font-size: 13px; }
+    </style>
+</head>
+<body>
+    <main>
+        <span class="badge">เตรียมระบบ · กำลังออกแบบ</span>
+        <h1>จัดการพนักงาน</h1>
+        <p class="sub">นำข้อมูลพนักงานแต่ละคนมาจัดการงานให้เป็นระบบ</p>
+
+        <section class="card">
+            <h2>แนวคิด</h2>
+            <p>นำข้อมูลของพนักงานแต่ละคนมาจัดการงาน แต่ละหน้าที่ พื้นที่ ความจำเป็น จัดแจงภาระหน้าที่ ติดตามงาน จัดการงานส่วนบุคคล</p>
+            <div class="points">
+                <div><b>①</b><span>ข้อมูลพนักงานแต่ละคน</span></div>
+                <div><b>②</b><span>หน้าที่ และพื้นที่รับผิดชอบ</span></div>
+                <div><b>③</b><span>ความจำเป็น / ลำดับความสำคัญ</span></div>
+                <div><b>④</b><span>จัดแจงภาระหน้าที่</span></div>
+                <div><b>⑤</b><span>ติดตามงาน</span></div>
+                <div><b>⑥</b><span>จัดการงานส่วนบุคคล</span></div>
+            </div>
+            <p class="note">หน้านี้เป็นหน้าเริ่มต้น — จะต่อยอดฟังก์ชันตามรายละเอียดที่กำหนดเพิ่ม</p>
+        </section>
+    </main>
+</body>
+</html>
