@@ -385,9 +385,25 @@
                 busy(`กำลังสร้าง ${format.toUpperCase()}…`, `${job.stage} ${job.total ? `(รูป ${job.done}/${job.total})` : ''}`, job.status === 'running' && job.done >= job.total && job.total ? 95 : pct);
             }
             if (job.status !== 'done') throw new Error(job.error || 'สร้างไฟล์ไม่สำเร็จ');
+            // ไฟล์ที่มีรูปหลายร้อยรูปใหญ่หลายสิบ MB — แสดงความคืบหน้าระหว่างรับไฟล์จากเครื่องหลังบ้าน
+            busy(`กำลังดาวน์โหลด ${format.toUpperCase()}…`, 'สร้างไฟล์เสร็จแล้ว กำลังส่งไฟล์มาที่เครื่องนี้…', 96);
             const response = await window.authFetch(api(`/export/${job.id}/file`));
             if (!response.ok) throw new Error('ดาวน์โหลดไฟล์ไม่สำเร็จ');
-            const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(await response.blob()), download: job.name });
+            const size = Number(response.headers.get('content-length')) || 0;
+            const mb = n => (n / 1048576).toFixed(1);
+            const chunks = [];
+            let received = 0;
+            const reader = response.body?.getReader();
+            if (reader) {
+                for (;;) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    chunks.push(value); received += value.length;
+                    busy(`กำลังดาวน์โหลด ${format.toUpperCase()}…`, size ? `${mb(received)} / ${mb(size)} MB` : `${mb(received)} MB`, size ? Math.round(received / size * 100) : 97);
+                }
+            }
+            const blob = reader ? new Blob(chunks, { type: response.headers.get('content-type') || '' }) : await response.blob();
+            const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: job.name });
             document.body.append(link); link.click(); link.remove();
             toast(`ดาวน์โหลด ${job.name} แล้ว${job.missing ? ` (เปิดรูปไม่ได้ ${job.missing} รูป)` : ''}`);
         } finally { busy(''); }
