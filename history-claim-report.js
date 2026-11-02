@@ -130,8 +130,26 @@
         split.classList.toggle('is-off', !allCompanies);
         split.querySelectorAll('input').forEach(input => { input.disabled = !allCompanies; });
         const items = selected();
-        const cases = new Set(items.map(item => clean(item.CaseIdNew) || item.targetRowNumber)).size;
-        dialog.querySelector('.hcr-count').textContent = `ตรงเงื่อนไข ${cases.toLocaleString('th-TH')} เคส (${items.length.toLocaleString('th-TH')} รายการ) — ในใบสรุปแสดงเฉพาะเคสที่มียอดเบิก`;
+        // ใบสรุปแสดงเฉพาะเคสที่มียอดเบิกตามประเภทที่เลือก — บอกให้ชัดว่ากี่เคสจะอยู่ในไฟล์และเคสไหนยังไม่มียอด
+        const type = dialog.querySelector('[name=type]').value;
+        const num = value => Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0;
+        const amountOf = item => ({
+            dental: num(item.DentalOPD),
+            opd: num(item.PPUsageOPD) + num(item.SLKUsageOpdThB),
+            ipd: num(item.PPUsageIPD) + num(item.SLKUsageIpdThB)
+        });
+        const byCase = new Map();
+        for (const item of items) {
+            const key = clean(item.CaseIdNew) || `row-${item.targetRowNumber}`;
+            const a = amountOf(item);
+            const sum = type === 'all' ? a.dental + a.opd + a.ipd : a[type] || 0;
+            byCase.set(key, Math.max(byCase.get(key) || 0, sum));
+        }
+        const withAmount = [...byCase.values()].filter(Boolean).length;
+        const without = [...byCase.entries()].filter(([, sum]) => !sum).map(([key]) => key);
+        const preview = without.slice(0, 8).map(key => `#${key}`).join(', ');
+        dialog.querySelector('.hcr-count').innerHTML = `ตรงเงื่อนไข <b>${byCase.size.toLocaleString('th-TH')}</b> เคส · มียอดเบิก (อยู่ในใบสรุป) <b>${withAmount.toLocaleString('th-TH')}</b> เคส`
+            + (without.length ? `<br><small>ยังไม่มียอดเบิก ${without.length.toLocaleString('th-TH')} เคส จึงไม่อยู่ในใบสรุป: ${esc(preview)}${without.length > 8 ? ' …' : ''}</small>` : '');
     }
 
     function open() {

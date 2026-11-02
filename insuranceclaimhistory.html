@@ -931,6 +931,78 @@
     display: block;
 }
 
+/* การ์ดแบบย่อ: ข้อมูลซ้าย + ยอดเงิน OPD / IPD / ทำฟัน ด้านขวา */
+#table-box-placeholder tr.flat-history-row.grouped-parent-row:not(.flat-row-open) {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(140px, 46%) !important;
+    column-gap: 14px !important;
+    align-items: start !important;
+}
+#table-box-placeholder tr.flat-history-row.grouped-parent-row:not(.flat-row-open) > td:first-child,
+#table-box-placeholder tr.flat-history-row.grouped-parent-row:not(.flat-row-open) > td:last-child {
+    grid-column: 1 / -1 !important;
+}
+#table-box-placeholder tr.flat-history-row.grouped-parent-row:not(.flat-row-open) > td:nth-child(2),
+#table-box-placeholder tr.flat-history-row.grouped-parent-row:not(.flat-row-open) > td:nth-child(3),
+#table-box-placeholder tr.flat-history-row.grouped-parent-row:not(.flat-row-open) > td:nth-child(4) {
+    grid-column: 1 !important;
+}
+#table-box-placeholder tr.flat-history-row > td.history-money-cell {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    grid-column: 2 !important;
+    grid-row: 2 / span 3 !important;
+    align-self: stretch !important;
+    padding: 8px 10px !important;
+    border: 1px solid var(--hv-border-soft) !important;
+    border-radius: 10px !important;
+    background: #f9fbfa !important;
+}
+#table-box-placeholder tr.flat-history-row.flat-row-open > td.history-money-cell {
+    display: none !important;
+}
+#table-box-placeholder .history-money-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 11.5px;
+    color: var(--hv-muted);
+}
+#table-box-placeholder .history-money-row b {
+    color: var(--hv-ink);
+    font-size: 12.5px;
+    white-space: nowrap;
+}
+#table-box-placeholder .history-money-row.is-zero b {
+    color: #b0b6bf;
+    font-weight: 500;
+}
+#table-box-placeholder .history-money-row.is-total {
+    margin-top: 3px;
+    padding-top: 4px;
+    border-top: 1px dashed var(--hv-border);
+}
+#table-box-placeholder .history-money-row.is-total b {
+    color: #087f74;
+}
+
+/* ขั้นตอนการรักษา: ป้ายสีตามช่วงของเคส */
+#table-box-placeholder .history-step-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 1.45;
+    border: 1px solid transparent;
+}
+#table-box-placeholder .history-step-pill.is-pending { background: #fff4e0; color: #9a5b00; border-color: #f5c46b; }
+#table-box-placeholder .history-step-pill.is-active { background: #e8f0ff; color: #1d4ed8; border-color: #9db8f5; }
+#table-box-placeholder .history-step-pill.is-progress { background: #f1ebff; color: #6d28d9; border-color: #c4b0f5; }
+#table-box-placeholder .history-step-pill.is-billing { background: #fff0e6; color: #c2410c; border-color: #f8b98d; }
+#table-box-placeholder .history-step-pill.is-closed { background: #e7f6ec; color: #067647; border-color: #9fdcb5; }
+
 /* "รายการก่อนหน้า" ของเคสเดียวกัน (แสดงเมื่อกดปุ่มลูกศรที่หัวการ์ด) */
 #table-box-placeholder tr.grouped-child-row {
     margin: 0 !important;

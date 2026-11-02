@@ -3416,6 +3416,55 @@ function appendHistoryDataCells(row, item) {
     );
 }
 
+// ยอดเงินของเคส (ค่ามากสุดของแต่ละช่องในทุกแถวของเคส — ชีตบันทึกเคสเดียวหลายแถวตามขั้นตอน)
+const HISTORY_AMOUNT = value => Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0;
+function caseAmounts(events) {
+    const max = pick => Math.max(0, ...events.map(event => pick(event)));
+    return {
+        dental: max(e => HISTORY_AMOUNT(e.DentalOPD)),
+        opd: max(e => HISTORY_AMOUNT(e.PPUsageOPD) + HISTORY_AMOUNT(e.SLKUsageOpdThB)),
+        ipd: max(e => HISTORY_AMOUNT(e.PPUsageIPD) + HISTORY_AMOUNT(e.SLKUsageIpdThB))
+    };
+}
+
+function createCaseMoneyCell(events) {
+    const amounts = caseAmounts(events);
+    const cell = document.createElement('td');
+    cell.className = 'history-money-cell';
+    const money = value => value ? value.toLocaleString('th-TH', { maximumFractionDigits: 2 }) : '-';
+    const rows = [
+        ['ทำฟัน (หักวงเงิน OPD)', amounts.dental],
+        ['ค่ารักษา OPD', amounts.opd],
+        ['ค่ารักษา IPD', amounts.ipd]
+    ];
+    const total = amounts.dental + amounts.opd + amounts.ipd;
+    cell.innerHTML = rows.map(([label, value]) =>
+        `<div class="history-money-row${value ? '' : ' is-zero'}"><span>${label}</span><b>${money(value)}</b></div>`).join('')
+        + `<div class="history-money-row is-total"><span>รวม (บาท)</span><b>${money(total)}</b></div>`;
+    return cell;
+}
+
+// ขั้นตอนการรักษา → กลุ่มสีเดียวกับการ์ดสรุปด้านบน (Pending / Active / In Progress / Billing / Closed)
+function historyStepStage(text) {
+    const step = String(text || '');
+    if (/ปิดเคส/.test(step)) return 'closed';
+    if (/สำรองจ่าย|เอกสารเคลม|รับเงินคืน|เงินคืน|บิล|ยืนยันยอด|รอเอกสาร/.test(step)) return 'billing';
+    if (/กลับบ้าน|ติดตาม|นัดตรวจ|รักษาต่อ|หัตถการ/.test(step)) return 'progress';
+    if (/เข้ารับการรักษาแล้ว|นอนโรงพยาบาล|เฝ้าดู|รอผลตรวจ/.test(step)) return 'active';
+    return 'pending';
+}
+
+function highlightHistoryStep(row) {
+    const cell = row.querySelector('td[data-label="ขั้นตอนการรักษา"]');
+    if (!cell || cell.querySelector('.history-step-pill')) return;
+    const text = cell.textContent.trim();
+    if (!text || text === '-') return;
+    const pill = document.createElement('span');
+    pill.className = `history-step-pill is-${historyStepStage(text)}`;
+    pill.textContent = text;
+    cell.replaceChildren(pill);
+}
+
 function renderFlatHistoryTable(history) {
     window.historyDisplayMode = 'filtered';
     updateHistoryResultCount(history);
@@ -3532,6 +3581,13 @@ function renderFlatHistoryTable(history) {
             parentRow,
             latestEvent
         );
+
+        // ยอดเงิน OPD / IPD / ทำฟัน แสดงด้านขวาของการ์ด (ใส่ก่อนช่องปุ่มท้ายแถว)
+        parentRow.insertBefore(
+            createCaseMoneyCell(events),
+            parentRow.lastElementChild
+        );
+        highlightHistoryStep(parentRow);
 
         fragment.appendChild(parentRow);
 
