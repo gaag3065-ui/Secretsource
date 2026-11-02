@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ระบบจัดการองค์กร</title>
+    <meta name="theme-color" content="#ffffff">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="ga-docs.css?v=20261102-1">
+    <link rel="icon" href="icons/icon-192.png">
+</head>
+<body>
+    <!-- ================= เข้าสู่ระบบ ================= -->
+    <section id="gdLogin" class="gd-login">
+        <div class="gd-login-card">
+            <a class="gd-admin-link" href="portal.html" title="สำหรับเจ้าหน้าที่ GA">⚙ ผู้ดูแลระบบ</a>
+            <div class="gd-logo"><span>GA</span><small>OFFICE</small></div>
+            <h1>ระบบจัดการองค์กร</h1>
+            <p class="gd-sub">ระบบรับ - ส่งเอกสาร GA (สำหรับพนักงาน)</p>
+            <form id="gdLoginForm" autocomplete="off">
+                <label for="gdId">รหัสพนักงาน / รหัสประกัน</label>
+                <input id="gdId" type="text" placeholder="ตัวอย่าง G012345678" autocapitalize="characters" spellcheck="false">
+                <button type="submit" class="gd-btn gd-btn-primary">เข้าสู่ระบบ →</button>
+            </form>
+            <p id="gdLoginMsg" class="gd-msg" role="status"></p>
+            <p class="gd-foot">General Affairs · ระบบจัดการองค์กร</p>
+        </div>
+    </section>
+
+    <!-- ================= เมนูหลัก ================= -->
+    <section id="gdHome" class="gd-app" hidden>
+        <header class="gd-top">
+            <div class="gd-top-brand"><span class="gd-logo gd-logo-sm"><span>GA</span></span><div><b>ระบบจัดการองค์กร</b><small>ระบบรับ - ส่งเอกสาร GA</small></div></div>
+            <button type="button" class="gd-btn gd-btn-ghost" data-action="logout">ออกจากระบบ</button>
+        </header>
+        <main class="gd-main">
+            <div class="gd-hello">
+                <p>สวัสดี <b id="gdName"></b></p>
+                <small id="gdMeta"></small>
+            </div>
+            <h2 class="gd-question">คุณต้องการส่งเอกสารหรือติดต่อเกี่ยวกับอะไร?</h2>
+            <p class="gd-hint">เลือกหัวข้อด้านล่าง</p>
+            <div id="gdMenu" class="gd-menu"></div>
+
+            <section class="gd-mine">
+                <div class="gd-mine-head"><h3>รายการที่ฉันส่ง</h3><button type="button" class="gd-btn gd-btn-ghost gd-btn-sm" data-action="reload-mine">รีเฟรช</button></div>
+                <div id="gdMine" class="gd-mine-list"><p class="gd-empty">กำลังโหลด…</p></div>
+            </section>
+        </main>
+    </section>
+
+    <!-- ================= แบบฟอร์ม ================= -->
+    <section id="gdForm" class="gd-app" hidden>
+        <header class="gd-top">
+            <button type="button" class="gd-btn gd-btn-ghost" data-action="back">← กลับเมนู</button>
+            <b id="gdFormTitle" class="gd-top-title"></b>
+            <span></span>
+        </header>
+        <main class="gd-main gd-main-narrow">
+            <div id="gdFormHead" class="gd-form-head"></div>
+            <div id="gdInfo"></div>
+            <form id="gdFields" novalidate></form>
+            <button type="button" class="gd-btn gd-btn-primary gd-submit" data-action="submit">ส่งข้อมูล</button>
+            <div id="gdProgress" class="gd-progress" hidden><i></i></div>
+            <p id="gdFormMsg" class="gd-msg" role="status"></p>
+        </main>
+    </section>
+
+    <!-- ================= ส่งสำเร็จ ================= -->
+    <section id="gdDone" class="gd-app" hidden>
+        <main class="gd-main gd-main-narrow gd-done">
+            <div class="gd-done-icon">✓</div>
+            <h2>ส่งข้อมูลเรียบร้อย</h2>
+            <p id="gdDoneText"></p>
+            <button type="button" class="gd-btn gd-btn-primary" data-action="back">กลับเมนูหลัก</button>
+        </main>
+    </section>
+
+    <script src="config.js"></script>
+    <script src="ga-docs.js?v=20261102-1"></script>
+</body>
+</html>

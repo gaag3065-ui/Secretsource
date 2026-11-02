@@ -1,0 +1,137 @@
+/* ระบบจัดการองค์กร — ระบบรับ - ส่งเอกสาร GA (ธีมสีขาว) */
+:root {
+    --gd-bg: #f5f7fb;
+    --gd-card: #ffffff;
+    --gd-ink: #172033;
+    --gd-muted: #667085;
+    --gd-line: #e4e8f0;
+    --gd-brand: #1d4ed8;
+    --gd-brand-soft: #eef3ff;
+    --gd-gold: #c8962c;
+    --gd-ok: #067647;
+    --gd-bad: #c4320a;
+    --gd-shadow: 0 10px 30px rgba(23, 32, 51, .08);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: 'Noto Sans Thai', system-ui, sans-serif; background: var(--gd-bg); color: var(--gd-ink); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+[hidden] { display: none !important; }
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* ---------- ปุ่ม ---------- */
+.gd-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 16px; border-radius: 12px; border: 1px solid var(--gd-line); background: #fff; font-weight: 600; cursor: pointer; text-decoration: none; transition: background .15s, box-shadow .15s, transform .1s; }
+.gd-btn:active { transform: translateY(1px); }
+.gd-btn:disabled { opacity: .55; cursor: wait; }
+.gd-btn-primary { background: var(--gd-brand); border-color: var(--gd-brand); color: #fff; box-shadow: 0 6px 16px rgba(29, 78, 216, .25); }
+.gd-btn-primary:hover { background: #1e40af; }
+.gd-btn-ghost:hover { background: #f2f4f8; }
+.gd-btn-sm { padding: 6px 12px; font-size: 13px; }
+
+/* ---------- เข้าสู่ระบบ ---------- */
+.gd-login { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
+    background: radial-gradient(900px 500px at 10% 0%, #e7eeff 0, transparent 60%), radial-gradient(800px 500px at 100% 100%, #fdf3df 0, transparent 55%), var(--gd-bg); }
+.gd-login-card { position: relative; width: min(440px, 100%); background: var(--gd-card); border: 1px solid var(--gd-line); border-radius: 22px; padding: 30px 28px 22px; box-shadow: var(--gd-shadow); text-align: center; }
+.gd-admin-link { position: absolute; top: 14px; left: 14px; font-size: 12.5px; font-weight: 600; color: var(--gd-muted); text-decoration: none; padding: 6px 10px; border: 1px solid var(--gd-line); border-radius: 10px; }
+.gd-admin-link:hover { color: var(--gd-brand); border-color: #c7d4f5; }
+.gd-logo { width: 84px; height: 84px; margin: 6px auto 12px; border-radius: 50%; display: grid; place-content: center; line-height: 1;
+    background: linear-gradient(145deg, #fff, #f2f5fb); border: 3px solid var(--gd-gold); box-shadow: 0 0 0 6px #fbf3e2, 0 8px 20px rgba(200, 150, 44, .25); }
+.gd-logo span { font-size: 24px; font-weight: 800; color: var(--gd-brand); letter-spacing: .5px; }
+.gd-logo small { font-size: 10px; font-weight: 700; color: var(--gd-gold); letter-spacing: 2px; margin-top: 3px; }
+.gd-logo-sm { width: 40px; height: 40px; margin: 0; border-width: 2px; box-shadow: none; }
+.gd-logo-sm span { font-size: 14px; }
+.gd-login h1 { margin: 4px 0 4px; font-size: 24px; }
+.gd-sub { margin: 0 0 22px; color: var(--gd-muted); font-size: 14px; }
+.gd-login form { text-align: left; display: grid; gap: 8px; }
+.gd-login label { font-weight: 600; font-size: 14px; }
+.gd-login input { width: 100%; padding: 13px 14px; border: 1px solid var(--gd-line); border-radius: 12px; font-size: 16px; background: #fbfcfe; }
+.gd-login input:focus { outline: 3px solid #dbe5ff; border-color: var(--gd-brand); background: #fff; }
+.gd-login .gd-btn-primary { margin-top: 6px; padding: 13px; font-size: 16px; }
+.gd-msg { min-height: 20px; margin: 12px 0 0; font-size: 14px; color: var(--gd-muted); }
+.gd-msg.is-bad { color: var(--gd-bad); }
+.gd-msg.is-ok { color: var(--gd-ok); }
+.gd-foot { margin: 14px 0 0; font-size: 12px; color: #98a2b3; }
+
+/* ---------- แถบบน ---------- */
+.gd-top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 16px; background: rgba(255, 255, 255, .92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--gd-line); }
+.gd-top-brand { display: flex; align-items: center; gap: 10px; }
+.gd-top-brand b { display: block; font-size: 15px; }
+.gd-top-brand small { color: var(--gd-muted); font-size: 12px; }
+.gd-top-title { font-size: 15px; text-align: center; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gd-main { max-width: 980px; margin: 0 auto; padding: 20px 16px 48px; }
+.gd-main-narrow { max-width: 640px; }
+
+/* ---------- เมนู ---------- */
+.gd-hello p { margin: 0; font-size: 17px; }
+.gd-hello small { color: var(--gd-muted); }
+.gd-question { margin: 22px 0 2px; font-size: 21px; }
+.gd-hint { margin: 0 0 16px; color: var(--gd-muted); font-size: 14px; }
+.gd-menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.gd-tile { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 12px 16px; background: var(--gd-card); border: 1px solid var(--gd-line); border-radius: 18px; cursor: pointer; text-align: center; transition: box-shadow .15s, transform .15s, border-color .15s; }
+.gd-tile:hover { box-shadow: var(--gd-shadow); transform: translateY(-2px); border-color: color-mix(in srgb, var(--c) 35%, var(--gd-line)); }
+.gd-tile:focus-visible { outline: 3px solid #dbe5ff; }
+.gd-tile-icon { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; background: color-mix(in srgb, var(--c) 12%, #fff); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c) 25%, #fff); }
+.gd-tile b { font-size: 14px; line-height: 1.35; }
+.gd-tile small { font-size: 11.5px; color: var(--gd-muted); line-height: 1.4; }
+
+/* ---------- รายการที่ฉันส่ง ---------- */
+.gd-mine { margin-top: 30px; }
+.gd-mine-head { display: flex; align-items: center; justify-content: space-between; }
+.gd-mine-head h3 { margin: 0; font-size: 17px; }
+.gd-mine-list { display: grid; gap: 8px; margin-top: 10px; }
+.gd-item { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; background: #fff; border: 1px solid var(--gd-line); border-radius: 14px; }
+.gd-item-icon { font-size: 22px; }
+.gd-item b { display: block; font-size: 14px; }
+.gd-item small { color: var(--gd-muted); font-size: 12px; }
+.gd-item .gd-note { display: block; margin-top: 4px; font-size: 12.5px; color: var(--gd-bad); }
+.gd-pill { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid transparent; }
+.gd-pill.is-pending { background: #fff6e5; color: #9a5b00; border-color: #f5d08b; }
+.gd-pill.is-received { background: #eaf1ff; color: #1d4ed8; border-color: #b8ccf8; }
+.gd-pill.is-done { background: #e8f6ee; color: #067647; border-color: #a6dcb9; }
+.gd-pill.is-rejected { background: #fdece7; color: #c4320a; border-color: #f6b8a5; }
+.gd-empty { color: var(--gd-muted); font-size: 14px; padding: 14px; text-align: center; background: #fff; border: 1px dashed var(--gd-line); border-radius: 14px; margin: 0; }
+
+/* ---------- แบบฟอร์ม ---------- */
+.gd-form-head { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
+.gd-form-head .gd-tile-icon { flex: none; }
+.gd-form-head h2 { margin: 0; font-size: 19px; }
+.gd-form-head p { margin: 2px 0 0; color: var(--gd-muted); font-size: 13.5px; }
+.gd-info { background: #fff; border: 1px solid var(--gd-line); border-radius: 16px; padding: 4px 16px; margin-bottom: 14px; }
+.gd-info div { padding: 10px 0; border-bottom: 1px dashed var(--gd-line); }
+.gd-info div:last-child { border-bottom: 0; }
+.gd-info small { display: block; color: var(--gd-muted); font-size: 12.5px; }
+.gd-info a { color: var(--gd-brand); font-weight: 700; text-decoration: none; }
+#gdFields { background: #fff; border: 1px solid var(--gd-line); border-radius: 16px; padding: 6px 16px 16px; }
+.gd-field { margin-top: 14px; }
+.gd-field > label, .gd-field > .gd-label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+.gd-req { color: var(--gd-bad); }
+.gd-field input[type=text], .gd-field input[type=tel], .gd-field input[type=number], .gd-field input[type=date], .gd-field select, .gd-field textarea {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--gd-line); border-radius: 11px; font-size: 16px; background: #fbfcfe; }
+.gd-field textarea { min-height: 84px; resize: vertical; }
+.gd-field :is(input, select, textarea):focus { outline: 3px solid #dbe5ff; border-color: var(--gd-brand); background: #fff; }
+.gd-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.gd-choice { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1.5px solid var(--gd-line); border-radius: 11px; cursor: pointer; font-weight: 600; font-size: 14px; background: #fff; }
+.gd-choice input { accent-color: var(--gd-brand); width: 17px; height: 17px; margin: 0; }
+.gd-choice:has(input:checked) { border-color: var(--gd-brand); background: var(--gd-brand-soft); color: var(--gd-brand); }
+.gd-pick { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px; border: 1.5px dashed #b7c6ea; border-radius: 12px; background: #f8faff; color: var(--gd-brand); font-weight: 600; cursor: pointer; }
+.gd-pick input { display: none; }
+.gd-pick small { font-weight: 400; color: var(--gd-muted); }
+.gd-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-top: 8px; }
+.gd-thumb { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid var(--gd-line); background: #eef1f6; display: grid; place-items: center; font-size: 12px; color: var(--gd-muted); text-align: center; padding: 4px; }
+.gd-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.gd-thumb button { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border: 0; border-radius: 50%; background: rgba(15, 23, 42, .65); color: #fff; font-size: 16px; line-height: 1; cursor: pointer; }
+.gd-submit { width: 100%; margin-top: 16px; padding: 14px; font-size: 16px; }
+.gd-progress { height: 8px; margin-top: 12px; border-radius: 99px; background: #e6eaf2; overflow: hidden; }
+.gd-progress i { display: block; height: 100%; width: 0; background: var(--gd-brand); transition: width .2s; }
+
+/* ---------- ส่งสำเร็จ ---------- */
+.gd-done { text-align: center; padding-top: 60px; }
+.gd-done-icon { width: 76px; height: 76px; margin: 0 auto 14px; border-radius: 50%; display: grid; place-items: center; font-size: 38px; color: #fff; background: var(--gd-ok); box-shadow: 0 0 0 8px #e3f4ea; }
+.gd-done h2 { margin: 0 0 6px; }
+.gd-done p { color: var(--gd-muted); margin: 0 0 20px; }
+
+@media (max-width: 520px) {
+    .gd-menu { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .gd-tile { padding: 16px 8px 14px; }
+    .gd-question { font-size: 18px; }
+    .gd-top-brand small { display: none; }
+}
