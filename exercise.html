@@ -1068,6 +1068,21 @@
           if (/เซสชัน|ไม่พบข้อมูลพนักงาน/.test((error && error.message) || '')) { window.logout(); const status = $('loginStatus'); if (status) status.textContent = 'กรุณาเข้าสู่ระบบอีกครั้ง'; }
         }).getFormStatus(saved.ID);
       })();
+      // มาจากหน้า "ระบบจัดการองค์กร" (ga-docs.html ล็อกอินอยู่แล้วในแท็บเดียวกัน) → เข้าสู่ระบบให้เลย ไม่ต้องกรอกรหัสซ้ำ
+      // (หน้านี้ใช้แค่รหัสพนักงานเข้าสู่ระบบอยู่แล้ว — ใช้รหัสของคนที่ล็อกอินหน้านั้น)
+      (() => {
+        let ga = null, saved = null;
+        try { ga = JSON.parse(sessionStorage.getItem('gaDocsSession') || 'null'); } catch (error) { ga = null; }
+        const id = ga && ga.employee && ga.employee.ID;
+        if (!id) return;
+        try { saved = JSON.parse(localStorage.getItem(USER_KEY) || 'null'); } catch (error) { saved = null; }
+        if (saved && String(saved.ID).toUpperCase() === String(id).toUpperCase() && window.__fitnessHasToken()) return;   // คนเดิมอยู่ในระบบแล้ว
+        if (saved) window.logout();                                                                                    // คนละคน → ออกก่อน
+        const input = $('empID');
+        if (!input) return;
+        input.value = id;
+        login();
+      })();
       window.appendSavedImageLink = function (host, src, caption) {
         if (!host || !src) return;
         const card = document.createElement('div');
