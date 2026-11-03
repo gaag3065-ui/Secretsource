@@ -30,7 +30,16 @@ const services = [
         color: '#06a86b',
         soft: '#e9fbf3',
         tags: [],
+        // กดการ์ดแล้วเปิดหน้าเลือกงาน (Monitoring / งาน GA) — หน้านั้นส่ง postMessage open-task กลับมาเปิดงานจริง
+        directOpen: true,
+        directTask: 'hub',
         tasks: [
+            {
+                route: 'hub',
+                title: 'สนับสนุนกิจการภายใน',
+                icon: 'message',
+                page: 'internal-support.html?v=20261103-1'
+            },
             {
                 route: 'monitoring',
                 title: 'Monitoring',
@@ -38,18 +47,10 @@ const services = [
                 page: 'monitoring.html?v=20261025-1'
             },
             {
-                route: 'new-work-update',
-                title: 'อัปเดตงานใหม่',
-                icon: 'plus',
-                planned: true,
-                page: ''
-            },
-            {
-                route: 'business-overview',
-                title: 'ภาพรวมกิจการ',
-                icon: 'home',
-                planned: true,
-                page: ''
+                route: 'ga-work',
+                title: 'งาน GA',
+                icon: 'users',
+                page: 'ga-work.html?v=20261103-1'
             }
         ]
     },
@@ -363,6 +364,14 @@ if (basePage === 'assets.html') {
 }
 
 if (basePage === 'staff-management.html') {
+    return permissions.ManageStaff === true;
+}
+
+if (basePage === 'internal-support.html') {
+    return permissions.ViewMonitoring === true || permissions.ManageStaff === true;
+}
+
+if (basePage === 'ga-work.html') {
     return permissions.ManageStaff === true;
 }
 

@@ -1,0 +1,51 @@
+/* งาน GA — ใช้โครงเดียวกับหน้าออกกำลังกาย (fitness-admin.css) */
+:root { --fa-brand: #4f46e5; --fa-brand-soft: #eef0ff; }
+.gw-title { margin: 22px 0 10px; font-size: 17px; }
+.gw-chart-card { padding: 16px 18px; }
+.gw-chart-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.gw-chart-head h2 { margin: 0; font-size: 16px; }
+.gw-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12.5px; color: var(--fa-muted); }
+.gw-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.gw-legend i { width: 12px; height: 12px; border-radius: 3px; background: var(--c); }
+.gw-chart { display: grid; gap: 8px; }
+.gw-row { display: grid; grid-template-columns: minmax(120px, 200px) 1fr 70px; gap: 12px; align-items: center; }
+.gw-row b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gw-row small { display: block; color: var(--fa-muted); font-size: 11px; font-weight: 400; }
+.gw-bar { display: flex; height: 22px; border-radius: 7px; overflow: hidden; background: #eef1f3; }
+.gw-bar i { display: block; height: 100%; background: var(--c); min-width: 2px; }
+.gw-num { text-align: right; font-weight: 700; font-size: 13px; }
+.gw-num small { font-weight: 400; }
+.gw-share { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 16px; }
+.gw-share div { border: 1px solid var(--fa-line); border-left: 4px solid var(--c); border-radius: 10px; padding: 8px 12px; }
+.gw-share b { display: block; font-size: 20px; }
+.gw-share span { color: var(--fa-muted); font-size: 12px; }
+
+.gw-staff { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+.gw-person { background: #fff; border: 1px solid var(--fa-line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; align-content: start; }
+.gw-person header { display: flex; gap: 10px; align-items: center; }
+.gw-avatar { flex: none; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--fa-brand-soft); color: var(--fa-brand); font-weight: 800; }
+.gw-person header b { display: block; font-size: 15px; }
+.gw-person header small { color: var(--fa-muted); font-size: 12px; }
+.gw-person header .fa-btn { white-space: nowrap; margin-left: auto; padding: 5px 10px; font-size: 12px; }
+.gw-note { margin: 0; font-size: 12.5px; white-space: pre-line; color: #34404f; background: #fafbfc; border-radius: 8px; padding: 6px 8px; }
+.gw-duty-group { display: grid; gap: 4px; }
+.gw-duty-group > span { font-size: 12px; font-weight: 700; color: var(--c); }
+.gw-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.gw-chip { padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: color-mix(in srgb, var(--c) 12%, #fff); color: color-mix(in srgb, var(--c) 80%, #000); border: 1px solid color-mix(in srgb, var(--c) 30%, #fff); }
+.gw-meta { color: var(--fa-muted); font-size: 11px; }
+
+.gw-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.gw-section { background: #fff; border: 1px solid var(--fa-line); border-top: 4px solid var(--c); border-radius: 14px; padding: 12px 14px; }
+.gw-section h3 { margin: 0 0 8px; font-size: 15px; color: var(--c); }
+.gw-section ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.gw-section li b { display: block; font-size: 13px; }
+.gw-section li small { color: var(--fa-muted); font-size: 12px; }
+.gw-section li .gw-none { color: var(--fa-bad); }
+
+.gw-dialog { width: min(720px, calc(100vw - 24px)); }
+.gw-edit-group { border: 1px solid var(--fa-line); border-left: 4px solid var(--c); border-radius: 10px; padding: 10px 12px; }
+.gw-edit-group h3 { margin: 0 0 6px; font-size: 14px; color: var(--c); }
+.gw-edit-group label { display: flex; gap: 8px; align-items: center; padding: 3px 0; cursor: pointer; }
+.gw-edit-group input { accent-color: var(--c); width: 16px; height: 16px; }
+.gw-edit textarea { width: 100%; min-height: 80px; border: 1px solid var(--fa-line); border-radius: 9px; padding: 8px 10px; font: inherit; }
+.gw-edit-foot { display: flex; justify-content: flex-end; gap: 8px; }

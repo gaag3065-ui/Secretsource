@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>สนับสนุนกิจการภายใน | GA Operations</title>
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <style>
+        :root { --ink: #18212f; --muted: #6b7785; --line: #e1e7ea; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #f4f7f8; color: var(--ink); font: 14px/1.5 "Noto Sans Thai", "Segoe UI", sans-serif; }
+        main { max-width: 860px; margin: 0 auto; padding: 36px 16px 48px; }
+        .eyebrow { margin: 0; color: #06a86b; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+        h1 { margin: 2px 0 4px; font-size: 24px; }
+        .sub { margin: 0 0 22px; color: var(--muted); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+        .tile { display: flex; gap: 16px; align-items: center; padding: 22px; background: #fff; border: 1px solid var(--line); border-radius: 18px; cursor: pointer; text-align: left; font: inherit; color: inherit; transition: box-shadow .15s, transform .15s, border-color .15s; }
+        .tile:hover { box-shadow: 0 12px 30px rgba(16, 24, 40, .08); transform: translateY(-2px); border-color: var(--c); }
+        .icon { flex: none; width: 58px; height: 58px; border-radius: 16px; display: grid; place-items: center; font-size: 28px; background: color-mix(in srgb, var(--c) 12%, #fff); }
+        .tile b { display: block; font-size: 18px; }
+        .tile small { color: var(--muted); font-size: 13px; }
+    </style>
+</head>
+<body>
+    <main>
+        <p class="eyebrow">INTERNAL SUPPORT</p>
+        <h1>สนับสนุนกิจการภายใน</h1>
+        <p class="sub">เลือกงานที่ต้องการ</p>
+        <div class="grid">
+            <button type="button" class="tile" style="--c:#06a86b" data-route="monitoring" data-page="monitoring.html">
+                <span class="icon">💬</span>
+                <span><b>Monitoring</b><small>ตอบข้อความ LINE OA ของพนักงาน</small></span>
+            </button>
+            <button type="button" class="tile" style="--c:#4f46e5" data-route="ga-work" data-page="ga-work.html">
+                <span class="icon">🗂️</span>
+                <span><b>งาน GA</b><small>เจ้าหน้าที่ GA หน้าที่ที่รับผิดชอบ และสัดส่วนงานของแต่ละคน</small></span>
+            </button>
+        </div>
+    </main>
+    <script>
+        // เปิดงานในพอร์ทัล (หน้านี้อยู่ในกรอบของพอร์ทัล) — เปิดตรงนอกพอร์ทัลให้ไปที่หน้านั้นเลย
+        document.querySelectorAll('[data-route]').forEach(tile => tile.addEventListener('click', () => {
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'open-task', serviceId: 'internal-support', route: tile.dataset.route }, location.origin);
+            } else {
+                location.href = tile.dataset.page;
+            }
+        }));
+    </script>
+</body>
+</html>
