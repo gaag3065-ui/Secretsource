@@ -123,6 +123,43 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gd-progress { height: 8px; margin-top: 12px; border-radius: 99px; background: #e6eaf2; overflow: hidden; }
 .gd-progress i { display: block; height: 100%; width: 0; background: var(--gd-brand); transition: width .2s; }
 
+/* ---------- แจ้งเตือนสำหรับคุณ ---------- */
+.gd-top-actions { display: flex; align-items: center; gap: 8px; }
+.gd-bell { position: relative; width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--gd-line); background: #fff; font-size: 18px; cursor: pointer; }
+.gd-bell i, .gd-count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #06c755; color: #fff; font-size: 11.5px; font-weight: 800; font-style: normal; line-height: 1; box-shadow: 0 0 0 2px #fff; }
+.gd-bell i { position: absolute; top: -4px; right: -4px; }
+.gd-home-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 360px); gap: 16px; align-items: start; }
+.gd-alerts { background: linear-gradient(160deg, #ffffff, #f0fdf4); border: 1.5px solid #86efac; border-radius: 18px; padding: 14px 14px 10px; box-shadow: 0 10px 28px rgba(6, 199, 85, .12); }
+.gd-alerts.is-empty { border-color: var(--gd-line); background: #fff; box-shadow: none; }
+.gd-alerts h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 15.5px; }
+.gd-alerts h3 .gd-count { margin-left: auto; }
+.gd-alert { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; width: 100%; padding: 9px 10px; margin-bottom: 6px; border: 1px solid #dcfce7; border-radius: 12px; background: #fff; cursor: pointer; text-align: left; }
+.gd-alert:hover { border-color: #4ade80; }
+.gd-alert > span:first-child { font-size: 20px; }
+.gd-alert b { display: block; font-size: 13.5px; }
+.gd-alert small { display: block; color: var(--gd-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 230px; }
+.gd-alerts .gd-empty { padding: 8px; border: 0; }
+.gd-tile { position: relative; }
+.gd-tile .gd-count { position: absolute; top: 10px; right: 10px; }
+
+/* ---------- งานที่ได้รับมอบหมาย ---------- */
+.gd-tasks { display: grid; gap: 10px; }
+.gd-task { background: #fff; border: 1px solid var(--gd-line); border-left: 4px solid #06c755; border-radius: 14px; padding: 14px; }
+.gd-task.is-read { border-left-color: var(--gd-line); }
+.gd-task header { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.gd-task header b { font-size: 15px; margin-right: auto; }
+.gd-task p { margin: 8px 0; white-space: pre-line; line-height: 1.7; font-size: 14px; }
+.gd-task-meta { color: var(--gd-muted); font-size: 12px; }
+.gd-tag { padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: #f2f4f8; color: #475467; }
+.gd-tag.is-new { background: #dcfce7; color: #047857; }
+.gd-tag.is-urgent { background: #fdece7; color: var(--gd-bad); }
+.gd-task-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.gd-task-form { display: grid; gap: 4px; margin-top: 8px; }
+.gd-ack { width: 100%; margin-top: 14px; padding: 13px; font-size: 16px; background: #06c755; border-color: #06c755; color: #fff; }
+.gd-ack:hover { background: #05a847; }
+.gd-answer { display: grid; gap: 6px; margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: #f6f8fb; }
+.gd-answer small { display: block; color: var(--gd-muted); font-size: 12px; }
+
 /* ---------- หัวข้อที่ยังเป็นแนวคิด ---------- */
 .gd-concept { background: #fff; border: 1px solid var(--gd-line); border-radius: 16px; padding: 18px; }
 .gd-concept-badge { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #fff6e5; color: #9a5b00; border: 1px solid #f5d08b; font-size: 12px; font-weight: 700; }
@@ -138,6 +175,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gd-done h2 { margin: 0 0 6px; }
 .gd-done p { color: var(--gd-muted); margin: 0 0 20px; }
 
+@media (max-width: 760px) {
+    .gd-home-head { grid-template-columns: 1fr; }
+}
 @media (max-width: 520px) {
     .gd-menu { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .gd-tile { padding: 16px 8px 14px; }

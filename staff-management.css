@@ -46,6 +46,21 @@
 .sm-task-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
 .sm-task-actions select, .sm-task-actions input { border: 1px solid var(--fa-line); border-radius: 8px; padding: 5px 8px; }
 .sm-task-actions input { flex: 1; min-width: 180px; }
+.sm-kinds { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.sm-kinds-title { font-weight: 700; font-size: 13px; width: 100%; }
+.sm-kinds label { display: inline-flex !important; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
+.sm-builder { display: grid; gap: 6px; border: 1px dashed #c7cbf5; border-radius: 10px; padding: 10px 12px; background: #fff; }
+.sm-builder small { color: var(--fa-muted); font-size: 12px; margin-top: -4px; }
+.sm-builder-rows { display: grid; gap: 6px; }
+.sm-builder-row { display: flex; gap: 6px; }
+.sm-builder-row input { flex: 1; }
+.sm-builder-row select { width: 220px; }
+.sm-builder > .fa-btn { justify-self: start; }
+.sm-response { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; margin: 6px 0; padding: 8px 10px; border-radius: 10px; background: #f6f7ff; }
+.sm-response > .fa-badge { grid-column: 1 / -1; justify-self: start; }
+.sm-response small { display: block; color: var(--fa-muted); font-size: 11px; }
+.sm-response b { font-size: 13px; white-space: pre-line; }
+.sm-file { padding: 3px 9px; font-size: 12px; }
 .sm-prio { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 6px; background: #eef1f3; color: #4b5866; }
 .sm-prio.p-high { background: #fff4e0; color: #a35d00; }
 .sm-prio.p-urgent { background: var(--fa-bad-soft); color: var(--fa-bad); }

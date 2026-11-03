@@ -6,7 +6,7 @@
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
     const API = `${window.APP_CONFIG.API_BASE_URL}/api/ga-docs/public`;
     const TOKEN_KEY = 'gaDocsSession';
-    const state = { config: null, session: null, form: null, files: {} };
+    const state = { config: null, session: null, form: null, files: {}, tasks: [], taskBoxes: [], task: null };
     // หัวข้อที่ยังเป็นแนวคิด (ยังไม่มีฟอร์มที่หลังบ้าน) — กดแล้วแสดงแนวคิดของระบบ
     const CONCEPTS = [
         {
@@ -16,7 +16,13 @@
             points: ['ข่าวสารเฉพาะบุคคล', 'งาน / รายการที่บริษัทมอบหมาย', 'ทำเป็นเควส สะสมความร่วมมือ', 'รายละเอียดแจกแจงของแต่ละเควส', 'ปุ่ม "รับทราบแล้ว"']
         }
     ];
-    const menuItems = () => [...state.config.forms, ...CONCEPTS];
+    // กล่องที่ GA สร้างเอง (แสดงเฉพาะคนที่มีงานในกล่องนั้น)
+    const customTiles = () => state.taskBoxes.map(b => ({ key: b.key, icon: b.icon || '📌', color: '#16a34a', title: b.title, short: b.title,
+        description: 'งานที่ได้รับมอบหมายจาก GA', box: true }));
+    const menuItems = () => [...state.config.forms, ...CONCEPTS, ...customTiles()];
+    const boxInfo = key => menuItems().find(f => f.key === key) || { key, icon: '📌', color: '#16a34a', title: key };
+    // งานที่ต้องแจ้งเตือน = ยังไม่กดรับทราบ
+    const unread = () => state.tasks.filter(t => !t.acknowledged_at);
 
     const store = {
         get() { try { return JSON.parse(sessionStorage.getItem(TOKEN_KEY) || 'null'); } catch { return null; } },
@@ -40,6 +46,7 @@
     }
     const msg = (node, text, kind = '') => { node.textContent = text; node.className = `gd-msg${kind ? ' is-' + kind : ''}`; };
     const show = id => ['gdLogin', 'gdHome', 'gdForm', 'gdDone'].forEach(key => { $(key).hidden = key !== id; });
+    const thDate = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? `${m[3]}/${m[2]}/${Number(m[1]) + 543}` : ''; };
     const when = text => text ? new Date(text).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : '';
 
     // ---------------------------------------------------------------- เข้าสู่ระบบ
@@ -76,15 +83,184 @@
         const e = state.session.employee;
         $('gdName').textContent = e.fullname;
         $('gdMeta').textContent = [e.ID, e.insuranceCode, e.company].filter(Boolean).join(' · ');
+        renderMenu();
+        renderAlerts();
+        show('gdHome');
+        window.scrollTo(0, 0);
+        loadMine();
+        loadTasks();
+    }
+    function renderMenu() {
         $('gdMenu').innerHTML = menuItems().map(f => `
             <button type="button" class="gd-tile" style="--c:${esc(f.color)}" data-open="${esc(f.key)}">
+                <span class="gd-count" data-badge="${esc(f.key)}" hidden></span>
                 <span class="gd-tile-icon" aria-hidden="true">${esc(f.icon)}</span>
                 <b>${esc(f.title)}</b>
                 <small>${esc(f.description)}</small>
             </button>`).join('');
-        show('gdHome');
+        renderBadges();
+    }
+
+    // ---------------------------------------------------------------- งานที่ GA มอบหมาย / แจ้งเตือน
+    async function loadTasks() {
+        try {
+            const { tasks, boxes } = await call('/tasks');
+            const hadBoxes = state.taskBoxes.map(b => b.key).join();
+            state.tasks = tasks;
+            state.taskBoxes = boxes || [];
+            if (hadBoxes !== state.taskBoxes.map(b => b.key).join() && !$('gdHome').hidden) renderMenu();
+            renderAlerts();
+            renderBadges();
+        } catch { /* หลังบ้านยังไม่อัปเดต — ไม่แสดงแจ้งเตือน */ }
+    }
+    function renderBadges() {
+        const counts = new Map();
+        unread().forEach(t => counts.set(t.box, (counts.get(t.box) || 0) + 1));
+        document.querySelectorAll('[data-badge]').forEach(node => {
+            const n = counts.get(node.dataset.badge) || 0;
+            node.hidden = !n;
+            node.textContent = n;
+        });
+        const total = unread().length;
+        $('gdBellCount').hidden = !total;
+        $('gdBellCount').textContent = total > 99 ? '99+' : total;
+    }
+    function renderAlerts() {
+        const list = unread();
+        const box = $('gdAlerts');
+        box.classList.toggle('is-empty', !list.length);
+        const groups = new Map();
+        list.forEach(t => { if (!groups.has(t.box)) groups.set(t.box, []); groups.get(t.box).push(t); });
+        box.innerHTML = `<h3>🔔 แจ้งเตือนสำหรับคุณ ${list.length ? `<span class="gd-count">${list.length}</span>` : ''}</h3>`
+            + (list.length ? [...groups.entries()].map(([key, items]) => {
+                const info = boxInfo(key);
+                return `<button type="button" class="gd-alert" data-box="${esc(key)}">
+                    <span>${esc(info.icon)}</span>
+                    <span><b>${esc(items[0].box_title || info.title)}</b><small>${esc(items.map(t => t.title).join(' · '))}</small></span>
+                    <span class="gd-count">${items.length}</span>
+                </button>`;
+            }).join('') : '<p class="gd-empty">ไม่มีงานแจ้งเตือน ✓</p>');
+    }
+    // หน้ารวมงานในกล่อง (กล่องที่สร้างเอง / ข่าวและภารกิจ)
+    function tasksHtml(tasks) {
+        return `<div class="gd-tasks">${tasks.map(t => `
+            <article class="gd-task ${t.acknowledged_at ? 'is-read' : ''}">
+                <header><b>${esc(t.title)}</b>
+                    ${t.acknowledged_at ? '' : '<span class="gd-tag is-new">ใหม่</span>'}
+                    ${t.priority && t.priority !== 'ปกติ' ? `<span class="gd-tag ${t.priority === 'ด่วน' ? 'is-urgent' : ''}">${esc(t.priority)}</span>` : ''}
+                    <span class="gd-tag">${esc(t.submitted_at ? 'ส่งแล้ว' : t.kind_label)}</span>
+                </header>
+                <span class="gd-task-meta">${esc(when(t.created_at))}${t.due_date ? ` · กำหนดเสร็จ ${esc(thDate(t.due_date))}` : ''}</span>
+                ${t.detail ? `<p>${esc(t.detail)}</p>` : ''}
+                <div class="gd-task-actions"><button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-task="${t.id}">เปิดงาน →</button></div>
+            </article>`).join('')}</div>`;
+    }
+    function openBox(key) {
+        const info = boxInfo(key);
+        const form = state.config.forms.find(f => f.key === key && f.fields);
+        if (form) return openForm(key);
+        const tasks = state.tasks.filter(t => t.box === key);
+        state.form = null;
+        $('gdFormTitle').textContent = info.short || info.title;
+        $('gdFormHead').innerHTML = `<span class="gd-tile-icon" style="--c:${esc(info.color)}">${esc(info.icon)}</span><div><h2>${esc(info.title)}</h2><p>${esc(info.description || '')}</p></div>`;
+        $('gdInfo').innerHTML = tasks.length ? tasksHtml(tasks)
+            : info.concept ? `<div class="gd-concept"><h3>ยังไม่มีงานหรือข่าวถึงคุณ</h3><p>${esc(info.concept)}</p></div>` : '<p class="gd-empty">ยังไม่มีงานในหัวข้อนี้</p>';
+        $('gdFields').innerHTML = '';
+        $('gdFields').hidden = true;
+        document.querySelector('.gd-submit').hidden = true;
+        $('gdProgress').hidden = true;
+        msg($('gdFormMsg'), '');
+        state.view = { box: key };
+        show('gdForm');
         window.scrollTo(0, 0);
-        loadMine();
+    }
+    // หน้างาน 1 งาน: รายละเอียด + ช่องกรอก/ช่องอัปโหลด + ปุ่มรับทราบ
+    function openTask(id) {
+        const t = state.tasks.find(x => x.id === Number(id));
+        if (!t) return;
+        state.task = t;
+        state.taskFiles = {};
+        const info = boxInfo(t.box);
+        const done = Boolean(t.submitted_at) || t.status === 'done';
+        const needsForm = (t.fields || []).length || (t.uploads || []).length;
+        $('gdFormTitle').textContent = t.title;
+        $('gdFormHead').innerHTML = `<span class="gd-tile-icon" style="--c:${esc(info.color)}">${esc(info.icon)}</span><div><h2>${esc(t.title)}</h2><p>${esc(t.box_title || info.title)} · ${esc(t.kind_label)}</p></div>`;
+        const filesOf = slot => (t.files || []).filter(f => f.slot === slot);
+        const answer = done ? `<div class="gd-answer"><b>✓ ส่งแล้วเมื่อ ${esc(when(t.submitted_at))}</b>
+            ${(t.fields || []).map(f => `<div><small>${esc(f.label)}</small>${esc(t.response?.[f.id] || '-')}</div>`).join('')}
+            ${(t.uploads || []).map(u => `<div><small>${esc(u.label)}</small>ส่งแล้ว ${filesOf(u.id).length} ไฟล์</div>`).join('')}</div>` : '';
+        const form = !done && needsForm ? `<form id="gdTaskForm" class="gd-task-form" novalidate>
+            ${(t.fields || []).map(f => `<div class="gd-field"><label for="gt_${f.id}">${esc(f.label)} <span class="gd-req">*</span></label><input type="text" id="gt_${f.id}" name="${esc(f.id)}" value="${esc(t.response?.[f.id] || '')}"></div>`).join('')}
+            ${(t.uploads || []).map(u => `<div class="gd-field" data-slot="${esc(u.id)}"><span class="gd-label">${esc(u.label)} <span class="gd-req">*</span> <small>(${u.type === 'pdf' ? 'ไฟล์ PDF' : 'รูปภาพ'})</small></span>
+                ${filesOf(u.id).length ? `<small class="gd-task-meta">ส่งไว้แล้ว ${filesOf(u.id).length} ไฟล์ — แนบเพิ่มได้</small>` : ''}
+                <label class="gd-pick">＋ แนบ${u.type === 'pdf' ? 'ไฟล์ PDF' : 'รูป'}<input type="file" accept="${u.type === 'pdf' ? 'application/pdf' : 'image/*'}" multiple data-task-slot="${esc(u.id)}"></label>
+                <div class="gd-thumbs" data-task-thumbs="${esc(u.id)}"></div>
+                ${u.type === 'pdf' ? `<input type="text" data-password="${esc(u.id)}" placeholder="รหัสเปิดไฟล์ PDF (ถ้ามี)" autocomplete="off">` : ''}
+            </div>`).join('')}
+            <button type="submit" class="gd-btn gd-btn-primary gd-submit-task">ส่งงาน</button>
+        </form>` : '';
+        $('gdInfo').innerHTML = `<article class="gd-task ${t.acknowledged_at ? 'is-read' : ''}">
+            <span class="gd-task-meta">มอบหมายเมื่อ ${esc(when(t.created_at))}${t.due_date ? ` · กำหนดเสร็จ ${esc(thDate(t.due_date))}` : ''}${t.priority && t.priority !== 'ปกติ' ? ` · ${esc(t.priority)}` : ''}</span>
+            ${t.detail ? `<p>${esc(t.detail)}</p>` : ''}
+            ${answer}${form}
+            ${t.acknowledged_at ? `<p class="gd-task-meta">✓ รับทราบแล้วเมื่อ ${esc(when(t.acknowledged_at))}</p>` : '<button type="button" class="gd-btn gd-ack" data-action="ack">✓ รับทราบ</button>'}
+        </article>`;
+        $('gdFields').innerHTML = '';
+        $('gdFields').hidden = true;
+        document.querySelector('.gd-submit').hidden = true;
+        $('gdProgress').hidden = true;
+        msg($('gdFormMsg'), '');
+        state.view = { task: t.id, box: t.box };
+        show('gdForm');
+        window.scrollTo(0, 0);
+    }
+    function replaceTask(task) {
+        const i = state.tasks.findIndex(t => t.id === task.id);
+        if (i >= 0) state.tasks[i] = task;
+        renderAlerts();
+        renderBadges();
+    }
+    async function ackTask(button) {
+        button.disabled = true;
+        try {
+            const { task } = await call(`/tasks/${state.task.id}/ack`, {});
+            replaceTask(task);
+            openTask(task.id);
+            msg($('gdFormMsg'), 'รับทราบแล้ว', 'ok');
+        } catch (error) { msg($('gdFormMsg'), error.message, 'bad'); button.disabled = false; }
+    }
+    async function submitTask(form) {
+        const t = state.task;
+        const values = {};
+        for (const f of t.fields || []) {
+            values[f.id] = form.elements[f.id].value.trim();
+            if (!values[f.id]) return msg($('gdFormMsg'), `กรุณากรอก "${f.label}"`, 'bad');
+        }
+        for (const u of t.uploads || []) {
+            if (!(state.taskFiles[u.id] || []).length && !(t.files || []).some(f => f.slot === u.id)) return msg($('gdFormMsg'), `กรุณาแนบ "${u.label}"`, 'bad');
+        }
+        const jobs = (t.uploads || []).flatMap(u => (state.taskFiles[u.id] || []).map(item => ({ slot: u.id, file: item.file,
+            password: form.querySelector(`[data-password="${u.id}"]`)?.value.trim() || '' })));
+        const button = form.querySelector('[type=submit]');
+        button.disabled = true;
+        const bar = $('gdProgress');
+        bar.hidden = false;
+        try {
+            for (let i = 0; i < jobs.length; i++) {
+                msg($('gdFormMsg'), `กำลังอัปโหลดไฟล์ ${i + 1}/${jobs.length}…`);
+                bar.firstElementChild.style.width = `${Math.round(i / (jobs.length + 1) * 100)}%`;
+                await call('/upload/task', { id: t.id, slot: jobs[i].slot, password: jobs[i].password, data: await toDataUrl(jobs[i].file) });
+            }
+            msg($('gdFormMsg'), 'กำลังส่งงาน…');
+            const { task } = await call(`/tasks/${t.id}/respond`, { values });
+            replaceTask(task);
+            openTask(task.id);
+            msg($('gdFormMsg'), 'ส่งงานเรียบร้อย ✓', 'ok');
+        } catch (error) {
+            msg($('gdFormMsg'), `ส่งไม่สำเร็จ: ${error.message}`, 'bad');
+            button.disabled = false;
+            bar.hidden = true;
+        }
     }
     async function loadMine() {
         const box = $('gdMine');
@@ -107,7 +283,7 @@
         const form = menuItems().find(f => f.key === key);
         if (!form) return;
         if (form.link) { location.href = form.link; return; }
-        if (form.concept) return openConcept(form);
+        if (form.concept || form.box) return openBox(key);
         document.querySelector('.gd-submit').hidden = false;
         $('gdFields').hidden = false;
         state.form = form;
@@ -115,6 +291,9 @@
         $('gdFormTitle').textContent = form.short || form.title;
         $('gdFormHead').innerHTML = `<span class="gd-tile-icon" style="--c:${esc(form.color)}">${esc(form.icon)}</span><div><h2>${esc(form.title)}</h2><p>${esc(form.description)}</p></div>`;
         $('gdInfo').innerHTML = form.info ? `<div class="gd-info">${form.info.map(i => `<div><small>${esc(i.label)}</small>${i.link ? `<a href="${esc(i.link)}" target="_blank" rel="noopener">${esc(i.value)}</a>` : esc(i.value)}</div>`).join('')}</div>` : '';
+        // งานที่ GA มอบหมายในหัวข้อนี้ แสดงไว้ด้านบนของฟอร์ม
+        const boxTasks = state.tasks.filter(t => t.box === key);
+        if (boxTasks.length) $('gdInfo').innerHTML += `<h3 class="gd-box-tasks">งานที่ได้รับมอบหมายในหัวข้อนี้</h3>${tasksHtml(boxTasks)}`;
         $('gdFields').innerHTML = form.fields.map(fieldHtml).join('');
         form.fields.filter(f => f.type === 'files').forEach(f => { state.files[f.name] = []; });
         refreshVisibility();
@@ -162,6 +341,31 @@
         const v = values();
         state.form.fields.forEach(f => { $('gdFields').querySelector(`[data-field="${f.name}"]`).hidden = !isVisible(f, v); });
     }
+    // ไฟล์ของงานที่ GA มอบหมาย (ช่องอัปโหลดตามที่ GA ตั้ง)
+    $('gdInfo').addEventListener('change', event => {
+        const input = event.target.closest('input[data-task-slot]');
+        if (!input) return;
+        const slot = input.dataset.taskSlot;
+        const list = state.taskFiles[slot] ||= [];
+        const def = (state.task.uploads || []).find(u => u.id === slot);
+        for (const file of input.files) {
+            if (def.type === 'pdf' ? file.type !== 'application/pdf' : !file.type.startsWith('image/')) { msg($('gdFormMsg'), `"${def.label}" ต้องเป็น${def.type === 'pdf' ? 'ไฟล์ PDF' : 'รูปภาพ'}`, 'bad'); continue; }
+            list.push({ file, url: file.type.startsWith('image/') ? URL.createObjectURL(file) : '' });
+        }
+        input.value = '';
+        const box = $('gdInfo').querySelector(`[data-task-thumbs="${slot}"]`);
+        box.replaceChildren(...list.map((item, i) => {
+            const div = document.createElement('div');
+            div.className = 'gd-thumb';
+            if (item.url) div.append(Object.assign(document.createElement('img'), { src: item.url, alt: '' }));
+            else div.textContent = `📄 ${item.file.name}`;
+            const remove = Object.assign(document.createElement('button'), { type: 'button', textContent: '×', title: 'ลบไฟล์นี้' });
+            remove.onclick = () => { list.splice(i, 1); input.dispatchEvent(new Event('change', { bubbles: true })); };
+            div.append(remove);
+            return div;
+        }));
+    });
+    $('gdInfo').addEventListener('submit', event => { if (event.target.id === 'gdTaskForm') { event.preventDefault(); submitTask(event.target); } });
     $('gdFields').addEventListener('change', event => {
         const input = event.target.closest('input[data-files]');
         if (!input) return refreshVisibility();
@@ -251,11 +455,21 @@
     document.addEventListener('click', event => {
         const tile = event.target.closest('[data-open]');
         if (tile) return openForm(tile.dataset.open);
+        const alertBox = event.target.closest('[data-box]');
+        if (alertBox) return openBox(alertBox.dataset.box);
+        const taskButton = event.target.closest('[data-task]');
+        if (taskButton) return openTask(taskButton.dataset.task);
         const button = event.target.closest('[data-action]');
         if (!button) return;
         const action = button.dataset.action;
         if (action === 'logout') logout();
-        else if (action === 'back') openHome();
+        else if (action === 'back') {
+            // จากหน้างาน → กลับไปกล่องของงานนั้น · จากกล่อง/ฟอร์ม → เมนูหลัก
+            if (state.view?.task && !$('gdForm').hidden) { const box = state.view.box; state.view = null; openBox(box); }
+            else { state.view = null; openHome(); }
+        }
+        else if (action === 'alerts') { openHome(); $('gdAlerts').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        else if (action === 'ack') ackTask(button);
         else if (action === 'reload-mine') loadMine();
         else if (action === 'submit') submit(button);
     });
@@ -267,6 +481,8 @@
             if (config.locked) msg($('gdLoginMsg'), 'ระบบปิดรับการเข้าสู่ระบบชั่วคราว', 'bad');
             const saved = store.get();
             if (saved?.token && !config.locked) { state.session = saved; openHome(); }
+            // แจ้งเตือนใหม่: ถามหลังบ้านทุก 1 นาทีระหว่างเปิดหน้าไว้
+            setInterval(() => { if (state.session && !document.hidden) loadTasks(); }, 60 * 1000);
         } catch (error) { msg($('gdLoginMsg'), error.message, 'bad'); }
     })();
 })();

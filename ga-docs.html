@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="ga-docs.css?v=20261102-2">
+    <link rel="stylesheet" href="ga-docs.css?v=20261103-1">
     <link rel="icon" href="icons/icon-192.png">
 </head>
 <body>
@@ -33,15 +33,24 @@
     <section id="gdHome" class="gd-app" hidden>
         <header class="gd-top">
             <div class="gd-top-brand"><span class="gd-logo gd-logo-sm"><span>GA</span></span><div><b>ระบบจัดการองค์กร</b><small>ระบบรับ - ส่งเอกสาร GA</small></div></div>
-            <button type="button" class="gd-btn gd-btn-ghost" data-action="logout">ออกจากระบบ</button>
+            <div class="gd-top-actions">
+                <button type="button" class="gd-bell" data-action="alerts" title="แจ้งเตือนสำหรับคุณ">🔔<i id="gdBellCount" hidden>0</i></button>
+                <button type="button" class="gd-btn gd-btn-ghost" data-action="logout">ออกจากระบบ</button>
+            </div>
         </header>
         <main class="gd-main">
-            <div class="gd-hello">
-                <p>สวัสดี <b id="gdName"></b></p>
-                <small id="gdMeta"></small>
+            <div class="gd-home-head">
+                <div>
+                    <div class="gd-hello">
+                        <p>สวัสดี <b id="gdName"></b></p>
+                        <small id="gdMeta"></small>
+                    </div>
+                    <h2 class="gd-question">คุณต้องการส่งเอกสารหรือติดต่อเกี่ยวกับอะไร?</h2>
+                    <p class="gd-hint">เลือกหัวข้อด้านล่าง</p>
+                </div>
+                <!-- แจ้งเตือนสำหรับคุณ: งานที่ GA มอบหมาย (จากหน้า "จัดการพนักงาน") ที่ยังไม่รับทราบ / ยังไม่ส่ง -->
+                <aside id="gdAlerts" class="gd-alerts" aria-live="polite"></aside>
             </div>
-            <h2 class="gd-question">คุณต้องการส่งเอกสารหรือติดต่อเกี่ยวกับอะไร?</h2>
-            <p class="gd-hint">เลือกหัวข้อด้านล่าง</p>
             <div id="gdMenu" class="gd-menu"></div>
 
             <section class="gd-mine">
@@ -79,6 +88,6 @@
     </section>
 
     <script src="config.js"></script>
-    <script src="ga-docs.js?v=20261102-2"></script>
+    <script src="ga-docs.js?v=20261103-1"></script>
 </body>
 </html>
