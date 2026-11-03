@@ -549,13 +549,20 @@
             </div>`;
         if (!$('smDialog').open) $('smDialog').showModal();
     }
+    // ลบงาน: ยืนยัน 2 รอบ — งานที่มีไฟล์รายงาน/ไฟล์ที่พนักงานส่ง จะลบไฟล์บน Drive ด้วย
     async function deleteTasks(ids, label) {
-        if (!ids.length || !confirm(`${label}?\nพนักงานจะไม่เห็นงานนี้ในหน้าระบบจัดการองค์กรอีก`)) return false;
-        const { deleted } = await request('/tasks/delete', { method: 'POST', body: JSON.stringify({ ids }) });
+        if (!ids.length) return false;
+        const withFiles = state.data.tasks.some(t => ids.map(Number).includes(t.id) && t.dest);
+        if (!confirm(`ต้องการ${label}ใช่ไหม?\n\nพนักงานจะไม่เห็นงานนี้ในหน้าระบบจัดการองค์กรอีก`)) return false;
+        if (!confirm(withFiles
+            ? '⚠️ ยืนยันอีกครั้ง\n\nถ้าลบ ข้อมูลและไฟล์ทั้งหมดของงานนี้ (ชีตรายงาน รูป PDF ที่พนักงานส่ง) จะหายจากทุกโฟลเดอร์ และอาจกู้คืนไม่ได้\n\nกด "ตกลง" เพื่อลบ'
+            : '⚠️ ยืนยันอีกครั้ง\n\nถ้าลบ ข้อมูลงานนี้จะหายและอาจกู้คืนไม่ได้\n\nกด "ตกลง" เพื่อลบ')) return false;
+        const { deleted, trashed, trashError } = await request('/tasks/delete', { method: 'POST', body: JSON.stringify({ ids, trashFiles: true }) });
         const gone = new Set(ids.map(Number));
         state.data.tasks = state.data.tasks.filter(t => !gone.has(t.id));
         render();
-        toast(`ลบงานแล้ว ${deleted} รายการ`);
+        if (trashError) alert(`ลบงานแล้ว ${deleted} รายการ แต่ลบไฟล์บน Drive ไม่สำเร็จ — ลบโฟลเดอร์ใน Drive เองได้\n\nสาเหตุ: ${trashError}`);
+        else toast(`ลบงานแล้ว ${deleted} รายการ${trashed ? ' พร้อมไฟล์บน Drive' : ''}`);
         return true;
     }
 
