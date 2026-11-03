@@ -129,7 +129,7 @@
         }));
         state.groups = [...groups.values()].sort((a, b) => b.tasks.length - a.tasks.length);
         const groupChips = state.groups.map((g, i) => `<button type="button" class="sm-group" data-group="${i}" title="${esc(`${g.title} · ${g.tasks.length} คน`)}"><span>${esc(g.title)}</span><i>${g.tasks.length}</i></button>`).join('');
-        $('smHead').innerHTML = `<th>บริษัท</th><th>สถานะปัจจุบัน</th><th>ชื่อเล่น</th><th>ชื่อพนักงาน</th>${extra.map(f => `<th>${esc(f.label)}</th>`).join('')}<th class="sm-tasks-head">งานที่มอบหมาย ${groupChips ? `<span class="sm-groups">${groupChips}</span>` : ''}</th><th></th>`;
+        $('smHead').innerHTML = `<th>บริษัท</th><th>สถานะปัจจุบัน</th><th>ชื่อเล่น</th><th>ชื่อพนักงาน</th>${extra.map(f => `<th>${esc(f.label)}</th>`).join('')}<th class="sm-tasks-head">งานที่มอบหมาย ${groupChips ? `<span class="sm-groups">${groupChips}</span>` : ''}</th><th class="sm-bulk-head"><button type="button" class="fa-btn sm-broadcast" data-action="broadcast" title="ส่งข้อความถึงพนักงานที่แสดงอยู่ทั้งหมด ผ่านคิว LINE OA">📢 ส่งข้อความแบบหมู่ (${rows.length})</button></th>`;
         const span = 6 + extra.length;
         if (!rows.length) { $('smRows').innerHTML = `<tr><td colspan="${span}" class="fa-empty">ไม่พบพนักงานตามตัวกรอง</td></tr>`; return; }
         $('smRows').innerHTML = rows.map(e => {
@@ -371,6 +371,90 @@
         return true;
     }
 
+    // ---------------------------------------------------------------- ส่งข้อความแบบหมู่ → คิว LINE OA (ยังไม่ส่งจริง — แอดมินกดส่งเองใน LINE OA Manager)
+    const VARS = ['{ชื่อ}', '{ชื่อเล่น}', '{รหัสพนักงาน}', '{รหัสประกัน}', '{บริษัท}'];
+    const fill = (text, e) => text.replace(/\{ชื่อ\}/g, e.fullname).replace(/\{ชื่อเล่น\}/g, e.nickname || e.fullname)
+        .replace(/\{รหัสพนักงาน\}/g, e.employeeId || e.centralId || '').replace(/\{รหัสประกัน\}/g, e.insuranceCode || '').replace(/\{บริษัท\}/g, e.company || '');
+    const roomLabel = r => `${r.customName || r.lineName || 'ไม่มีชื่อ'}${r.customName && r.lineName ? ` (LINE: ${r.lineName})` : ''} · ${r.channelName}`;
+    async function openBroadcast() {
+        const people = filtered();
+        if (!people.length) return toast('ไม่มีพนักงานในรายการ', true);
+        state.mode = 'broadcast';
+        state.current = null;
+        state.broadcast = { people, rooms: [], targets: [], file: null };
+        $('smDetail').innerHTML = `
+            <header class="fa-detail-head">
+                <div><h2>📢 ส่งข้อความแบบหมู่ · ${people.length} คน</h2><p>ข้อความจะเข้าคิว LINE OA (หน้า Monitoring) — ยังไม่ส่งจริง จนกว่าคุณจะกดส่งเองใน LINE OA Manager</p></div>
+                <button type="button" class="fa-close" data-close aria-label="ปิด">×</button>
+            </header>
+            <div class="fa-detail-body">
+                <section class="sm-section">
+                    <h3>1. แพทเทิร์นข้อความ</h3>
+                    <div class="sm-vars">แทรกข้อมูลของแต่ละคน: ${VARS.map(v => `<button type="button" class="sm-var" data-var="${v}">${v}</button>`).join('')}</div>
+                    <textarea id="smBcText" class="sm-bc-text" maxlength="4000" placeholder="เช่น เรียนคุณ{ชื่อเล่น} ({รหัสพนักงาน}) กรุณาส่งเอกสารตรวจ 4 โรคภายในวันที่ 15/11 ค่ะ"></textarea>
+                    <label class="sm-bc-file">📎 แนบรูปหรือไฟล์ (ถ้ามี · ไม่เกิน 10 MB) <input id="smBcFile" type="file" accept="image/jpeg,image/png,application/pdf,.doc,.docx,.xls,.xlsx"></label>
+                    <div id="smBcFileInfo" class="sm-meta"></div>
+                    <div class="sm-bc-preview"><small>ตัวอย่างข้อความของ ${esc(people[0].fullname)}</small><div id="smBcPreview">—</div></div>
+                </section>
+                <section class="sm-section">
+                    <h3>2. ห้องแชท LINE ของแต่ละคน <span class="sm-meta" id="smBcMatchInfo">กำลังจับคู่…</span></h3>
+                    <div class="sm-bc-list" id="smBcList"><p class="fa-empty">กำลังค้นหาห้องแชทที่ตรงกับพนักงาน…</p></div>
+                </section>
+                <div class="sm-group-actions">
+                    <button type="button" class="fa-btn fa-btn-primary" data-bc-send>ส่งเข้าคิว LINE OA</button>
+                    <span class="sm-meta">ไปกดส่งจริงที่ LINE OA Manager (ส่วนขยาย "ผู้ช่วยส่งข้อความ" — ปิดโหมดอัตโนมัติเพื่อกดส่งเอง)</span>
+                </div>
+            </div>`;
+        if (!$('smDialog').open) $('smDialog').showModal();
+        try {
+            const data = await request('/line-targets', { method: 'POST', body: JSON.stringify({ keys: people.map(e => e.key) }) });
+            state.broadcast.rooms = data.rooms;
+            state.broadcast.targets = data.targets;
+            renderBroadcastTargets();
+        } catch (error) { $('smBcList').innerHTML = `<p class="fa-empty">${esc(error.message)}</p>`; }
+    }
+    function renderBroadcastTargets() {
+        const b = state.broadcast;
+        const matched = b.targets.filter(t => t.selected).length;
+        $('smBcMatchInfo').textContent = `จับคู่ได้ ${matched}/${b.targets.length} คน — ตรวจชื่อห้องให้ถูกก่อนส่ง`;
+        $('smBcList').innerHTML = `<table class="sm-group-table"><thead><tr><th><input type="checkbox" data-bc-all checked></th><th>พนักงาน</th><th>ห้องแชท LINE</th></tr></thead><tbody>
+            ${b.targets.map((t, i) => `<tr class="${t.selected ? '' : 'sm-bc-none'}">
+                <td><input type="checkbox" data-bc-pick="${i}" ${t.selected ? 'checked' : 'disabled'}></td>
+                <td><b>${esc(t.fullname)}</b>${t.nickname ? ` <span class="fa-type">${esc(t.nickname)}</span>` : ''}<small>${esc([t.employeeId, t.company].filter(Boolean).join(' · '))}</small></td>
+                <td><select data-bc-room="${i}">
+                    <option value="">— ไม่ส่ง (ยังไม่พบห้อง) —</option>
+                    ${t.suggestions.map(r => `<option value="${esc(`${r.channelId}|${r.conversationId}`)}" ${t.selected === `${r.channelId}|${r.conversationId}` ? 'selected' : ''}>${t.linked && r.score === 999 ? '✓ ' : ''}${esc(roomLabel(r))}</option>`).join('')}
+                    <option value="__search">🔍 ค้นหาห้องอื่น…</option>
+                </select>${t.linked ? '<small class="sm-ok">ห้องที่เคยยืนยันแล้ว</small>' : ''}</td></tr>`).join('')}
+        </tbody></table>`;
+    }
+    function updateBroadcastPreview() {
+        const b = state.broadcast;
+        const text = $('smBcText').value;
+        $('smBcPreview').textContent = text ? fill(text, b.people[0]) : '—';
+    }
+    async function sendBroadcast(button) {
+        const b = state.broadcast;
+        const text = $('smBcText').value.trim();
+        if (!text && !b.file) return toast('กรุณาพิมพ์ข้อความหรือแนบไฟล์', true);
+        const targets = b.targets.map((t, i) => ({ t, i })).filter(({ t, i }) => t.selected && $('smBcList').querySelector(`[data-bc-pick="${i}"]`)?.checked)
+            .map(({ t }) => {
+                const room = b.rooms.find(r => `${r.channelId}|${r.conversationId}` === t.selected);
+                return { key: t.key, room: t.selected, roomName: room ? (room.customName || room.lineName) : '' };
+            });
+        if (!targets.length) return toast('ยังไม่ได้เลือกห้องแชทของใครเลย', true);
+        if (!confirm(`ส่งข้อความเข้าคิว LINE OA ให้ ${targets.length} คน?\nข้อความยังไม่ถูกส่งจริง จนกว่าจะกดส่งใน LINE OA Manager`)) return;
+        button.disabled = true;
+        button.textContent = 'กำลังเข้าคิว…';
+        try {
+            const result = await request('/line-broadcast', { method: 'POST', body: JSON.stringify({ text, file: b.file, targets }) });
+            toast(`เข้าคิวแล้ว ${result.people} คน (${result.queued} ข้อความ)${result.failed.length ? ` · ไม่สำเร็จ ${result.failed.length}` : ''}`, Boolean(result.failed.length));
+            if (result.failed.length) alert(`เข้าคิวไม่สำเร็จ:\n${result.failed.join('\n')}`);
+            else $('smDialog').close();
+        } catch (error) { toast(error.message, true); }
+        finally { button.disabled = false; button.textContent = 'ส่งเข้าคิว LINE OA'; }
+    }
+
     // ขั้นตอนของงาน: ยังไม่รับทราบ → รับทราบแล้ว → ส่งข้อมูลแล้ว → ตรวจสอบแล้ว
     function stagesOf(t) {
         if (!t.acknowledged_at && !t.submitted_at) return [['unread', 'ยังไม่รับทราบ']];
@@ -525,6 +609,38 @@
         const filled = d.title.trim() || d.detail.trim() || d.fields.some(f => f.label.trim()) || d.uploads.some(u => u.label.trim());
         if (filled) state.drafts.set(state.current, d); else state.drafts.delete(state.current);
     });
+    $('smDialog').addEventListener('input', event => { if (event.target.id === 'smBcText') updateBroadcastPreview(); });
+    $('smDialog').addEventListener('change', async event => {
+        const b = state.broadcast;
+        if (!b || state.mode !== 'broadcast') return;
+        if (event.target.id === 'smBcFile') {
+            const file = event.target.files?.[0];
+            if (!file) { b.file = null; $('smBcFileInfo').textContent = ''; return; }
+            if (file.size > 10 * 1024 * 1024) { event.target.value = ''; b.file = null; return toast('ไฟล์ต้องไม่เกิน 10 MB', true); }
+            const data = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file); });
+            b.file = { name: file.name, data };
+            $('smBcFileInfo').textContent = `แนบแล้ว: ${file.name} (${(file.size / 1048576).toFixed(1)} MB)${/^image\/(jpeg|png)$/.test(file.type) ? ' — ส่งเป็นรูป' : ' — ส่งเป็นลิงก์ดาวน์โหลด'}`;
+            return;
+        }
+        const all = event.target.closest('[data-bc-all]');
+        if (all) { $('smBcList').querySelectorAll('[data-bc-pick]:not(:disabled)').forEach(c => { c.checked = all.checked; }); return; }
+        const sel = event.target.closest('[data-bc-room]');
+        if (sel) {
+            const t = b.targets[Number(sel.dataset.bcRoom)];
+            if (sel.value === '__search') {
+                const q = (prompt(`ค้นหาห้องแชทของ ${t.fullname} (พิมพ์ชื่อ / รหัส)`) || '').trim().toLowerCase();
+                if (q) {
+                    const found = b.rooms.filter(r => `${r.customName} ${r.lineName}`.toLowerCase().includes(q)).slice(0, 15);
+                    if (!found.length) toast('ไม่พบห้องที่ตรงคำค้น', true);
+                    found.forEach(r => { if (!t.suggestions.some(s => s.channelId === r.channelId && s.conversationId === r.conversationId)) t.suggestions.push({ ...r, score: 0 }); });
+                    if (found[0]) t.selected = `${found[0].channelId}|${found[0].conversationId}`;
+                }
+                return renderBroadcastTargets();
+            }
+            t.selected = sel.value;
+            return renderBroadcastTargets();
+        }
+    });
     $('smDialog').addEventListener('change', event => { const form = event.target.closest('#smNewTask'); if (form && event.target.matches('[name=kind], [name=box]')) syncBuilder(form); });
     $('smDialog').addEventListener('click', async event => {
         // คลิกพื้นที่ว่างนอกหน้าต่างไม่ปิด (กันข้อมูลที่กรอกหาย) — ปิดด้วยปุ่ม × เท่านั้น
@@ -536,6 +652,17 @@
         if (event.target.closest('[data-remove]')) return event.target.closest('.sm-builder-row').remove();
         const review = event.target.closest('[data-review]');
         if (review) return reviewTask(review);
+        const varBtn = event.target.closest('[data-var]');
+        if (varBtn) {
+            const area = $('smBcText');
+            const at = area.selectionStart ?? area.value.length;
+            area.value = area.value.slice(0, at) + varBtn.dataset.var + area.value.slice(area.selectionEnd ?? at);
+            area.focus();
+            area.selectionStart = area.selectionEnd = at + varBtn.dataset.var.length;
+            return updateBroadcastPreview();
+        }
+        const bcSend = event.target.closest('[data-bc-send]');
+        if (bcSend) return sendBroadcast(bcSend);
         const delGroup = event.target.closest('[data-del-group]');
         const delTask = event.target.closest('[data-del-task]');
         if (delGroup || delTask) {
@@ -585,6 +712,7 @@
         if (taskPill) return openTaskInfo(taskPill.dataset.taskOpen);
         const action = event.target.closest('[data-action]')?.dataset.action;
         if (action === 'refresh') load(true);
+        if (action === 'broadcast') openBroadcast();
         if (action === 'clear-filters') {
             document.querySelectorAll('.sm-toolbar select').forEach(s => { s.value = ''; });
             $('smSearch').value = '';
