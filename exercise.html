@@ -92,6 +92,8 @@
   <style>/* ขยายเต็มความกว้างจอ (เดิมจำกัด 1180px บนคอม / 680px บนมือถือ) */.layout{width:calc(100% - 48px);max-width:1760px}@media(max-width:800px){.layout{width:calc(100% - 20px);max-width:none}}</style>
 </head>
 <body>
+  <!-- กลับไประบบจัดการองค์กร (หน้าเมนูหลักของพนักงาน) — มาจากหน้านั้นใช้ย้อนกลับ ไม่ใช่ก็เปิดหน้านั้นตรง ๆ -->
+  <a class="admin-access" href="ga-docs.html" onclick="if (document.referrer && /ga-docs\.html/.test(document.referrer) && history.length > 1) { event.preventDefault(); history.back(); }">← กลับหน้าระบบจัดการองค์กร</a>
   <main class="layout">
     <!-- LOGIN: เริ่มที่หน้านี้ก่อนเสมอ -->
     <section id="loginCard" class="card center" aria-live="polite">
