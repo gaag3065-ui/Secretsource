@@ -79,6 +79,10 @@
     .general-exercise-card .day-slot.done strong{color:#a9f3c9}
     @media(max-width:760px){.program-rules .section-title{display:block;line-height:1.45}.program-rules .section-title small{display:block;margin:5px 0 0}.program-rule-grid{grid-template-columns:1fr}.program-rule-card{padding:16px}}
     /* ปุ่มผู้ดูแลมุมซ้ายบน และหน้าต่างรหัสผ่านแบบสั้น */
+    .contact-ga{padding:0;border:0;background:none;color:var(--gold2);font:inherit;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.contact-ga:hover{color:var(--gold)}
+    .contact-ga-dialog{width:min(380px,calc(100vw - 32px));padding:22px;border:1px solid rgba(245,196,90,.45);border-radius:16px;color:#e8f2ff;background:#071a2e;box-shadow:0 20px 60px rgba(0,0,0,.55);text-align:center}.contact-ga-dialog::backdrop{background:rgba(2,8,16,.7)}.contact-ga-dialog h3{margin:0 0 4px;color:var(--gold);font-size:20px}.contact-ga-dialog p{margin:0 0 14px;color:#9fc1e4;font-size:14px}
+    .contact-ga-areas{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.contact-ga-areas a{padding:13px;border:1px solid rgba(72,186,255,.5);border-radius:12px;color:#fff;background:rgba(6,199,85,.16);font-weight:800;font-size:16px;text-decoration:none}.contact-ga-areas a:hover{background:#06c755;border-color:#06c755}.contact-ga-areas a:last-child{grid-column:1/-1}
+    .contact-ga-close{margin-top:14px;padding:9px 22px;border:1px solid rgba(189,208,231,.42);border-radius:10px;color:#cde7ff;background:transparent;font:700 13px Arial,"Noto Sans Thai",sans-serif;cursor:pointer}
     .admin-access{position:fixed;z-index:31;top:14px;left:14px;display:inline-flex;align-items:center;justify-content:center;gap:7px;margin:0;padding:9px 14px;border:1px solid rgba(189,208,231,.42);border-radius:10px;color:#cde7ff;background:rgba(5,24,43,.72);font:700 12px Arial,"Noto Sans Thai",sans-serif;text-decoration:none;cursor:pointer;transition:.2s}
     .admin-access:hover{transform:translateY(-1px);border-color:var(--blue);color:#fff;box-shadow:0 7px 18px rgba(72,186,255,.16)}
     @media(max-width:420px){.admin-access{top:10px;left:10px;padding:8px 11px}}
@@ -99,10 +103,23 @@
         <button id="btnLogin" class="btn btn-gold" type="submit">เข้าสู่ระบบ →</button>
       </form>
       <div id="loginStatus" class="login-status"></div>
-      <p class="login-help">Project Sports 08092026 </p>
-      <!-- ผู้ดูแลเข้าสู่ระบบเว็บด้วยบัญชีของตัวเอง (ชื่อผู้ใช้ + รหัสผ่าน + Google Authenticator) แล้วเปิด-ปิดระบบที่เมนู "ออกกำลังกายและฟิตเนส" -->
-      <a id="adminAccessButton" class="admin-access" href="index.html" title="เข้าสู่ระบบผู้ดูแลเพื่อเปิด-ปิดระบบและตรวจรูป">⚙️ ผู้ดูแลระบบ</a>
+      <!-- ติดต่อ GA: เลือกพื้นที่ → LINE OA ของพื้นที่นั้น (ผู้ดูแลเข้าหลังบ้านจากพอร์ทัล GA แทนปุ่มเดิม) -->
+      <p class="login-help"><button type="button" class="contact-ga" onclick="document.getElementById('contactGaDialog').showModal()">หากติดปัญหาติดต่อ GA</button></p>
     </section>
+    <dialog id="contactGaDialog" class="contact-ga-dialog">
+      <form method="dialog">
+        <h3>ติดต่อ GA</h3>
+        <p>เลือกพื้นที่ของคุณ</p>
+        <div class="contact-ga-areas">
+          <a href="https://lin.ee/QaekWTaL" target="_blank" rel="noopener">TH</a>
+          <a href="https://lin.ee/No1xF9k" target="_blank" rel="noopener">SL</a>
+          <a href="https://lin.ee/6oNqaOa" target="_blank" rel="noopener">GE</a>
+          <a href="https://lin.ee/6oNqaOa" target="_blank" rel="noopener">MY</a>
+          <a href="https://lin.ee/QaekWTaL" target="_blank" rel="noopener">อื่น ๆ</a>
+        </div>
+        <button class="contact-ga-close" value="">ปิด</button>
+      </form>
+    </dialog>
 
 <!-- DASHBOARD: แสดงหลัง login สำเร็จ -->
 <!-- DASHBOARD: แสดงหลัง login สำเร็จ -->
