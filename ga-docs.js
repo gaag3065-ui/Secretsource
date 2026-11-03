@@ -19,8 +19,9 @@
     // กล่องที่ GA สร้างเอง (แสดงเฉพาะคนที่มีงานในกล่องนั้น)
     const customTiles = () => state.taskBoxes.map(b => ({ key: b.key, icon: b.icon || '📌', color: '#16a34a', title: b.title, short: b.title,
         description: 'งานที่ได้รับมอบหมายจาก GA', box: true }));
-    const menuItems = () => [...state.config.forms, ...CONCEPTS, ...customTiles()];
-    const boxInfo = key => menuItems().find(f => f.key === key) || { key, icon: '📌', color: '#16a34a', title: key };
+    // หัวข้อที่เปิดอยู่ + กล่องที่คนนี้มีงาน (กล่องที่สร้างเอง หรือหัวข้อที่ปิดไปแล้วแต่ยังมีงานค้าง)
+    const menuItems = () => [...state.config.forms, ...customTiles()];
+    const boxInfo = key => [...menuItems(), ...CONCEPTS].find(f => f.key === key) || { key, icon: '📌', color: '#16a34a', title: key };
     // งานที่ต้องแจ้งเตือน = ยังไม่กดรับทราบ
     const unread = () => state.tasks.filter(t => !t.acknowledged_at);
 
