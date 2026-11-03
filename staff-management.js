@@ -120,14 +120,23 @@
             const v = key === 'room' ? roomOf(e) : e[key];
             return `<span class="sm-wrap">${esc(v || '-')}</span>`;
         };
-        $('smHead').innerHTML = `<th>บริษัท</th><th>สถานะปัจจุบัน</th><th>ชื่อเล่น</th><th>ชื่อพนักงาน</th>${extra.map(f => `<th>${esc(f.label)}</th>`).join('')}<th>งานที่มอบหมาย</th><th></th>`;
+        // งานของคนที่แสดงอยู่ รวมตามหัวเรื่อง (มุมขวา = จำนวนคน) — กดเข้าไปดู/ลบทั้งกลุ่มได้
+        const groups = new Map();
+        rows.forEach(e => tasksOf(e.key).filter(t => t.status !== 'cancelled').forEach(t => {
+            const g = groups.get(t.title) || { title: t.title, tasks: [] };
+            g.tasks.push(t);
+            groups.set(t.title, g);
+        }));
+        state.groups = [...groups.values()].sort((a, b) => b.tasks.length - a.tasks.length);
+        const groupChips = state.groups.map((g, i) => `<button type="button" class="sm-group" data-group="${i}" title="${esc(`${g.title} · ${g.tasks.length} คน`)}"><span>${esc(g.title)}</span><i>${g.tasks.length}</i></button>`).join('');
+        $('smHead').innerHTML = `<th>บริษัท</th><th>สถานะปัจจุบัน</th><th>ชื่อเล่น</th><th>ชื่อพนักงาน</th>${extra.map(f => `<th>${esc(f.label)}</th>`).join('')}<th class="sm-tasks-head">งานที่มอบหมาย ${groupChips ? `<span class="sm-groups">${groupChips}</span>` : ''}</th><th></th>`;
         const span = 6 + extra.length;
         if (!rows.length) { $('smRows').innerHTML = `<tr><td colspan="${span}" class="fa-empty">ไม่พบพนักงานตามตัวกรอง</td></tr>`; return; }
         $('smRows').innerHTML = rows.map(e => {
             const list = tasksOf(e.key).filter(t => t.status !== 'cancelled');
             const pills = list.slice(0, 6).map(t => {
                 const stages = stagesOf(t);
-                return `<span class="sm-task-pill ${esc(t.status)}" title="${esc(`${t.title} · ${stages.map(s => s[1]).join(' · ')}`)}"><span class="sm-task-title">${esc(t.title)}</span>${stages.map(([cls, text]) => `<i class="sm-ack ${cls}">${text}</i>`).join('')}</span>`;
+                return `<button type="button" class="sm-task-pill ${esc(t.status)}" data-task-open="${t.id}" title="${esc(`${t.title} · ${stages.map(s => s[1]).join(' · ')} — กดเพื่อดู/ลบ`)}"><span class="sm-task-title">${esc(t.title)}</span>${stages.map(([cls, text]) => `<i class="sm-ack ${cls}">${text}</i>`).join('')}</button>`;
             }).join('')
                 + (list.length > 6 ? `<span class="sm-task-pill more">+${list.length - 6}</span>` : '');
             return `<tr>
@@ -300,6 +309,68 @@
             </article>`).join('') : '<p class="fa-empty">ยังไม่มีงาน — สร้างงานใหม่ด้านบน</p>';
     }
 
+    // ---------------------------------------------------------------- งานกลุ่มเดียวกัน (หัวเรื่องเดียวกัน) / งานรายคน → ดูและลบ
+    const personOf = t => state.byKey.get(t.employee_key) || { fullname: t.fullname, nickname: '', company: t.company };
+    function openGroup(index) {
+        const g = state.groups?.[index];
+        if (!g) return;
+        state.current = null;
+        state.mode = 'group';
+        state.groupTitle = g.title;
+        $('smDetail').innerHTML = `
+            <header class="fa-detail-head">
+                <div><h2>${esc(g.title)}</h2><p>มอบหมายให้ ${g.tasks.length} คน (ในรายการที่กรองอยู่)</p></div>
+                <button type="button" class="fa-close" data-close aria-label="ปิด">×</button>
+            </header>
+            <div class="fa-detail-body">
+                <div class="sm-group-actions">
+                    <button type="button" class="fa-btn sm-danger" data-del-group>🗑 ลบงานนี้ทั้งหมด (${g.tasks.length} คน)</button>
+                    <span class="sm-meta">ลบแล้วงานจะหายจากหน้าระบบจัดการองค์กรของพนักงานด้วย</span>
+                </div>
+                <table class="sm-group-table"><thead><tr><th>พนักงาน</th><th>บริษัท</th><th>ขั้นตอน</th><th></th></tr></thead><tbody>
+                ${g.tasks.map(t => {
+                    const p = personOf(t);
+                    return `<tr><td><b>${esc(p.fullname)}</b>${p.nickname ? ` <span class="fa-type">${esc(p.nickname)}</span>` : ''}</td><td>${esc(p.company || '-')}</td>
+                        <td><div class="sm-stages">${stagesOf(t).map(([cls, text]) => `<i class="sm-ack ${cls}">${text}</i>`).join('')}</div></td>
+                        <td><button type="button" class="fa-btn fa-btn-ghost" data-del-task="${t.id}">ลบออก</button></td></tr>`;
+                }).join('')}
+                </tbody></table>
+            </div>`;
+        if (!$('smDialog').open) $('smDialog').showModal();
+    }
+    function openTaskInfo(id) {
+        const t = state.data.tasks.find(x => x.id === Number(id));
+        if (!t) return;
+        const p = personOf(t);
+        state.current = t.employee_key;
+        state.mode = 'task';
+        $('smDetail').innerHTML = `
+            <header class="fa-detail-head">
+                <div><h2>${esc(t.title)}</h2><p>${esc(p.fullname)}${p.nickname ? ` (${esc(p.nickname)})` : ''} · ${esc(t.box_title || '')} · มอบหมายโดย ${esc(t.created_by || '-')} ${esc(when(t.created_at))}</p></div>
+                <button type="button" class="fa-close" data-close aria-label="ปิด">×</button>
+            </header>
+            <div class="fa-detail-body">
+                <div class="sm-stages">${stagesOf(t).map(([cls, text]) => `<i class="sm-ack ${cls}">${text}</i>`).join('')}</div>
+                ${t.detail ? `<p class="sm-task-detail">${esc(t.detail)}</p>` : ''}
+                ${responseHtml(t)}
+                <div class="sm-group-actions">
+                    <button type="button" class="fa-btn sm-danger" data-del-task="${t.id}">🗑 ลบงานนี้ออกจาก ${esc(p.fullname)}</button>
+                    <button type="button" class="fa-btn" data-goto-plan="${esc(t.employee_key)}">จัดงานของคนนี้</button>
+                    ${(t.fields || []).length || (t.uploads || []).length ? `<button type="button" class="fa-btn" data-goto-check="${esc(t.employee_key)}">ตรวจเอกสาร</button>` : ''}
+                </div>
+            </div>`;
+        if (!$('smDialog').open) $('smDialog').showModal();
+    }
+    async function deleteTasks(ids, label) {
+        if (!ids.length || !confirm(`${label}?\nพนักงานจะไม่เห็นงานนี้ในหน้าระบบจัดการองค์กรอีก`)) return false;
+        const { deleted } = await request('/tasks/delete', { method: 'POST', body: JSON.stringify({ ids }) });
+        const gone = new Set(ids.map(Number));
+        state.data.tasks = state.data.tasks.filter(t => !gone.has(t.id));
+        render();
+        toast(`ลบงานแล้ว ${deleted} รายการ`);
+        return true;
+    }
+
     // ขั้นตอนของงาน: ยังไม่รับทราบ → รับทราบแล้ว → ส่งข้อมูลแล้ว → ตรวจสอบแล้ว
     function stagesOf(t) {
         if (!t.acknowledged_at && !t.submitted_at) return [['unread', 'ยังไม่รับทราบ']];
@@ -465,6 +536,26 @@
         if (event.target.closest('[data-remove]')) return event.target.closest('.sm-builder-row').remove();
         const review = event.target.closest('[data-review]');
         if (review) return reviewTask(review);
+        const delGroup = event.target.closest('[data-del-group]');
+        const delTask = event.target.closest('[data-del-task]');
+        if (delGroup || delTask) {
+            const button = delGroup || delTask;
+            button.disabled = true;
+            try {
+                const group = state.mode === 'group' ? state.groups.find(g => g.title === state.groupTitle) : null;
+                const ids = delGroup ? group.tasks.map(t => t.id) : [Number(delTask.dataset.delTask)];
+                const label = delGroup ? `ลบงาน "${state.groupTitle}" ทั้งหมด ${ids.length} คน` : 'ลบงานนี้ออกจากพนักงานคนนี้';
+                if (await deleteTasks(ids, label)) {
+                    const again = state.mode === 'group' && state.groups.findIndex(g => g.title === state.groupTitle);
+                    if (state.mode === 'group' && again >= 0) openGroup(again); else $('smDialog').close();
+                }
+            } catch (error) { toast(error.message, true); } finally { button.disabled = false; }
+            return;
+        }
+        const gotoPlan = event.target.closest('[data-goto-plan]');
+        if (gotoPlan) { state.mode = 'plan'; return openPlan(gotoPlan.dataset.gotoPlan); }
+        const gotoCheck = event.target.closest('[data-goto-check]');
+        if (gotoCheck) return openCheck(gotoCheck.dataset.gotoCheck);
         const view = event.target.closest('[data-view]');
         if (view) { try { const url = await fileUrl(view.dataset.view); window.open(url, '_blank'); } catch (error) { toast(error.message, true); } return; }
         const file = event.target.closest('[data-file]');
@@ -488,6 +579,10 @@
         if (plan) { state.mode = 'plan'; return openPlan(plan.dataset.plan); }
         const checkBtn = event.target.closest('[data-check]');
         if (checkBtn) return openCheck(checkBtn.dataset.check);
+        const groupBtn = event.target.closest('[data-group]');
+        if (groupBtn) return openGroup(Number(groupBtn.dataset.group));
+        const taskPill = event.target.closest('[data-task-open]');
+        if (taskPill) return openTaskInfo(taskPill.dataset.taskOpen);
         const action = event.target.closest('[data-action]')?.dataset.action;
         if (action === 'refresh') load(true);
         if (action === 'clear-filters') {

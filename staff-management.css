@@ -22,6 +22,20 @@
 .sm-ack.read { background: #06c755; color: #fff; }
 .sm-ack.sent { background: #1d4ed8; color: #fff; }
 .sm-ack.unread { background: #fff; color: #9a5b00; border: 1px dashed #e7b45c; }
+/* หัวคอลัมน์งาน: รวมงานของคนที่แสดงอยู่ */
+#smHead th.sm-tasks-head { white-space: normal; }
+.sm-groups { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-left: 8px; vertical-align: middle; }
+.sm-group { display: inline-flex; align-items: center; gap: 6px; max-width: 320px; padding: 3px 4px 3px 10px; border: 1px solid #c7cbf5; border-radius: 999px; background: #fff; color: var(--fa-brand); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.sm-group span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sm-group i { flex: none; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--fa-brand); color: #fff; font-style: normal; font-size: 11px; display: inline-grid; place-items: center; }
+.sm-group:hover { background: var(--fa-brand-soft); }
+button.sm-task-pill { font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; }
+button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cbf5; }
+.sm-group-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sm-danger { background: var(--fa-bad-soft); border-color: #f1b7b1; color: var(--fa-bad); }
+.sm-danger:hover { background: var(--fa-bad); color: #fff; border-color: var(--fa-bad); }
+.sm-group-table td, .sm-group-table th { padding: 8px 10px; }
+.sm-task-detail { margin: 0; white-space: pre-line; font-size: 13.5px; }
 .sm-task-pill.submitted { background: #e8efff; color: #1d4ed8; border-color: #b9cbf6; }
 .sm-ack.checked { background: #067647; color: #fff; }
 .sm-actions { white-space: nowrap; }
