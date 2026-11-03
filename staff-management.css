@@ -16,6 +16,12 @@
 .sm-task-pill.doing { background: #e8efff; color: #1d4ed8; border-color: #b9cbf6; }
 .sm-task-pill.done { background: var(--fa-ok-soft); color: var(--fa-ok); border-color: #a7dcbd; }
 .sm-task-pill.cancelled { background: #eef1f3; color: var(--fa-muted); text-decoration: line-through; }
+.sm-task-pill { display: inline-flex !important; align-items: center; gap: 6px; max-width: 420px !important; }
+.sm-task-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sm-ack { flex: none; padding: 0 6px; border-radius: 999px; font-style: normal; font-size: 10.5px; font-weight: 800; line-height: 16px; }
+.sm-ack.read { background: #06c755; color: #fff; }
+.sm-ack.sent { background: #1d4ed8; color: #fff; }
+.sm-ack.unread { background: #fff; color: #9a5b00; border: 1px dashed #e7b45c; }
 .sm-task-pill.more { background: #eef1f3; color: var(--fa-muted); }
 .sm-plan { background: var(--fa-brand); border-color: var(--fa-brand); color: #fff; white-space: nowrap; }
 .sm-plan:hover { color: #fff; filter: brightness(1.1); }

@@ -125,7 +125,12 @@
         if (!rows.length) { $('smRows').innerHTML = `<tr><td colspan="${span}" class="fa-empty">ไม่พบพนักงานตามตัวกรอง</td></tr>`; return; }
         $('smRows').innerHTML = rows.map(e => {
             const list = tasksOf(e.key).filter(t => t.status !== 'cancelled');
-            const pills = list.slice(0, 6).map(t => `<span class="sm-task-pill ${esc(t.status)}" title="${esc(`${t.title} · ${t.status_label}`)}">${esc(t.title)}</span>`).join('')
+            // ป้ายต่อท้ายหัวเรื่อง: พนักงานส่งงานแล้ว / รับทราบแล้ว / ยังไม่รับทราบ
+            const ackOf = t => t.submitted_at ? ['sent', '✓ ส่งแล้ว'] : t.acknowledged_at ? ['read', '✓ รับทราบแล้ว'] : ['unread', 'ยังไม่รับทราบ'];
+            const pills = list.slice(0, 6).map(t => {
+                const [cls, text] = ackOf(t);
+                return `<span class="sm-task-pill ${esc(t.status)}" title="${esc(`${t.title} · ${t.status_label} · ${text}`)}"><span class="sm-task-title">${esc(t.title)}</span><i class="sm-ack ${cls}">${text}</i></span>`;
+            }).join('')
                 + (list.length > 6 ? `<span class="sm-task-pill more">+${list.length - 6}</span>` : '');
             return `<tr>
                 <td>${esc(e.company || '-')}</td>
