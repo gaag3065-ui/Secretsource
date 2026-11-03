@@ -225,19 +225,18 @@ const services = [
         category: 'people',
         title: 'จัดการพนักงาน',
         shortTitle: 'จัดการพนักงาน',
-        description: 'จัดการงานตามหน้าที่ พื้นที่ ภาระงาน และติดตามงานของพนักงานแต่ละคน (กำลังออกแบบ)',
+        description: 'รายชื่อพนักงานจากข้อมูลเบื้องต้น จัดงาน มอบหมาย และติดตามงานของพนักงานแต่ละคน',
         icon: 'users',
         color: '#4f46e5',
         soft: '#eef0ff',
         tags: [],
-        // หน้าเริ่มต้น (แสดงแนวคิด) — จะต่อยอดภายหลัง
         directOpen: true,
         tasks: [
             {
                 route: 'staff-management',
                 title: 'จัดการพนักงาน',
                 icon: 'users',
-                page: 'staff-management.html?v=20261102-2'
+                page: 'staff-management.html?v=20261103-1'
             }
         ]
     }
@@ -363,9 +362,8 @@ if (basePage === 'assets.html') {
     return permissions.ViewAssets === true;
 }
 
-// จัดการพนักงาน: ตอนนี้เป็นหน้าแนวคิด เปิดได้ทุกบัญชีที่ล็อกอินพอร์ทัล
 if (basePage === 'staff-management.html') {
-    return true;
+    return permissions.ManageStaff === true;
 }
 
 if (basePage === 'monitoring.html') {

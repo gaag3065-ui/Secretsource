@@ -1,0 +1,47 @@
+/* จัดการพนักงาน — ใช้โครงเดียวกับหน้าออกกำลังกาย (fitness-admin.css) เปลี่ยนสีหลักเป็นม่วง */
+:root { --fa-brand: #4f46e5; --fa-brand-soft: #eef0ff; }
+.sm-toolbar select { max-width: 190px; }
+#smSearch { flex: 1; min-width: 220px; border: 1px solid var(--fa-line); border-radius: 9px; padding: 7px 10px; background: #fff; }
+.sm-toolbar select.is-set { border-color: var(--fa-brand); background: var(--fa-brand-soft); color: var(--fa-brand); font-weight: 600; }
+.sm-count { margin: -4px 0 10px; color: var(--fa-muted); font-size: 12px; }
+.sm-detail-cell { max-width: 220px; white-space: pre-line; font-size: 12px; color: #34404f; }
+.sm-room { white-space: nowrap; }
+.sm-tasks { display: flex; flex-wrap: wrap; gap: 4px; max-width: 280px; }
+.sm-task-pill { display: inline-block; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; border: 1px solid transparent; }
+.sm-task-pill.assigned { background: var(--fa-warn-soft); color: var(--fa-warn); border-color: #f2cf93; }
+.sm-task-pill.doing { background: #e8efff; color: #1d4ed8; border-color: #b9cbf6; }
+.sm-task-pill.done { background: var(--fa-ok-soft); color: var(--fa-ok); border-color: #a7dcbd; }
+.sm-task-pill.cancelled { background: #eef1f3; color: var(--fa-muted); text-decoration: line-through; }
+.sm-task-pill.more { background: #eef1f3; color: var(--fa-muted); }
+.sm-plan { background: var(--fa-brand); border-color: var(--fa-brand); color: #fff; white-space: nowrap; }
+.sm-plan:hover { color: #fff; filter: brightness(1.1); }
+
+.sm-dialog { width: min(980px, calc(100vw - 24px)); }
+.sm-info { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.sm-info div { border: 1px solid var(--fa-line); border-radius: 10px; padding: 8px 10px; background: #fbfcfc; }
+.sm-info small { display: block; color: var(--fa-muted); font-size: 11px; }
+.sm-info b { font-size: 13px; white-space: pre-line; }
+.sm-section h3 { margin: 0 0 8px; font-size: 15px; }
+.sm-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; border: 1px solid var(--fa-line); border-radius: 12px; padding: 14px; background: #fbfbff; }
+.sm-form label { display: grid; gap: 4px; font-weight: 600; font-size: 13px; }
+.sm-form .sm-wide { grid-column: 1 / -1; }
+.sm-form input, .sm-form select, .sm-form textarea { border: 1px solid var(--fa-line); border-radius: 9px; padding: 8px 10px; background: #fff; font-weight: 400; }
+.sm-form textarea { min-height: 80px; resize: vertical; }
+.sm-form .sm-req { color: var(--fa-bad); }
+.sm-form-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.sm-form-foot label { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
+.sm-task-list { display: grid; gap: 8px; }
+.sm-task { border: 1px solid var(--fa-line); border-left: 4px solid var(--fa-warn); border-radius: 10px; padding: 10px 12px; background: #fff; }
+.sm-task.doing { border-left-color: #1d4ed8; }
+.sm-task.done { border-left-color: var(--fa-ok); }
+.sm-task.cancelled { border-left-color: #b8c0c8; opacity: .75; }
+.sm-task header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.sm-task header b { font-size: 14px; }
+.sm-task .sm-meta { color: var(--fa-muted); font-size: 11.5px; }
+.sm-task p { margin: 6px 0; white-space: pre-line; font-size: 13px; }
+.sm-task-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.sm-task-actions select, .sm-task-actions input { border: 1px solid var(--fa-line); border-radius: 8px; padding: 5px 8px; }
+.sm-task-actions input { flex: 1; min-width: 180px; }
+.sm-prio { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 6px; background: #eef1f3; color: #4b5866; }
+.sm-prio.p-high { background: #fff4e0; color: #a35d00; }
+.sm-prio.p-urgent { background: var(--fa-bad-soft); color: var(--fa-bad); }
