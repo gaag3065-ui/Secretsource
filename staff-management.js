@@ -375,7 +375,7 @@
     const VARS = ['{ชื่อ}', '{ชื่อเล่น}', '{รหัสพนักงาน}', '{รหัสประกัน}', '{บริษัท}'];
     const fill = (text, e) => text.replace(/\{ชื่อ\}/g, e.fullname).replace(/\{ชื่อเล่น\}/g, e.nickname || e.fullname)
         .replace(/\{รหัสพนักงาน\}/g, e.employeeId || e.centralId || '').replace(/\{รหัสประกัน\}/g, e.insuranceCode || '').replace(/\{บริษัท\}/g, e.company || '');
-    const roomLabel = r => `${r.customName || r.lineName || 'ไม่มีชื่อ'}${r.customName && r.lineName ? ` (LINE: ${r.lineName})` : ''} · ${r.channelName}`;
+    const roomLabel = r => `${r.customName || r.managerName || r.lineName || 'ไม่มีชื่อ'}${r.managerName && r.managerName !== (r.customName || r.managerName) ? ` [OA: ${r.managerName}]` : ''}${r.lineName ? ` (LINE: ${r.lineName})` : ''} · ${r.channelName}`;
     async function openBroadcast() {
         const people = filtered();
         if (!people.length) return toast('ไม่มีพนักงานในรายการ', true);
@@ -457,6 +457,7 @@
 
     // ---------------------------------------------------------------- จับคู่ห้องแชท LINE ↔ พนักงาน → แท็ก = รหัสพนักงาน (ส่วนกลาง) + ชื่อในหน้า Monitoring
     const LM_GROUPS = [['sure', '✅ ตรงแน่นอน', true], ['check', '⚠️ ต้องตรวจ (ชื่อใกล้กันหลายคน / หลายห้องชี้คนเดียว)', false], ['none', '❔ หาคนไม่เจอ (เลือกเองได้)', false]];
+    const roomName = r => r.customName || r.managerName || r.lineName || 'ไม่มีชื่อ';
     const personLabel = p => `${p.employeeId} · ${p.fullname}${p.nickname ? ` (${p.nickname})` : ''}`;
     async function openLineMatch() {
         state.mode = 'line-match';
@@ -477,7 +478,6 @@
         const { rows, people } = state.lineMatch;
         const withId = Object.values(people).filter(p => p.employeeId);
         const tagged = rows.filter(x => x.status === 'tagged').length;
-        const roomName = r => r.customName || r.lineName || 'ไม่มีชื่อ';
         $('smLmBody').innerHTML = `
             <p class="sm-meta">ห้องทั้งหมด ${rows.length} · มีแท็กรหัสพนักงานแล้ว ${tagged} · พนักงานที่มีรหัส (ส่วนกลาง) ${withId.length} คน</p>
             <datalist id="smLmPeople">${withId.map(p => `<option value="${esc(personLabel(p))}"></option>`).join('')}</datalist>
@@ -488,7 +488,7 @@
                     <table class="sm-group-table"><thead><tr><th></th><th>ห้องแชท (Monitoring)</th><th>พนักงาน (รหัสส่วนกลาง · ชื่อ)</th></tr></thead><tbody>
                     ${list.map(({ x, i }) => { const p = x.best && people[x.best.key]; return `<tr>
                         <td><input type="checkbox" data-lm-pick="${i}" data-lm-group="${status}" ${on && p ? 'checked' : ''}></td>
-                        <td><b>${esc(roomName(x.room))}</b><small>${esc([x.room.customName && x.room.lineName ? `LINE: ${x.room.lineName}` : '', x.room.channelName].filter(Boolean).join(' · '))}</small></td>
+                        <td><b>${esc(roomName(x.room))}</b><small>${esc([x.room.managerName && x.room.customName ? `OA: ${x.room.managerName}` : '', (x.room.customName || x.room.managerName) && x.room.lineName ? `LINE: ${x.room.lineName}` : '', x.room.channelName].filter(Boolean).join(' · '))}</small></td>
                         <td><input class="sm-lm-person" list="smLmPeople" data-lm-person="${i}" value="${p ? esc(personLabel(p)) : ''}" placeholder="พิมพ์รหัสหรือชื่อเพื่อค้นหา">${x.dup ? '<small>มีห้องอื่นชี้คนนี้ด้วย</small>' : ''}</td></tr>`; }).join('')}
                     </tbody></table></section>`;
             }).join('')}
@@ -505,8 +505,8 @@
             const x = rows[box.dataset.lmPick];
             const label = $('smLmBody').querySelector(`[data-lm-person="${box.dataset.lmPick}"]`).value.trim();
             const key = byLabel.get(label);
-            if (!key) return bad.push(x.room.customName || x.room.lineName);
-            pairs.push({ key, room: `${x.room.channelId}|${x.room.conversationId}`, roomName: x.room.customName || x.room.lineName });
+            if (!key) return bad.push(roomName(x.room));
+            pairs.push({ key, room: `${x.room.channelId}|${x.room.conversationId}`, roomName: roomName(x.room) });
         });
         if (bad.length) return toast(`เลือกพนักงานจากรายการให้ถูกต้อง: ${bad.slice(0, 3).join(', ')}${bad.length > 3 ? '…' : ''}`, true);
         if (!pairs.length) return toast('ยังไม่ได้เลือกห้อง', true);
