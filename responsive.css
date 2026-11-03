@@ -2576,7 +2576,7 @@ textarea {
 
 .insurance-open-treatment-view .open-case-search-section .employee-detail-row {
     min-height: 36px !important;
-    grid-template-columns: minmax(120px, auto) minmax(60px, auto) auto !important;
+    grid-template-columns: 150px minmax(60px, auto) auto !important;   /* ป้ายกว้างเท่ากันทุกแถว ค่าเรียงตรงกัน */
     justify-content: start !important;
     gap: 7px !important;
     padding: 5px 0 !important;
@@ -2890,3 +2890,17 @@ body.login-page {
         grid-template-columns: minmax(0, 1fr) !important;
     }
 }
+
+/* สรุปวงเงิน OPD/IPD + ยอดหักแต่ละครั้ง (การ์ดพนักงาน) — กินเต็มความกว้างของการ์ด */
+.limit-summary { grid-column: 1 / -1; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e3e8f0; }
+.limit-summary-alert { margin-bottom: 10px; padding: 9px 12px; border-radius: 8px; background: #fdecec; border: 1px solid #f5b5b5; color: #b42318; font-weight: 700; font-size: 14px; }
+.limit-summary-ok { margin-bottom: 10px; padding: 7px 12px; border-radius: 8px; background: #ecfdf3; color: #067647; font-weight: 700; font-size: 13px; }
+.limit-money-table { display: grid; grid-template-columns: 150px repeat(3, minmax(110px, 160px)); gap: 6px 16px; align-items: center; font-size: 14px; }
+.limit-money-table > span, .limit-money-table > b:not(.limit-row) { text-align: right; font-variant-numeric: tabular-nums; }
+.limit-money-table > b:nth-child(-n+4) { color: #5b6b82; font-size: 12px; }
+.limit-money-table .limit-balance { font-weight: 700; color: #173b8f; }
+.limit-summary-head { display: flex; align-items: center; gap: 10px; margin: 12px 0 6px; font-size: 14px; }
+@media (max-width: 600px) {
+    .limit-money-table { grid-template-columns: 92px repeat(3, minmax(0, 1fr)); gap: 4px 8px; font-size: 12px; }
+}
+.limit-summary-text { margin: 0; padding: 10px 12px; background: #f7f9fc; border: 1px solid #e3e8f0; border-radius: 8px; font: 14px/1.6 inherit; font-family: inherit; white-space: pre-wrap; }

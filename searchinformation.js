@@ -240,6 +240,76 @@ function applySelectedEmployee(employee, selectedItem, options = {}) {
     );
 }
 
+// ---------------------------------------------------------------- สรุปวงเงิน: ยอดหักแต่ละครั้ง (ทุกเคส) เทียบกับยอดคงเหลือในชีต
+const limitNumber = value => {
+    const number = Number(String(value ?? '').replace(/[,\s฿บาท]/g, ''));
+    return Number.isFinite(number) ? number : 0;
+};
+const limitMoney = value => limitNumber(value).toLocaleString('th-TH', { maximumFractionDigits: 2 });
+const hasLimitValue = value => String(value ?? '').trim() !== '' && String(value).trim() !== '-';
+
+// "26/08/2026 19:23" / "18/4/2026, 0:00:00" → { time, text: "26-8-69" }
+function parseTreatmentDate(value) {
+    const match = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String(value || ''));
+    if (!match) return { time: Infinity, text: 'ไม่ระบุวันที่' };
+    const [, day, month, year] = match.map(Number);
+    const ad = year > 2400 ? year - 543 : year;
+    return { time: new Date(ad, month - 1, day).getTime(), text: `${day}-${month}-${String(ad + 543).slice(-2)}` };
+}
+
+function buildLimitSummary(employee) {
+    const cases = new Map();
+    (Array.isArray(employee.history) ? employee.history : []).forEach(item => cases.set(String(item.CaseIdNew), item)); // เหตุการณ์ล่าสุดของแต่ละเคส
+    const visits = [...cases.entries()].map(([caseId, item]) => {
+        const dental = limitNumber(item.DentalOPD);
+        const opd = limitNumber(item.PPUsageOPD) + limitNumber(item.SLKUsageOpdThB);
+        const ipd = limitNumber(item.PPUsageIPD) + limitNumber(item.SLKUsageIpdThB);
+        return { caseId, date: parseTreatmentDate(item.treatmentDateTime), opd, ipd, dental, total: opd + ipd + dental };
+    }).filter(visit => visit.total > 0)
+        .sort((a, b) => a.date.time - b.date.time || Number(a.caseId) - Number(b.caseId));
+
+    const opdLimit = limitNumber(employee.colAV), ipdLimit = limitNumber(employee.colAW);
+    const opdUsed = visits.reduce((sum, v) => sum + v.opd + v.dental, 0);
+    const ipdUsed = visits.reduce((sum, v) => sum + v.ipd, 0);
+    const checks = [
+        ['OPD', opdLimit - opdUsed, employee.colBA],
+        ['IPD', ipdLimit - ipdUsed, employee.colBB]
+    ].filter(([, , sheet]) => hasLimitValue(sheet));
+    const mismatches = checks.filter(([, calculated, sheet]) => Math.abs(calculated - limitNumber(sheet)) > 0.5);
+
+    const lines = [
+        `📌วงเงินค่ารักษาพยาบาล Size ${employee.colD || '-'}  รวม ${limitMoney(opdLimit + ipdLimit)} บาท`,
+        `- ผู้ป่วยใน IPD วงเงิน ${limitMoney(ipdLimit)}  คงเหลือ ${limitMoney(employee.colBB)} บาท`,
+        `- ผู้ป่วยนอก OPD วงเงิน ${limitMoney(opdLimit)}  คงเหลือ ${limitMoney(employee.colBA)} บาท`,
+        ...visits.map(v => {
+            const parts = [v.opd && `OPD ${limitMoney(v.opd)}`, v.dental && `ทำฟัน OPD ${limitMoney(v.dental)}`, v.ipd && `IPD ${limitMoney(v.ipd)}`].filter(Boolean);
+            return `${v.date.text}  ค่ารักษา ${limitMoney(v.total)} บาท (${parts.join(' · ')})`;
+        })
+    ];
+    const text = lines.join('\n');
+
+    const warning = mismatches.length
+        ? `<div class="limit-summary-alert">⚠️ ยอดคงเหลือไม่ตรง — ${mismatches.map(([type, calculated, sheet]) =>
+            `${type}: คำนวณจากประวัติได้ ${limitMoney(calculated)} แต่ชีตแสดง ${limitMoney(sheet)} (ต่าง ${limitMoney(Math.abs(calculated - limitNumber(sheet)))})`).join(' · ')}</div>`
+        : (checks.length ? '<div class="limit-summary-ok">✓ ยอดคงเหลือตรงกับประวัติการรักษา</div>' : '');
+
+    const money = `
+        <div class="limit-money-table">
+            <span></span><b>วงเงิน</b><b>ใช้ไป (จากประวัติ)</b><b>คงเหลือ</b>
+            <b class="limit-row">OPD (รวมทำฟัน)</b><span>${limitMoney(opdLimit)}</span><span>${limitMoney(opdUsed)}</span><span class="limit-balance">${escapeSearchHtml(employee.colBA || '-')}</span>
+            <b class="limit-row">IPD</b><span>${limitMoney(ipdLimit)}</span><span>${limitMoney(ipdUsed)}</span><span class="limit-balance">${escapeSearchHtml(employee.colBB || '-')}</span>
+        </div>`;
+
+    return `
+        <div class="limit-summary">
+            ${warning}
+            ${money}
+            <div class="limit-summary-head"><b>สรุปการหักวงเงินแต่ละครั้ง (${visits.length} ครั้ง)</b>
+                <button type="button" class="employee-copy-button" data-copy-value="${escapeSearchHtml(text)}">Copy ทั้งหมด</button></div>
+            <pre class="limit-summary-text">${escapeSearchHtml(text)}</pre>
+        </div>`;
+}
+
 function createEmployeeResultItem(employee, options = {}) {
     const employmentStatus = getEmploymentStatus(employee.colI);
     const item = document.createElement('div');
@@ -273,10 +343,7 @@ function createEmployeeResultItem(employee, options = {}) {
             ${createEmployeeInformationRow('SIZE', employee.colD)}
             ${createEmployeeInformationRow('Insurance ID', employee.colC)}
             ${createEmployeeInformationRow('สถานที่ทำงาน', employee.colK)}
-            ${createEmployeeInformationRow('วงเงิน OPD', employee.colAV)}
-            ${createEmployeeInformationRow('วงเงิน IPD', employee.colAW)}
-            ${createEmployeeInformationRow('วงเงิน OPD คงเหลือ', employee.colBA)}
-            ${createEmployeeInformationRow('วงเงิน IPD คงเหลือ', employee.colBB)}
+            ${buildLimitSummary(employee)}
         </div>
     `;
 
