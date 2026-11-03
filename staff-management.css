@@ -194,3 +194,5 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 .sm-fe-move button { width: 28px; height: 28px; border: 1px solid #d6e4f5; border-radius: 7px; background: #f8fbff; cursor: pointer; }
 .sm-fe-move [data-fe-del] { color: #b42318; }
 @media (max-width: 700px) { .sm-form .sm-fe-row { grid-template-columns: 1fr 1fr; } }
+.sm-dest { margin: 10px 0; padding: 10px 14px; border-radius: 10px; background: #ecfdf3; border: 1px solid #b9e6c6; font-size: 13px; }
+.sm-section-pick small { color: #6b7280; font-weight: 400; }

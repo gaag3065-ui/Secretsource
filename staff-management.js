@@ -233,6 +233,9 @@
                             <label><input type="radio" name="kind" value="info"> งานเก็บข้อมูล (ให้กรอกข้อมูล)</label>
                             <label><input type="radio" name="kind" value="info_upload"> งานเก็บข้อมูลและอัปโหลดเอกสาร</label>
                         </div>
+                        <label class="sm-wide sm-section-pick" data-section hidden>เก็บข้อมูลไว้ที่ส่วนงาน <span class="sm-req">*</span>
+                            <select name="section"><option value="">— เลือกส่วนงาน —</option>${Object.entries(state.data.sections || {}).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select>
+                            <small>ระบบสร้าง Google Sheet เก็บข้อมูลที่พนักงานกรอก${'' /* และ */} และโฟลเดอร์เก็บไฟล์ (รูป / PDF) ไว้ในโฟลเดอร์ของส่วนงานนี้ให้ทันทีเมื่อมอบหมายงาน</small></label>
                         <div class="sm-wide sm-builder" data-builder="fields" hidden>
                             <b>ช่องกรอกข้อมูล</b><small>ตั้งหัวเรื่องของแต่ละช่อง เช่น เบอร์โทรศัพท์, เลขบัญชี</small>
                             <div class="sm-builder-rows"></div>
@@ -332,14 +335,14 @@
         const rows = type => [...form.querySelectorAll(`[data-builder="${type}"] .sm-builder-row`)];
         return {
             title: form.title.value, detail: form.detail.value, box: form.box.value, new_box_title: form.new_box_title.value,
-            priority: form.priority.value, due_date: form.due_date.value, kind: form.querySelector('[name=kind]:checked')?.value || 'notice',
+            priority: form.priority.value, due_date: form.due_date.value, section: form.section?.value || "", kind: form.querySelector('[name=kind]:checked')?.value || 'notice',
             bulk: Boolean(form.bulk?.checked),
             fields: rows('fields').map(r => ({ label: r.querySelector('[data-label]').value })),
             uploads: rows('uploads').map(r => ({ label: r.querySelector('[data-label]').value, type: r.querySelector('[data-type]').value }))
         };
     }
     function fillForm(form, d) {
-        ['title', 'detail', 'new_box_title', 'priority', 'due_date'].forEach(k => { if (d[k] !== undefined) form[k].value = d[k]; });
+        ['title', 'detail', 'new_box_title', 'priority', 'due_date', 'section'].forEach(k => { if (d[k] !== undefined && form[k]) form[k].value = d[k]; });
         if (d.box && [...form.box.options].some(o => o.value === d.box)) form.box.value = d.box;
         const kind = form.querySelector(`[name=kind][value="${d.kind || 'notice'}"]`);
         if (kind) kind.checked = true;
@@ -359,7 +362,7 @@
         const t = state.data.tasks.find(x => x.id === Number(id));
         if (!t) return;
         fillForm($('smNewTask'), { title: t.title, detail: t.detail || '', box: t.box || 'quests', new_box_title: '', priority: t.priority || 'ปกติ',
-            due_date: t.due_date || '', kind: t.kind || 'notice', fields: t.fields || [], uploads: t.uploads || [] });
+            due_date: t.due_date || '', section: t.section || '', kind: t.kind || 'notice', fields: t.fields || [], uploads: t.uploads || [] });
         toast(`ใช้หัวเรื่อง "${t.title}" แล้ว — แก้ไขได้ก่อนกดมอบหมาย`);
     }
     // ตัวสร้างแบบฟอร์มงาน: เพิ่ม/ลบช่องกรอกข้อมูลและช่องอัปโหลด
@@ -461,6 +464,8 @@
     function syncBuilder(form) {
         const kind = form.querySelector('[name=kind]:checked').value;
         form.querySelector('.sm-newbox').hidden = form.box.value !== '__new';
+        const sectionPick = form.querySelector('[data-section]');
+        if (sectionPick) sectionPick.hidden = kind === 'notice';
         renderBoxForm(form);
         [['fields', kind !== 'notice'], ['uploads', kind === 'info_upload']].forEach(([type, on]) => {
             const box = form.querySelector(`[data-builder="${type}"]`);
@@ -509,6 +514,7 @@
                     <button type="button" class="fa-btn sm-danger" data-del-group>🗑 ลบงานนี้ทั้งหมด (${g.tasks.length} คน)</button>
                     <span class="sm-meta">ลบแล้วงานจะหายจากหน้าระบบจัดการองค์กรของพนักงานด้วย</span>
                 </div>
+                ${[...new Map(g.tasks.filter(t => t.dest).map(t => [t.dest.sheet, t.dest])).values()].map(d => `<div class="sm-dest">📊 รายงานงานนี้ (${esc(d.section_title)}): <a href="${esc(d.sheet)}" target="_blank" rel="noopener">เปิด Google Sheet ↗</a> · <a href="${esc(d.folder)}" target="_blank" rel="noopener">โฟลเดอร์ไฟล์ ↗</a></div>`).join('')}
                 <table class="sm-group-table"><thead><tr><th>พนักงาน</th><th>บริษัท</th><th>ขั้นตอน</th><th></th></tr></thead><tbody>
                 ${g.tasks.map(t => {
                     const p = personOf(t);
@@ -826,6 +832,7 @@
         const fd = Object.fromEntries(new FormData(form));
         if (!fd.title?.trim()) return toast('กรุณากรอกหัวเรื่องงาน', true);
         if (fd.box === '__new' && !fd.new_box_title?.trim()) return toast('กรุณาตั้งชื่อกล่องใหม่', true);
+        if (fd.kind !== 'notice' && !fd.section) return toast('กรุณาเลือกส่วนงานที่จะเก็บข้อมูลของงานนี้', true);
         const rowsOf = type => [...form.querySelectorAll(`[data-builder="${type}"] .sm-builder-row`)];
         fd.fields = fd.kind === 'notice' ? [] : rowsOf('fields').map(r => ({ label: r.querySelector('[data-label]').value.trim() })).filter(f => f.label);
         fd.uploads = fd.kind !== 'info_upload' ? [] : rowsOf('uploads').map(r => ({ label: r.querySelector('[data-label]').value.trim(), type: r.querySelector('[data-type]').value })).filter(u => u.label);
@@ -841,7 +848,9 @@
         const button = form.querySelector('button[type=submit]');
         button.disabled = true;
         try {
-            const { tasks, boxes } = await request('/tasks', { method: 'POST', body: JSON.stringify({ ...fd, bulk: undefined, employee_keys: keys }) });
+            const { tasks, boxes, destError } = await request('/tasks', { method: 'POST', body: JSON.stringify({ ...fd, bulk: undefined, employee_keys: keys }) });
+            if (destError) alert(destError);
+            else if (tasks[0]?.dest) toast(`สร้างชีตเก็บข้อมูลใน "${tasks[0].dest.section_title}" แล้ว`);
             state.data.tasks.push(...tasks);
             if (boxes) state.data.boxes = boxes;
             state.drafts.delete(state.current);
