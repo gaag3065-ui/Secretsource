@@ -155,6 +155,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gd-tag.is-urgent { background: #fdece7; color: var(--gd-bad); }
 .gd-task-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .gd-task-form { display: grid; gap: 4px; margin-top: 8px; }
+.gd-ack-go { background: #06c755; border-color: #06c755; color: #fff; box-shadow: 0 6px 14px rgba(6, 199, 85, .25); }
+.gd-ack-go:hover { background: #05a847; }
 .gd-ack { width: 100%; margin-top: 14px; padding: 13px; font-size: 16px; background: #06c755; border-color: #06c755; color: #fff; }
 .gd-ack:hover { background: #05a847; }
 .gd-answer { display: grid; gap: 6px; margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: #f6f8fb; }

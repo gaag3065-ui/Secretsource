@@ -125,11 +125,9 @@
         if (!rows.length) { $('smRows').innerHTML = `<tr><td colspan="${span}" class="fa-empty">ไม่พบพนักงานตามตัวกรอง</td></tr>`; return; }
         $('smRows').innerHTML = rows.map(e => {
             const list = tasksOf(e.key).filter(t => t.status !== 'cancelled');
-            // ป้ายต่อท้ายหัวเรื่อง: พนักงานส่งงานแล้ว / รับทราบแล้ว / ยังไม่รับทราบ
-            const ackOf = t => t.submitted_at ? ['sent', '✓ ส่งแล้ว'] : t.acknowledged_at ? ['read', '✓ รับทราบแล้ว'] : ['unread', 'ยังไม่รับทราบ'];
             const pills = list.slice(0, 6).map(t => {
-                const [cls, text] = ackOf(t);
-                return `<span class="sm-task-pill ${esc(t.status)}" title="${esc(`${t.title} · ${t.status_label} · ${text}`)}"><span class="sm-task-title">${esc(t.title)}</span><i class="sm-ack ${cls}">${text}</i></span>`;
+                const stages = stagesOf(t);
+                return `<span class="sm-task-pill ${esc(t.status)}" title="${esc(`${t.title} · ${stages.map(s => s[1]).join(' · ')}`)}"><span class="sm-task-title">${esc(t.title)}</span>${stages.map(([cls, text]) => `<i class="sm-ack ${cls}">${text}</i>`).join('')}</span>`;
             }).join('')
                 + (list.length > 6 ? `<span class="sm-task-pill more">+${list.length - 6}</span>` : '');
             return `<tr>
@@ -139,7 +137,7 @@
                 <td><b>${esc(e.fullname)}</b><small>${esc([e.employeeId || e.centralId, e.insuranceCode].filter(Boolean).join(' · '))}</small></td>
                 ${extra.map(f => `<td>${cell(e, f.key)}</td>`).join('')}
                 <td class="sm-tasks-cell"><div class="sm-tasks">${pills || '<span class="fa-badge dim">ยังไม่มีงาน</span>'}</div></td>
-                <td><button type="button" class="fa-btn sm-plan" data-plan="${esc(e.key)}">จัดงาน</button></td>
+                <td class="sm-actions"><button type="button" class="fa-btn sm-check" data-check="${esc(e.key)}" ${list.some(t => (t.fields || []).length || (t.uploads || []).length || t.submitted_at) ? '' : 'disabled title="ยังไม่มีงานที่ต้องส่งข้อมูล"'}>ตรวจ${list.some(t => t.status === 'submitted') ? ' <i class="sm-dot"></i>' : ''}</button><button type="button" class="fa-btn sm-plan" data-plan="${esc(e.key)}">จัดงาน</button></td>
             </tr>`;
         }).join('');
     }
@@ -302,6 +300,90 @@
             </article>`).join('') : '<p class="fa-empty">ยังไม่มีงาน — สร้างงานใหม่ด้านบน</p>';
     }
 
+    // ขั้นตอนของงาน: ยังไม่รับทราบ → รับทราบแล้ว → ส่งข้อมูลแล้ว → ตรวจสอบแล้ว
+    function stagesOf(t) {
+        if (!t.acknowledged_at && !t.submitted_at) return [['unread', 'ยังไม่รับทราบ']];
+        const out = [['read', '✓ รับทราบแล้ว']];
+        if (t.submitted_at || t.status === 'done') out.push(['sent', '✓ ส่งข้อมูลแล้ว']);
+        if (t.status === 'done') out.push(['checked', '✓ ตรวจสอบแล้ว']);
+        return out;
+    }
+
+    // ---------------------------------------------------------------- ตรวจเอกสารที่พนักงานส่ง (ครบ/ไม่ครบ + ดูรูป/ไฟล์บนเว็บ)
+    const blobCache = new Map();
+    async function fileUrl(ref) {
+        if (blobCache.has(ref)) return blobCache.get(ref);
+        const [id, n] = ref.split('/');
+        const response = await window.authFetch(api(`/tasks/${id}/file/${n}`));
+        if (!response.ok) throw new Error('เปิดไฟล์ไม่ได้');
+        const url = URL.createObjectURL(await response.blob());
+        blobCache.set(ref, url);
+        return url;
+    }
+    function openCheck(key) {
+        const e = state.byKey.get(key);
+        if (!e) return;
+        state.current = key;
+        state.mode = 'check';
+        const list = tasksOf(key).filter(t => (t.fields || []).length || (t.uploads || []).length || t.submitted_at);
+        const check = t => {
+            const files = t.files || [];
+            const missingFields = (t.fields || []).filter(f => !t.response?.[f.id]);
+            const missingUploads = (t.uploads || []).filter(u => !files.some(f => f.slot === u.id));
+            const complete = Boolean(t.submitted_at) && !missingFields.length && !missingUploads.length;
+            return { files, missingFields, missingUploads, complete };
+        };
+        $('smDetail').innerHTML = `
+            <header class="fa-detail-head">
+                <div><h2>ตรวจเอกสาร · ${esc(e.fullname)}${e.nickname ? ` (${esc(e.nickname)})` : ''}</h2><p>${esc([e.employeeId || e.centralId, e.insuranceCode, e.company].filter(Boolean).join(' · '))}</p></div>
+                <button type="button" class="fa-close" data-close aria-label="ปิด">×</button>
+            </header>
+            <div class="fa-detail-body">
+                ${list.length ? list.map(t => {
+                    const c = check(t);
+                    return `<article class="sm-check-task ${c.complete ? 'is-ok' : 'is-wait'}" data-task="${t.id}">
+                        <header>
+                            <div><b>${esc(t.title)}</b> <span class="fa-type">${esc(t.box_title || '')}</span></div>
+                            <div class="sm-stages">${stagesOf(t).map(([cls, text]) => `<i class="sm-ack ${cls}">${text}</i>`).join('')}</div>
+                        </header>
+                        <p class="sm-check-sum">${!t.submitted_at ? '⏳ พนักงานยังไม่ส่งข้อมูล' : c.complete ? '✅ ข้อมูลและเอกสารครบถ้วน' : `⚠️ ไม่ครบ: ${[...c.missingFields.map(f => f.label), ...c.missingUploads.map(u => u.label)].map(esc).join(', ')}`}
+                            ${t.submitted_at ? ` · ส่งเมื่อ ${esc(when(t.submitted_at))}` : ''}</p>
+                        ${(t.fields || []).length ? `<div class="sm-check-fields">${t.fields.map(f => `<div class="${t.response?.[f.id] ? '' : 'is-missing'}"><small>${esc(f.label)}</small><b>${esc(t.response?.[f.id] || 'ยังไม่กรอก')}</b></div>`).join('')}</div>` : ''}
+                        ${(t.uploads || []).map(u => {
+                            const files = c.files.filter(f => f.slot === u.id);
+                            return `<div class="sm-check-slot ${files.length ? '' : 'is-missing'}"><small>${esc(u.label)} · ${u.type === 'pdf' ? 'PDF' : 'รูปภาพ'} · ${files.length ? `${files.length} ไฟล์` : 'ยังไม่อัปโหลด'}</small>
+                                <div class="sm-check-files">${files.map(f => f.mime === 'application/pdf'
+                                    ? `<button type="button" class="sm-pdf" data-file="${t.id}/${f.n}">📄 เปิด PDF ${f.n + 1}${f.password ? `<span>รหัส: ${esc(f.password)}</span>` : ''}</button>`
+                                    : `<button type="button" class="sm-thumb" data-view="${t.id}/${f.n}"><img data-src="${t.id}/${f.n}" alt="${esc(u.label)}"></button>`).join('')}</div></div>`;
+                        }).join('')}
+                        <div class="sm-check-actions">
+                            <input data-field="note" value="${esc(t.note || '')}" placeholder="หมายเหตุถึงพนักงาน / บันทึกการตรวจ">
+                            <button type="button" class="fa-btn fa-btn-primary" data-review="done" ${t.submitted_at ? '' : 'disabled'}>✓ ตรวจสอบแล้ว</button>
+                            <button type="button" class="fa-btn" data-review="reopen" ${t.submitted_at || t.status === 'done' ? '' : 'disabled'}>↩ ให้ส่งใหม่</button>
+                        </div>
+                    </article>`;
+                }).join('') : '<p class="fa-empty">ยังไม่มีงานที่ให้พนักงานส่งข้อมูล</p>'}
+            </div>`;
+        const dialog = $('smDialog');
+        if (!dialog.open) dialog.showModal();
+        // โหลดภาพย่อจากหลังบ้าน (ต้องแนบสิทธิ์ล็อกอิน — ใช้ลิงก์ Drive ตรงไม่ได้)
+        $('smDetail').querySelectorAll('img[data-src]').forEach(async img => {
+            try { img.src = await fileUrl(img.dataset.src); } catch { img.alt = 'เปิดรูปไม่ได้'; }
+        });
+    }
+    async function reviewTask(button) {
+        const card = button.closest('[data-task]');
+        const id = card.dataset.task;
+        const note = card.querySelector('[data-field=note]').value;
+        const reopen = button.dataset.review === 'reopen';
+        if (reopen && !confirm('ให้พนักงานแก้ไขและส่งข้อมูลงานนี้ใหม่?')) return;
+        button.disabled = true;
+        try {
+            await updateTask(id, reopen ? { reopen: true, note } : { status: 'done', note }, reopen ? 'ส่งกลับให้พนักงานแก้ไขแล้ว' : 'บันทึกว่าตรวจสอบแล้ว');
+            openCheck(state.current);
+        } catch (error) { toast(error.message, true); button.disabled = false; }
+    }
+
     // สิ่งที่ GA ขอ + สิ่งที่พนักงานตอบกลับ (ข้อมูลที่กรอก / ไฟล์ที่ส่ง)
     function responseHtml(t) {
         const fields = t.fields || [], uploads = t.uploads || [];
@@ -354,7 +436,7 @@
         const { task } = await request(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(patch) });
         const i = state.data.tasks.findIndex(t => t.id === task.id);
         if (patch.status === 'deleted') state.data.tasks.splice(i, 1); else state.data.tasks[i] = task;
-        renderTasks();
+        if ($('smTaskList')) renderTasks();
         render();
         toast(done);
     }
@@ -381,6 +463,10 @@
         const add = event.target.closest('[data-add]');
         if (add) return add.previousElementSibling.append(builderRow(add.dataset.add));
         if (event.target.closest('[data-remove]')) return event.target.closest('.sm-builder-row').remove();
+        const review = event.target.closest('[data-review]');
+        if (review) return reviewTask(review);
+        const view = event.target.closest('[data-view]');
+        if (view) { try { const url = await fileUrl(view.dataset.view); window.open(url, '_blank'); } catch (error) { toast(error.message, true); } return; }
         const file = event.target.closest('[data-file]');
         if (file) return openFile(file.dataset.file);
         const save = event.target.closest('[data-save]'), del = event.target.closest('[data-delete]');
@@ -399,7 +485,9 @@
     });
     document.addEventListener('click', event => {
         const plan = event.target.closest('[data-plan]');
-        if (plan) return openPlan(plan.dataset.plan);
+        if (plan) { state.mode = 'plan'; return openPlan(plan.dataset.plan); }
+        const checkBtn = event.target.closest('[data-check]');
+        if (checkBtn) return openCheck(checkBtn.dataset.check);
         const action = event.target.closest('[data-action]')?.dataset.action;
         if (action === 'refresh') load(true);
         if (action === 'clear-filters') {

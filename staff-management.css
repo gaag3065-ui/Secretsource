@@ -22,6 +22,31 @@
 .sm-ack.read { background: #06c755; color: #fff; }
 .sm-ack.sent { background: #1d4ed8; color: #fff; }
 .sm-ack.unread { background: #fff; color: #9a5b00; border: 1px dashed #e7b45c; }
+.sm-task-pill.submitted { background: #e8efff; color: #1d4ed8; border-color: #b9cbf6; }
+.sm-ack.checked { background: #067647; color: #fff; }
+.sm-actions { white-space: nowrap; }
+.sm-actions .fa-btn { margin-left: 6px; }
+.sm-check { position: relative; background: #fff; border-color: var(--fa-brand); color: var(--fa-brand); }
+.sm-check:disabled { opacity: .4; cursor: not-allowed; }
+.sm-dot { position: absolute; top: -4px; right: -4px; width: 10px; height: 10px; border-radius: 50%; background: #06c755; box-shadow: 0 0 0 2px #fff; }
+.sm-check-task { border: 1px solid var(--fa-line); border-left: 5px solid var(--fa-warn); border-radius: 12px; padding: 12px 14px; background: #fff; display: grid; gap: 8px; }
+.sm-check-task.is-ok { border-left-color: var(--fa-ok); }
+.sm-check-task header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.sm-check-task header b { font-size: 15px; }
+.sm-stages { display: flex; gap: 4px; }
+.sm-check-sum { margin: 0; font-size: 13.5px; font-weight: 600; }
+.sm-check-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.sm-check-fields div, .sm-check-slot { border: 1px solid var(--fa-line); border-radius: 9px; padding: 7px 10px; background: #fafbff; }
+.sm-check-fields .is-missing, .sm-check-slot.is-missing { border-color: #f1b7b1; background: var(--fa-bad-soft); }
+.sm-check-fields small, .sm-check-slot small { display: block; color: var(--fa-muted); font-size: 11.5px; }
+.sm-check-fields b { font-size: 13.5px; white-space: pre-line; }
+.sm-check-files { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.sm-thumb { width: 150px; height: 190px; padding: 0; border: 1px solid var(--fa-line); border-radius: 9px; overflow: hidden; background: #eef1f3; cursor: zoom-in; }
+.sm-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sm-pdf { display: grid; gap: 2px; padding: 10px 14px; border: 1px solid var(--fa-line); border-radius: 9px; background: #fff; font-weight: 700; cursor: pointer; }
+.sm-pdf span { font-size: 11.5px; font-weight: 600; color: var(--fa-bad); }
+.sm-check-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.sm-check-actions input { flex: 1; min-width: 200px; border: 1px solid var(--fa-line); border-radius: 8px; padding: 7px 9px; }
 .sm-task-pill.more { background: #eef1f3; color: var(--fa-muted); }
 .sm-plan { background: var(--fa-brand); border-color: var(--fa-brand); color: #fff; white-space: nowrap; }
 .sm-plan:hover { color: #fff; filter: brightness(1.1); }

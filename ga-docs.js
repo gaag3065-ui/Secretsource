@@ -152,7 +152,7 @@
                 </header>
                 <span class="gd-task-meta">${esc(when(t.created_at))}${t.due_date ? ` · กำหนดเสร็จ ${esc(thDate(t.due_date))}` : ''}</span>
                 ${t.detail ? `<p>${esc(t.detail)}</p>` : ''}
-                <div class="gd-task-actions"><button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-task="${t.id}">เปิดงาน →</button></div>
+                <div class="gd-task-actions"><button type="button" class="gd-btn gd-btn-sm ${t.acknowledged_at ? 'gd-btn-primary' : 'gd-ack-go'}" data-task="${t.id}">${t.acknowledged_at ? 'เปิดงาน →' : '✓ รับทราบและดำเนินการ →'}</button></div>
             </article>`).join('')}</div>`;
     }
     function openBox(key) {
@@ -186,7 +186,7 @@
         $('gdFormTitle').textContent = t.title;
         $('gdFormHead').innerHTML = `<span class="gd-tile-icon" style="--c:${esc(info.color)}">${esc(info.icon)}</span><div><h2>${esc(t.title)}</h2><p>${esc(t.box_title || info.title)} · ${esc(t.kind_label)}</p></div>`;
         const filesOf = slot => (t.files || []).filter(f => f.slot === slot);
-        const answer = done ? `<div class="gd-answer"><b>✓ ส่งแล้วเมื่อ ${esc(when(t.submitted_at))}</b>
+        const answer = done ? `<div class="gd-answer"><b>✓ ส่งข้อมูลแล้วเมื่อ ${esc(when(t.submitted_at))}${t.status === 'done' ? ' · GA ตรวจสอบแล้ว' : ''}</b>
             ${(t.fields || []).map(f => `<div><small>${esc(f.label)}</small>${esc(t.response?.[f.id] || '-')}</div>`).join('')}
             ${(t.uploads || []).map(u => `<div><small>${esc(u.label)}</small>ส่งแล้ว ${filesOf(u.id).length} ไฟล์</div>`).join('')}</div>` : '';
         const form = !done && needsForm ? `<form id="gdTaskForm" class="gd-task-form" novalidate>
@@ -197,13 +197,13 @@
                 <div class="gd-thumbs" data-task-thumbs="${esc(u.id)}"></div>
                 ${u.type === 'pdf' ? `<input type="text" data-password="${esc(u.id)}" placeholder="รหัสเปิดไฟล์ PDF (ถ้ามี)" autocomplete="off">` : ''}
             </div>`).join('')}
-            <button type="submit" class="gd-btn gd-btn-primary gd-submit-task">ส่งงาน</button>
+            <button type="submit" class="gd-btn gd-btn-primary gd-submit-task">ส่งข้อมูล</button>
         </form>` : '';
         $('gdInfo').innerHTML = `<article class="gd-task ${t.acknowledged_at ? 'is-read' : ''}">
             <span class="gd-task-meta">มอบหมายเมื่อ ${esc(when(t.created_at))}${t.due_date ? ` · กำหนดเสร็จ ${esc(thDate(t.due_date))}` : ''}${t.priority && t.priority !== 'ปกติ' ? ` · ${esc(t.priority)}` : ''}</span>
             ${t.detail ? `<p>${esc(t.detail)}</p>` : ''}
             ${answer}${form}
-            ${t.acknowledged_at ? `<p class="gd-task-meta">✓ รับทราบแล้วเมื่อ ${esc(when(t.acknowledged_at))}</p>` : '<button type="button" class="gd-btn gd-ack" data-action="ack">✓ รับทราบ</button>'}
+            ${t.acknowledged_at ? `<p class="gd-task-meta">✓ รับทราบแล้วเมื่อ ${esc(when(t.acknowledged_at))}</p>` : ''}
         </article>`;
         $('gdFields').innerHTML = '';
         $('gdFields').hidden = true;
@@ -219,6 +219,16 @@
         if (i >= 0) state.tasks[i] = task;
         renderAlerts();
         renderBadges();
+    }
+    // เข้างาน: งานที่ยังไม่รับทราบ → บันทึกรับทราบก่อน แล้วเปิดหน้างาน (ตัวเลขแจ้งเตือนลดลงทันที)
+    async function goTask(id) {
+        const t = state.tasks.find(x => x.id === Number(id));
+        if (!t) return;
+        if (!t.acknowledged_at) {
+            try { const { task } = await call(`/tasks/${t.id}/ack`, {}); replaceTask(task); }
+            catch (error) { msg($('gdFormMsg'), error.message, 'bad'); }
+        }
+        openTask(t.id);
     }
     async function ackTask(button) {
         button.disabled = true;
@@ -459,10 +469,10 @@
         const alertBox = event.target.closest('[data-box]');
         if (alertBox) {
             const items = unread().filter(t => t.box === alertBox.dataset.box);
-            return items.length === 1 ? openTask(items[0].id) : openBox(alertBox.dataset.box);
+            return items.length === 1 ? goTask(items[0].id) : openBox(alertBox.dataset.box);
         }
         const taskButton = event.target.closest('[data-task]');
-        if (taskButton) return openTask(taskButton.dataset.task);
+        if (taskButton) return goTask(taskButton.dataset.task);
         const button = event.target.closest('[data-action]');
         if (!button) return;
         const action = button.dataset.action;
