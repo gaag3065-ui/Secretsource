@@ -488,8 +488,14 @@
                     <table class="sm-group-table"><thead><tr><th></th><th>ห้องแชท (Monitoring)</th><th>พนักงาน (รหัสส่วนกลาง · ชื่อ)</th></tr></thead><tbody>
                     ${list.map(({ x, i }) => { const p = x.best && people[x.best.key]; return `<tr>
                         <td><input type="checkbox" data-lm-pick="${i}" data-lm-group="${status}" ${on && p ? 'checked' : ''}></td>
-                        <td><b>${esc(roomName(x.room))}</b><small>${esc([x.room.managerName && x.room.customName ? `OA: ${x.room.managerName}` : '', (x.room.customName || x.room.managerName) && x.room.lineName ? `LINE: ${x.room.lineName}` : '', x.room.channelName].filter(Boolean).join(' · '))}</small></td>
-                        <td><input class="sm-lm-person" list="smLmPeople" data-lm-person="${i}" value="${p ? esc(personLabel(p)) : ''}" placeholder="พิมพ์รหัสหรือชื่อเพื่อค้นหา">${x.dup ? '<small>มีห้องอื่นชี้คนนี้ด้วย</small>' : ''}</td></tr>`; }).join('')}
+                        <td><div class="sm-lm-room">${x.picture ? `<img src="${esc(x.picture)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<span class="sm-lm-noimg">👤</span>'}<div>
+                            <b>${esc(roomName(x.room))}</b><small>${esc([x.room.managerName && x.room.customName ? `OA: ${x.room.managerName}` : '', (x.room.customName || x.room.managerName) && x.room.lineName ? `LINE: ${x.room.lineName}` : '', x.room.channelName].filter(Boolean).join(' · '))}</small>
+                            ${x.note ? `<small class="sm-lm-note">📝 ${esc(x.note)}</small>` : ''}
+                            ${(x.recent || []).map(t => `<small class="sm-lm-msg">💬 ${esc(t)}</small>`).join('')}
+                            <a class="sm-lm-open" href="monitoring.html?conversation=${encodeURIComponent(x.room.conversationId)}&channel=${encodeURIComponent(x.room.channelId)}" target="_blank" rel="noopener">เปิดอ่านแชททั้งหมด ↗</a>
+                        </div></div></td>
+                        <td><input class="sm-lm-person" list="smLmPeople" data-lm-person="${i}" value="${p ? esc(personLabel(p)) : ''}" placeholder="พิมพ์รหัสหรือชื่อเพื่อค้นหา">${x.dup ? '<small>มีห้องอื่นชี้คนนี้ด้วย</small>' : ''}
+                            ${(x.hints || []).filter(h => people[h.key]).map(h => `<button type="button" class="sm-lm-hint" data-lm-hint="${i}" data-label="${esc(personLabel(people[h.key]))}" title="${esc(h.quote)}">💡 ${esc(people[h.key].fullname)} <small>${esc(h.why)}</small></button>`).join('')}</td></tr>`; }).join('')}
                     </tbody></table></section>`;
             }).join('')}
             <div class="sm-group-actions">
@@ -787,6 +793,12 @@
         if (action === 'refresh') load(true);
         if (action === 'broadcast') openBroadcast();
         if (action === 'line-match') openLineMatch();
+        const hint = event.target.closest('[data-lm-hint]');
+        if (hint) {
+            $('smLmBody').querySelector(`[data-lm-person="${hint.dataset.lmHint}"]`).value = hint.dataset.label;
+            $('smLmBody').querySelector(`[data-lm-pick="${hint.dataset.lmHint}"]`).checked = true;
+            return;
+        }
         const lmApply = event.target.closest('[data-lm-apply]');
         if (lmApply) return applyLineMatch(lmApply);
         if (action === 'clear-filters') {
