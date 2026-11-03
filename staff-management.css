@@ -170,3 +170,13 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 .sm-form .sm-pick-row input { width: auto; padding: 0; }
 .sm-form .sm-pick-row b { font-weight: 700; }
 .sm-form .sm-pick-row .fa-type { margin: 0; }
+
+/* ช่องของแบบฟอร์มในกล่องที่เลือก (ตอนจัดงาน) */
+.sm-boxform { padding: 12px 14px; border-radius: 12px; background: #f0f7ff; border: 1px solid #c7ddf7; font-size: 13px; }
+.sm-boxform > b { display: block; color: #1e3a8a; margin-bottom: 6px; }
+.sm-boxform p { margin: 6px 0 0; color: #4b5866; }
+.sm-boxform ol { margin: 0; padding-left: 22px; display: grid; gap: 3px; }
+.sm-boxform li span { font-weight: 600; }
+.sm-boxform li small { margin-left: 6px; color: #6b7280; }
+.sm-boxform li.is-file span { color: #9a3412; }
+.sm-boxform .sm-req { font-style: normal; }

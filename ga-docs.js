@@ -204,6 +204,7 @@
             <span class="gd-task-meta">มอบหมายเมื่อ ${esc(when(t.created_at))}${t.due_date ? ` · กำหนดเสร็จ ${esc(thDate(t.due_date))}` : ''}${t.priority && t.priority !== 'ปกติ' ? ` · ${esc(t.priority)}` : ''}</span>
             ${t.detail ? `<p>${esc(t.detail)}</p>` : ''}
             ${answer}${form}
+            ${state.config.forms.some(f => f.key === t.box && f.fields) ? `<button type="button" class="gd-btn gd-btn-primary" data-open-box="${esc(t.box)}">กรอกแบบฟอร์ม "${esc(info.title)}" →</button>` : ''}
             ${t.acknowledged_at ? `<p class="gd-task-meta">✓ รับทราบแล้วเมื่อ ${esc(when(t.acknowledged_at))}</p>` : ''}
         </article>`;
         $('gdFields').innerHTML = '';
@@ -466,6 +467,8 @@
     document.addEventListener('click', event => {
         const tile = event.target.closest('[data-open]');
         if (tile) return openForm(tile.dataset.open);
+        const formButton = event.target.closest('[data-open-box]');
+        if (formButton) { state.view = null; return openForm(formButton.dataset.openBox); }
         // แจ้งเตือน: มีงานใหม่งานเดียวในกล่อง → เปิดหน้างาน (ช่องกรอก/อัปโหลด) ทันที
         const alertBox = event.target.closest('[data-box]');
         if (alertBox) {

@@ -220,14 +220,15 @@
         return `
                         <label class="sm-wide">หัวเรื่องงาน <span class="sm-req">*</span><input name="title" maxlength="150" required placeholder="เช่น ส่งเอกสารตรวจสุขภาพประจำปี"></label>
                         <label class="sm-wide">รายละเอียด<textarea name="detail" maxlength="3000" placeholder="สิ่งที่ต้องทำ ขั้นตอน เอกสารที่ต้องใช้ ผู้ประสานงาน"></textarea></label>
-                        <label>ลงกล่องงาน (หน้าระบบจัดการองค์กร)<select name="box">
+                        <label class="sm-wide">ลงกล่องงาน (หน้าระบบจัดการองค์กร)<select name="box">
                             ${(state.data.boxes || []).map(b => `<option value="${esc(b.key)}" ${b.key === boxKey ? 'selected' : ''}>${esc(`${b.icon} ${b.title}`)}</option>`).join('')}
                             <option value="__new">＋ สร้างกล่องใหม่…</option></select></label>
+                        <div class="sm-wide sm-boxform" data-boxform></div>
                         <label class="sm-newbox sm-wide" hidden>ชื่อกล่องใหม่ <span class="sm-req">*</span><input name="new_box_title" maxlength="80" placeholder="เช่น เอกสารเดินทางไป SL"></label>
                         <label>ความสำคัญ<select name="priority">${opt(state.data.priorities)}</select></label>
                         <label>กำหนดเสร็จ<input type="date" name="due_date"></label>
                         <div class="sm-wide sm-kinds">
-                            <span class="sm-kinds-title">ประเภทงาน</span>
+                            <span class="sm-kinds-title" data-kinds-title>ประเภทงาน</span>
                             <label><input type="radio" name="kind" value="notice" checked> แจ้งให้รับทราบอย่างเดียว</label>
                             <label><input type="radio" name="kind" value="info"> งานเก็บข้อมูล (ให้กรอกข้อมูล)</label>
                             <label><input type="radio" name="kind" value="info_upload"> งานเก็บข้อมูลและอัปโหลดเอกสาร</label>
@@ -370,9 +371,28 @@
             : '<input data-label maxlength="150" placeholder="ให้อัปโหลดอะไร เช่น ผลตรวจ 4 โรค"><select data-type><option value="image">รูปภาพ</option><option value="pdf">PDF (มีช่องกรอกรหัส ถ้ามี)</option></select><button type="button" class="fa-btn fa-btn-ghost" data-remove title="ลบช่องนี้">×</button>';
         return row;
     }
+    // ช่องของแบบฟอร์มในกล่องที่เลือก — ให้เห็นว่าพนักงานต้องกรอก/อัปโหลดอะไรในกล่องนี้อยู่แล้ว
+    const FIELD_TYPES = { text: 'ข้อความ', textarea: 'ข้อความยาว', number: 'ตัวเลข', date: 'วันที่', tel: 'เบอร์โทร', select: 'เลือก 1 ข้อ', radio: 'เลือก 1 ข้อ', files: 'อัปโหลดรูป/PDF' };
+    function renderBoxForm(form) {
+        const box = (state.data.boxes || []).find(b => b.key === form.box.value);
+        const slot = form.querySelector('[data-boxform]');
+        const fields = box?.form || [];
+        const title = form.querySelector('[data-kinds-title]');
+        if (title) title.textContent = fields.length || box?.link ? 'สิ่งที่ขอเพิ่มเติมนอกจากแบบฟอร์มของกล่อง (ถ้ามี)' : 'ประเภทงาน';
+        if (!box || (!fields.length && !box.link)) { slot.hidden = true; slot.innerHTML = ''; return; }
+        slot.hidden = false;
+        slot.innerHTML = box.link
+            ? `<b>${esc(box.icon)} ${esc(box.title)}</b><p>${esc(box.description)} — พนักงานกดจากกล่องนี้ไปที่ระบบแยก (ไม่มีช่องกรอกในกล่อง)</p>`
+            : `<b>${esc(box.icon)} แบบฟอร์มในกล่อง "${esc(box.title)}" — พนักงานต้องกรอก/อัปโหลด ${fields.length} ช่อง</b>
+                <ol>${fields.map(f => `<li class="${f.type === 'files' ? 'is-file' : ''}">
+                    <span>${f.type === 'files' ? '📎' : '✏️'} ${esc(f.label)}${f.required ? ' <i class="sm-req">*</i>' : ' <small>(ถ้ามี)</small>'}</span>
+                    <small>${esc(FIELD_TYPES[f.type] || f.type)}${f.type === 'files' && f.max ? ` · ได้ถึง ${f.max} ไฟล์` : ''}${f.options?.length ? `: ${esc(f.options.join(' / '))}` : ''}${f.when ? ` · ${esc(f.when)}` : ''}</small></li>`).join('')}</ol>
+                <p>งานนี้จะขึ้นเหนือแบบฟอร์มในกล่องนี้ — ถ้าต้องการข้อมูลอื่นนอกจากนี้ ให้เลือกด้านล่าง</p>`;
+    }
     function syncBuilder(form) {
         const kind = form.querySelector('[name=kind]:checked').value;
         form.querySelector('.sm-newbox').hidden = form.box.value !== '__new';
+        renderBoxForm(form);
         [['fields', kind !== 'notice'], ['uploads', kind === 'info_upload']].forEach(([type, on]) => {
             const box = form.querySelector(`[data-builder="${type}"]`);
             box.hidden = !on;
