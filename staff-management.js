@@ -92,6 +92,7 @@
                 if (want && want !== '*' && ((f.key === 'room' ? roomOf(e) : e[f.key]) || '(ว่าง)') !== want) return false;
             }
             const tasks = tasksOf(e.key);
+            if (state.box && !tasks.some(t => t.box === state.box && t.status !== 'cancelled')) return false;
             if (taskMode === 'open' && !tasks.some(t => OPEN.has(t.status))) return false;
             if (taskMode === 'none' && tasks.some(t => t.status !== 'cancelled')) return false;
             if (taskMode === 'done' && !tasks.some(t => t.status === 'done')) return false;
@@ -99,6 +100,24 @@
                 .some(v => String(v || '').toLowerCase().includes(q))) return false;
             return true;
         });
+    }
+
+    // ---------------------------------------------------------------- กล่องงานทั้งหมด (นับทุกคน ไม่ขึ้นกับตัวกรอง)
+    function renderBoxes() {
+        const active = (state.data.tasks || []).filter(t => t.status !== 'cancelled');
+        $('smBoxes').innerHTML = (state.data.boxes || []).map(b => {
+            const list = active.filter(t => t.box === b.key);
+            const people = new Set(list.map(t => t.employee_key)).size;
+            const open = new Set(list.filter(t => OPEN.has(t.status)).map(t => t.employee_key)).size;
+            const titles = [...new Set(list.map(t => t.title))];
+            return `<button type="button" class="sm-box${people ? '' : ' is-empty'}${state.box === b.key ? ' is-on' : ''}" data-box="${esc(b.key)}"
+                title="${esc(titles.length ? `งาน: ${titles.join(' · ')}` : 'ยังไม่มีงานในกล่องนี้')}">
+                <span class="sm-box-count" aria-label="ได้รับมอบหมาย ${people} คน">${people}</span>
+                <span class="sm-box-icon">${esc(b.icon || '📌')}</span>
+                <b>${esc(b.title)}</b>
+                <small>${titles.length ? `${titles.length} งาน · ค้าง ${open} คน` : 'ยังไม่มีงาน'}</small>
+            </button>`;
+        }).join('');
     }
 
     // ---------------------------------------------------------------- ตาราง
@@ -111,6 +130,7 @@
             + stat(new Set(tasks.filter(t => OPEN.has(t.status)).map(t => t.employee_key)).size, 'คนที่มีงานค้าง')
             + stat(tasks.filter(t => OPEN.has(t.status)).length, 'งานที่ยังไม่เสร็จ') + stat(tasks.filter(t => t.status === 'done').length, 'งานเสร็จแล้ว')
             + stat(all.filter(e => e.contracts > 0).length, 'เคยเซ็นสัญญาเช่าบ้าน SL');
+        renderBoxes();
         document.querySelectorAll('.sm-toolbar select').forEach(s => s.classList.toggle('is-set', Boolean(s.value)));
         $('smCount').textContent = `แสดง ${rows.length.toLocaleString('th-TH')} จาก ${all.length.toLocaleString('th-TH')} คน`;
         // คอลัมน์: บริษัท · สถานะ · ชื่อเล่น · ชื่อจริง · [ช่องที่เลือกตัวกรอง] · งานที่มอบหมาย · ปุ่ม
@@ -801,7 +821,10 @@
         }
         const lmApply = event.target.closest('[data-lm-apply]');
         if (lmApply) return applyLineMatch(lmApply);
+        const boxTile = event.target.closest('[data-box]');
+        if (boxTile) { state.box = state.box === boxTile.dataset.box ? '' : boxTile.dataset.box; return render(); }
         if (action === 'clear-filters') {
+            state.box = '';
             document.querySelectorAll('.sm-toolbar select').forEach(s => { s.value = ''; });
             $('smSearch').value = '';
             render();
