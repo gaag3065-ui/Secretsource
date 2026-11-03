@@ -154,3 +154,19 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 .sm-box-count { position: absolute; top: 7px; right: 7px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: #16a34a; color: #fff; font-size: 12px; font-weight: 700; line-height: 22px; text-align: center; }
 .sm-box.is-empty .sm-box-count { background: #cbd5e1; }
 @media (max-width: 600px) { .sm-boxes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ปุ่ม ＋ สร้างงาน (ท้ายแถวกล่องงาน) และตัวเลือกพนักงาน */
+.sm-box-add { align-items: center; justify-content: center; padding: 9px 11px; border-style: dashed; border-color: #a5b4fc; color: #4f46e5; background: #f5f7ff; text-align: center; }
+.sm-box-add .sm-box-icon { font-size: 22px; font-weight: 700; }
+.sm-pick { border-top: 1px dashed var(--fa-line); padding-top: 10px; }
+.sm-pick h3 { margin: 0 0 8px; }
+.sm-pick-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.sm-pick-tools input { flex: 1 1 220px; }
+.sm-pick-list { max-height: 300px; overflow: auto; margin-top: 6px; border: 1px solid var(--fa-line); border-radius: 10px; background: #fff; }
+.sm-pick-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid #f1f3f6; cursor: pointer; font-size: 13px; }
+.sm-pick-row:hover { background: #f8f9ff; }
+.sm-pick-row small { margin-left: auto; color: #6b7280; }
+.sm-form .sm-pick-row { display: flex; gap: 8px; font-weight: 400; }
+.sm-form .sm-pick-row input { width: auto; padding: 0; }
+.sm-form .sm-pick-row b { font-weight: 700; }
+.sm-form .sm-pick-row .fa-type { margin: 0; }

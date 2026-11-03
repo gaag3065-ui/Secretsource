@@ -117,7 +117,7 @@
                 <b>${esc(b.title)}</b>
                 <small>${titles.length ? `${titles.length} งาน · ค้าง ${open} คน` : 'ยังไม่มีงาน'}</small>
             </button>`;
-        }).join('');
+        }).join('') + '<button type="button" class="sm-box sm-box-add" data-action="create-task" title="สร้างงานใหม่ แล้วเลือกพนักงานที่จะได้รับงาน"><span class="sm-box-icon">＋</span><b>สร้างงาน</b><small>ตั้งงานแล้วเลือกคน</small></button>';
     }
 
     // ---------------------------------------------------------------- ตาราง
@@ -194,11 +194,34 @@
                 <section class="sm-section">
                     <h3>สร้างงานใหม่</h3>
                     ${templatesHtml()}
-                    <form class="sm-form" id="smNewTask">
+                    <form class="sm-form" id="smNewTask">${taskFields()}
+                        <div class="sm-form-foot">
+                            <label><input type="checkbox" name="bulk"> มอบหมายให้พนักงานที่กรองอยู่ทั้งหมด (${visible.length} คน)</label>
+                            <button type="submit" class="fa-btn fa-btn-primary">มอบหมายงาน</button>
+                        </div>
+                    </form>
+                </section>
+                <section class="sm-section">
+                    <h3>งานของ ${esc(e.fullname)}</h3>
+                    <div class="sm-task-list" id="smTaskList"></div>
+                </section>
+            </div>`;
+        renderTasks();
+        // ข้อมูลที่กรอกค้างไว้ของพนักงานคนนี้ (ปิดหน้าต่างไปก่อนส่ง) → ใส่คืน
+        const draft = state.drafts.get(key);
+        if (draft) fillForm($('smNewTask'), draft);
+        else syncBuilder($('smNewTask'));
+        const dialog = $('smDialog');
+        if (!dialog.open) dialog.showModal();
+    }
+    // ช่องของฟอร์มสร้างงาน (หัวเรื่อง กล่อง ประเภท ช่องกรอก/อัปโหลด)
+    function taskFields(boxKey = 'quests') {
+        const opt = list => list.map(v => `<option>${esc(v)}</option>`).join('');
+        return `
                         <label class="sm-wide">หัวเรื่องงาน <span class="sm-req">*</span><input name="title" maxlength="150" required placeholder="เช่น ส่งเอกสารตรวจสุขภาพประจำปี"></label>
                         <label class="sm-wide">รายละเอียด<textarea name="detail" maxlength="3000" placeholder="สิ่งที่ต้องทำ ขั้นตอน เอกสารที่ต้องใช้ ผู้ประสานงาน"></textarea></label>
                         <label>ลงกล่องงาน (หน้าระบบจัดการองค์กร)<select name="box">
-                            ${(state.data.boxes || []).map(b => `<option value="${esc(b.key)}" ${b.key === 'quests' ? 'selected' : ''}>${esc(`${b.icon} ${b.title}`)}</option>`).join('')}
+                            ${(state.data.boxes || []).map(b => `<option value="${esc(b.key)}" ${b.key === boxKey ? 'selected' : ''}>${esc(`${b.icon} ${b.title}`)}</option>`).join('')}
                             <option value="__new">＋ สร้างกล่องใหม่…</option></select></label>
                         <label class="sm-newbox sm-wide" hidden>ชื่อกล่องใหม่ <span class="sm-req">*</span><input name="new_box_title" maxlength="80" placeholder="เช่น เอกสารเดินทางไป SL"></label>
                         <label>ความสำคัญ<select name="priority">${opt(state.data.priorities)}</select></label>
@@ -219,25 +242,75 @@
                             <div class="sm-builder-rows"></div>
                             <button type="button" class="fa-btn fa-btn-ghost" data-add="uploads">＋ เพิ่มช่องอัปโหลด</button>
                         </div>
+`;
+    }
+
+    // ---------------------------------------------------------------- สร้างงานก่อน แล้วเลือกคนทีหลัง (ปุ่ม ＋ ในแถวกล่องงาน)
+    const CREATE = '__create';
+    function openCreate(boxKey) {
+        state.mode = 'create';
+        state.current = CREATE;
+        state.picks ||= new Set();
+        $('smDetail').innerHTML = `
+            <header class="fa-detail-head">
+                <div><h2>＋ สร้างงานใหม่</h2><p>ตั้งงานก่อน แล้วเลือกพนักงานที่จะได้รับงานนี้ด้านล่าง</p></div>
+                <button type="button" class="fa-close" data-close aria-label="ปิด">×</button>
+            </header>
+            <div class="fa-detail-body">
+                <section class="sm-section">
+                    <h3>1. รายละเอียดงาน</h3>
+                    ${templatesHtml()}
+                    <form class="sm-form" id="smNewTask" data-create="1">${taskFields(boxKey)}
+                        <div class="sm-wide sm-pick">
+                            <h3>2. เลือกพนักงาน <span class="sm-meta" id="smPickCount"></span></h3>
+                            <div class="sm-pick-tools">
+                                <input type="search" id="smPickSearch" placeholder="ค้นหาชื่อ ชื่อเล่น รหัสพนักงาน บริษัท ตึก…" autocomplete="off">
+                                <button type="button" class="fa-btn fa-btn-ghost" data-pick-all>เลือกทั้งหมดที่แสดง</button>
+                                <button type="button" class="fa-btn fa-btn-ghost" data-pick-none>ล้างที่เลือก</button>
+                            </div>
+                            <small class="sm-meta">รายชื่อตามตัวกรองของตารางตอนนี้ (${filtered().length} คน) — ปิดหน้าต่างไปกรองตารางก่อนได้ งานที่กรอกไว้จะยังอยู่</small>
+                            <div class="sm-pick-list" id="smPickList"></div>
+                        </div>
                         <div class="sm-form-foot">
-                            <label><input type="checkbox" name="bulk"> มอบหมายให้พนักงานที่กรองอยู่ทั้งหมด (${visible.length} คน)</label>
+                            <span class="sm-meta">งานจะขึ้นในหน้าระบบจัดการองค์กรของพนักงานที่เลือก</span>
                             <button type="submit" class="fa-btn fa-btn-primary">มอบหมายงาน</button>
                         </div>
                     </form>
                 </section>
-                <section class="sm-section">
-                    <h3>งานของ ${esc(e.fullname)}</h3>
-                    <div class="sm-task-list" id="smTaskList"></div>
-                </section>
             </div>`;
-        renderTasks();
-        // ข้อมูลที่กรอกค้างไว้ของพนักงานคนนี้ (ปิดหน้าต่างไปก่อนส่ง) → ใส่คืน
-        const draft = state.drafts.get(key);
-        if (draft) fillForm($('smNewTask'), draft);
+        const draft = state.drafts.get(CREATE);
+        if (draft) fillForm($('smNewTask'), { ...draft, box: boxKey || draft.box });
         else syncBuilder($('smNewTask'));
-        const dialog = $('smDialog');
-        if (!dialog.open) dialog.showModal();
+        renderPicks();
+        if (!$('smDialog').open) $('smDialog').showModal();
     }
+    function pickPool() {
+        const q = ($('smPickSearch')?.value || '').trim().toLowerCase();
+        return filtered().filter(e => !q || [e.fullname, e.nickname, e.employeeId, e.centralId, e.insuranceCode, e.company, e.building, e.area]
+            .some(v => String(v || '').toLowerCase().includes(q)));
+    }
+    function renderPicks() {
+        const list = pickPool();
+        $('smPickCount').textContent = `เลือกแล้ว ${state.picks.size} คน`;
+        $('smPickList').innerHTML = list.length ? list.slice(0, 500).map(e => `
+            <label class="sm-pick-row"><input type="checkbox" data-pick="${esc(e.key)}" ${state.picks.has(e.key) ? 'checked' : ''}>
+                <b>${esc(e.fullname)}</b>${e.nickname ? ` <span class="fa-type">${esc(e.nickname)}</span>` : ''}
+                <small>${esc([e.employeeId || e.centralId, e.company, e.status].filter(Boolean).join(' · '))}</small></label>`).join('')
+            + (list.length > 500 ? `<p class="sm-meta">แสดง 500 จาก ${list.length} คน — พิมพ์ค้นหาเพื่อหาคนอื่น หรือกด "เลือกทั้งหมดที่แสดง"</p>` : '')
+            : '<p class="fa-empty">ไม่พบพนักงาน</p>';
+    }
+    $('smDialog').addEventListener('input', event => { if (event.target.id === 'smPickSearch') renderPicks(); });
+    $('smDialog').addEventListener('change', event => {
+        const box = event.target.closest('[data-pick]');
+        if (!box) return;
+        if (box.checked) state.picks.add(box.dataset.pick); else state.picks.delete(box.dataset.pick);
+        $('smPickCount').textContent = `เลือกแล้ว ${state.picks.size} คน`;
+    });
+    $('smDialog').addEventListener('click', event => {
+        if (event.target.closest('[data-pick-all]')) { pickPool().forEach(e => state.picks.add(e.key)); renderPicks(); }
+        if (event.target.closest('[data-pick-none]')) { state.picks.clear(); renderPicks(); }
+    });
+
     // หัวเรื่องงานที่เคยสร้าง → ปุ่มให้กดใช้ซ้ำ (กรอกทุกช่องเหมือนเดิม ไม่ต้องตั้งใหม่)
     function templates() {
         const seen = new Set();
@@ -671,8 +744,11 @@
         if (fd.kind === 'info_upload' && !fd.uploads.length && fd.fields.length) fd.kind = 'info';
         if (fd.kind === 'info' && !fd.fields.length) return toast('งานเก็บข้อมูลต้องมีช่องกรอกข้อมูลอย่างน้อย 1 ช่อง', true);
         if (fd.kind === 'info_upload' && !fd.uploads.length) return toast('กรุณาเพิ่มช่องอัปโหลดอย่างน้อย 1 ช่อง', true);
-        const keys = fd.bulk ? filtered().map(e => e.key) : [state.current];
-        if (fd.bulk && !confirm(`มอบหมายงาน "${fd.title}" ให้พนักงาน ${keys.length} คน?`)) return;
+        const creating = form.dataset.create === '1';
+        const keys = creating ? [...state.picks] : fd.bulk ? filtered().map(e => e.key) : [state.current];
+        if (creating && !keys.length) return toast('กรุณาเลือกพนักงานอย่างน้อย 1 คน', true);
+        if (creating && !confirm(`มอบหมายงาน "${fd.title}" ให้พนักงาน ${keys.length} คน?`)) return;
+        if (!creating && fd.bulk && !confirm(`มอบหมายงาน "${fd.title}" ให้พนักงาน ${keys.length} คน?`)) return;
         const button = form.querySelector('button[type=submit]');
         button.disabled = true;
         try {
@@ -680,8 +756,9 @@
             state.data.tasks.push(...tasks);
             if (boxes) state.data.boxes = boxes;
             state.drafts.delete(state.current);
-            openPlan(state.current);      // วาดฟอร์มใหม่ (มีกล่องที่เพิ่งสร้างให้เลือก)
-            renderTasks();
+            if (creating) { state.picks.clear(); $('smDialog').close(); }
+            else openPlan(state.current);      // วาดฟอร์มใหม่ (มีกล่องที่เพิ่งสร้างให้เลือก)
+            if ($('smTaskList')) renderTasks();
             render();
             toast(`มอบหมายงานแล้ว ${tasks.length} คน`);
         } catch (error) { toast(error.message, true); } finally { button.disabled = false; }
@@ -813,6 +890,7 @@
         if (action === 'refresh') load(true);
         if (action === 'broadcast') openBroadcast();
         if (action === 'line-match') openLineMatch();
+        if (action === 'create-task') return openCreate();
         const hint = event.target.closest('[data-lm-hint]');
         if (hint) {
             $('smLmBody').querySelector(`[data-lm-person="${hint.dataset.lmHint}"]`).value = hint.dataset.label;
