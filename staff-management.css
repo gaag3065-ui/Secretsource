@@ -46,6 +46,12 @@
 .sm-task-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
 .sm-task-actions select, .sm-task-actions input { border: 1px solid var(--fa-line); border-radius: 8px; padding: 5px 8px; }
 .sm-task-actions input { flex: 1; min-width: 180px; }
+/* ช่องที่ซ่อนอยู่ (hidden) ต้องซ่อนจริงแม้กฎอื่นตั้ง display ไว้ */
+.sm-dialog [hidden] { display: none !important; }
+.sm-templates { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 10px; }
+.sm-templates span { font-size: 12.5px; font-weight: 700; color: var(--fa-muted); }
+.sm-template { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 5px 12px; border: 1px solid #c7cbf5; border-radius: 999px; background: #fff; color: var(--fa-brand); font-weight: 600; font-size: 12.5px; cursor: pointer; }
+.sm-template:hover { background: var(--fa-brand-soft); border-color: var(--fa-brand); }
 .sm-kinds { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
 .sm-kinds-title { font-weight: 700; font-size: 13px; width: 100%; }
 .sm-kinds label { display: inline-flex !important; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }

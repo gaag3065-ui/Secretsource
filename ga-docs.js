@@ -455,8 +455,12 @@
     document.addEventListener('click', event => {
         const tile = event.target.closest('[data-open]');
         if (tile) return openForm(tile.dataset.open);
+        // แจ้งเตือน: มีงานใหม่งานเดียวในกล่อง → เปิดหน้างาน (ช่องกรอก/อัปโหลด) ทันที
         const alertBox = event.target.closest('[data-box]');
-        if (alertBox) return openBox(alertBox.dataset.box);
+        if (alertBox) {
+            const items = unread().filter(t => t.box === alertBox.dataset.box);
+            return items.length === 1 ? openTask(items[0].id) : openBox(alertBox.dataset.box);
+        }
         const taskButton = event.target.closest('[data-task]');
         if (taskButton) return openTask(taskButton.dataset.task);
         const button = event.target.closest('[data-action]');
@@ -481,8 +485,10 @@
             if (config.locked) msg($('gdLoginMsg'), 'ระบบปิดรับการเข้าสู่ระบบชั่วคราว', 'bad');
             const saved = store.get();
             if (saved?.token && !config.locked) { state.session = saved; openHome(); }
-            // แจ้งเตือนใหม่: ถามหลังบ้านทุก 1 นาทีระหว่างเปิดหน้าไว้
-            setInterval(() => { if (state.session && !document.hidden) loadTasks(); }, 60 * 1000);
+            // แจ้งเตือนใหม่: ถามหลังบ้านทุก 15 วินาทีระหว่างเปิดหน้าไว้ และทันทีที่กลับมาที่หน้านี้
+            setInterval(() => { if (state.session && !document.hidden) loadTasks(); }, 15 * 1000);
+            document.addEventListener('visibilitychange', () => { if (state.session && !document.hidden) loadTasks(); });
+            window.addEventListener('focus', () => { if (state.session) loadTasks(); });
         } catch (error) { msg($('gdLoginMsg'), error.message, 'bad'); }
     })();
 })();

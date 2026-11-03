@@ -20,7 +20,7 @@
     const pick = key => document.querySelector(`[data-filter="${key}"]`)?.value || '';
     // ห้องที่กรอกเป็นชื่อตึกซ้ำ (ไม่มีเลขห้อง) ไม่ต้องแสดงซ้ำ
     const roomOf = e => (e.room && e.room !== e.building ? e.room : '');
-    const state = { data: null, byKey: new Map(), current: null };
+    const state = { data: null, byKey: new Map(), current: null, drafts: new Map() };
 
     // หน้านี้เปิดตรง/ฝังใน iframe ได้โดยไม่ผ่านหน้าที่เก็บ csrfToken ไว้ → ขอจาก /api/session ก่อนส่งคำขอแก้ไขครั้งแรก
     async function ensureCsrf() {
@@ -161,13 +161,14 @@
                 <div class="sm-info">${info.map(([k, v]) => `<div><small>${esc(k)}</small><b>${esc(v)}</b></div>`).join('')}</div>
                 <section class="sm-section">
                     <h3>สร้างงานใหม่</h3>
+                    ${templatesHtml()}
                     <form class="sm-form" id="smNewTask">
                         <label class="sm-wide">หัวเรื่องงาน <span class="sm-req">*</span><input name="title" maxlength="150" required placeholder="เช่น ส่งเอกสารตรวจสุขภาพประจำปี"></label>
                         <label class="sm-wide">รายละเอียด<textarea name="detail" maxlength="3000" placeholder="สิ่งที่ต้องทำ ขั้นตอน เอกสารที่ต้องใช้ ผู้ประสานงาน"></textarea></label>
                         <label>ลงกล่องงาน (หน้าระบบจัดการองค์กร)<select name="box">
                             ${(state.data.boxes || []).map(b => `<option value="${esc(b.key)}" ${b.key === 'quests' ? 'selected' : ''}>${esc(`${b.icon} ${b.title}`)}</option>`).join('')}
                             <option value="__new">＋ สร้างกล่องใหม่…</option></select></label>
-                        <label class="sm-newbox" hidden>ชื่อกล่องใหม่ <span class="sm-req">*</span><input name="new_box_title" maxlength="80" placeholder="เช่น เอกสารเดินทางไป SL"></label>
+                        <label class="sm-newbox sm-wide" hidden>ชื่อกล่องใหม่ <span class="sm-req">*</span><input name="new_box_title" maxlength="80" placeholder="เช่น เอกสารเดินทางไป SL"></label>
                         <label>ความสำคัญ<select name="priority">${opt(state.data.priorities)}</select></label>
                         <label>กำหนดเสร็จ<input type="date" name="due_date"></label>
                         <div class="sm-wide sm-kinds">
@@ -198,8 +199,62 @@
                 </section>
             </div>`;
         renderTasks();
+        // ข้อมูลที่กรอกค้างไว้ของพนักงานคนนี้ (ปิดหน้าต่างไปก่อนส่ง) → ใส่คืน
+        const draft = state.drafts.get(key);
+        if (draft) fillForm($('smNewTask'), draft);
+        else syncBuilder($('smNewTask'));
         const dialog = $('smDialog');
         if (!dialog.open) dialog.showModal();
+    }
+    // หัวเรื่องงานที่เคยสร้าง → ปุ่มให้กดใช้ซ้ำ (กรอกทุกช่องเหมือนเดิม ไม่ต้องตั้งใหม่)
+    function templates() {
+        const seen = new Set();
+        return [...state.data.tasks].sort((a, b) => b.id - a.id).filter(t => {
+            const k = t.title.trim().toLowerCase();
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+        }).slice(0, 15);
+    }
+    function templatesHtml() {
+        const list = templates();
+        if (!list.length) return '';
+        return `<div class="sm-templates"><span>ใช้หัวเรื่องที่เคยสร้าง:</span>${list.map(t =>
+            `<button type="button" class="sm-template" data-template="${t.id}" title="${esc(`${t.box_title || ''} · ${t.kind_label || ''}`)}">${esc(t.title)}</button>`).join('')}</div>`;
+    }
+    function readForm(form) {
+        const rows = type => [...form.querySelectorAll(`[data-builder="${type}"] .sm-builder-row`)];
+        return {
+            title: form.title.value, detail: form.detail.value, box: form.box.value, new_box_title: form.new_box_title.value,
+            priority: form.priority.value, due_date: form.due_date.value, kind: form.querySelector('[name=kind]:checked')?.value || 'notice',
+            bulk: form.bulk.checked,
+            fields: rows('fields').map(r => ({ label: r.querySelector('[data-label]').value })),
+            uploads: rows('uploads').map(r => ({ label: r.querySelector('[data-label]').value, type: r.querySelector('[data-type]').value }))
+        };
+    }
+    function fillForm(form, d) {
+        ['title', 'detail', 'new_box_title', 'priority', 'due_date'].forEach(k => { if (d[k] !== undefined) form[k].value = d[k]; });
+        if (d.box && [...form.box.options].some(o => o.value === d.box)) form.box.value = d.box;
+        const kind = form.querySelector(`[name=kind][value="${d.kind || 'notice'}"]`);
+        if (kind) kind.checked = true;
+        form.bulk.checked = Boolean(d.bulk);
+        [['fields', d.fields || []], ['uploads', d.uploads || []]].forEach(([type, list]) => {
+            const rows = form.querySelector(`[data-builder="${type}"] .sm-builder-rows`);
+            rows.replaceChildren(...list.map(item => {
+                const row = builderRow(type);
+                row.querySelector('[data-label]').value = item.label || '';
+                if (type === 'uploads') row.querySelector('[data-type]').value = item.type === 'pdf' ? 'pdf' : 'image';
+                return row;
+            }));
+        });
+        syncBuilder(form);
+    }
+    function useTemplate(id) {
+        const t = state.data.tasks.find(x => x.id === Number(id));
+        if (!t) return;
+        fillForm($('smNewTask'), { title: t.title, detail: t.detail || '', box: t.box || 'quests', new_box_title: '', priority: t.priority || 'ปกติ',
+            due_date: t.due_date || '', kind: t.kind || 'notice', fields: t.fields || [], uploads: t.uploads || [] });
+        toast(`ใช้หัวเรื่อง "${t.title}" แล้ว — แก้ไขได้ก่อนกดมอบหมาย`);
     }
     // ตัวสร้างแบบฟอร์มงาน: เพิ่ม/ลบช่องกรอกข้อมูลและช่องอัปโหลด
     function builderRow(type) {
@@ -271,6 +326,8 @@
         const rowsOf = type => [...form.querySelectorAll(`[data-builder="${type}"] .sm-builder-row`)];
         fd.fields = fd.kind === 'notice' ? [] : rowsOf('fields').map(r => ({ label: r.querySelector('[data-label]').value.trim() })).filter(f => f.label);
         fd.uploads = fd.kind !== 'info_upload' ? [] : rowsOf('uploads').map(r => ({ label: r.querySelector('[data-label]').value.trim(), type: r.querySelector('[data-type]').value })).filter(u => u.label);
+        // เลือก "เก็บข้อมูลและอัปโหลด" แต่ไม่ได้ตั้งช่องอัปโหลด → เป็นงานเก็บข้อมูล
+        if (fd.kind === 'info_upload' && !fd.uploads.length && fd.fields.length) fd.kind = 'info';
         if (fd.kind === 'info' && !fd.fields.length) return toast('งานเก็บข้อมูลต้องมีช่องกรอกข้อมูลอย่างน้อย 1 ช่อง', true);
         if (fd.kind === 'info_upload' && !fd.uploads.length) return toast('กรุณาเพิ่มช่องอัปโหลดอย่างน้อย 1 ช่อง', true);
         const keys = fd.bulk ? filtered().map(e => e.key) : [state.current];
@@ -281,6 +338,7 @@
             const { tasks, boxes } = await request('/tasks', { method: 'POST', body: JSON.stringify({ ...fd, bulk: undefined, employee_keys: keys }) });
             state.data.tasks.push(...tasks);
             if (boxes) state.data.boxes = boxes;
+            state.drafts.delete(state.current);
             openPlan(state.current);      // วาดฟอร์มใหม่ (มีกล่องที่เพิ่งสร้างให้เลือก)
             renderTasks();
             render();
@@ -301,9 +359,20 @@
     document.querySelector('.sm-toolbar').addEventListener('change', event => { if (event.target.matches('select')) render(); });
     $('smSearch').addEventListener('input', render);
     $('smDialog').addEventListener('submit', event => { if (event.target.id === 'smNewTask') { event.preventDefault(); createTask(event.target); } });
+    // ปิดหน้าต่าง (ปุ่ม × / Esc) → เก็บข้อมูลที่กรอกไว้ เปิดพนักงานคนเดิมอีกครั้งจะกรอกคืนให้
+    $('smDialog').addEventListener('close', () => {
+        const form = $('smNewTask');
+        if (!form || !state.current) return;
+        const d = readForm(form);
+        const filled = d.title.trim() || d.detail.trim() || d.fields.some(f => f.label.trim()) || d.uploads.some(u => u.label.trim());
+        if (filled) state.drafts.set(state.current, d); else state.drafts.delete(state.current);
+    });
     $('smDialog').addEventListener('change', event => { const form = event.target.closest('#smNewTask'); if (form && event.target.matches('[name=kind], [name=box]')) syncBuilder(form); });
     $('smDialog').addEventListener('click', async event => {
-        if (event.target === $('smDialog') || event.target.closest('[data-close]')) return $('smDialog').close();
+        // คลิกพื้นที่ว่างนอกหน้าต่างไม่ปิด (กันข้อมูลที่กรอกหาย) — ปิดด้วยปุ่ม × เท่านั้น
+        if (event.target.closest('[data-close]')) return $('smDialog').close();
+        const template = event.target.closest('[data-template]');
+        if (template) return useTemplate(template.dataset.template);
         const add = event.target.closest('[data-add]');
         if (add) return add.previousElementSibling.append(builderRow(add.dataset.add));
         if (event.target.closest('[data-remove]')) return event.target.closest('.sm-builder-row').remove();
