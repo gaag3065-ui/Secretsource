@@ -1597,6 +1597,22 @@
                     <div id="closeCaseEvidencePreview" class="upload-image-preview"></div>
                 </div>
 
+                <div class="update-upload-card">
+                    <label>✍️ ใบยินยอมให้ใช้วงเงิน IPD ร่วม OPD</label>
+                    <small style="display:block; color:#b42318; margin-bottom:6px;">เฉพาะเคสที่วงเงิน OPD ไม่พอ — ให้พนักงานเซ็นก่อน แล้วอัปโหลดในเคสนี้</small>
+                    <label for="ipdShareConsentFile" class="update-upload-button">
+                        📁 เลือกรูปใบยินยอมที่เซ็นแล้ว
+                    </label>
+                    <input
+                        type="file"
+                        id="ipdShareConsentFile"
+                        accept="image/jpeg,image/png,image/webp"
+                        hidden
+                        onchange="previewSelectedImage(this, 'ipdShareConsentPreview')"
+                    >
+                    <div id="ipdShareConsentPreview" class="upload-image-preview"></div>
+                </div>
+
             </div>
             <!-- สิ้นสุดโซนอัปโหลดรูปภาพเพิ่มเติม -->
              

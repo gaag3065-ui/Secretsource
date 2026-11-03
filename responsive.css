@@ -2904,3 +2904,9 @@ body.login-page {
     .limit-money-table { grid-template-columns: 92px repeat(3, minmax(0, 1fr)); gap: 4px 8px; font-size: 12px; }
 }
 .limit-summary-text { margin: 0; padding: 10px 12px; background: #f7f9fc; border: 1px solid #e3e8f0; border-radius: 8px; font: 14px/1.6 inherit; font-family: inherit; white-space: pre-wrap; }
+.limit-summary-alert + .limit-summary-alert { margin-top: -4px; }
+.limit-money-table .limit-balance.is-low { color: #b42318; }
+.limit-badge { margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: #fdecec; color: #b42318; border: 1px solid #f5b5b5; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.limit-consent { margin-bottom: 10px; padding: 10px 12px; border-radius: 8px; background: #fff8e1; border: 1px solid #f0c64a; font-size: 14px; }
+.limit-consent p { margin: 4px 0 8px; }
+.limit-consent-button { padding: 7px 12px; border: 0; border-radius: 6px; background: #b42318; color: #fff; font-weight: 700; cursor: pointer; }

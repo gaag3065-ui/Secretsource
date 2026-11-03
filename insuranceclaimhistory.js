@@ -381,14 +381,16 @@ function resetUpdateEvidenceFiles() {
         'openCaseEvidenceFile',
         'updateReceiptFile',
         'medicalCertificateFile',
-        'closeCaseEvidenceFile'
+        'closeCaseEvidenceFile',
+        'ipdShareConsentFile'
     ];
 
     const previewIds = [
         'openCaseEvidencePreview',
         'updateReceiptPreview',
         'medicalCertificatePreview',
-        'closeCaseEvidencePreview'
+        'closeCaseEvidencePreview',
+        'ipdShareConsentPreview'
     ];
 
     inputIds.forEach((id) => {
@@ -577,18 +579,23 @@ window.uploadAllUpdateEvidence = async function () {
     const closeFile =
         document.getElementById('closeCaseEvidenceFile')?.files?.[0] || null;
 
-    const [receiptUrl, medicalCertificateUrl, closeCaseUrl] =
+    const consentFile =
+        document.getElementById('ipdShareConsentFile')?.files?.[0] || null;
+
+    const [receiptUrl, medicalCertificateUrl, closeCaseUrl, ipdShareConsentUrl] =
         await Promise.all([
             uploadUpdateEvidence(receiptFile, 'UpdateReceiptcase'),
             uploadUpdateEvidence(medicalFile, 'MedicalCertificatecase'),
-            uploadUpdateEvidence(closeFile, 'Closecase')
+            uploadUpdateEvidence(closeFile, 'Closecase'),
+            uploadUpdateEvidence(consentFile, 'IpdShareConsentcase')
         ]);
 
     return {
         openCaseUrl: '',
         receiptUrl,
         medicalCertificateUrl,
-        closeCaseUrl
+        closeCaseUrl,
+        ipdShareConsentUrl
     };
 };
 //#endregion
@@ -1286,9 +1293,12 @@ async function collectEditedEvidenceDocuments(editorEl, originalRaw = '') {
         }
     }
 
-    // รูปเพิ่มเติม (Additional) ไม่มีช่องแก้ในฟอร์มนี้ — คงไว้ตามเดิม
+    // รูปเพิ่มเติม (Additional) และใบยินยอมใช้วงเงิน IPD ร่วม ไม่มีช่องแก้ในฟอร์มนี้ — คงไว้ตามเดิม
     for (const url of parseAdditionalEvidence(originalRaw)) {
         lines.push(`ADDITIONAL|${url}`);
+    }
+    for (const url of parseIpdShareConsent(originalRaw)) {
+        lines.push(`IPD_SHARE_CONSENT|${url}`);
     }
 
     return lines.join('\n') || '-';
@@ -2088,6 +2098,10 @@ if (response.ok && result.success) {
 
             evidenceUrls.closeCaseUrl
                 ? `CLOSE_CASE|${evidenceUrls.closeCaseUrl}`
+                : '',
+
+            evidenceUrls.ipdShareConsentUrl
+                ? `IPD_SHARE_CONSENT|${evidenceUrls.ipdShareConsentUrl}`
                 : '',
 
             ...(evidenceUrls.additionalUrls || []).map(
@@ -2964,6 +2978,14 @@ function parseAdditionalEvidence(rawValue) {
         .filter(Boolean);
 }
 
+// ใบยินยอมให้ใช้วงเงิน IPD ร่วม OPD (อัปโหลดในอัปเดตเคส) — IPD_SHARE_CONSENT|url
+function parseIpdShareConsent(rawValue) {
+    return String(rawValue || '')
+        .split(/\r?\n/)
+        .map((line) => /^IPD_SHARE_CONSENT\|(.+)$/i.exec(line.trim())?.[1]?.trim())
+        .filter(Boolean);
+}
+
 function parseEvidenceDocuments(
     rawValue,
     statusText = '',
@@ -2971,6 +2993,10 @@ function parseEvidenceDocuments(
 ) {
     return [
         ...parseBaseEvidenceDocuments(rawValue, statusText, showCompleteCase),
+        ...parseIpdShareConsent(rawValue).map((url) => ({
+            label: 'ใบยินยอมใช้วงเงิน IPD ร่วม OPD',
+            url
+        })),
         ...parseAdditionalEvidence(rawValue).map((url, index) => ({
             label: `เพิ่มเติม (Additional) ${index + 1}`,
             url,
@@ -3033,7 +3059,7 @@ function parseBaseEvidenceDocuments(
     const unlabeledUrls = [];
 
     for (const line of lines) {
-        if (/^ADDITIONAL\|/i.test(line)) continue;
+        if (/^(ADDITIONAL|IPD_SHARE_CONSENT)\|/i.test(line)) continue;
 
         const labeledMatch = line.match(
             /^(OPEN_CASE|RECEIPT|MEDICAL_CERTIFICATE|CLOSE_CASE)\|(.+)$/i
@@ -3142,7 +3168,8 @@ function combineCaseEvidenceDocuments(timelines) {
         ['รูปหลักฐานการเปิดเคส', 'OPEN_CASE'],
         ['รูปใบเสร็จ', 'RECEIPT'],
         ['ใบรับรองแพทย์', 'MEDICAL_CERTIFICATE'],
-        ['รูปหลักฐานการปิดเคส', 'CLOSE_CASE']
+        ['รูปหลักฐานการปิดเคส', 'CLOSE_CASE'],
+        ['ใบยินยอมใช้วงเงิน IPD ร่วม OPD', 'IPD_SHARE_CONSENT']
     ];
 
     const additional = [
