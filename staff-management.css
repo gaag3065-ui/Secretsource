@@ -180,3 +180,17 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 .sm-boxform li small { margin-left: 6px; color: #6b7280; }
 .sm-boxform li.is-file span { color: #9a3412; }
 .sm-boxform .sm-req { font-style: normal; }
+
+/* ตัวแก้ช่องของแบบฟอร์มในกล่อง */
+.sm-boxform-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+.sm-boxform-tools small { color: #a15c00; font-weight: 700; }
+.sm-fe-rows { display: grid; gap: 6px; margin-top: 8px; }
+.sm-form .sm-fe-row { display: grid; grid-template-columns: minmax(160px, 1fr) 170px auto 70px auto; gap: 6px; align-items: center; background: #fff; border: 1px solid #d6e4f5; border-radius: 10px; padding: 6px; }
+.sm-form .sm-fe-row [data-fe=options] { grid-column: 1 / -1; }
+.sm-form .sm-fe-row [hidden] { display: none !important; }
+.sm-form .sm-fe-req { display: flex; gap: 4px; align-items: center; font-weight: 400; white-space: nowrap; }
+.sm-form .sm-fe-req input { width: auto; padding: 0; }
+.sm-fe-move { display: flex; gap: 2px; }
+.sm-fe-move button { width: 28px; height: 28px; border: 1px solid #d6e4f5; border-radius: 7px; background: #f8fbff; cursor: pointer; }
+.sm-fe-move [data-fe-del] { color: #b42318; }
+@media (max-width: 700px) { .sm-form .sm-fe-row { grid-template-columns: 1fr 1fr; } }

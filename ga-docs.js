@@ -230,6 +230,9 @@
             try { const { task } = await call(`/tasks/${t.id}/ack`, {}); replaceTask(task); }
             catch (error) { msg($('gdFormMsg'), error.message, 'bad'); }
         }
+        // งานในกล่องที่มีแบบฟอร์ม และไม่มีช่องของงานเอง → ไปกรอกแบบฟอร์มของกล่องเลย
+        const boxForm = state.config.forms.some(f => f.key === t.box && f.fields);
+        if (boxForm && !(t.fields || []).length && !(t.uploads || []).length) { state.view = null; return openForm(t.box); }
         openTask(t.id);
     }
     async function ackTask(button) {
@@ -306,7 +309,13 @@
         // งานที่ GA มอบหมายในหัวข้อนี้ แสดงไว้ด้านบนของฟอร์ม
         const boxTasks = state.tasks.filter(t => t.box === key);
         if (boxTasks.length) $('gdInfo').innerHTML += `<h3 class="gd-box-tasks">งานที่ได้รับมอบหมายในหัวข้อนี้</h3>${tasksHtml(boxTasks)}`;
+        // มีงานในหัวข้อนี้ที่ยังไม่กดรับทราบ → ยังกรอกไม่ได้
+        const mustAck = boxTasks.some(t => !t.acknowledged_at);
+        if (mustAck) $('gdInfo').innerHTML += '<p class="gd-lock-note">🔒 กรุณากด "รับทราบและดำเนินการ" ที่งานด้านบนก่อน จึงจะกรอกข้อมูลและอัปโหลดเอกสารได้</p>';
         $('gdFields').innerHTML = form.fields.map(fieldHtml).join('');
+        $('gdFields').classList.toggle('is-locked', mustAck);
+        $('gdFields').querySelectorAll('input, select, textarea, button').forEach(el => { el.disabled = mustAck; });
+        document.querySelector('.gd-submit').disabled = mustAck;
         form.fields.filter(f => f.type === 'files').forEach(f => { state.files[f.name] = []; });
         refreshVisibility();
         msg($('gdFormMsg'), '');

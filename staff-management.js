@@ -376,6 +376,8 @@
     function renderBoxForm(form) {
         const box = (state.data.boxes || []).find(b => b.key === form.box.value);
         const slot = form.querySelector('[data-boxform]');
+        if (slot.dataset.editing && slot.dataset.editing === form.box.value) return;   // กำลังแก้ช่องอยู่
+        delete slot.dataset.editing;
         const fields = box?.form || [];
         const title = form.querySelector('[data-kinds-title]');
         if (title) title.textContent = fields.length || box?.link ? 'สิ่งที่ขอเพิ่มเติมนอกจากแบบฟอร์มของกล่อง (ถ้ามี)' : 'ประเภทงาน';
@@ -387,8 +389,75 @@
                 <ol>${fields.map(f => `<li class="${f.type === 'files' ? 'is-file' : ''}">
                     <span>${f.type === 'files' ? '📎' : '✏️'} ${esc(f.label)}${f.required ? ' <i class="sm-req">*</i>' : ' <small>(ถ้ามี)</small>'}</span>
                     <small>${esc(FIELD_TYPES[f.type] || f.type)}${f.type === 'files' && f.max ? ` · ได้ถึง ${f.max} ไฟล์` : ''}${f.options?.length ? `: ${esc(f.options.join(' / '))}` : ''}${f.when ? ` · ${esc(f.when)}` : ''}</small></li>`).join('')}</ol>
-                <p>งานนี้จะขึ้นเหนือแบบฟอร์มในกล่องนี้ — ถ้าต้องการข้อมูลอื่นนอกจากนี้ ให้เลือกด้านล่าง</p>`;
+                <p>งานนี้จะขึ้นเหนือแบบฟอร์มในกล่องนี้ — ถ้าต้องการข้อมูลอื่นนอกจากนี้ ให้เลือกด้านล่าง</p>
+                ${box.editable ? `<div class="sm-boxform-tools"><button type="button" class="fa-btn fa-btn-ghost" data-form-edit>✏️ แก้ไขช่องของแบบฟอร์ม</button>
+                    ${box.edited ? '<button type="button" class="fa-btn fa-btn-ghost" data-form-reset>↺ คืนค่าเริ่มต้น</button><small>แก้ไขแล้ว</small>' : ''}</div>` : ''}`;
     }
+    // ตัวแก้ช่องของแบบฟอร์ม — บันทึกแล้วหน้าระบบจัดการองค์กรใช้ช่องชุดใหม่ทันที
+    const EDIT_TYPES = [['text', 'ข้อความ'], ['textarea', 'ข้อความยาว'], ['number', 'ตัวเลข / จำนวนเงิน'], ['date', 'วันที่'], ['tel', 'เบอร์โทร'], ['select', 'เลือก 1 ข้อ (รายการ)'], ['radio', 'เลือก 1 ข้อ (ปุ่ม)'], ['files', 'อัปโหลดรูป/PDF']];
+    function formEditRow(f = { label: '', type: 'text' }) {
+        const row = document.createElement('div');
+        row.className = 'sm-fe-row';
+        row.dataset.name = f.name || '';
+        row.innerHTML = `<input data-fe="label" maxlength="120" placeholder="หัวข้อช่อง เช่น ใบเสร็จ" value="${esc(f.label)}">
+            <select data-fe="type">${EDIT_TYPES.map(([v, l]) => `<option value="${v}" ${v === f.type ? 'selected' : ''}>${l}</option>`).join('')}</select>
+            <label class="sm-fe-req"><input type="checkbox" data-fe="required" ${f.required ? 'checked' : ''}> บังคับ</label>
+            <input data-fe="max" type="number" min="1" max="20" value="${f.max || 5}" title="จำนวนไฟล์สูงสุด" ${f.type === 'files' ? '' : 'hidden'}>
+            <span class="sm-fe-move"><button type="button" data-fe-up title="เลื่อนขึ้น">↑</button><button type="button" data-fe-down title="เลื่อนลง">↓</button><button type="button" data-fe-del title="ลบช่อง">×</button></span>
+            <input data-fe="options" placeholder="ตัวเลือก คั่นด้วย , เช่น เงินสด, เงินโอน" value="${esc((f.options || []).join(', '))}" ${/select|radio/.test(f.type) ? '' : 'hidden'}>`;
+        return row;
+    }
+    function openFormEditor(form) {
+        const box = (state.data.boxes || []).find(b => b.key === form.box.value);
+        const slot = form.querySelector('[data-boxform]');
+        slot.dataset.editing = form.box.value;
+        slot.innerHTML = `<b>✏️ แก้ไขช่องของแบบฟอร์ม "${esc(box.title)}"</b>
+            <p>เพิ่ม ลบ เรียงลำดับ หรือแก้หัวข้อช่อง — บันทึกแล้วหน้าระบบจัดการองค์กรและชีตปลายทางใช้ช่องชุดนี้ทันที (ข้อมูลที่ส่งมาแล้วไม่หาย)</p>
+            <div class="sm-fe-rows"></div>
+            <div class="sm-boxform-tools"><button type="button" class="fa-btn fa-btn-ghost" data-fe-add>＋ เพิ่มช่อง</button>
+                <button type="button" class="fa-btn fa-btn-ghost" data-fe-cancel>ยกเลิก</button>
+                <button type="button" class="fa-btn fa-btn-primary" data-fe-save>บันทึกแบบฟอร์ม</button></div>`;
+        slot.querySelector('.sm-fe-rows').append(...box.form.map(formEditRow));
+    }
+    async function saveFormEditor(form, button, reset = false) {
+        const key = form.box.value;
+        const fields = [...form.querySelectorAll('.sm-fe-row')].map(r => ({
+            name: r.dataset.name || undefined, label: r.querySelector('[data-fe=label]').value.trim(), type: r.querySelector('[data-fe=type]').value,
+            required: r.querySelector('[data-fe=required]').checked, max: Number(r.querySelector('[data-fe=max]').value) || 5,
+            options: r.querySelector('[data-fe=options]').value.split(',').map(s => s.trim()).filter(Boolean)
+        })).filter(f => f.label);
+        if (!reset && !fields.length) return toast('แบบฟอร์มต้องมีอย่างน้อย 1 ช่อง', true);
+        if (reset && !confirm('คืนค่าแบบฟอร์มนี้เป็นช่องเริ่มต้นของระบบ?')) return;
+        button.disabled = true;
+        try {
+            const { boxes } = await request(`/boxes/${encodeURIComponent(key)}/form`, { method: 'PUT', body: JSON.stringify(reset ? { reset: true } : { fields }) });
+            state.data.boxes = boxes;
+            delete form.querySelector('[data-boxform]').dataset.editing;
+            renderBoxForm(form);
+            toast(reset ? 'คืนค่าเริ่มต้นแล้ว' : 'บันทึกแบบฟอร์มแล้ว — หน้าระบบจัดการองค์กรเปลี่ยนตามแล้ว');
+        } catch (error) { toast(error.message, true); button.disabled = false; }
+    }
+    $('smDialog').addEventListener('click', event => {
+        const form = event.target.closest('#smNewTask');
+        if (!form) return;
+        if (event.target.closest('[data-form-edit]')) return openFormEditor(form);
+        if (event.target.closest('[data-form-reset]')) return saveFormEditor(form, event.target.closest('button'), true);
+        if (event.target.closest('[data-fe-cancel]')) { delete form.querySelector('[data-boxform]').dataset.editing; return renderBoxForm(form); }
+        if (event.target.closest('[data-fe-save]')) return saveFormEditor(form, event.target.closest('button'));
+        if (event.target.closest('[data-fe-add]')) { const row = formEditRow(); form.querySelector('.sm-fe-rows').append(row); row.querySelector('input').focus(); return; }
+        const row = event.target.closest('.sm-fe-row');
+        if (!row) return;
+        if (event.target.closest('[data-fe-del]')) row.remove();
+        if (event.target.closest('[data-fe-up]') && row.previousElementSibling) row.after(row.previousElementSibling);
+        if (event.target.closest('[data-fe-down]') && row.nextElementSibling) row.before(row.nextElementSibling);
+    });
+    $('smDialog').addEventListener('change', event => {
+        const type = event.target.closest('[data-fe=type]');
+        if (!type) return;
+        const row = type.closest('.sm-fe-row');
+        row.querySelector('[data-fe=max]').hidden = type.value !== 'files';
+        row.querySelector('[data-fe=options]').hidden = !/select|radio/.test(type.value);
+    });
     function syncBuilder(form) {
         const kind = form.querySelector('[name=kind]:checked').value;
         form.querySelector('.sm-newbox').hidden = form.box.value !== '__new';

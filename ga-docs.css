@@ -186,3 +186,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
     .gd-question { font-size: 18px; }
     .gd-top-brand small { display: none; }
 }
+/* ยังไม่กดรับทราบงานในหัวข้อนี้ → แบบฟอร์มล็อก */
+.gd-lock-note { margin: 10px 0 0; padding: 10px 14px; border-radius: 12px; background: #fff7e6; border: 1px solid #f5c26b; color: #8a4b00; font-weight: 600; }
+#gdFields.is-locked { opacity: .5; pointer-events: none; }
+.gd-submit:disabled { opacity: .5; cursor: not-allowed; }
