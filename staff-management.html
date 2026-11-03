@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>จัดการพนักงาน | GA Operations</title>
     <link rel="stylesheet" href="fitness-admin.css?v=20261102-2">
-    <link rel="stylesheet" href="staff-management.css?v=20261103-1">
+    <link rel="stylesheet" href="staff-management.css?v=20261103-2">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
@@ -25,21 +25,15 @@
         <section class="fa-stats" id="smStats"></section>
 
         <section class="fa-toolbar sm-toolbar">
-            <select id="smCompany" data-filter="company"><option value="">ทุกบริษัท</option></select>
-            <select id="smStatus" data-filter="status"><option value="">ทุกสถานะปัจจุบัน</option></select>
-            <select id="smArea" data-filter="area"><option value="">ทุกพื้นที่รันงาน</option></select>
-            <select id="smBuilding" data-filter="building"><option value="">ทุกตึก</option></select>
-            <select id="smFloor" data-filter="floor"><option value="">ทุกชั้น</option></select>
-            <select id="smRoom" data-filter="room"><option value="">ทุกห้อง</option></select>
-            <select id="smSize" data-filter="size"><option value="">ทุก Size</option></select>
-            <select id="smContract" data-filter="contractText"><option value="">สัญญาเช่าบ้าน SL ทั้งหมด</option></select>
+            <!-- ตัวกรองสร้างจาก staff-management.js (FILTERS) — ช่องเสริมแสดงในตารางเมื่อเลือกตัวกรองนั้น -->
+            <span id="smFilters" class="sm-filters"></span>
             <select id="smTask">
-                <option value="">งาน: ทั้งหมด</option>
-                <option value="open">มีงานค้าง</option>
-                <option value="none">ยังไม่มีงาน</option>
-                <option value="done">มีงานเสร็จแล้ว</option>
+                <option value="">งาน : ทั้งหมด</option>
+                <option value="open">งาน : มีงานค้าง</option>
+                <option value="none">งาน : ยังไม่มีงาน</option>
+                <option value="done">งาน : มีงานเสร็จแล้ว</option>
             </select>
-            <input id="smSearch" type="search" placeholder="ค้นหาชื่อ รหัสพนักงาน รหัสประกัน รายละเอียด…" autocomplete="off">
+            <input id="smSearch" type="search" placeholder="ค้นหาชื่อ ชื่อเล่น รหัสพนักงาน รหัสประกัน…" autocomplete="off">
             <button type="button" class="fa-btn fa-btn-ghost" data-action="clear-filters">ล้างตัวกรอง</button>
         </section>
         <p class="sm-count" id="smCount"></p>
@@ -47,8 +41,8 @@
         <section class="fa-card">
             <div class="fa-table-wrap">
                 <table>
-                    <thead><tr><th>พนักงาน</th><th>บริษัท</th><th>สถานะปัจจุบัน</th><th>พื้นที่รันงาน</th><th>ที่พัก (ตึก · ชั้น · ห้อง)</th><th id="smSizeHead">Size</th><th>สัญญาเช่าบ้าน SL</th><th id="smDetailHead">รายละเอียด</th><th>งานที่มอบหมาย</th><th></th></tr></thead>
-                    <tbody id="smRows"><tr><td colspan="10" class="fa-empty">กำลังโหลด…</td></tr></tbody>
+                    <thead><tr id="smHead"></tr></thead>
+                    <tbody id="smRows"><tr><td colspan="6" class="fa-empty">กำลังโหลด…</td></tr></tbody>
                 </table>
             </div>
         </section>
@@ -60,6 +54,6 @@
     <div id="smToast" class="fa-toast" role="status"></div>
 
     <script src="config.js"></script>
-    <script src="staff-management.js?v=20261103-1"></script>
+    <script src="staff-management.js?v=20261103-2"></script>
 </body>
 </html>
