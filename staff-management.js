@@ -343,7 +343,7 @@
         if (d.box && [...form.box.options].some(o => o.value === d.box)) form.box.value = d.box;
         const kind = form.querySelector(`[name=kind][value="${d.kind || 'notice'}"]`);
         if (kind) kind.checked = true;
-        form.bulk.checked = Boolean(d.bulk);
+        if (form.bulk) form.bulk.checked = Boolean(d.bulk);
         [['fields', d.fields || []], ['uploads', d.uploads || []]].forEach(([type, list]) => {
             const rows = form.querySelector(`[data-builder="${type}"] .sm-builder-rows`);
             rows.replaceChildren(...list.map(item => {
