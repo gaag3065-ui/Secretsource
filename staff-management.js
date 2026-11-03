@@ -455,6 +455,79 @@
         finally { button.disabled = false; button.textContent = 'ส่งเข้าคิว LINE OA'; }
     }
 
+    // ---------------------------------------------------------------- จับคู่ห้องแชท LINE ↔ พนักงาน → แท็ก = รหัสพนักงาน (ส่วนกลาง) + ชื่อในหน้า Monitoring
+    const LM_GROUPS = [['sure', '✅ ตรงแน่นอน', true], ['check', '⚠️ ต้องตรวจ (ชื่อใกล้กันหลายคน / หลายห้องชี้คนเดียว)', false], ['none', '❔ หาคนไม่เจอ (เลือกเองได้)', false]];
+    const personLabel = p => `${p.employeeId} · ${p.fullname}${p.nickname ? ` (${p.nickname})` : ''}`;
+    async function openLineMatch() {
+        state.mode = 'line-match';
+        state.current = null;
+        $('smDetail').innerHTML = `
+            <header class="fa-detail-head">
+                <div><h2>🔗 จับคู่ห้อง LINE กับพนักงาน</h2><p>เทียบชื่อห้องในหน้า Monitoring กับแท็บ "ข้อมูลเบื้องต้น" แล้วใส่แท็ก = รหัสพนักงาน (ส่วนกลาง) ให้แต่ละห้อง</p></div>
+                <button type="button" class="fa-close" data-close aria-label="ปิด">×</button>
+            </header>
+            <div class="fa-detail-body" id="smLmBody"><p class="fa-empty">กำลังจับคู่ห้องแชททั้งหมด…</p></div>`;
+        if (!$('smDialog').open) $('smDialog').showModal();
+        try {
+            state.lineMatch = await request('/line-match', { method: 'POST', body: '{}' });
+            renderLineMatch();
+        } catch (error) { $('smLmBody').innerHTML = `<p class="fa-empty">${esc(error.message)}</p>`; }
+    }
+    function renderLineMatch() {
+        const { rows, people } = state.lineMatch;
+        const withId = Object.values(people).filter(p => p.employeeId);
+        const tagged = rows.filter(x => x.status === 'tagged').length;
+        const roomName = r => r.customName || r.lineName || 'ไม่มีชื่อ';
+        $('smLmBody').innerHTML = `
+            <p class="sm-meta">ห้องทั้งหมด ${rows.length} · มีแท็กรหัสพนักงานแล้ว ${tagged} · พนักงานที่มีรหัส (ส่วนกลาง) ${withId.length} คน</p>
+            <datalist id="smLmPeople">${withId.map(p => `<option value="${esc(personLabel(p))}"></option>`).join('')}</datalist>
+            ${LM_GROUPS.map(([status, title, on]) => {
+                const list = rows.map((x, i) => ({ x, i })).filter(({ x }) => x.status === status);
+                if (!list.length) return '';
+                return `<section class="sm-section"><h3>${title} · ${list.length} ห้อง <label class="sm-meta"><input type="checkbox" data-lm-all="${status}" ${on ? 'checked' : ''}> เลือกทั้งกลุ่ม</label></h3>
+                    <table class="sm-group-table"><thead><tr><th></th><th>ห้องแชท (Monitoring)</th><th>พนักงาน (รหัสส่วนกลาง · ชื่อ)</th></tr></thead><tbody>
+                    ${list.map(({ x, i }) => { const p = x.best && people[x.best.key]; return `<tr>
+                        <td><input type="checkbox" data-lm-pick="${i}" data-lm-group="${status}" ${on && p ? 'checked' : ''}></td>
+                        <td><b>${esc(roomName(x.room))}</b><small>${esc([x.room.customName && x.room.lineName ? `LINE: ${x.room.lineName}` : '', x.room.channelName].filter(Boolean).join(' · '))}</small></td>
+                        <td><input class="sm-lm-person" list="smLmPeople" data-lm-person="${i}" value="${p ? esc(personLabel(p)) : ''}" placeholder="พิมพ์รหัสหรือชื่อเพื่อค้นหา">${x.dup ? '<small>มีห้องอื่นชี้คนนี้ด้วย</small>' : ''}</td></tr>`; }).join('')}
+                    </tbody></table></section>`;
+            }).join('')}
+            <div class="sm-group-actions">
+                <label class="sm-meta"><input type="checkbox" id="smLmSetName" checked> ตั้งชื่อห้องในหน้า Monitoring เป็นชื่อพนักงานด้วย</label>
+                <button type="button" class="fa-btn fa-btn-primary" data-lm-apply>ยืนยันใส่แท็ก</button>
+            </div>`;
+    }
+    async function applyLineMatch(button) {
+        const { rows, people } = state.lineMatch;
+        const byLabel = new Map(Object.values(people).filter(p => p.employeeId).map(p => [personLabel(p), p.key]));
+        const pairs = [], bad = [];
+        $('smLmBody').querySelectorAll('[data-lm-pick]:checked').forEach(box => {
+            const x = rows[box.dataset.lmPick];
+            const label = $('smLmBody').querySelector(`[data-lm-person="${box.dataset.lmPick}"]`).value.trim();
+            const key = byLabel.get(label);
+            if (!key) return bad.push(x.room.customName || x.room.lineName);
+            pairs.push({ key, room: `${x.room.channelId}|${x.room.conversationId}`, roomName: x.room.customName || x.room.lineName });
+        });
+        if (bad.length) return toast(`เลือกพนักงานจากรายการให้ถูกต้อง: ${bad.slice(0, 3).join(', ')}${bad.length > 3 ? '…' : ''}`, true);
+        if (!pairs.length) return toast('ยังไม่ได้เลือกห้อง', true);
+        const setName = $('smLmSetName').checked;
+        if (!confirm(`ใส่แท็กรหัสพนักงาน${setName ? ' และตั้งชื่อ' : ''}ให้ ${pairs.length} ห้อง?`)) return;
+        button.disabled = true;
+        button.textContent = 'กำลังบันทึก…';
+        try {
+            const result = await request('/line-match/apply', { method: 'POST', body: JSON.stringify({ pairs, setName }) });
+            toast(`ใส่แท็กแล้ว ${result.linked} ห้อง${result.failed.length ? ` · ไม่สำเร็จ ${result.failed.length}` : ''}`, Boolean(result.failed.length));
+            if (result.failed.length) alert(`ไม่สำเร็จ:\n${result.failed.join('\n')}`);
+            openLineMatch();
+        } catch (error) { toast(error.message, true); button.disabled = false; button.textContent = 'ยืนยันใส่แท็ก'; }
+    }
+    document.addEventListener('change', event => {
+        const all = event.target.closest('[data-lm-all]');
+        if (all) $('smLmBody').querySelectorAll(`[data-lm-group="${all.dataset.lmAll}"]`).forEach(b => { b.checked = all.checked; });
+        const person = event.target.closest('[data-lm-person]');
+        if (person && person.value) { const b = $('smLmBody').querySelector(`[data-lm-pick="${person.dataset.lmPerson}"]`); if (b) b.checked = true; }
+    });
+
     // ขั้นตอนของงาน: ยังไม่รับทราบ → รับทราบแล้ว → ส่งข้อมูลแล้ว → ตรวจสอบแล้ว
     function stagesOf(t) {
         if (!t.acknowledged_at && !t.submitted_at) return [['unread', 'ยังไม่รับทราบ']];
@@ -713,6 +786,9 @@
         const action = event.target.closest('[data-action]')?.dataset.action;
         if (action === 'refresh') load(true);
         if (action === 'broadcast') openBroadcast();
+        if (action === 'line-match') openLineMatch();
+        const lmApply = event.target.closest('[data-lm-apply]');
+        if (lmApply) return applyLineMatch(lmApply);
         if (action === 'clear-filters') {
             document.querySelectorAll('.sm-toolbar select').forEach(s => { s.value = ''; });
             $('smSearch').value = '';
