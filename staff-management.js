@@ -333,7 +333,7 @@
         return {
             title: form.title.value, detail: form.detail.value, box: form.box.value, new_box_title: form.new_box_title.value,
             priority: form.priority.value, due_date: form.due_date.value, kind: form.querySelector('[name=kind]:checked')?.value || 'notice',
-            bulk: form.bulk.checked,
+            bulk: Boolean(form.bulk?.checked),
             fields: rows('fields').map(r => ({ label: r.querySelector('[data-label]').value })),
             uploads: rows('uploads').map(r => ({ label: r.querySelector('[data-label]').value, type: r.querySelector('[data-type]').value }))
         };
