@@ -2955,3 +2955,24 @@ body.login-page {
     .intake-box.is-top .intake-list { position: static; width: auto; box-shadow: none; border: 0; border-top: 1px solid #f3c1cc; border-radius: 0; }
 }
 .intake-chip.is-annual { background: #eff6ff; color: #1d4ed8; }
+/* กล่องรับเรื่อง: รายการแบบกระชับ */
+.intake-list { gap: 6px !important; padding: 8px !important; }
+.intake-box.is-top .intake-list { width: min(560px, calc(100vw - 32px)) !important; }
+.intake-item { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; gap: 10px !important; align-items: center; padding: 9px 12px !important; border-left-width: 3px !important; border-radius: 8px !important; font-size: 13px !important; }
+.intake-item.is-annual { border-left-color: #2563eb !important; }
+.intake-main { display: grid; gap: 2px; min-width: 0; }
+.intake-line1 { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.intake-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; color: #111827; }
+.intake-tag { flex: none; padding: 1px 7px; border-radius: 4px; background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 700; }
+.intake-tag.is-annual { background: #dbeafe; color: #1e40af; }
+.intake-tag.is-hot { background: #e11d48; color: #fff; }
+.intake-amount { margin-left: auto; flex: none; font-weight: 700; color: #111827; font-variant-numeric: tabular-nums; }
+.intake-line2 { color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.intake-line3 { color: #6b7280; font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.intake-docs summary { width: fit-content; margin-top: 2px; color: #2563eb; font-size: 12px; cursor: pointer; list-style: none; }
+.intake-docs summary::-webkit-details-marker { display: none; }
+.intake-docs[open] summary { margin-bottom: 4px; }
+.intake-docs .intake-files { gap: 4px !important; }
+.intake-docs .intake-files button { padding: 2px 8px !important; font-size: 11.5px !important; border-radius: 6px !important; }
+.intake-item .intake-take { align-self: center; padding: 6px 14px !important; border-radius: 6px !important; font-size: 12.5px !important; white-space: nowrap; }
+.intake-item.is-on .intake-take { background: #059669 !important; }

@@ -47,18 +47,28 @@
         count.textContent = list.length ? `รอรับเคส ${list.length}${urgent ? ` · ด่วน ${urgent}` : ''}` : 'ไม่มีเรื่องค้าง';
         count.className = `intake-count${urgent ? ' is-urgent' : list.length ? ' is-wait' : ''}`;
         const recent = state.records.filter(r => r.case_id).slice(0, 5);
-        document.getElementById('intakeList').innerHTML = (list.length ? list.map(r => `
-            <article class="intake-item${r.urgent ? ' is-urgent' : ''}${window.__treatmentIntake?.id === r.id ? ' is-on' : ''}">
-                <header><b>${r.urgent ? '🚨 ' : ''}${esc(r.fullname)}</b><small>${esc([r.employee_id, r.insurance_code, r.company].filter(Boolean).join(' · '))} · แจ้งเมื่อ ${esc(when(r.submitted_at))} · เลขที่ ${r.id}</small></header>
-                ${isAnnual(r)
-                    ? `<p><span class="intake-chip is-annual">🩺 ตรวจสุขภาพประจำปี (เบิกย้อนหลัง)</span> ตรวจเมื่อ ${esc(thDate(val(r, 'check_date')))} · ${esc(val(r, 'hospital'))}</p>
-                       <p>ยอดตามใบเสร็จ <b>${esc(money(val(r, 'amount')))} บาท</b> — เปิดเคสก่อน แล้วบันทึกยอดในวงเงินอื่นๆ ตอนปิดเคส</p>`
-                    : `<p>${val(r, 'treat_type') ? `<span class="intake-chip">${esc(val(r, 'treat_type'))}</span> ` : ''}${esc(thDate(val(r, 'treat_date')))} ${esc(val(r, 'treat_time'))} · ${esc(val(r, 'hospital'))}</p>
-                       <p>อาการ: ${esc(val(r, 'symptom'))}</p>`}
-                <p class="intake-meta">ติดต่อ: ${esc(contactOf(r))}${r.urgent ? ' · <b class="intake-hot">ค่าใช้จ่ายสูง เกิน 5,000 บาท — ประสานประกันให้จ่ายตรง</b>' : ''}${val(r, 'note') ? ` · หมายเหตุ: ${esc(val(r, 'note'))}` : ''}</p>
-                ${r.files.length ? `<div class="intake-files">${r.files.map(f => `<button type="button" data-intake-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">${/^image\//.test(f.mime) ? '🖼️' : '📄'} ${esc(f.field_label)} ${f.index}</button>`).join('')}</div>` : ''}
-                <button type="button" class="intake-take" data-intake-take="${r.id}">${window.__treatmentIntake?.id === r.id ? '✓ กำลังเปิดเคสนี้ (กรอกฟอร์มด้านล่างแล้ว)' : 'รับเคสนี้ → กรอกฟอร์มเปิดเคส'}</button>
-            </article>`).join('') : '<p class="intake-empty">ไม่มีเรื่องแจ้งเข้ารักษาที่รอรับ ✓</p>')
+        document.getElementById('intakeList').innerHTML = (list.length ? list.map(r => {
+            const on = window.__treatmentIntake?.id === r.id;
+            const annual = isAnnual(r);
+            const date = annual ? thDate(val(r, 'check_date')) : `${thDate(val(r, 'treat_date'))} ${val(r, 'treat_time')}`.trim();
+            const imgs = r.files.filter(x => /^image\//.test(x.mime)).length;
+            return `
+            <article class="intake-item${r.urgent ? ' is-urgent' : ''}${on ? ' is-on' : ''}${annual ? ' is-annual' : ''}">
+                <div class="intake-main">
+                    <div class="intake-line1">
+                        <b class="intake-name">${r.urgent ? '🚨 ' : ''}${esc(r.fullname)}</b>
+                        <span class="intake-tag${annual ? ' is-annual' : r.urgent ? ' is-hot' : ''}">${annual ? 'ตรวจสุขภาพ' : r.urgent ? 'ด่วน >5,000' : 'แจ้งเข้ารักษา'}</span>
+                        ${annual ? `<span class="intake-amount">${esc(money(val(r, 'amount')))} ฿</span>` : ''}
+                    </div>
+                    <div class="intake-line2">${esc(date || '-')} · ${esc(val(r, 'hospital') || '-')}${annual ? '' : ` · ${esc(val(r, 'symptom') || '-')}`}</div>
+                    <div class="intake-line3">${esc(r.company || '')} · ${esc(r.insurance_code || r.employee_id || '')} · ${esc(contactOf(r) || '-')} · เลขที่ ${r.id} · ${esc(when(r.submitted_at))}</div>
+                    ${val(r, 'note') ? `<div class="intake-line3">หมายเหตุ: ${esc(val(r, 'note'))}</div>` : ''}
+                    ${r.files.length ? `<details class="intake-docs"><summary>📎 เอกสาร ${r.files.length} ไฟล์${imgs && imgs < r.files.length ? ` (รูป ${imgs})` : ''}</summary>
+                        <div class="intake-files">${r.files.map(x => `<button type="button" data-intake-file="${r.id}/${x.n}" data-mime="${esc(x.mime)}">${esc(x.field_label)} ${x.index}</button>`).join('')}</div></details>` : ''}
+                </div>
+                <button type="button" class="intake-take" data-intake-take="${r.id}" title="ค้นหาพนักงานและกรอกฟอร์มเปิดเคสให้">${on ? '✓ กำลังเปิดเคส' : 'รับเคส'}</button>
+            </article>`;
+        }).join('') : '<p class="intake-empty">ไม่มีเรื่องรอรับเคส ✓</p>')
             + (recent.length ? `<p class="intake-recent">ล่าสุด: ${recent.map(r => `${esc(r.fullname)} ${r.case_id ? `→ เคส #${esc(r.case_id)}` : `(${esc(r.status_label)})`}`).join(' · ')}</p>` : '');
         if (urgent && !state.open) toggle(true);
     }
