@@ -143,17 +143,34 @@
             node.hidden = !n;
             node.textContent = n;
         });
-        const total = unread().length;
+        const total = unread().length + gaNotes().length;
         $('gdBellCount').hidden = !total;
         $('gdBellCount').textContent = total > 99 ? '99+' : total;
     }
+    // ข้อความ/สถานะจาก GA ในรายการที่ส่ง (เช่น "แจ้งประกันเรียบร้อย เข้ารักษาได้เลย") ที่ยังไม่ได้เปิดอ่าน
+    const seenKey = () => `gdSeenNotes:${state.session?.employee?.ID || ''}`;
+    const seenNotes = () => { try { return new Set(JSON.parse(localStorage.getItem(seenKey()) || '[]')); } catch { return new Set(); } };
+    const noteId = r => `${r.id}|${r.handled_at || ''}`;
+    const gaNotes = () => { const seen = seenNotes(); return (state.mine || []).filter(r => r.admin_note && r.handled_at && !seen.has(noteId(r))); };
+    function markNoteSeen(id) {
+        const seen = seenNotes(); seen.add(id);
+        try { localStorage.setItem(seenKey(), JSON.stringify([...seen].slice(-300))); } catch { /* ไม่เป็นไร */ }
+        renderAlerts(); renderBadges();
+    }
     function renderAlerts() {
         const list = unread();
+        const notes = gaNotes();
         const box = $('gdAlerts');
-        box.classList.toggle('is-empty', !list.length);
+        const total = list.length + notes.length;
+        box.classList.toggle('is-empty', !total);
         const groups = new Map();
         list.forEach(t => { if (!groups.has(t.box)) groups.set(t.box, []); groups.get(t.box).push(t); });
-        box.innerHTML = `<h3>🔔 แจ้งเตือนสำหรับคุณ ${list.length ? `<span class="gd-count">${list.length}</span>` : ''}</h3>`
+        box.innerHTML = `<h3>🔔 แจ้งเตือนสำหรับคุณ ${total ? `<span class="gd-count">${total}</span>` : ''}</h3>`
+            + notes.map(r => `<button type="button" class="gd-alert is-ga-note" data-ga-note="${esc(noteId(r))}">
+                    <span>📣</span>
+                    <span><b>${esc(r.type_title)}${r.case_id ? ` · เคส #${esc(r.case_id)}` : ''}</b><small>GA: ${esc(r.admin_note)}</small></span>
+                    <span class="gd-tag is-new">ใหม่</span>
+                </button>`).join('')
             + (list.length ? [...groups.entries()].map(([key, items]) => {
                 const info = boxInfo(key);
                 return `<button type="button" class="gd-alert" data-box="${esc(key)}">
@@ -161,7 +178,7 @@
                     <span><b>${esc(items[0].box_title || info.title)}</b><small>${esc(items.map(t => t.title).join(' · '))}</small></span>
                     <span class="gd-count">${items.length}</span>
                 </button>`;
-            }).join('') : '<p class="gd-empty">ไม่มีงานแจ้งเตือน ✓</p>');
+            }).join('') : notes.length ? '' : '<p class="gd-empty">ไม่มีงานแจ้งเตือน ✓</p>');
     }
     // หน้ารวมงานในกล่อง (กล่องที่สร้างเอง / ข่าวและภารกิจ)
     function tasksHtml(tasks) {
@@ -305,6 +322,7 @@
             const { records } = await call('/mine');
             state.mine = records;
             renderBadges();
+            renderAlerts();
             const icon = key => state.config.forms.find(f => f.key === key)?.icon || '📄';
             box.innerHTML = records.length ? records.map(r => {
                 const slips = r.files.filter(f => f.field === 'refund_slip');
@@ -688,6 +706,13 @@
 
     // ---------------------------------------------------------------- ปุ่ม
     document.addEventListener('click', event => {
+        const gaNote = event.target.closest('[data-ga-note]');
+        if (gaNote) {
+            markNoteSeen(gaNote.dataset.gaNote);
+            const rec = $('gdMine').querySelector(`[data-rec="${gaNote.dataset.gaNote.split('|')[0]}"]`) || $('gdMine');
+            rec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
         const tile = event.target.closest('[data-open]');
         if (tile) return openForm(tile.dataset.open);
         const formButton = event.target.closest('[data-open-box]');

@@ -20,7 +20,7 @@
     if (card) card.before(box); else form.before(box);
 
     // รอรับเคส = ยังไม่มีเลขเคส (รวมรายการที่ถูกกดสถานะไปก่อนเปิดเคส)
-    const pending = () => state.records.filter(r => !r.case_id && !['billed', 'deleted'].includes(r.status));
+    const pending = () => state.records.filter(r => r.type !== 'medical' && !r.case_id && !['billed', 'deleted'].includes(r.status));
     const isAnnual = r => r.type === 'annual';
     // สถานะสำเร็จรูปที่ GA เลือกแจ้งกลับให้พนักงาน
     const NOTICES = r => isAnnual(r)
@@ -60,10 +60,13 @@
         const list = pending().sort((a, b) => (b.urgent - a.urgent) || a.id - b.id);
         const urgent = list.filter(r => r.urgent).length;
         const count = document.getElementById('intakeCount');
-        count.textContent = list.length ? `รอรับเคส ${list.length}${urgent ? ` · ด่วน ${urgent}` : ''}` : 'ไม่มีเรื่องค้าง';
-        count.className = `intake-count${urgent ? ' is-urgent' : list.length ? ' is-wait' : ''}`;
+        const billWait = state.records.filter(r => r.type === 'medical' && ['pending', 'rejected', 'approved'].includes(r.status)).length;
+        count.textContent = [list.length ? `รอรับเคส ${list.length}` : '', urgent ? `ด่วน ${urgent}` : '', billWait ? `บิลรอปิดเคส ${billWait}` : ''].filter(Boolean).join(' · ') || 'ไม่มีเรื่องค้าง';
+        count.className = `intake-count${urgent ? ' is-urgent' : list.length || billWait ? ' is-wait' : ''}`;
         // เปิดเคสแล้ว (ยังไม่ส่งบิล) → GA เลือกสถานะแจ้งกลับให้พนักงาน
-        const recent = state.records.filter(r => r.case_id && !['billed', 'deleted'].includes(r.status)).slice(0, 15);
+        const recent = state.records.filter(r => r.type !== 'medical' && r.case_id && !['billed', 'deleted', 'waiting', 'insurance', 'refunded', 'done'].includes(r.status)).slice(0, 15);
+        // บิลค่ารักษาที่พนักงานส่งจากเคส → GA บันทึกลงเคส แล้วกด "ปิดเคสแล้ว"
+        const bills = state.records.filter(r => r.type === 'medical' && ['pending', 'rejected', 'approved'].includes(r.status)).slice(0, 30);
         document.getElementById('intakeList').innerHTML = (list.length ? `<table class="intake-table">
             <thead><tr><th>ประเภท</th><th>พนักงาน</th><th>วันที่</th><th>โรงพยาบาล / อาการ</th><th class="num">ยอด (฿)</th><th>ติดต่อ</th><th>เอกสาร</th><th>แจ้งเมื่อ</th><th></th></tr></thead>
             <tbody>${list.map(r => {
@@ -89,11 +92,26 @@
             ${recent.map(r => `<tr>
                 <td><span class="intake-tag${isAnnual(r) ? ' is-annual' : ''}">${isAnnual(r) ? 'ตรวจสุขภาพ' : 'เข้ารักษา'}</span></td>
                 <td><b>${esc(r.fullname)}</b><small>${esc(r.company || '')} · ${esc(r.insurance_code || r.employee_id || '')}</small></td>
-                <td class="nowrap">#${esc(r.case_id)}</td>
+                <td class="nowrap">#${esc(r.case_id)} <button type="button" class="intake-fixcase" data-fix-case="${r.id}" title="แก้เลขเคสที่ผูกกับเรื่องนี้">✏️</button></td>
                 <td class="clip" title="${esc(r.admin_note || '')}">${esc(r.admin_note || '-')}</td>
                 <td class="nowrap"><select data-notice-pick="${r.id}">${NOTICES(r).map(n => `<option>${esc(n)}</option>`).join('')}<option value="__custom">✏️ พิมพ์เอง…</option></select>
-                    <button type="button" class="intake-take" data-notice-send="${r.id}">แจ้ง</button></td>
-            </tr>`).join('')}</tbody></table>` : '');
+                    <button type="button" class="intake-take" data-notice-send="${r.id}">แจ้ง</button>
+                    <button type="button" class="intake-end" data-step="${r.id}" data-step-to="${isAnnual(r) ? 'insurance' : 'waiting'}" title="${isAnnual(r) ? 'จบงานนี้ — ส่งเบิกประกันแล้ว' : 'แจ้งพนักงานแล้ว ซ่อนไว้ — กลับมาแสดงเมื่อพนักงานส่งบิลค่ารักษา'}">สิ้นสุด</button></td>
+            </tr>`).join('')}</tbody></table>` : '')
+            + (bills.length ? `<div class="intake-sub is-bill">🧾 ส่งบิลค่ารักษาแล้ว — บันทึกยอดลงเคส แล้วกด "ปิดเคสแล้ว"</div>
+            <table class="intake-table"><thead><tr><th>พนักงาน</th><th>เคส</th><th>ประเภทการรักษา</th><th>วันที่</th><th>โรงพยาบาล</th><th class="num">ยอด (฿)</th><th>รับเงิน</th><th>เอกสาร</th><th></th></tr></thead><tbody>
+            ${bills.map(r => `<tr>
+                <td><b>${esc(r.fullname)}</b><small>${esc(r.company || '')} · ${esc(r.insurance_code || r.employee_id || '')}</small></td>
+                <td class="nowrap">#${esc(r.case_id)}</td>
+                <td>${esc(val(r, 'treat_type') || '-')}</td>
+                <td class="nowrap">${esc(thDate(val(r, 'treat_date')))}</td>
+                <td class="clip">${esc(val(r, 'hospital') || '-')}</td>
+                <td class="num">${esc(money(val(r, 'amount')))}</td>
+                <td class="nowrap">${esc(val(r, 'pay') || '-')}${val(r, 'refund_account_no') ? `<small>${esc(val(r, 'refund_bank'))} ${esc(val(r, 'refund_account_no'))}</small>` : ''}</td>
+                <td>${r.files.length ? `<button type="button" class="intake-docbtn" data-intake-docs="${r.id}">📎 ${r.files.length}</button>` : '-'}</td>
+                <td><button type="button" class="intake-take" data-step="${r.id}" data-step-to="insurance" title="บันทึกยอดลงเคสในประวัติการรักษาแล้ว — ซ่อนจากรายการ (พนักงานเห็น 'รอประกันตรวจสอบและโอนเงินคืน')">ปิดเคสแล้ว</button></td>
+            </tr>
+            <tr class="intake-docrow" data-docrow="${r.id}" hidden><td colspan="9"><div class="intake-files">${r.files.map(x => `<button type="button" data-intake-file="${r.id}/${x.n}" data-mime="${esc(x.mime)}">${esc(x.field_label)} ${x.index}</button>`).join('')}</div></td></tr>`).join('')}</tbody></table>` : '');
         if (urgent && !state.open) toggle(true);
     }
     function toggle(force) {
@@ -200,6 +218,30 @@
 
     box.addEventListener('click', event => {
         if (event.target.closest('[data-intake-toggle]')) return toggle();
+        const fix = event.target.closest('[data-fix-case]');
+        if (fix) {
+            const r = state.records.find(x => x.id === Number(fix.dataset.fixCase));
+            const next = (prompt(`แก้เลขเคสของ ${r?.fullname || ''} (ตอนนี้ #${r?.case_id || '-'})\nใส่เลขเคสที่ถูกต้องจากประวัติการรักษา`, r?.case_id || '') || '').trim().replace(/^#/, '');
+            if (!next || next === r?.case_id) return;
+            fix.disabled = true;
+            window.authFetch(`${API()}/records/${fix.dataset.fixCase}/case`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ case_id: next }) })
+                .then(res => res.json().then(d => { if (!res.ok || d.success === false) throw new Error(d.message || 'แก้เลขเคสไม่สำเร็จ'); }))
+                .then(load).catch(error => { alert(error.message); fix.disabled = false; });
+            return;
+        }
+        const stepBtn = event.target.closest('[data-step]');
+        if (stepBtn) {
+            const r = state.records.find(x => x.id === Number(stepBtn.dataset.step));
+            const msg = stepBtn.dataset.stepTo === 'waiting'
+                ? `สิ้นสุดการแจ้งของ ${r?.fullname || ''} (เคส #${r?.case_id || '-'})?\n\nเรื่องนี้จะหายจากรายการ และกลับมาที่ "ส่งบิลค่ารักษาแล้ว" เมื่อพนักงานอัปโหลดบิลค่ารักษา`
+                : `ยืนยัน${r?.type === 'medical' ? 'บันทึกบิลลงเคสแล้ว' : 'จบงาน'}ของ ${r?.fullname || ''} (เคส #${r?.case_id || '-'})?\n\nพนักงานจะเห็นสถานะ "รอประกันตรวจสอบและโอนเงินคืน"`;
+            if (!confirm(msg)) return;
+            stepBtn.disabled = true;
+            window.authFetch(`${API()}/records/${stepBtn.dataset.step}/step`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: stepBtn.dataset.stepTo }) })
+                .then(res => res.json().then(d => { if (!res.ok || d.success === false) throw new Error(d.message || 'บันทึกไม่สำเร็จ'); }))
+                .then(load).catch(error => { alert(error.message); stepBtn.disabled = false; });
+            return;
+        }
         const notice = event.target.closest('[data-notice-send]');
         if (notice) return sendNotice(notice.dataset.noticeSend, notice);
         const docs = event.target.closest('[data-intake-docs]');

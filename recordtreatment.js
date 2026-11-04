@@ -441,7 +441,8 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
             const result = await response.json();
             
             if (response.ok && result.success) {
-                window.TreatmentIntake?.linkCase(caseId);   // เคสที่รับจากการแจ้งของพนักงาน → ผูกเลขเคส
+                // เคสที่รับจากการแจ้งของพนักงาน → ผูกเลขเคส "ที่บันทึกจริง" (เลขที่จองบนหน้าจออาจถูกเปลี่ยนโดยหลังบ้าน)
+                window.TreatmentIntake?.linkCase(result.finalCaseId || caseId);
                 claimStatus.innerText = `✅ ${result.message}`;
                 claimStatus.style.color = 'green';
 

@@ -3002,3 +3002,8 @@ body.login-page {
 .intake-sub { padding: 8px 10px 4px; border-top: 1px solid #e5e7eb; background: #f0fdf4; color: #166534; font-size: 12.5px; font-weight: 700; }
 .intake-sub small { color: #6b7280; font-weight: 400; }
 .intake-table select { max-width: 260px; padding: 3px 6px; border: 1px solid #d1d5db; border-radius: 6px; font: inherit; font-size: 12px; }
+.intake-fixcase { padding: 0 4px; border: 0; background: none; cursor: pointer; font-size: 12px; opacity: .6; }
+.intake-fixcase:hover { opacity: 1; }
+.intake-end { margin-left: 4px; padding: 4px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; color: #374151; font: inherit; font-size: 12px; cursor: pointer; }
+.intake-end:hover { background: #f3f4f6; }
+.intake-sub.is-bill { background: #fff7ed; color: #9a3412; }
