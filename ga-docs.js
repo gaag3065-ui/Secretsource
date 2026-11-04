@@ -300,6 +300,7 @@
                     <span class="gd-item-icon">${esc(icon(r.type))}</span>
                     <div><b>${esc(r.type_title)}</b><small>เลขที่ ${r.id} · ส่งเมื่อ ${esc(when(r.submitted_at))} · ไฟล์แนบ ${r.files.length - slips.length}</small>
                         ${r.admin_note ? `<span class="gd-note">GA: ${esc(r.admin_note)}</span>` : ''}
+                        ${r.type === 'treatment' && r.status !== 'pending' ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm gd-bill" data-bill-from="${r.id}">📤 รักษาเสร็จ / ส่งบิล${r.case_id ? ` (เคส #${esc(r.case_id)})` : ''}</button>` : ''}
                         ${slips.length ? `<span class="gd-slips">${slips.map(f => `<button type="button" class="gd-btn gd-btn-sm" data-own-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">🧾 ดูสลิปโอนเงินคืน${slips.length > 1 ? ` ${f.index}` : ''}</button>`).join('')}</span>` : ''}
                         ${more}</div>
                     <span class="gd-pill is-${esc(r.status)}">${esc(r.status_label)}</span>
@@ -341,6 +342,23 @@
     document.addEventListener('click', async event => {
         const own = event.target.closest('[data-own-file]');
         if (own) { own.disabled = true; try { await openOwnFile(own.dataset.ownFile, own.dataset.mime); } catch (error) { alert(error.message); } finally { own.disabled = false; } return; }
+        const bill = event.target.closest('[data-bill-from]');
+        if (bill) {
+            const r = (state.mine || []).find(x => x.id === Number(bill.dataset.billFrom));
+            if (!r) return;
+            openForm('medical');
+            const set = (name, value) => {
+                if (!value) return;
+                const radio = $('gdFields').querySelector(`input[type=radio][name="${name}"][value="${CSS.escape(value)}"]`);
+                if (radio) radio.checked = true;
+                const input = $('gdFields').querySelector(`[name="${name}"]:not([type=radio])`);
+                if (input) input.value = value;
+            };
+            set('case_ref', r.case_id ? `เคส #${r.case_id} (แจ้งเลขที่ ${r.id})` : `แจ้งเลขที่ ${r.id}`);
+            ['treat_type', 'treat_date', 'hospital', 'symptom'].forEach(k => set(k, r.fields?.[k]));
+            refreshVisibility();
+            return;
+        }
         const resubmit = event.target.closest('[data-resubmit]');
         if (resubmit) {
             const wrap = resubmit.closest('[data-more]');

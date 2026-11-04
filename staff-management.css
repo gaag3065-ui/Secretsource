@@ -228,3 +228,12 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 .sm-viewer-stage { flex: 1; overflow: auto; display: grid; place-items: center; padding: 10px 20px 24px; }
 .sm-viewer-stage img { max-width: 92vw; max-height: 82vh; border-radius: 8px; background: #fff; transform-origin: center top; transition: transform .15s; cursor: zoom-in; }
 .sm-viewer-stage img.is-zoomed { cursor: zoom-out; }
+
+/* ลบ / คืนกล่องงาน */
+.sm-box-del { position: absolute; right: 6px; bottom: 6px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 8px; background: #fff; border: 1px solid #f5b5b5; font-size: 13px; opacity: 0; transition: opacity .15s; cursor: pointer; }
+.sm-box:hover .sm-box-del, .sm-box:focus-within .sm-box-del { opacity: 1; }
+.sm-box-del:hover { background: #fee4e2; }
+@media (hover: none) { .sm-box-del { opacity: .8; } }
+.sm-box-restore { border-color: #a6dcb9; color: #067647; background: #f3fbf6; }
+.sm-restore-list { display: grid; gap: 8px; }
+.sm-restore { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--fa-line); border-radius: 10px; }

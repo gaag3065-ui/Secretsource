@@ -139,12 +139,13 @@
             return `<button type="button" class="sm-box${total ? '' : ' is-empty'}${state.box === b.key ? ' is-on' : ''}" data-box="${esc(b.key)}"
                 title="${esc(titles.length ? `งาน: ${titles.join(' · ')}` : 'ยังไม่มีงานในกล่องนี้')}">
                 <span class="sm-box-count${waiting ? ' is-wait' : ''}" aria-label="ได้รับงาน/ส่งเอกสาร ${total} คน">${total}</span>
+                ${b.key !== 'quests' ? `<span class="sm-box-del" data-del-box="${esc(b.key)}" role="button" title="ลบกล่องงานนี้ (ลบงาน เอกสาร และไฟล์ที่เกี่ยวข้องทั้งหมด)">🗑</span>` : ''}
                 <span class="sm-box-icon">${esc(b.icon || '📌')}</span>
                 <b>${esc(b.title)}</b>
                 <small>${titles.length ? `${titles.length} งาน · ค้าง ${open} คน` : recs.length ? '' : 'ยังไม่มีงาน'}</small>
                 ${recs.length ? `<span class="sm-box-review${waiting ? ' is-wait' : ''}" data-review-box="${esc(b.key)}" title="เอกสารที่พนักงานส่งมาในกล่องนี้ — กดเพื่อดู/ตรวจ">📥 ส่งมา ${recs.length}${waiting ? ` · รอตรวจ ${waiting}` : ''}</span>` : ''}
             </button>`;
-        }).join('') + '<button type="button" class="sm-box sm-box-add" data-action="create-task" title="สร้างงานใหม่ แล้วเลือกพนักงานที่จะได้รับงาน"><span class="sm-box-icon">＋</span><b>สร้างงาน</b><small>ตั้งงานแล้วเลือกคน</small></button>';
+        }).join('') + ((state.data.removedBoxes || []).length ? `<button type="button" class="sm-box sm-box-add sm-box-restore" data-restore-list title="หัวข้อแบบฟอร์มที่ลบไปแล้ว — กดเพื่อคืนให้พนักงานเห็นอีกครั้ง"><span class="sm-box-icon">♻️</span><b>หัวข้อที่ลบ (${state.data.removedBoxes.length})</b><small>กดเพื่อคืนหัวข้อ</small></button>` : '') + '<button type="button" class="sm-box sm-box-add" data-action="create-task" title="สร้างงานใหม่ แล้วเลือกพนักงานที่จะได้รับงาน"><span class="sm-box-icon">＋</span><b>สร้างงาน</b><small>ตั้งงานแล้วเลือกคน</small></button>';
     }
 
     // ---------------------------------------------------------------- ตาราง
@@ -777,6 +778,53 @@
 
     // ---------------------------------------------------------------- ตรวจเอกสารที่พนักงานส่ง (ครบ/ไม่ครบ + ดูรูป/ไฟล์บนเว็บ)
     const blobCache = new Map();
+    // ---------------------------------------------------------------- ลบกล่องงาน (ยืนยัน 2 รอบ) — งาน เอกสารที่ส่งมา และไฟล์บน Drive ทั้งหมด
+    async function deleteBox(key) {
+        const box = (state.data.boxes || []).find(b => b.key === key);
+        if (!box) return;
+        const tasks = (state.data.tasks || []).filter(t => t.box === key);
+        const people = new Set(tasks.map(t => t.employee_key)).size;
+        const recs = (state.records || []).filter(r => r.type === key);
+        if (!confirm(`ต้องการลบกล่องงาน "${box.title}" ใช่ไหม?`)) return;
+        const detail = [
+            tasks.length ? `• งานที่มอบหมาย ${tasks.length} งาน (${people} คน) — พนักงานจะไม่เห็นงานนี้อีก` : '',
+            recs.length ? `• เอกสารที่พนักงานส่งมา ${recs.length} รายการ พร้อมรูป/ไฟล์` : '',
+            '• ชีตรายงานและโฟลเดอร์ไฟล์บน Google Drive ที่ระบบสร้าง',
+            box.custom ? '• กล่องนี้ในหน้าระบบจัดการองค์กร' : '• หัวข้อนี้ในหน้าระบบจัดการองค์กร (คืนหัวข้อได้ภายหลัง แต่ข้อมูลที่ลบจะไม่กลับมา)'
+        ].filter(Boolean).join('\n');
+        if (!confirm(`⚠️ ยืนยันอีกครั้ง\n\nถ้าลบ ข้อมูลต่อไปนี้จะหายจากทุกส่วนและทุกโฟลเดอร์ และอาจกู้คืนไม่ได้:\n${detail}\n\nกด "ตกลง" เพื่อลบ`)) return;
+        try {
+            const result = await request(`/boxes/${encodeURIComponent(key)}/delete`, { method: 'POST', body: JSON.stringify({ trashFiles: true }) });
+            state.data.boxes = result.boxes;
+            state.data.removedBoxes = result.removedBoxes;
+            state.data.tasks = state.data.tasks.filter(t => t.box !== key);
+            state.records = (state.records || []).filter(r => r.type !== key);
+            if (state.box === key) state.box = '';
+            render();
+            if (result.trashError) alert(`ลบกล่องงานแล้ว แต่ลบไฟล์บน Drive บางส่วนไม่สำเร็จ — ลบโฟลเดอร์ใน Drive เองได้\n\nสาเหตุ: ${result.trashError}`);
+            else toast(`ลบกล่อง "${box.title}" แล้ว · งาน ${result.tasks} · เอกสาร ${result.records} · ไฟล์ ${result.trashed}`);
+        } catch (error) { toast(error.message, true); }
+    }
+    function openRestore() {
+        state.mode = 'restore';
+        state.current = null;
+        $('smDetail').innerHTML = `
+            <header class="fa-detail-head"><div><h2>♻️ หัวข้อที่ลบไปแล้ว</h2><p>คืนหัวข้อให้พนักงานเห็นในหน้าระบบจัดการองค์กรอีกครั้ง (ข้อมูลที่ลบไปแล้วจะไม่กลับมา)</p></div>
+                <button type="button" class="fa-close" data-close aria-label="ปิด">×</button></header>
+            <div class="fa-detail-body"><div class="sm-restore-list">${(state.data.removedBoxes || []).map(b => `<div class="sm-restore"><span>${esc(b.icon || '📌')} <b>${esc(b.title)}</b></span><button type="button" class="fa-btn fa-btn-primary" data-restore-box="${esc(b.key)}">คืนหัวข้อ</button></div>`).join('') || '<p class="fa-empty">ไม่มีหัวข้อที่ลบ</p>'}</div></div>`;
+        if (!$('smDialog').open) $('smDialog').showModal();
+    }
+    async function restoreBox(key) {
+        try {
+            const result = await request(`/boxes/${encodeURIComponent(key)}/restore`, { method: 'POST', body: '{}' });
+            state.data.boxes = result.boxes;
+            state.data.removedBoxes = result.removedBoxes;
+            render();
+            openRestore();
+            toast('คืนหัวข้อแล้ว — พนักงานเห็นในหน้าระบบจัดการองค์กรอีกครั้ง');
+        } catch (error) { toast(error.message, true); }
+    }
+
     const recBlob = new Map();
     async function recordFileUrl(id, n) {
         const key = `${id}/${n}`;
@@ -1165,6 +1213,11 @@
         }
         const lmApply = event.target.closest('[data-lm-apply]');
         if (lmApply) return applyLineMatch(lmApply);
+        const delBox = event.target.closest('[data-del-box]');
+        if (delBox) { event.stopPropagation(); return deleteBox(delBox.dataset.delBox); }
+        if (event.target.closest('[data-restore-list]')) return openRestore();
+        const restoreBtn = event.target.closest('[data-restore-box]');
+        if (restoreBtn) return restoreBox(restoreBtn.dataset.restoreBox);
         const reviewBox = event.target.closest('[data-review-box]');
         if (reviewBox) { event.stopPropagation(); return openReviewList(reviewBox.dataset.reviewBox); }
         const recordBtn = event.target.closest('[data-record]');

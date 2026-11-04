@@ -24,6 +24,8 @@
 
     const pending = () => state.records.filter(r => r.status === 'pending');
     const val = (r, k) => r.fields?.[k] || '';
+    // แพทเทิร์นเดิม: "wowmai285 เบอร์ 0892303860" (รายการเก่าที่กรอกช่องเดียวใช้ contact)
+    const contactOf = r => val(r, 'contact') || [val(r, 'line_id'), val(r, 'phone') && `เบอร์ ${val(r, 'phone')}`].filter(Boolean).join(' ');
     const thDate = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : iso || '-'; };
     const when = text => text ? new Date(text).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }) : '';
 
@@ -49,7 +51,7 @@
                 <header><b>${r.urgent ? '🚨 ' : ''}${esc(r.fullname)}</b><small>${esc([r.employee_id, r.insurance_code, r.company].filter(Boolean).join(' · '))} · แจ้งเมื่อ ${esc(when(r.submitted_at))} · เลขที่ ${r.id}</small></header>
                 <p><span class="intake-chip">${esc(val(r, 'treat_type'))}</span> ${esc(thDate(val(r, 'treat_date')))} ${esc(val(r, 'treat_time'))} · ${esc(val(r, 'hospital'))}</p>
                 <p>อาการ: ${esc(val(r, 'symptom'))}</p>
-                <p class="intake-meta">ติดต่อ: ${esc(val(r, 'contact'))}${r.urgent ? ' · <b class="intake-hot">ค่าใช้จ่ายสูง เกิน 5,000 บาท — ประสานประกันให้จ่ายตรง</b>' : ''}${val(r, 'note') ? ` · หมายเหตุ: ${esc(val(r, 'note'))}` : ''}</p>
+                <p class="intake-meta">ติดต่อ: ${esc(contactOf(r))}${r.urgent ? ' · <b class="intake-hot">ค่าใช้จ่ายสูง เกิน 5,000 บาท — ประสานประกันให้จ่ายตรง</b>' : ''}${val(r, 'note') ? ` · หมายเหตุ: ${esc(val(r, 'note'))}` : ''}</p>
                 ${r.files.length ? `<div class="intake-files">${r.files.map(f => `<button type="button" data-intake-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">${/^image\//.test(f.mime) ? '🖼️' : '📄'} ${esc(f.field_label)} ${f.index}</button>`).join('')}</div>` : ''}
                 <button type="button" class="intake-take" data-intake-take="${r.id}">${window.__treatmentIntake?.id === r.id ? '✓ กำลังเปิดเคสนี้ (กรอกฟอร์มด้านล่างแล้ว)' : 'รับเคสนี้ → กรอกฟอร์มเปิดเคส'}</button>
             </article>`).join('') : '<p class="intake-empty">ไม่มีเรื่องแจ้งเข้ารักษาที่รอรับ ✓</p>')
@@ -119,7 +121,7 @@
             hospital.dispatchEvent(new Event('change', { bubbles: true }));
         }
         setField('symptomsInput', `${val(r, 'symptom')}${val(r, 'treat_type') ? ` (${val(r, 'treat_type')})` : ''}`);
-        setField('contactInput', val(r, 'contact'));
+        setField('contactInput', contactOf(r));
         setField('notesInput', [`แจ้งผ่านระบบจัดการองค์กร เลขที่ ${r.id}`, r.urgent ? 'ค่าใช้จ่ายอาจเกิน 5,000 บาท — ให้ประกันจ่ายตรง' : '', val(r, 'note')].filter(Boolean).join(' · '));
         window.__treatmentIntake = { id: r.id, links: r.files.map(f => f.link).filter(Boolean), name: r.fullname };
         render();
