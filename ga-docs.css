@@ -204,3 +204,30 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gd-viewer img.is-zoom { max-width: none; max-height: none; width: 180vw; cursor: zoom-out; }
 .gd-viewer button { position: fixed; top: 14px; right: 16px; width: 40px; height: 40px; border: 0; border-radius: 50%; background: #fff; font-size: 22px; cursor: pointer; }
 @media (max-width: 600px) { .gd-item { grid-template-columns: auto 1fr; } .gd-item .gd-pill { grid-column: 2; justify-self: start; } }
+
+/* หน้ารักษาพยาบาล: วงเงิน + เคสที่แจ้ง + ประวัติ */
+.gd-care { display: grid; gap: 14px; margin-bottom: 14px; }
+.gd-care-section { padding: 14px; border: 1px solid var(--gd-line); border-radius: 14px; background: #fff; }
+.gd-care-section h3, .gd-care-open { margin: 0 0 10px; font-size: 15px; }
+.gd-care-section h3 small { color: var(--gd-muted); font-weight: 400; margin-left: 6px; }
+.gd-care-open { margin: 6px 0 0; color: #be123c; }
+.gd-limits { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.gd-limit { padding: 12px; border-radius: 12px; border: 1px solid var(--gd-line); border-top: 4px solid var(--c); background: #fbfcff; }
+.gd-limit-head b { display: block; font-size: 14px; }
+.gd-limit-head small, .gd-limit-note { color: var(--gd-muted); font-size: 12px; }
+.gd-limit-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0 8px; }
+.gd-limit-nums small { display: block; color: var(--gd-muted); font-size: 11px; }
+.gd-limit-nums b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.gd-limit-nums .is-left b { color: var(--c); font-size: 17px; }
+.gd-limit-bar { height: 8px; border-radius: 8px; background: #eef1f6; overflow: hidden; }
+.gd-limit-bar i { display: block; height: 100%; background: var(--c); }
+.gd-limit-foot { margin: 10px 0 0; color: var(--gd-muted); font-size: 12.5px; }
+.gd-care-case, .gd-care-row { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; padding: 10px 0; border-top: 1px dashed var(--gd-line); }
+.gd-care-case:first-of-type, .gd-care-row:first-of-type { border-top: 0; }
+.gd-care-case small, .gd-care-main small, .gd-care-amount small { display: block; color: var(--gd-muted); font-size: 12px; }
+.gd-care-status { color: #1d4ed8 !important; }
+.gd-care-amount { text-align: right; }
+.gd-care-amount b { font-size: 15px; }
+.gd-care-docs { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.gd-pill.is-billed { background: #e8f6ee; color: #067647; border-color: #a6dcb9; }
+@media (max-width: 600px) { .gd-care-row, .gd-care-case { grid-template-columns: 1fr; } .gd-care-amount { text-align: left; } }

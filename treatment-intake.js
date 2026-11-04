@@ -49,7 +49,7 @@
         document.getElementById('intakeList').innerHTML = (list.length ? list.map(r => `
             <article class="intake-item${r.urgent ? ' is-urgent' : ''}${window.__treatmentIntake?.id === r.id ? ' is-on' : ''}">
                 <header><b>${r.urgent ? '🚨 ' : ''}${esc(r.fullname)}</b><small>${esc([r.employee_id, r.insurance_code, r.company].filter(Boolean).join(' · '))} · แจ้งเมื่อ ${esc(when(r.submitted_at))} · เลขที่ ${r.id}</small></header>
-                <p><span class="intake-chip">${esc(val(r, 'treat_type'))}</span> ${esc(thDate(val(r, 'treat_date')))} ${esc(val(r, 'treat_time'))} · ${esc(val(r, 'hospital'))}</p>
+                <p>${val(r, 'treat_type') ? `<span class="intake-chip">${esc(val(r, 'treat_type'))}</span> ` : ''}${esc(thDate(val(r, 'treat_date')))} ${esc(val(r, 'treat_time'))} · ${esc(val(r, 'hospital'))}</p>
                 <p>อาการ: ${esc(val(r, 'symptom'))}</p>
                 <p class="intake-meta">ติดต่อ: ${esc(contactOf(r))}${r.urgent ? ' · <b class="intake-hot">ค่าใช้จ่ายสูง เกิน 5,000 บาท — ประสานประกันให้จ่ายตรง</b>' : ''}${val(r, 'note') ? ` · หมายเหตุ: ${esc(val(r, 'note'))}` : ''}</p>
                 ${r.files.length ? `<div class="intake-files">${r.files.map(f => `<button type="button" data-intake-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">${/^image\//.test(f.mime) ? '🖼️' : '📄'} ${esc(f.field_label)} ${f.index}</button>`).join('')}</div>` : ''}

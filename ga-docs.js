@@ -114,9 +114,13 @@
             renderBadges();
         } catch { /* หลังบ้านยังไม่อัปเดต — ไม่แสดงแจ้งเตือน */ }
     }
+    // เคสรักษาที่แจ้งไว้และยังไม่ได้บันทึกค่ารักษา
+    const openCareCases = () => (state.mine || []).filter(r => r.type === 'treatment' && ['pending', 'received'].includes(r.status));
     function renderBadges() {
         const counts = new Map();
         unread().forEach(t => counts.set(t.box, (counts.get(t.box) || 0) + 1));
+        const openCases = openCareCases().length;
+        if (openCases) counts.set('treatment', (counts.get('treatment') || 0) + openCases);
         document.querySelectorAll('[data-badge]').forEach(node => {
             const n = counts.get(node.dataset.badge) || 0;
             node.hidden = !n;
@@ -283,6 +287,7 @@
         try {
             const { records } = await call('/mine');
             state.mine = records;
+            renderBadges();
             const icon = key => state.config.forms.find(f => f.key === key)?.icon || '📄';
             box.innerHTML = records.length ? records.map(r => {
                 const slips = r.files.filter(f => f.field === 'refund_slip');
@@ -300,7 +305,7 @@
                     <span class="gd-item-icon">${esc(icon(r.type))}</span>
                     <div><b>${esc(r.type_title)}</b><small>เลขที่ ${r.id} · ส่งเมื่อ ${esc(when(r.submitted_at))} · ไฟล์แนบ ${r.files.length - slips.length}</small>
                         ${r.admin_note ? `<span class="gd-note">GA: ${esc(r.admin_note)}</span>` : ''}
-                        ${r.type === 'treatment' && r.status !== 'pending' ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm gd-bill" data-bill-from="${r.id}">📤 รักษาเสร็จ / ส่งบิล${r.case_id ? ` (เคส #${esc(r.case_id)})` : ''}</button>` : ''}
+                        ${r.type === 'treatment' && ['pending', 'received'].includes(r.status) ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm gd-bill" data-bill-from="${r.id}">📤 รักษาเสร็จ / ส่งบิล${r.case_id ? ` (เคส #${esc(r.case_id)})` : ''}</button>` : ''}
                         ${slips.length ? `<span class="gd-slips">${slips.map(f => `<button type="button" class="gd-btn gd-btn-sm" data-own-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">🧾 ดูสลิปโอนเงินคืน${slips.length > 1 ? ` ${f.index}` : ''}</button>`).join('')}</span>` : ''}
                         ${more}</div>
                     <span class="gd-pill is-${esc(r.status)}">${esc(r.status_label)}</span>
@@ -347,6 +352,7 @@
             const r = (state.mine || []).find(x => x.id === Number(bill.dataset.billFrom));
             if (!r) return;
             openForm('medical');
+            state.billFrom = r.id;
             const set = (name, value) => {
                 if (!value) return;
                 const radio = $('gdFields').querySelector(`input[type=radio][name="${name}"][value="${CSS.escape(value)}"]`);
@@ -355,7 +361,7 @@
                 if (input) input.value = value;
             };
             set('case_ref', r.case_id ? `เคส #${r.case_id} (แจ้งเลขที่ ${r.id})` : `แจ้งเลขที่ ${r.id}`);
-            ['treat_type', 'treat_date', 'hospital', 'symptom'].forEach(k => set(k, r.fields?.[k]));
+            ['treat_date', 'hospital', 'symptom'].forEach(k => set(k, r.fields?.[k]));
             refreshVisibility();
             return;
         }
@@ -370,9 +376,69 @@
     });
 
     // ---------------------------------------------------------------- แบบฟอร์ม
+    const money = n => Number(n || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
+    function limitCard(title, sub, limit, balance, color) {
+        const used = balance === null ? null : Math.max(0, limit - balance);
+        const pct = limit ? Math.min(100, Math.round((used || 0) / limit * 100)) : 0;
+        return `<div class="gd-limit" style="--c:${color}"><div class="gd-limit-head"><b>${title}</b><small>${sub}</small></div>
+            <div class="gd-limit-nums"><div><small>วงเงินตั้งต้น</small><b>${money(limit)}</b></div><div><small>ใช้ไป</small><b>${used === null ? '-' : money(used)}</b></div><div class="is-left"><small>คงเหลือ</small><b>${balance === null ? '-' : money(balance)}</b></div></div>
+            <div class="gd-limit-bar"><i style="width:${pct}%"></i></div><small class="gd-limit-note">${balance !== null && balance < 1000 ? '⚠️ วงเงินเหลือน้อย' : `ใช้ไป ${pct}%`}</small></div>`;
+    }
+    async function renderCare() {
+        const box = document.createElement('div');
+        box.className = 'gd-care';
+        box.innerHTML = '<p class="gd-empty">กำลังโหลดวงเงินและประวัติการรักษา…</p>';
+        $('gdInfo').prepend(box);
+        const cases = openCareCases();
+        const casesHtml = cases.length ? `<section class="gd-care-section"><h3>🩺 เคสที่แจ้งไว้ (${cases.length}) — รักษาเสร็จแล้วกดบันทึกค่ารักษา</h3>
+            ${cases.map(r => `<div class="gd-care-case"><div><b>${esc(r.fields?.hospital || '-')}</b><small>${esc(thDate(r.fields?.treat_date || ''))} ${esc(r.fields?.treat_time || '')} · ${esc(r.fields?.symptom || '')}</small>
+                <small>เลขที่ ${r.id}${r.case_id ? ` · เคสประกัน #${esc(r.case_id)}` : ''} · <span class="gd-pill is-${esc(r.status)}">${r.status === 'pending' ? 'รอ GA เปิดเคส' : 'GA เปิดเคสแล้ว'}</span></small></div>
+                <button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-bill-from="${r.id}">📤 บันทึกค่ารักษา</button></div>`).join('')}</section>` : '';
+        let summary = null;
+        try { summary = (await call('/care')).summary; } catch (error) { box.innerHTML = casesHtml + `<p class="gd-empty">${esc(error.message)}</p>`; return; }
+        if (!summary) { box.innerHTML = casesHtml + '<p class="gd-empty">ยังไม่พบข้อมูลวงเงินประกันของคุณ — กรุณาติดต่อ GA</p>'; return; }
+        const history = summary.cases.length ? summary.cases.map(c => {
+            const parts = [c.opd && `OPD ${money(c.opd)}`, c.dental && `ทันตกรรม (OPD) ${money(c.dental)}`, c.ipd && `IPD ${money(c.ipd)}`, c.other && `วงเงินอื่นๆ ${money(c.other)}`].filter(Boolean);
+            return `<div class="gd-care-row"><div class="gd-care-main"><b>${esc(c.hospital || '-')}</b><small>${esc(c.date || '-')} · เคส #${esc(c.caseId)} · ${esc(c.symptoms || '')}</small>
+                <small class="gd-care-status">${esc(c.status || '')}</small></div>
+                <div class="gd-care-amount"><b>${c.total ? `${money(c.total)} บาท` : '—'}</b><small>${esc(parts.join(' · ') || 'ยังไม่บันทึกยอด')}</small></div>
+                ${c.docs.length ? `<div class="gd-care-docs">${c.docs.map(d => `<button type="button" class="gd-btn gd-btn-sm" data-care-doc="${esc(c.caseId)}/${d.n}">${d.label === 'ใบเสร็จ' ? '🧾' : '📎'} ${esc(d.label)}</button>`).join('')}</div>` : ''}</div>`;
+        }).join('') : '<p class="gd-empty">ยังไม่มีประวัติการรักษา</p>';
+        box.innerHTML = `
+            <section class="gd-care-section"><h3>💳 วงเงินค่ารักษาพยาบาลของคุณ <small>Size ${esc(summary.size || '-')}</small></h3>
+                <div class="gd-limits">${limitCard('ผู้ป่วยนอก (OPD)', 'รวมทันตกรรม / ทำฟัน', summary.opd.limit, summary.opd.balance, '#2563eb')}
+                ${limitCard('ผู้ป่วยใน (IPD)', 'นอนโรงพยาบาล', summary.ipd.limit, summary.ipd.balance, '#7c3aed')}
+                ${summary.other ? limitCard('วงเงินอื่นๆ', 'แยกจาก OPD / IPD', summary.other.limit, summary.other.balance, '#0d9488') : ''}</div>
+                <p class="gd-limit-foot">ทันตกรรม / ทำฟัน หักจากวงเงิน OPD เท่านั้น · ค่ารักษาไม่เกิน 5,000 บาท สำรองจ่ายเองแล้วเบิกคืน</p></section>
+            ${casesHtml}
+            <section class="gd-care-section"><h3>📋 ประวัติการรักษา (${summary.cases.length} ครั้ง)</h3>${history}</section>
+            <h3 class="gd-care-open">＋ แจ้งเปิดเคสก่อนไปรักษา</h3>`;
+    }
+    async function openCareDoc(ref) {
+        const [caseId, n] = ref.split('/');
+        const response = await fetch(`${API}/care/file/${encodeURIComponent(caseId)}/${n}`, { headers: { Authorization: `Bearer ${state.session?.token || ''}` } });
+        if (!response.ok) throw new Error('เปิดเอกสารไม่ได้');
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        if (!/^image\//.test(blob.type)) { window.open(url, '_blank'); return; }
+        const viewer = document.createElement('div');
+        viewer.className = 'gd-viewer';
+        viewer.innerHTML = `<img src="${url}" alt=""><button type="button" aria-label="ปิด">×</button>`;
+        viewer.addEventListener('click', event => { if (event.target.tagName !== 'IMG') viewer.remove(); });
+        viewer.querySelector('img').addEventListener('click', event => event.target.classList.toggle('is-zoom'));
+        document.body.append(viewer);
+    }
+    document.addEventListener('click', async event => {
+        const doc = event.target.closest('[data-care-doc]');
+        if (!doc) return;
+        doc.disabled = true;
+        try { await openCareDoc(doc.dataset.careDoc); } catch (error) { alert(error.message); } finally { doc.disabled = false; }
+    });
+
     function openForm(key) {
         const form = menuItems().find(f => f.key === key);
         if (!form) return;
+        if (key !== 'medical') state.billFrom = null;
         if (form.link) { location.href = form.link; return; }
         if (form.concept || form.box) return openBox(key);
         document.querySelector('.gd-submit').hidden = false;
@@ -389,6 +455,7 @@
         const mustAck = boxTasks.some(t => !t.acknowledged_at);
         if (mustAck) $('gdInfo').innerHTML += '<p class="gd-lock-note">🔒 กรุณากด "รับทราบและดำเนินการ" ที่งานด้านบนก่อน จึงจะกรอกข้อมูลและอัปโหลดเอกสารได้</p>';
         $('gdFields').innerHTML = form.fields.map(fieldHtml).join('');
+        if (key === 'treatment') renderCare();
         $('gdFields').classList.toggle('is-locked', mustAck);
         $('gdFields').querySelectorAll('input, select, textarea, button').forEach(el => { el.disabled = mustAck; });
         document.querySelector('.gd-submit').disabled = mustAck;
@@ -531,6 +598,7 @@
             msg($('gdFormMsg'), 'กำลังส่งข้อมูล…');
             step(5);
             const { id } = await call('/submit', { type: form.key, fields: v });
+            const fromCase = form.key === 'medical' ? state.billFrom : null;
             for (let i = 0; i < uploads.length; i++) {
                 msg($('gdFormMsg'), `กำลังอัปโหลดไฟล์ ${i + 1}/${uploads.length}…`);
                 step(10 + Math.round(i / uploads.length * 80));
@@ -538,7 +606,9 @@
             }
             msg($('gdFormMsg'), 'กำลังยืนยันการส่ง…');
             step(95);
-            await call('/finalize', { id });
+            await call('/finalize', { id, from_case: fromCase || undefined });
+            state.billFrom = null;
+            loadMine();
             $('gdDoneText').textContent = `${form.title} · เลขที่ ${id} — GA จะตรวจสอบและอัปเดตสถานะในหน้า "รายการที่ฉันส่ง"`;
             show('gdDone');
             window.scrollTo(0, 0);
