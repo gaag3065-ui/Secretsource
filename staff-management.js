@@ -911,6 +911,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
                         <label class="sm-wide">หมายเหตุถึงพนักงาน (เช่น ขอใบเสร็จตัวจริงเพิ่ม)<textarea name="note" maxlength="1000">${esc(r.admin_note || '')}</textarea></label>
                         <div class="sm-form-foot"><span class="sm-meta">${r.handled_by ? `ตรวจล่าสุดโดย ${esc(r.handled_by)} ${esc(when(r.handled_at))}` : 'ยังไม่ได้ตรวจ'}</span><button type="submit" class="fa-btn fa-btn-primary">บันทึกผลการตรวจ</button></div>
                     </form></section>
+                <div class="sm-rec-danger"><button type="button" class="fa-btn sm-btn-danger" data-del-record="${r.id}">🗑️ ลบรายการนี้</button><small>ลบออกจากทุกหน้า (พนักงานจะไม่เห็นแล้ว) และย้ายไฟล์แนบไปถังขยะ Drive</small></div>
             </div>`;
         if (!$('smDialog').open) $('smDialog').showModal();
         syncRecForm($('smRecForm'));
@@ -918,6 +919,26 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
             const [rid, n] = img.dataset.recImg.split('/');
             recordFileUrl(rid, n).then(url => { img.src = url; }).catch(() => { img.alt = 'เปิดไม่ได้'; });
         });
+    }
+    async function deleteRecord(id, button) {
+        const r = (state.records || []).find(x => x.id === Number(id));
+        if (!r) return;
+        if (!confirm(`ลบรายการ "${r.type_title}" #${r.id} ของ ${r.fullname} ?
+
+รายการจะหายจากหน้าจัดการพนักงาน หน้างานประกัน และหน้าของพนักงาน`)) return;
+        if (!confirm(`ยืนยันอีกครั้ง — ลบรายการ #${r.id} และย้ายไฟล์แนบ ${r.files.length} ไฟล์ไปถังขยะ Drive
+(กู้คืนไฟล์ได้จากถังขยะ Drive ภายใน 30 วัน)`)) return;
+        button.disabled = true;
+        try {
+            await ensureCsrf();
+            const response = await window.authFetch(docsApi(`/records/${r.id}/delete`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) throw new Error(data.message || (response.status === 403 ? 'บัญชีนี้ไม่มีสิทธิ์ตรวจเอกสาร (ReviewGaDocs)' : 'ลบไม่สำเร็จ'));
+            state.records = state.records.filter(x => x.id !== r.id);
+            $('smDialog').close();
+            render();
+            toast(`ลบรายการ #${r.id} แล้ว${data.trashed ? ` · ไฟล์ ${data.trashed} ไฟล์ไปถังขยะ` : ''}`);
+        } catch (error) { toast(error.message, true); button.disabled = false; }
     }
     function syncRecForm(form) {
         if (!form) return;
@@ -1253,6 +1274,8 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         if (recordBtn) return openRecord(recordBtn.dataset.record);
         const copyPattern = event.target.closest('[data-copy-pattern]');
         if (copyPattern) { const pre = $('smDetail').querySelector('.sm-pattern'); if (pre) navigator.clipboard?.writeText(pre.textContent).then(() => toast('คัดลอกข้อความแจ้งประกันแล้ว')).catch(() => {}); if (copyPattern.tagName === 'BUTTON') return; }
+        const delRecord = event.target.closest('[data-del-record]');
+        if (delRecord) return deleteRecord(delRecord.dataset.delRecord, delRecord);
         const openIntake = event.target.closest('[data-open-intake]');
         if (openIntake) { $('smDialog').close(); window.parent.postMessage({ type: 'open-insurance-intake', id: openIntake.dataset.openIntake }, location.origin); return; }
         const recFile = event.target.closest('[data-rec-file]');

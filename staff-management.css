@@ -245,3 +245,7 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 .sm-pattern { margin: 8px 0; padding: 10px 12px; border-radius: 8px; background: #f7f9fc; border: 1px solid #e3e8f0; font: inherit; font-size: 13px; white-space: pre-wrap; }
 .sm-pattern-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .sm-pattern-actions a { text-decoration: none; }
+.sm-rec-danger { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed #fecaca; }
+.sm-rec-danger small { color: #6b7280; font-size: 12px; }
+.sm-btn-danger { color: #b42318; border-color: #fecaca; background: #fff5f5; }
+.sm-btn-danger:hover { background: #fee2e2; }
