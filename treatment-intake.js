@@ -11,7 +11,7 @@
 
     const box = document.createElement('section');
     box.className = 'intake-box';
-    box.innerHTML = '<button type="button" class="intake-head" data-intake-toggle><b>📥 พนักงานแจ้งเข้ารักษา</b><span class="intake-count" id="intakeCount">…</span><span class="intake-caret">▾</span></button><div class="intake-list" id="intakeList" hidden></div>';
+    box.innerHTML = '<button type="button" class="intake-head" data-intake-toggle><b>📥 พนักงานแจ้งเข้ารักษา / ตรวจสุขภาพ</b><span class="intake-count" id="intakeCount">…</span><span class="intake-caret">▾</span></button><div class="intake-list" id="intakeList" hidden></div>';
     const form = document.getElementById('claimForm');
     if (!form) return;
     // วางเป็นกล่องเล็กด้านบน ข้างช่องค้นหาพนักงาน (รายการเปิดเป็นแผงลอยด้านล่าง) · ไม่มีส่วนค้นหา → วางเหนือฟอร์มเหมือนเดิม
@@ -22,6 +22,8 @@
 
     // รอรับเคส = ยังไม่มีเลขเคส (รวมรายการที่ถูกกดสถานะไปก่อนเปิดเคส)
     const pending = () => state.records.filter(r => !r.case_id && !['billed', 'deleted'].includes(r.status));
+    const isAnnual = r => r.type === 'annual';
+    const money = v => Number(v || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 });
     const val = (r, k) => r.fields?.[k] || '';
     // แพทเทิร์นเดิม: "wowmai285 เบอร์ 0892303860" (รายการเก่าที่กรอกช่องเดียวใช้ contact)
     const contactOf = r => val(r, 'contact') || [val(r, 'line_id'), val(r, 'phone') && `เบอร์ ${val(r, 'phone')}`].filter(Boolean).join(' ');
@@ -48,8 +50,11 @@
         document.getElementById('intakeList').innerHTML = (list.length ? list.map(r => `
             <article class="intake-item${r.urgent ? ' is-urgent' : ''}${window.__treatmentIntake?.id === r.id ? ' is-on' : ''}">
                 <header><b>${r.urgent ? '🚨 ' : ''}${esc(r.fullname)}</b><small>${esc([r.employee_id, r.insurance_code, r.company].filter(Boolean).join(' · '))} · แจ้งเมื่อ ${esc(when(r.submitted_at))} · เลขที่ ${r.id}</small></header>
-                <p>${val(r, 'treat_type') ? `<span class="intake-chip">${esc(val(r, 'treat_type'))}</span> ` : ''}${esc(thDate(val(r, 'treat_date')))} ${esc(val(r, 'treat_time'))} · ${esc(val(r, 'hospital'))}</p>
-                <p>อาการ: ${esc(val(r, 'symptom'))}</p>
+                ${isAnnual(r)
+                    ? `<p><span class="intake-chip is-annual">🩺 ตรวจสุขภาพประจำปี (เบิกย้อนหลัง)</span> ตรวจเมื่อ ${esc(thDate(val(r, 'check_date')))} · ${esc(val(r, 'hospital'))}</p>
+                       <p>ยอดตามใบเสร็จ <b>${esc(money(val(r, 'amount')))} บาท</b> — เปิดเคสก่อน แล้วบันทึกยอดในวงเงินอื่นๆ ตอนปิดเคส</p>`
+                    : `<p>${val(r, 'treat_type') ? `<span class="intake-chip">${esc(val(r, 'treat_type'))}</span> ` : ''}${esc(thDate(val(r, 'treat_date')))} ${esc(val(r, 'treat_time'))} · ${esc(val(r, 'hospital'))}</p>
+                       <p>อาการ: ${esc(val(r, 'symptom'))}</p>`}
                 <p class="intake-meta">ติดต่อ: ${esc(contactOf(r))}${r.urgent ? ' · <b class="intake-hot">ค่าใช้จ่ายสูง เกิน 5,000 บาท — ประสานประกันให้จ่ายตรง</b>' : ''}${val(r, 'note') ? ` · หมายเหตุ: ${esc(val(r, 'note'))}` : ''}</p>
                 ${r.files.length ? `<div class="intake-files">${r.files.map(f => `<button type="button" data-intake-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">${/^image\//.test(f.mime) ? '🖼️' : '📄'} ${esc(f.field_label)} ${f.index}</button>`).join('')}</div>` : ''}
                 <button type="button" class="intake-take" data-intake-take="${r.id}">${window.__treatmentIntake?.id === r.id ? '✓ กำลังเปิดเคสนี้ (กรอกฟอร์มด้านล่างแล้ว)' : 'รับเคสนี้ → กรอกฟอร์มเปิดเคส'}</button>
@@ -108,9 +113,9 @@
         option.click();
         await waitFor(() => document.getElementById('hiddenInsuranceId')?.value);
         await wait(200);
-        const [y, m, d] = String(val(r, 'treat_date')).split('-');
+        const [y, m, d] = String(val(r, isAnnual(r) ? 'check_date' : 'treat_date')).split('-');
         setField('manualDate', d ? `${d}/${m}/${y}` : '');
-        setField('manualTime', val(r, 'treat_time'));
+        setField('manualTime', val(r, 'treat_time'));   // ตรวจสุขภาพ: ไม่มีเวลา ให้ GA กรอกเอง
         const hospital = document.getElementById('hospitalSelect');
         if (hospital && val(r, 'hospital')) {
             hospital.disabled = false;
@@ -120,9 +125,15 @@
             hospital.value = match ? match.value : name;
             hospital.dispatchEvent(new Event('change', { bubbles: true }));
         }
-        setField('symptomsInput', `${val(r, 'symptom')}${val(r, 'treat_type') ? ` (${val(r, 'treat_type')})` : ''}`);
-        setField('contactInput', contactOf(r));
-        setField('notesInput', [`แจ้งผ่านระบบจัดการองค์กร เลขที่ ${r.id}`, r.urgent ? 'ค่าใช้จ่ายอาจเกิน 5,000 บาท — ให้ประกันจ่ายตรง' : '', val(r, 'note')].filter(Boolean).join(' · '));
+        if (isAnnual(r)) {
+            setField('symptomsInput', 'ตรวจสุขภาพประจำปี 2026 (เบิกย้อนหลัง)');
+            setField('contactInput', val(r, 'phone') ? `เบอร์ ${val(r, 'phone')}` : '');
+            setField('notesInput', [`ส่งเอกสารผ่านระบบจัดการองค์กร เลขที่ ${r.id}`, `ยอดตามใบเสร็จ ${money(val(r, 'amount'))} บาท (หักวงเงินอื่นๆ ตอนปิดเคส)`, val(r, 'note')].filter(Boolean).join(' · '));
+        } else {
+            setField('symptomsInput', `${val(r, 'symptom')}${val(r, 'treat_type') ? ` (${val(r, 'treat_type')})` : ''}`);
+            setField('contactInput', contactOf(r));
+            setField('notesInput', [`แจ้งผ่านระบบจัดการองค์กร เลขที่ ${r.id}`, r.urgent ? 'ค่าใช้จ่ายอาจเกิน 5,000 บาท — ให้ประกันจ่ายตรง' : '', val(r, 'note')].filter(Boolean).join(' · '));
+        }
         window.__treatmentIntake = { id: r.id, links: r.files.map(f => f.link).filter(Boolean), name: r.fullname };
         render();
         form.scrollIntoView({ behavior: 'smooth', block: 'start' });

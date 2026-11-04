@@ -517,7 +517,7 @@
             <label class="gd-pick">＋ แนบไฟล์ <small>(รูปหรือ PDF${(f.max || 10) > 1 ? ` · ได้ถึง ${f.max || 10} ไฟล์` : ''})</small><input type="file" accept="image/*,application/pdf" ${(f.max || 10) > 1 ? 'multiple' : ''} data-files="${esc(f.name)}"></label>
             <div class="gd-thumbs" data-thumbs="${esc(f.name)}"></div></div>`;
         else if (f.type === 'number') input = `<input type="number" inputmode="decimal" min="0" step="0.01" ${attrs}>`;
-        else input = `<input type="${f.type === 'tel' ? 'tel' : f.type === 'date' ? 'date' : f.type === 'time' ? 'time' : 'text'}" ${attrs}>`;
+        else input = `<input type="${f.type === 'tel' ? 'tel' : f.type === 'date' ? 'date' : f.type === 'time' ? 'time' : 'text'}" ${attrs}${f.maxDate ? ` max="${esc(f.maxDate)}"` : ''}>`;
         return `<div class="gd-field" data-field="${esc(f.name)}"><label for="${id}">${label}</label>${input}</div>`;
     }
     const values = () => {

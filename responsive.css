@@ -2954,3 +2954,4 @@ body.login-page {
     .intake-box.is-top { position: static; width: auto; margin: 10px 0 0; }
     .intake-box.is-top .intake-list { position: static; width: auto; box-shadow: none; border: 0; border-top: 1px solid #f3c1cc; border-radius: 0; }
 }
+.intake-chip.is-annual { background: #eff6ff; color: #1d4ed8; }
