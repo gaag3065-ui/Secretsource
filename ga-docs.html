@@ -8,10 +8,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="ga-docs.css?v=20261104-care">
+    <link rel="stylesheet" href="ga-docs.css?v=20261104-boot">
     <link rel="icon" href="icons/icon-192.png">
+    <!-- เปิด/รีเฟรชหน้า: ซ่อนทุกหน้าจนกว่าจะรู้ว่าเข้าสู่ระบบอยู่หรือไม่ (ไม่ให้หน้าเข้าสู่ระบบโผล่ขึ้นมาแวบหนึ่ง) -->
+    <script>document.documentElement.classList.add('gd-booting');</script>
 </head>
 <body>
+    <div class="gd-splash" role="status" aria-live="polite">
+        <span class="gd-splash-logo">GA</span>
+        <b>ระบบจัดการองค์กร</b>
+        <span class="gd-splash-spin" aria-hidden="true"></span>
+        <small>กำลังโหลด…</small>
+    </div>
     <!-- ================= เข้าสู่ระบบ ================= -->
     <section id="gdLogin" class="gd-login">
         <div class="gd-login-card">
@@ -88,6 +96,6 @@
     </section>
 
     <script src="config.js"></script>
-    <script src="ga-docs.js?v=20261104-care"></script>
+    <script src="ga-docs.js?v=20261104-boot"></script>
 </body>
 </html>

@@ -231,3 +231,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gd-care-docs { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
 .gd-pill.is-billed { background: #e8f6ee; color: #067647; border-color: #a6dcb9; }
 @media (max-width: 600px) { .gd-care-row, .gd-care-case { grid-template-columns: 1fr; } .gd-care-amount { text-align: left; } }
+
+/* หน้าจอโหลดตอนเปิด/รีเฟรช (แทนการโชว์หน้าเข้าสู่ระบบแวบหนึ่ง) */
+.gd-splash { display: none; }
+.gd-booting .gd-splash { position: fixed; inset: 0; z-index: 50; display: grid; place-content: center; justify-items: center; gap: 10px; background: #f7f8fb; color: #1f2a44; }
+.gd-booting #gdLogin, .gd-booting .gd-app { display: none !important; }
+.gd-splash-logo { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; border: 2px solid #d4a017; color: #1d4ed8; font-weight: 800; font-size: 20px; background: #fff; box-shadow: 0 6px 20px rgba(29, 78, 216, .12); }
+.gd-splash b { font-size: 17px; }
+.gd-splash small { color: #6b7280; }
+.gd-splash-spin { width: 26px; height: 26px; border: 3px solid #dbe4ff; border-top-color: #1d4ed8; border-radius: 50%; animation: gd-spin .8s linear infinite; }
+@keyframes gd-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .gd-splash-spin { animation: none; } }

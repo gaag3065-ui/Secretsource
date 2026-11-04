@@ -647,17 +647,19 @@
         else if (action === 'submit') submit(button);
     });
 
-    // เปิดหน้าใหม่: ใช้เซสชันเดิมถ้ายังอยู่ · แจ้งถ้าระบบปิดรับ
+    // เปิดหน้าใหม่: ใช้เซสชันเดิมถ้ายังอยู่ · แจ้งถ้าระบบปิดรับ — ระหว่างนี้แสดงหน้าจอโหลด (gd-booting) แล้วค่อยเปิดหน้าที่ถูกต้องหน้าเดียว
+    const booted = () => document.documentElement.classList.remove('gd-booting');
     (async () => {
         try {
             const config = await loadConfig();
             if (config.locked) msg($('gdLoginMsg'), 'ระบบปิดรับการเข้าสู่ระบบชั่วคราว', 'bad');
             const saved = store.get();
             if (saved?.token && !config.locked) { state.session = saved; openHome(); }
+            booted();
             // แจ้งเตือนใหม่: ถามหลังบ้านทุก 15 วินาทีระหว่างเปิดหน้าไว้ และทันทีที่กลับมาที่หน้านี้
             setInterval(() => { if (state.session && !document.hidden) loadTasks(); }, 15 * 1000);
             document.addEventListener('visibilitychange', () => { if (state.session && !document.hidden) loadTasks(); });
             window.addEventListener('focus', () => { if (state.session) loadTasks(); });
-        } catch (error) { msg($('gdLoginMsg'), error.message, 'bad'); }
+        } catch (error) { msg($('gdLoginMsg'), error.message, 'bad'); booted(); }
     })();
 })();
