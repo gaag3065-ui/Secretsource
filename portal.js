@@ -50,7 +50,7 @@ const services = [
                 route: 'ga-work',
                 title: 'งาน GA',
                 icon: 'users',
-                page: 'ga-work.html?v=20261104-2'
+                page: 'ga-work.html?v=20261104-3'
             }
         ]
     },

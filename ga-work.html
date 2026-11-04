@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>งาน GA | GA Operations</title>
     <link rel="stylesheet" href="fitness-admin.css?v=20261102-2">
-    <link rel="stylesheet" href="ga-work.css?v=20261104-2">
+    <link rel="stylesheet" href="ga-work.css?v=20261104-3">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
@@ -23,7 +23,7 @@
 
         <!-- งานที่กำลังดำเนินการ (WORKFLOW) — ga-workflow.js -->
         <section class="fa-card wf-board">
-            <div class="wf-board-head"><h2>งานที่กำลังดำเนินการ <small id="wfCount"></small></h2>
+            <div class="wf-board-head"><div class="wf-hero"><b id="wfCount">0</b><span>งานที่กำลังดำเนินการ<small>กดกล่องขั้นตอนเพื่ออัปเดต · ทุกงานเรียงต่อกันด้านล่าง</small></span></div>
                 <button type="button" class="fa-btn fa-btn-primary" data-wf-new>＋ สร้างงาน (WORKFLOW)</button></div>
             <div id="wfCards" class="wf-cards"><p class="fa-empty">กำลังโหลด…</p></div>
             <details id="wfClosed" class="wf-closed" hidden></details>
@@ -53,6 +53,6 @@
 
     <script src="config.js"></script>
     <script src="ga-work.js?v=20261104-1"></script>
-    <script src="ga-workflow.js?v=20261104-2"></script>
+    <script src="ga-workflow.js?v=20261104-3"></script>
 </body>
 </html>

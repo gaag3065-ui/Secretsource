@@ -156,3 +156,25 @@
 .wf-editor input, .wf-step input, .wf-editor select { font-size: 14px; min-height: 40px; }
 .wf-editor [name=detail] { min-height: 110px; }
 .wf-ebody textarea[data-e=detail] { min-height: 64px; }
+
+/* บอร์ด: หัวสรุปจำนวนงาน + แต่ละงานแสดงผัง WORKFLOW */
+.wf-hero { display: flex; align-items: center; gap: 14px; padding: 10px 18px; border-radius: 14px; background: linear-gradient(135deg, #4f46e5, #2563eb); color: #fff; box-shadow: 0 8px 22px rgba(79, 70, 229, .25); }
+.wf-hero b { font-size: 34px; line-height: 1; }
+.wf-hero span { font-size: 17px; font-weight: 700; }
+.wf-hero small { display: block; font-size: 12px; font-weight: 400; opacity: .85; }
+#wfCards { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.wf-proj { border: 1px solid var(--fa-line); border-left: 5px solid #4f46e5; border-radius: 14px; background: #fff; padding: 12px 14px; }
+.wf-proj-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 10px; }
+.wf-proj-head h3 { margin: 0 0 4px; font-size: 16px; }
+.wf-proj-head small { color: var(--fa-muted); font-size: 12.5px; }
+.wf-proj-side { display: flex; align-items: center; gap: 10px; }
+.wf-proj-side .wf-progress { width: 140px; }
+.wf-diagram-board { max-height: 340px; }
+/* ช่องข้อมูล/เอกสารที่ขอจากพนักงาน */
+.wf-efields { display: grid; gap: 6px; }
+.wf-items { display: grid; gap: 6px; }
+.wf-item { display: grid; grid-template-columns: 190px 1fr auto auto; gap: 6px; }
+.wf-item button { width: 32px; border: 1px solid var(--fa-line); border-radius: 8px; background: #fff; cursor: pointer; }
+.wf-item [data-item-del] { color: #b42318; }
+.wf-item-add { display: flex; flex-wrap: wrap; gap: 6px; }
+@media (max-width: 640px) { .wf-item { grid-template-columns: 1fr auto auto; } .wf-item select { grid-column: 1 / -1; } }

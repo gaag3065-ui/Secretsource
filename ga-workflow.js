@@ -34,6 +34,23 @@
     const staffName = username => state.staff.find(p => p.username === username)?.name || username || '';
     const isDone = s => s.status === 'done' || s.status === 'skip';
     const progressOf = p => ({ done: p.steps.filter(isDone).length, total: p.steps.length });
+    const ITEM_KINDS = [['text', '✏️ กรอกข้อความ'], ['image', '🖼️ อัปโหลดรูปภาพ'], ['pdf', '📄 อัปโหลด PDF']];
+    const itemsOf = s => (s.items && s.items.length ? s.items : (s.fields || []).map(label => ({ kind: 'text', label })));
+    const itemRow = (i = { kind: 'text', label: '' }) => `<div class="wf-item">
+        <select data-item-kind>${ITEM_KINDS.map(([k, l]) => `<option value="${k}" ${k === i.kind ? 'selected' : ''}>${l}</option>`).join('')}</select>
+        <input data-item-label maxlength="150" placeholder="${i.kind === 'text' ? 'เช่น พักที่ไหน / เที่ยวบิน' : 'เช่น สำเนาบัตร / ใบเสร็จ'}" value="${esc(i.label)}">
+        <button type="button" data-item-up title="เลื่อนขึ้น">↑</button><button type="button" data-item-del title="ลบช่อง">×</button></div>`;
+    const itemsEditor = items => `<div class="wf-items" data-items>${items.map(itemRow).join('')}</div>
+        <div class="wf-item-add"><button type="button" class="fa-btn fa-btn-ghost" data-item-add="text">＋ เพิ่มช่องกรอกข้อความ</button><button type="button" class="fa-btn fa-btn-ghost" data-item-add="image">＋ เพิ่มช่องอัปโหลดเอกสาร (รูป / PDF)</button></div>`;
+    const readItems = box => box ? [...box.querySelectorAll('.wf-item')].map(r => ({ kind: r.querySelector('[data-item-kind]').value, label: r.querySelector('[data-item-label]').value.trim() })).filter(i => i.label) : [];
+    document.addEventListener('click', event => {
+        const add = event.target.closest('[data-item-add]');
+        if (add) { const box = add.parentElement.previousElementSibling; box.insertAdjacentHTML('beforeend', itemRow({ kind: add.dataset.itemAdd, label: '' })); box.lastElementChild.querySelector('input').focus(); return; }
+        const row = event.target.closest('.wf-item');
+        if (!row) return;
+        if (event.target.closest('[data-item-del]')) row.remove();
+        if (event.target.closest('[data-item-up]') && row.previousElementSibling) row.after(row.previousElementSibling);
+    });
 
     async function load() {
         $('wfCards').innerHTML = '<p class="fa-empty">กำลังโหลด…</p>';
@@ -68,14 +85,27 @@
                 <small>${done}/${total} ขั้นตอน${people.length ? ` · ${esc(people.map(staffName).join(', '))}` : ''}</small></span>
         </button>`;
     }
+    function boardProject(p) {
+        const { done, total } = progressOf(p);
+        const late = p.due_date && p.due_date < new Date().toISOString().slice(0, 10);
+        const next = p.steps.filter(s => !isDone(s) && s.ready);
+        return `<article class="wf-proj" data-wf-project="${p.id}">
+            <header class="wf-proj-head">
+                <div><h3>🧭 ${esc(p.title)}</h3>
+                    <small><span class="wf-chip">${esc(p.section_title)}</span>${p.due_date ? ` <span class="wf-due${late ? ' is-late' : ''}">กำหนด ${esc(thDate(p.due_date))}</span>` : ''} · ${done}/${total} ขั้นตอน${next.length ? ` · ขั้นต่อไป: ${esc(next.map(s => s.title).join(', '))}` : ''}</small></div>
+                <div class="wf-proj-side"><span class="wf-progress"><i style="width:${total ? Math.round(done / total * 100) : 0}%"></i></span><button type="button" class="fa-btn fa-btn-ghost" data-wf-open="${p.id}">เปิดงาน →</button></div>
+            </header>
+            <div class="wf-diagram wf-diagram-board">${diagramHtml(p, null)}</div>
+        </article>`;
+    }
     function renderBoard() {
         const list = state.data.projects;
         const active = list.filter(p => p.status !== 'done');
         const closed = list.filter(p => p.status === 'done');
-        $('wfCards').innerHTML = (active.length ? active.map(cardHtml).join('') : '<p class="fa-empty">ยังไม่มีงานค้าง — กด "＋ สร้างงาน" เพื่อเริ่ม WORKFLOW ใหม่</p>');
+        $('wfCards').innerHTML = (active.length ? active.map(boardProject).join('') : '<p class="fa-empty">ยังไม่มีงานค้าง — กด "＋ สร้างงาน" เพื่อเริ่ม WORKFLOW ใหม่</p>');
         $('wfClosed').hidden = !closed.length;
         $('wfClosed').innerHTML = closed.length ? `<summary>งานที่ปิดแล้ว (${closed.length})</summary><div class="wf-cards">${closed.map(cardHtml).join('')}</div>` : '';
-        $('wfCount').textContent = active.length ? `${active.length} งาน` : '';
+        $('wfCount').textContent = String(active.length);
     }
 
     // ---------------------------------------------------------------- ผังขั้นตอน (คอลัมน์ตามลำดับที่ต้องทำ เส้นเชื่อม = ต้องทำหลังจาก)
@@ -97,7 +127,7 @@
         const width = 32 + cols.length * (W + GX) - GX, height = 32 + Math.max(...cols.map(c => c.length)) * (H + GY) - GY;
         return { pos, W, H, width, height };
     }
-    function diagramHtml(p) {
+    function diagramHtml(p, selected = state.step) {
         const { pos, W, H, width, height } = layout(p.steps);
         const edges = p.steps.flatMap(s => s.after.map(a => {
             const from = pos.get(a), to = pos.get(s.id);
@@ -111,7 +141,7 @@
             const st = isDone(s) ? s.status : s.status === 'doing' ? 'doing' : s.ready ? 'ready' : 'lock';
             const label = { done: '✓ เสร็จแล้ว', skip: 'ข้าม', doing: '● กำลังทำ', ready: 'พร้อมเริ่ม', lock: '🔒 รอขั้นก่อนหน้า' }[st];
             const prog = s.progress ? ` · ส่งแล้ว ${s.progress.submitted}/${s.progress.total}` : '';
-            return `<button type="button" class="wf-node st-${st}${state.step === s.id ? ' is-on' : ''}" style="left:${x}px;top:${y}px;width:${W}px;height:${H}px" data-wf-step="${esc(s.id)}">
+            return `<button type="button" class="wf-node st-${st}${selected === s.id ? ' is-on' : ''}" style="left:${x}px;top:${y}px;width:${W}px;height:${H}px" data-wf-step="${esc(s.id)}">
                 <span class="wf-node-top"><span>${i + 1}. ${TYPE_ICON[s.type] || ''}</span><em>${label}${prog}</em></span>
                 <b>${esc(s.title)}</b>
                 <small>${esc(s.assignee ? `👤 ${staffName(s.assignee)}` : '')}</small>
@@ -173,7 +203,7 @@
                     ${s.progress.dest ? ` · <a href="${esc(s.progress.dest.sheet)}" target="_blank" rel="noopener">เปิดรายงานข้อมูล ↗</a>` : ''}</div>`
                 : canWork ? `<div class="wf-collect">
                     <b>📋 เก็บข้อมูลจากพนักงาน</b><small>ระบบจะส่งงานไปที่หน้าระบบจัดการองค์กรของพนักงานที่เลือก (กล่อง "${esc(p.title)}") และสร้างชีตรายงานให้</small>
-                    <label>ข้อมูลที่ให้พนักงานกรอก (1 บรรทัด = 1 ช่อง)<textarea id="wfFields" rows="5">${esc(s.fields.join('\n'))}</textarea></label>
+                    <div class="wf-efields" id="wfItems"><b>ข้อมูลและเอกสารที่ขอจากพนักงาน (เรียงตามลำดับ)</b>${itemsEditor(itemsOf(s))}</div>
                     <label>ข้อความถึงพนักงาน (ถ้ามี)<textarea id="wfMessage" rows="3" placeholder="เช่น ขอข้อมูลเพื่อฝากของไป SL ภายในวันศุกร์"></textarea></label>
                     <div class="wf-pick-tools"><input type="search" id="wfPickSearch" placeholder="ค้นหาชื่อ / รหัส / บริษัท / พื้นที่…"><span id="wfPickCount">เลือกแล้ว ${state.picks.size} คน</span></div>
                     <div class="wf-pick-list" id="wfPickList"><p class="fa-empty">กำลังโหลดรายชื่อ…</p></div>
@@ -226,13 +256,13 @@
     }
     async function sendCollect(button) {
         const p = project(state.open);
-        const fields = $('wfFields').value.split('\n').map(x => x.trim()).filter(Boolean);
-        if (!fields.length) return toast('กรุณาระบุข้อมูลที่ต้องการให้พนักงานกรอก', true);
+        const items = readItems($('wfItems').querySelector('[data-items]'));
+        if (!items.length) return toast('กรุณาระบุข้อมูลหรือเอกสารที่ต้องการจากพนักงานอย่างน้อย 1 ช่อง', true);
         if (!state.picks.size) return toast('กรุณาเลือกพนักงานอย่างน้อย 1 คน', true);
         if (!confirm(`ส่งงานเก็บข้อมูลให้พนักงาน ${state.picks.size} คน?`)) return;
         button.disabled = true;
         try {
-            const result = await request(`/projects/${p.id}/steps/${encodeURIComponent(state.step)}/collect`, { method: 'POST', body: JSON.stringify({ fields, employee_keys: [...state.picks], message: $('wfMessage').value }) });
+            const result = await request(`/projects/${p.id}/steps/${encodeURIComponent(state.step)}/collect`, { method: 'POST', body: JSON.stringify({ items, employee_keys: [...state.picks], message: $('wfMessage').value }) });
             state.picks.clear();
             replace(result.project);
             if (result.destError) alert(result.destError); else toast(`ส่งงานให้พนักงานแล้ว ${result.sent} คน`);
@@ -290,7 +320,7 @@
             id: r.dataset.id, title: r.querySelector('[data-e=title]').value, type: r.querySelector('[data-e=type]').value,
             assignee: r.querySelector('[data-e=assignee]').value, detail: r.querySelector('[data-e=detail]').value,
             after: [...r.querySelectorAll('[data-e=after]:checked')].map(c => c.value),
-            fields: (r.querySelector('[data-e=fields]')?.value || '').split('\n').map(x => x.trim()).filter(Boolean)
+            items: readItems(r.querySelector('[data-items]'))
         }));
     }
     function renderEditSteps() {
@@ -306,7 +336,7 @@
                 </div>
                 <textarea data-e="detail" rows="3" maxlength="1000" placeholder="รายละเอียด / สิ่งที่ต้องทำในขั้นนี้">${esc(s.detail || '')}</textarea>
                 ${i ? `<div class="wf-after"><span>ต้องทำหลังจาก:</span>${steps.slice(0, i).map((x, j) => `<label><input type="checkbox" data-e="after" value="${esc(x.id)}" ${(s.after || []).includes(x.id) ? 'checked' : ''}>${j + 1}. ${esc(x.title || '…')}</label>`).join('')}</div>` : '<div class="wf-after"><span>จุดเริ่มต้น (ทำได้ทันที)</span></div>'}
-                ${s.type === 'collect' ? `<label class="wf-efields">ข้อมูลที่ให้พนักงานกรอก (1 บรรทัด = 1 ช่อง)<textarea data-e="fields" rows="5">${esc((s.fields || []).join('\n'))}</textarea></label>` : ''}
+                ${s.type === 'collect' ? `<div class="wf-efields"><b>ข้อมูลและเอกสารที่ขอจากพนักงาน (เรียงตามลำดับ)</b>${itemsEditor(itemsOf(s))}</div>` : ''}
             </div></div>`).join('');
     }
     async function saveEditor(form) {
@@ -333,6 +363,8 @@
         if (t.closest('[data-wf-new]')) return openEditor(null);
         const open = t.closest('[data-wf-open]');
         if (open) return openProject(open.dataset.wfOpen);
+        const boardStep = t.closest('.wf-proj [data-wf-step]');
+        if (boardStep) { openProject(boardStep.closest('[data-wf-project]').dataset.wfProject); state.step = boardStep.dataset.wfStep; return renderProject(project(state.open)); }
         if (t.closest('[data-action=refresh]')) load();
     });
     $('wfDialog').addEventListener('click', event => {
