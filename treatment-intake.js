@@ -14,7 +14,11 @@
     box.innerHTML = '<button type="button" class="intake-head" data-intake-toggle><b>📥 พนักงานแจ้งเข้ารักษา</b><span class="intake-count" id="intakeCount">…</span><span class="intake-caret">▾</span></button><div class="intake-list" id="intakeList" hidden></div>';
     const form = document.getElementById('claimForm');
     if (!form) return;
-    form.before(box);
+    // วางเป็นกล่องเล็กด้านบน ข้างช่องค้นหาพนักงาน (รายการเปิดเป็นแผงลอยด้านล่าง) · ไม่มีส่วนค้นหา → วางเหนือฟอร์มเหมือนเดิม
+    const header = document.querySelector('.employee-search-sticky-header');
+    if (header) { header.classList.add('has-intake'); header.append(box); box.classList.add('is-top'); }
+    else form.before(box);
+    document.addEventListener('click', event => { if (state.open && box.classList.contains('is-top') && !box.contains(event.target) && !event.target.closest('.intake-viewer, .intake-alert')) toggle(false); });
 
     // รอรับเคส = ยังไม่มีเลขเคส (รวมรายการที่ถูกกดสถานะไปก่อนเปิดเคส)
     const pending = () => state.records.filter(r => !r.case_id && !['billed', 'deleted'].includes(r.status));
@@ -94,6 +98,7 @@
     async function take(id) {
         const r = state.records.find(x => x.id === Number(id));
         if (!r) return;
+        if (box.classList.contains('is-top')) toggle(false);
         const keyword = document.getElementById('keywordInput');
         if (!keyword || typeof performEmployeeSearch !== 'function') return alert('บัญชีนี้ไม่มีสิทธิ์ค้นหาพนักงาน — ค้นหาและกรอกเองได้');
         keyword.value = r.insurance_code || r.employee_id;
