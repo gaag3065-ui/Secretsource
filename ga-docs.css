@@ -293,3 +293,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
 @media (max-width: 1639px) { .gd-personal { margin-top: 4px; } }
 .gd-bill-case { margin: 0 0 12px; padding: 12px 14px; border: 1px solid #fecdd3; border-left: 5px solid #e11d48; border-radius: 12px; background: #fff1f2; font-size: 14px; }
 .gd-bill-case small { display: block; margin-top: 4px; color: #6b7280; font-size: 12.5px; }
+/* จอเล็ก/มือถือ: ช่องทางการติดต่อเป็นปุ่มพับเก็บ (มุมขวาข้างชื่อ) กดแล้วเปิดเป็นแผงลอย */
+.gd-hello { position: relative; }
+.gd-contact-toggle { display: none; }
+@media (max-width: 1100px) {
+    .gd-hello { padding-right: 150px; }
+    .gd-contact-toggle { display: inline-flex; align-items: center; gap: 6px; position: absolute; top: 0; right: 0; padding: 8px 14px; border: 1px solid #86efac; border-radius: 999px; background: #f0fdf4; color: #166534; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; box-shadow: 0 3px 10px rgba(6, 199, 85, .15); }
+    .gd-contact-toggle span { transition: transform .2s; }
+    body.contacts-open .gd-contact-toggle span { transform: rotate(180deg); }
+    .gd-main-home { position: relative; }
+    .gd-main-home > .gd-contacts { display: none; position: absolute; z-index: 40; top: 76px; left: 16px; right: 16px; max-height: 72vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(15, 23, 42, .25); }
+    body.contacts-open .gd-main-home > .gd-contacts { display: grid; }
+}

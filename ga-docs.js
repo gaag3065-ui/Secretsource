@@ -643,6 +643,18 @@
         } finally { button.disabled = false; }
     }
 
+    // ---------------------------------------------------------------- ช่องทางการติดต่อ (จอเล็ก: พับเก็บ กดเปิด/ปิด)
+    function toggleContacts(open) {
+        const on = open ?? !document.body.classList.contains('contacts-open');
+        document.body.classList.toggle('contacts-open', on);
+        $('gdContactToggle')?.setAttribute('aria-expanded', String(on));
+    }
+    $('gdContactToggle')?.addEventListener('click', event => { event.stopPropagation(); toggleContacts(); });
+    document.addEventListener('click', event => {
+        if (document.body.classList.contains('contacts-open') && !event.target.closest('#gdContacts')) toggleContacts(false);
+    });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') toggleContacts(false); });
+
     // ---------------------------------------------------------------- ปุ่ม
     document.addEventListener('click', event => {
         const tile = event.target.closest('[data-open]');

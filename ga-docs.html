@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="ga-docs.css?v=20261104-care7">
+    <link rel="stylesheet" href="ga-docs.css?v=20261104-care8">
     <link rel="icon" href="icons/icon-192.png">
     <!-- เปิด/รีเฟรชหน้า: ซ่อนทุกหน้าจนกว่าจะรู้ว่าเข้าสู่ระบบอยู่หรือไม่ (ไม่ให้หน้าเข้าสู่ระบบโผล่ขึ้นมาแวบหนึ่ง) -->
     <script>document.documentElement.classList.add('gd-booting');</script>
@@ -53,6 +53,8 @@
                     <div class="gd-hello">
                         <p>สวัสดี <b id="gdName"></b></p>
                         <small id="gdMeta"></small>
+                        <!-- จอเล็ก/มือถือ: ช่องทางการติดต่อพับเก็บไว้ กดเพื่อเปิด -->
+                        <button type="button" class="gd-contact-toggle" id="gdContactToggle" aria-expanded="false" aria-controls="gdContacts">💬 ช่องทางติดต่อ <span aria-hidden="true">▾</span></button>
                     </div>
                     <h2 class="gd-question">คุณต้องการส่งเอกสารหรือติดต่อเกี่ยวกับอะไร?</h2>
                     <p class="gd-hint">เลือกหัวข้อด้านล่าง</p>
@@ -74,7 +76,7 @@
                     <div id="gdPersonalList" class="gd-personal-list"></div>
                 </aside>
                 <!-- ช่องทางการติดต่อ (LINE Official) — กดแล้วเปิด LINE ไปที่บัญชีนั้น -->
-                <aside class="gd-contacts" aria-label="ช่องทางการติดต่อ">
+                <aside class="gd-contacts" id="gdContacts" aria-label="ช่องทางการติดต่อ">
                     <h3>💬 ช่องทางการติดต่อ</h3>
                     <p>เลือกไลน์ให้ตรงเรื่อง เพื่อความรวดเร็ว · กดเพื่อเปิด LINE</p>
                     <a class="gd-contact" style="--c:#e11d48" href="https://line.me/R/ti/p/%40396gfqzn" target="_blank" rel="noopener">
@@ -135,6 +137,6 @@
     </section>
 
     <script src="config.js"></script>
-    <script src="ga-docs.js?v=20261104-care7"></script>
+    <script src="ga-docs.js?v=20261104-care8"></script>
 </body>
 </html>
