@@ -242,3 +242,5 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gd-splash-spin { width: 26px; height: 26px; border: 3px solid #dbe4ff; border-top-color: #1d4ed8; border-radius: 50%; animation: gd-spin .8s linear infinite; }
 @keyframes gd-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .gd-splash-spin { animation: none; } }
+.gd-care-dates { display: flex !important; flex-wrap: wrap; gap: 4px 12px; margin-top: 2px; }
+.gd-care-dates span::before { content: '•'; margin-right: 4px; color: #cbd5e1; }

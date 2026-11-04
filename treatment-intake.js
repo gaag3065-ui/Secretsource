@@ -22,7 +22,8 @@
         <button type="button" class="treatment-share" data-share="line" title="เปิด LINE พร้อมข้อความ แล้วเลือกห้อง/กลุ่มที่จะส่ง">💚 ส่งผ่าน LINE</button>
         <button type="button" class="treatment-share" data-share="telegram" title="เปิด Telegram พร้อมข้อความ แล้วเลือกห้อง/กลุ่มที่จะส่ง">✈️ ส่งผ่าน Telegram</button>`);
 
-    const pending = () => state.records.filter(r => r.status === 'pending');
+    // รอรับเคส = ยังไม่มีเลขเคส (รวมรายการที่ถูกกดสถานะไปก่อนเปิดเคส)
+    const pending = () => state.records.filter(r => !r.case_id && !['billed', 'deleted'].includes(r.status));
     const val = (r, k) => r.fields?.[k] || '';
     // แพทเทิร์นเดิม: "wowmai285 เบอร์ 0892303860" (รายการเก่าที่กรอกช่องเดียวใช้ contact)
     const contactOf = r => val(r, 'contact') || [val(r, 'line_id'), val(r, 'phone') && `เบอร์ ${val(r, 'phone')}`].filter(Boolean).join(' ');
@@ -45,7 +46,7 @@
         const count = document.getElementById('intakeCount');
         count.textContent = list.length ? `รอรับเคส ${list.length}${urgent ? ` · ด่วน ${urgent}` : ''}` : 'ไม่มีเรื่องค้าง';
         count.className = `intake-count${urgent ? ' is-urgent' : list.length ? ' is-wait' : ''}`;
-        const recent = state.records.filter(r => r.status !== 'pending').slice(0, 5);
+        const recent = state.records.filter(r => r.case_id).slice(0, 5);
         document.getElementById('intakeList').innerHTML = (list.length ? list.map(r => `
             <article class="intake-item${r.urgent ? ' is-urgent' : ''}${window.__treatmentIntake?.id === r.id ? ' is-on' : ''}">
                 <header><b>${r.urgent ? '🚨 ' : ''}${esc(r.fullname)}</b><small>${esc([r.employee_id, r.insurance_code, r.company].filter(Boolean).join(' · '))} · แจ้งเมื่อ ${esc(when(r.submitted_at))} · เลขที่ ${r.id}</small></header>
@@ -185,6 +186,12 @@ InsuranceId : ${get('hiddenInsuranceId') || '-'}
     });
     document.addEventListener('click', event => { const s = event.target.closest('[data-share]'); if (s) share(s.dataset.share); });
 
-    load();
+    // มาจากปุ่ม "เปิดเคส / แจ้งประกัน" ในหน้าจัดการพนักงาน → เปิดรายการและรับเคสนั้นเลย
+    const wanted = new URLSearchParams(location.search).get('intake');
+    load().then(() => {
+        if (!wanted) return;
+        toggle(true);
+        if (pending().some(r => String(r.id) === wanted)) take(wanted);
+    });
     setInterval(() => { if (!document.hidden) load(); }, 60000);
 })();

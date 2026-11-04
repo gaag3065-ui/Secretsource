@@ -237,3 +237,11 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 .sm-box-restore { border-color: #a6dcb9; color: #067647; background: #f3fbf6; }
 .sm-restore-list { display: grid; gap: 8px; }
 .sm-restore { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--fa-line); border-radius: 10px; }
+
+/* เรื่องแจ้งรักษา: ขั้นตอนของ GA */
+.sm-intake-steps ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.sm-intake-steps li { padding: 10px 12px; border: 1px solid var(--fa-line); border-left: 4px solid #f59e0b; border-radius: 10px; font-size: 13.5px; }
+.sm-intake-steps li.is-done { border-left-color: #16a34a; background: #f3fbf6; }
+.sm-pattern { margin: 8px 0; padding: 10px 12px; border-radius: 8px; background: #f7f9fc; border: 1px solid #e3e8f0; font: inherit; font-size: 13px; white-space: pre-wrap; }
+.sm-pattern-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.sm-pattern-actions a { text-decoration: none; }

@@ -115,7 +115,7 @@
         } catch { /* หลังบ้านยังไม่อัปเดต — ไม่แสดงแจ้งเตือน */ }
     }
     // เคสรักษาที่แจ้งไว้และยังไม่ได้บันทึกค่ารักษา
-    const openCareCases = () => (state.mine || []).filter(r => r.type === 'treatment' && ['pending', 'received'].includes(r.status));
+    const openCareCases = () => (state.mine || []).filter(r => r.type === 'treatment' && !['billed', 'deleted', 'rejected'].includes(r.status));
     function renderBadges() {
         const counts = new Map();
         unread().forEach(t => counts.set(t.box, (counts.get(t.box) || 0) + 1));
@@ -305,7 +305,7 @@
                     <span class="gd-item-icon">${esc(icon(r.type))}</span>
                     <div><b>${esc(r.type_title)}</b><small>เลขที่ ${r.id} · ส่งเมื่อ ${esc(when(r.submitted_at))} · ไฟล์แนบ ${r.files.length - slips.length}</small>
                         ${r.admin_note ? `<span class="gd-note">GA: ${esc(r.admin_note)}</span>` : ''}
-                        ${r.type === 'treatment' && ['pending', 'received'].includes(r.status) ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm gd-bill" data-bill-from="${r.id}">📤 รักษาเสร็จ / ส่งบิล${r.case_id ? ` (เคส #${esc(r.case_id)})` : ''}</button>` : ''}
+                        ${r.type === 'treatment' && !['billed', 'deleted', 'rejected'].includes(r.status) ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm gd-bill" data-bill-from="${r.id}">📤 รักษาเสร็จ / ส่งบิล${r.case_id ? ` (เคส #${esc(r.case_id)})` : ''}</button>` : ''}
                         ${slips.length ? `<span class="gd-slips">${slips.map(f => `<button type="button" class="gd-btn gd-btn-sm" data-own-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">🧾 ดูสลิปโอนเงินคืน${slips.length > 1 ? ` ${f.index}` : ''}</button>`).join('')}</span>` : ''}
                         ${more}</div>
                     <span class="gd-pill is-${esc(r.status)}">${esc(r.status_label)}</span>
@@ -392,14 +392,15 @@
         const cases = openCareCases();
         const casesHtml = cases.length ? `<section class="gd-care-section"><h3>🩺 เคสที่แจ้งไว้ (${cases.length}) — รักษาเสร็จแล้วกดบันทึกค่ารักษา</h3>
             ${cases.map(r => `<div class="gd-care-case"><div><b>${esc(r.fields?.hospital || '-')}</b><small>${esc(thDate(r.fields?.treat_date || ''))} ${esc(r.fields?.treat_time || '')} · ${esc(r.fields?.symptom || '')}</small>
-                <small>เลขที่ ${r.id}${r.case_id ? ` · เคสประกัน #${esc(r.case_id)}` : ''} · <span class="gd-pill is-${esc(r.status)}">${r.status === 'pending' ? 'รอ GA เปิดเคส' : 'GA เปิดเคสแล้ว'}</span></small></div>
+                <small>เลขที่ ${r.id}${r.case_id ? ` · เคสประกัน #${esc(r.case_id)}` : ''} · <span class="gd-pill is-${r.case_id ? 'received' : 'pending'}">${r.case_id ? 'GA เปิดเคสแล้ว' : 'รอ GA เปิดเคส'}</span></small></div>
                 <button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-bill-from="${r.id}">📤 บันทึกค่ารักษา</button></div>`).join('')}</section>` : '';
         let summary = null;
         try { summary = (await call('/care')).summary; } catch (error) { box.innerHTML = casesHtml + `<p class="gd-empty">${esc(error.message)}</p>`; return; }
         if (!summary) { box.innerHTML = casesHtml + '<p class="gd-empty">ยังไม่พบข้อมูลวงเงินประกันของคุณ — กรุณาติดต่อ GA</p>'; return; }
         const history = summary.cases.length ? summary.cases.map(c => {
             const parts = [c.opd && `OPD ${money(c.opd)}`, c.dental && `ทันตกรรม (OPD) ${money(c.dental)}`, c.ipd && `IPD ${money(c.ipd)}`, c.other && `วงเงินอื่นๆ ${money(c.other)}`].filter(Boolean);
-            return `<div class="gd-care-row"><div class="gd-care-main"><b>${esc(c.hospital || '-')}</b><small>${esc(c.date || '-')} · เคส #${esc(c.caseId)} · ${esc(c.symptoms || '')}</small>
+            return `<div class="gd-care-row"><div class="gd-care-main"><b>${esc(c.hospital || '-')}</b><small>เคส #${esc(c.caseId)} · ${esc(c.symptoms || '')}</small>
+                <small class="gd-care-dates"><span>แจ้งเคส ${esc(String(c.reportedAt || '-').split(/[ ,]/)[0])}</span><span>วันที่รักษา ${esc(String(c.date || '-').split(/[ ,]/)[0])}</span><span>รักษาเสร็จ ${esc(c.closedAt ? String(c.closedAt).split(/[ ,]/)[0] : '—')}</span></small>
                 <small class="gd-care-status">${esc(c.status || '')}</small></div>
                 <div class="gd-care-amount"><b>${c.total ? `${money(c.total)} บาท` : '—'}</b><small>${esc(parts.join(' · ') || 'ยังไม่บันทึกยอด')}</small></div>
                 ${c.docs.length ? `<div class="gd-care-docs">${c.docs.map(d => `<button type="button" class="gd-btn gd-btn-sm" data-care-doc="${esc(c.caseId)}/${d.n}">${d.label === 'ใบเสร็จ' ? '🧾' : '📎'} ${esc(d.label)}</button>`).join('')}</div>` : ''}</div>`;

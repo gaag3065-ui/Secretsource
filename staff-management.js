@@ -854,6 +854,36 @@
             </div>`;
         if (!$('smDialog').open) $('smDialog').showModal();
     }
+    // แพทเทิร์นแจ้งประกัน (รูปแบบเดียวกับหน้าเปิดเคส)
+    function claimPattern(r) {
+        const e = [...state.byKey.values()].find(x => recIds(x).includes(String(r.employee_id).toUpperCase())) || {};
+        const f = r.fields || {};
+        const [y, m, d] = String(f.treat_date || '').split('-');
+        return `ระบุเวลาที่เข้ารับการรักษา : ${d ? `${d}/${m}/${y}` : '-'} ${f.treat_time || ''}
+บริษัท : ${r.company || e.company || '-'}
+ชื่อ : ${r.fullname || '-'}
+SIZE : ${e.size || '-'}
+InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
+อาการป่วย : ${f.symptom || '-'}
+คลินิกหรือสถานพยาบาล : ${f.hospital || '-'}
+เบอร์โทรติดต่อพนักงานหรือ ID Line : ${[f.line_id, f.phone && `เบอร์ ${f.phone}`].filter(Boolean).join(' ') || f.contact || '-'}
+หมายเหตุ : ${[f.cost_level && /เกิน/.test(f.cost_level) ? 'ค่าใช้จ่ายอาจเกิน 5,000 บาท ขอให้ประกันจ่ายตรง' : '', f.note].filter(Boolean).join(' · ') || '-'}`;
+    }
+    function treatmentSteps(r) {
+        const text = claimPattern(r);
+        const opened = r.case_id || ['received', 'billed'].includes(r.status);
+        return `<section class="sm-section sm-intake-steps"><h3>ขั้นตอนของ GA</h3>
+            <ol>
+                <li class="${opened ? 'is-done' : ''}"><b>1. แจ้งประกัน</b> — คัดลอกข้อความ หรือกดส่งผ่าน LINE / Telegram แล้วเลือกกลุ่มประกันและกดส่งเอง
+                    <pre class="sm-pattern">${esc(text)}</pre>
+                    <div class="sm-pattern-actions"><button type="button" class="fa-btn" data-copy-pattern>📋 คัดลอกข้อความ</button>
+                        <a class="fa-btn" href="https://line.me/R/msg/text/?${encodeURIComponent(text)}" target="_blank" rel="noopener" data-copy-pattern>💚 ส่งผ่าน LINE</a>
+                        <a class="fa-btn" href="https://t.me/share/url?url=%20&text=${encodeURIComponent(text)}" target="_blank" rel="noopener" data-copy-pattern>✈️ ส่งผ่าน Telegram</a></div></li>
+                <li class="${opened ? 'is-done' : ''}"><b>2. เปิดเคสในระบบงานประกัน</b> — ระบบกรอกฟอร์มเปิดเคสให้ แนบรูปหลักฐานที่แจ้งประกันแล้ว (แคปแชท) แล้วกดบันทึก → เรื่องนี้จะเปลี่ยนเป็น "รับเรื่องแล้ว · เคส #" และพนักงานเห็นว่า GA เปิดเคสแล้ว
+                    ${opened ? `<p class="sm-meta">✓ เปิดเคสแล้ว${r.case_id ? ` เลขเคส #${esc(r.case_id)}` : ''}</p>` : `<div class="sm-pattern-actions"><button type="button" class="fa-btn fa-btn-primary" data-open-intake="${r.id}">🛡️ เปิดเคสในหน้างานประกัน →</button></div>`}</li>
+                <li class="${r.status === 'billed' ? 'is-done' : ''}"><b>3. รอพนักงานรักษาเสร็จ</b> — พนักงานกด "บันทึกค่ารักษา" ที่เคสนี้ บิลจะเข้ากล่อง "ส่งบิลค่ารักษาพยาบาล" ให้ตรวจ${r.status === 'billed' ? ' · ✓ ส่งบิลแล้ว' : ''}</li>
+            </ol></section>`;
+    }
     function openRecord(id) {
         const r = (state.records || []).find(x => x.id === Number(id));
         if (!r) return;
@@ -871,9 +901,10 @@
             </header>
             <div class="fa-detail-body">
                 <div class="sm-info sm-rec-info">${rows || '<p class="fa-empty">ไม่มีข้อมูลที่กรอก</p>'}</div>
+                ${r.type === 'treatment' ? treatmentSteps(r) : ''}
                 <div class="sm-rec-groups">${[...groups.entries()].map(([label, files]) => `<section class="sm-rec-group${label === 'สลิปโอนเงินคืน' ? ' is-slip' : ''}"><h3>${esc(label)} <small>(${files.length})</small></h3><div class="sm-rec-files">
                     ${files.map(f => `<button type="button" class="sm-rec-file" data-rec-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}" title="กดเพื่อดูขยาย">${/^image\//.test(f.mime) ? `<img alt="" data-rec-img="${r.id}/${f.n}">` : '<span>📄 PDF</span>'}<small>ไฟล์ ${f.index}</small></button>`).join('')}</div></section>`).join('')}</div>
-                <section class="sm-section"><h3>ผลการตรวจ</h3>
+                <section class="sm-section"${r.type === 'treatment' ? ' hidden' : ''}><h3>ผลการตรวจ</h3>
                     <form class="sm-form" id="smRecForm" data-id="${r.id}">
                         <label>สถานะ<select name="status">${Object.entries(state.docStatuses || {}).filter(([k]) => k !== 'draft').map(([k, v]) => `<option value="${k}" ${k === r.status ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>
                         <div class="sm-wide sm-rec-slip" data-slip hidden><b>🧾 แนบสลิปการโอนคืน</b><small>พนักงานจะเห็นปุ่ม "ดูสลิปโอนเงินคืน" ในหน้าระบบจัดการองค์กร (รายการที่ฉันส่ง)</small>
@@ -1222,6 +1253,10 @@
         if (reviewBox) { event.stopPropagation(); return openReviewList(reviewBox.dataset.reviewBox); }
         const recordBtn = event.target.closest('[data-record]');
         if (recordBtn) return openRecord(recordBtn.dataset.record);
+        const copyPattern = event.target.closest('[data-copy-pattern]');
+        if (copyPattern) { const pre = $('smDetail').querySelector('.sm-pattern'); if (pre) navigator.clipboard?.writeText(pre.textContent).then(() => toast('คัดลอกข้อความแจ้งประกันแล้ว')).catch(() => {}); if (copyPattern.tagName === 'BUTTON') return; }
+        const openIntake = event.target.closest('[data-open-intake]');
+        if (openIntake) { $('smDialog').close(); window.parent.postMessage({ type: 'open-insurance-intake', id: openIntake.dataset.openIntake }, location.origin); return; }
         const recFile = event.target.closest('[data-rec-file]');
         if (recFile) {
             const [rid, n] = recFile.dataset.recFile.split('/');

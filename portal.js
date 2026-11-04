@@ -237,7 +237,7 @@ const services = [
                 route: 'staff-management',
                 title: 'จัดการพนักงาน',
                 icon: 'users',
-                page: 'staff-management.html?v=20261104-4'
+                page: 'staff-management.html?v=20261104-5'
             }
         ]
     }
@@ -1174,6 +1174,17 @@ window.addEventListener('popstate', event => {
         state.taskIndex,
         false
     );
+});
+
+// หน้าจัดการพนักงาน → "เปิดเคสในหน้างานประกัน" ของเรื่องแจ้งรักษา (treatment-intake.js รับเคสให้อัตโนมัติ)
+window.addEventListener('message', event => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type !== 'open-insurance-intake') return;
+    const service = services.find(item => item.tasks?.some(task => task.route === 'insurance-all'));
+    const task = service && getAccessibleTasks(service).find(item => item.route === 'insurance-all');
+    if (!task) return;
+    const [path, hash] = task.page.split('#');
+    openTask(service, { ...task, page: `${path}${path.includes('?') ? '&' : '?'}intake=${encodeURIComponent(String(event.data.id || ''))}#${hash || 'all'}` }, service.tasks.indexOf(task));
 });
 
 // หน้าในกรอบขอเปิดงานอื่น เช่น ปุ่ม "เช่าที่พักใหม่" → ตรวจรับห้องพัก (เฉพาะงานที่ผู้ใช้มีสิทธิ์)
