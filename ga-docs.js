@@ -282,16 +282,74 @@
         box.innerHTML = '<p class="gd-empty">กำลังโหลด…</p>';
         try {
             const { records } = await call('/mine');
+            state.mine = records;
             const icon = key => state.config.forms.find(f => f.key === key)?.icon || '📄';
-            box.innerHTML = records.length ? records.map(r => `
-                <div class="gd-item">
+            box.innerHTML = records.length ? records.map(r => {
+                const slips = r.files.filter(f => f.field === 'refund_slip');
+                const form = state.config.forms.find(f => f.key === r.type);
+                const fileFields = (form?.fields || []).filter(f => f.type === 'files');
+                // GA ขอเอกสารเพิ่ม → แนบไฟล์เพิ่มในรายการเดิม แล้วส่งกลับให้ตรวจ
+                const more = r.status === 'rejected' && fileFields.length ? `<div class="gd-more" data-more="${r.id}">
+                    <b>＋ ส่งเอกสารเพิ่ม</b>
+                    <select data-more-field>${fileFields.map(f => `<option value="${esc(f.name)}">${esc(f.label)}</option>`).join('')}</select>
+                    <label class="gd-pick">＋ เลือกรูป / PDF<input type="file" accept="image/*,application/pdf" multiple data-more-files></label>
+                    <small data-more-msg></small>
+                    <button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-resubmit="${r.id}">ส่งกลับให้ GA ตรวจ</button>
+                </div>` : '';
+                return `<div class="gd-item">
                     <span class="gd-item-icon">${esc(icon(r.type))}</span>
-                    <div><b>${esc(r.type_title)}</b><small>เลขที่ ${r.id} · ส่งเมื่อ ${esc(when(r.submitted_at))} · ไฟล์แนบ ${r.files.length}</small>
-                        ${r.admin_note ? `<span class="gd-note">GA: ${esc(r.admin_note)}</span>` : ''}</div>
+                    <div><b>${esc(r.type_title)}</b><small>เลขที่ ${r.id} · ส่งเมื่อ ${esc(when(r.submitted_at))} · ไฟล์แนบ ${r.files.length - slips.length}</small>
+                        ${r.admin_note ? `<span class="gd-note">GA: ${esc(r.admin_note)}</span>` : ''}
+                        ${slips.length ? `<span class="gd-slips">${slips.map(f => `<button type="button" class="gd-btn gd-btn-sm" data-own-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">🧾 ดูสลิปโอนเงินคืน${slips.length > 1 ? ` ${f.index}` : ''}</button>`).join('')}</span>` : ''}
+                        ${more}</div>
                     <span class="gd-pill is-${esc(r.status)}">${esc(r.status_label)}</span>
-                </div>`).join('') : '<p class="gd-empty">ยังไม่มีรายการที่ส่ง</p>';
+                </div>`;
+            }).join('') : '<p class="gd-empty">ยังไม่มีรายการที่ส่ง</p>';
         } catch (error) { box.innerHTML = `<p class="gd-empty">${esc(error.message)}</p>`; }
     }
+
+    // ไฟล์ของรายการตัวเอง (สลิปโอนคืน) — ต้องส่ง token จึงดึงเป็น blob แล้วแสดงในหน้าเดียวกัน
+    async function openOwnFile(ref, mime) {
+        const [id, n] = ref.split('/');
+        const response = await fetch(`${API}/file/${id}/${n}`, { headers: { Authorization: `Bearer ${state.session?.token || ''}` } });
+        if (!response.ok) throw new Error('เปิดไฟล์ไม่ได้');
+        const url = URL.createObjectURL(await response.blob());
+        if (!/^image\//.test(mime)) { window.open(url, '_blank'); return; }
+        const box = document.createElement('div');
+        box.className = 'gd-viewer';
+        box.innerHTML = `<img src="${url}" alt="สลิปโอนเงินคืน"><button type="button" aria-label="ปิด">×</button>`;
+        box.addEventListener('click', event => { if (event.target.tagName !== 'IMG') box.remove(); });
+        box.querySelector('img').addEventListener('click', event => event.target.classList.toggle('is-zoom'));
+        document.body.append(box);
+    }
+    async function uploadMore(input) {
+        const wrap = input.closest('[data-more]');
+        const note = wrap.querySelector('[data-more-msg]');
+        const files = [...input.files];
+        input.disabled = true;
+        try {
+            for (let i = 0; i < files.length; i++) {
+                note.textContent = `กำลังอัปโหลด ${i + 1}/${files.length}…`;
+                await call('/upload/more', { id: Number(wrap.dataset.more), field: wrap.querySelector('[data-more-field]').value, data: await toDataUrl(files[i]) });
+            }
+            wrap.dataset.added = String(Number(wrap.dataset.added || 0) + files.length);
+            note.textContent = `✓ แนบเพิ่มแล้ว ${wrap.dataset.added} ไฟล์ — กด "ส่งกลับให้ GA ตรวจ" เมื่อครบ`;
+        } catch (error) { note.textContent = `แนบไม่สำเร็จ: ${error.message}`; }
+        finally { input.disabled = false; input.value = ''; }
+    }
+    document.addEventListener('change', event => { const input = event.target.closest('[data-more-files]'); if (input && input.files.length) uploadMore(input); });
+    document.addEventListener('click', async event => {
+        const own = event.target.closest('[data-own-file]');
+        if (own) { own.disabled = true; try { await openOwnFile(own.dataset.ownFile, own.dataset.mime); } catch (error) { alert(error.message); } finally { own.disabled = false; } return; }
+        const resubmit = event.target.closest('[data-resubmit]');
+        if (resubmit) {
+            const wrap = resubmit.closest('[data-more]');
+            if (!Number(wrap.dataset.added || 0) && !confirm('ยังไม่ได้แนบไฟล์เพิ่ม — ส่งกลับให้ GA ตรวจเลยไหม?')) return;
+            resubmit.disabled = true;
+            try { await call('/resubmit', { id: Number(resubmit.dataset.resubmit) }); loadMine(); }
+            catch (error) { alert(error.message); resubmit.disabled = false; }
+        }
+    });
 
     // ---------------------------------------------------------------- แบบฟอร์ม
     function openForm(key) {

@@ -208,3 +208,23 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 .sm-rec-file img { width: 116px; height: 116px; object-fit: cover; border-radius: 6px; background: #f1f5f9; }
 .sm-rec-file span { display: grid; place-items: center; width: 116px; height: 116px; border-radius: 6px; background: #f1f5f9; font-weight: 700; }
 .fa-badge.warn { background: #fff4e0; color: #a35d00; }
+
+/* รูปเอกสารเรียงด้านข้าง + ตัวดูรูปขยาย + สลิปโอนคืน */
+.sm-rec-groups { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
+.sm-rec-group { flex: 0 1 auto; padding: 10px; border: 1px solid var(--fa-line); border-radius: 12px; background: #fbfcfe; }
+.sm-rec-group.is-slip { border-color: #a6dcb9; background: #f3fbf6; }
+.sm-rec-group h3 { margin: 0 0 8px; font-size: 13px; }
+.sm-rec-group h3 small { color: var(--fa-muted); font-weight: 400; }
+.sm-rec-files { flex-wrap: nowrap; }
+.sm-rec-slip, .sm-rec-hint { padding: 10px 12px; border-radius: 10px; font-size: 13px; }
+.sm-rec-slip { display: grid; gap: 6px; background: #ecfdf3; border: 1px solid #a6dcb9; }
+.sm-rec-slip small { color: #475467; font-weight: 400; }
+.sm-rec-hint { margin: 0; background: #fff8e8; border: 1px solid #f5c26b; font-weight: 400; }
+.sm-box-count.is-wait { background: #f59e0b; }
+.sm-viewer { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; background: rgba(15, 23, 42, .88); }
+.sm-viewer-tools { display: flex; justify-content: center; gap: 8px; padding: 10px; }
+.sm-viewer-tools button { min-width: 44px; height: 40px; border: 0; border-radius: 10px; background: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+.sm-viewer-tools [data-z="x"] { margin-left: 16px; background: #fee4e2; color: #b42318; }
+.sm-viewer-stage { flex: 1; overflow: auto; display: grid; place-items: center; padding: 10px 20px 24px; }
+.sm-viewer-stage img { max-width: 92vw; max-height: 82vh; border-radius: 8px; background: #fff; transform-origin: center top; transition: transform .15s; cursor: zoom-in; }
+.sm-viewer-stage img.is-zoomed { cursor: zoom-out; }

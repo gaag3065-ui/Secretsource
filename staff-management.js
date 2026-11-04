@@ -133,9 +133,12 @@
             const titles = [...new Set(list.map(t => t.title))];
             const recs = (state.records || []).filter(r => r.type === b.key);
             const waiting = recs.filter(r => REVIEW.has(r.status)).length;
-            return `<button type="button" class="sm-box${people || recs.length ? '' : ' is-empty'}${state.box === b.key ? ' is-on' : ''}" data-box="${esc(b.key)}"
+            const submitters = new Set(recs.map(r => String(r.employee_id).toUpperCase()));
+            list.forEach(t => submitters.delete(String(t.employee_key).toUpperCase()));
+            const total = people + submitters.size;
+            return `<button type="button" class="sm-box${total ? '' : ' is-empty'}${state.box === b.key ? ' is-on' : ''}" data-box="${esc(b.key)}"
                 title="${esc(titles.length ? `งาน: ${titles.join(' · ')}` : 'ยังไม่มีงานในกล่องนี้')}">
-                <span class="sm-box-count" aria-label="ได้รับมอบหมาย ${people} คน">${people}</span>
+                <span class="sm-box-count${waiting ? ' is-wait' : ''}" aria-label="ได้รับงาน/ส่งเอกสาร ${total} คน">${total}</span>
                 <span class="sm-box-icon">${esc(b.icon || '📌')}</span>
                 <b>${esc(b.title)}</b>
                 <small>${titles.length ? `${titles.length} งาน · ค้าง ${open} คน` : recs.length ? '' : 'ยังไม่มีงาน'}</small>
@@ -820,26 +823,46 @@
             </header>
             <div class="fa-detail-body">
                 <div class="sm-info sm-rec-info">${rows || '<p class="fa-empty">ไม่มีข้อมูลที่กรอก</p>'}</div>
-                ${[...groups.entries()].map(([label, files]) => `<section class="sm-section"><h3>${esc(label)} (${files.length})</h3><div class="sm-rec-files">
-                    ${files.map(f => `<button type="button" class="sm-rec-file" data-rec-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">${/^image\//.test(f.mime) ? `<img alt="" data-rec-img="${r.id}/${f.n}">` : '<span>📄 PDF</span>'}<small>ไฟล์ ${f.index}</small></button>`).join('')}</div></section>`).join('')}
+                <div class="sm-rec-groups">${[...groups.entries()].map(([label, files]) => `<section class="sm-rec-group${label === 'สลิปโอนเงินคืน' ? ' is-slip' : ''}"><h3>${esc(label)} <small>(${files.length})</small></h3><div class="sm-rec-files">
+                    ${files.map(f => `<button type="button" class="sm-rec-file" data-rec-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}" title="กดเพื่อดูขยาย">${/^image\//.test(f.mime) ? `<img alt="" data-rec-img="${r.id}/${f.n}">` : '<span>📄 PDF</span>'}<small>ไฟล์ ${f.index}</small></button>`).join('')}</div></section>`).join('')}</div>
                 <section class="sm-section"><h3>ผลการตรวจ</h3>
                     <form class="sm-form" id="smRecForm" data-id="${r.id}">
                         <label>สถานะ<select name="status">${Object.entries(state.docStatuses || {}).filter(([k]) => k !== 'draft').map(([k, v]) => `<option value="${k}" ${k === r.status ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>
-                        <label class="sm-wide">หมายเหตุถึงพนักงาน (เช่น ขอเอกสารเพิ่ม)<textarea name="note" maxlength="1000">${esc(r.admin_note || '')}</textarea></label>
+                        <div class="sm-wide sm-rec-slip" data-slip hidden><b>🧾 แนบสลิปการโอนคืน</b><small>พนักงานจะเห็นปุ่ม "ดูสลิปโอนเงินคืน" ในหน้าระบบจัดการองค์กร (รายการที่ฉันส่ง)</small>
+                            <input type="file" name="slip" accept="image/*,application/pdf" multiple></div>
+                        <p class="sm-wide sm-rec-hint" data-reject-hint hidden>📎 เลือก "ขอเอกสารเพิ่ม" แล้ว พนักงานจะเห็นหมายเหตุนี้ และปุ่ม <b>"＋ ส่งเอกสารเพิ่ม"</b> ที่รายการนี้ในหน้าระบบจัดการองค์กร → เลือกหัวข้อ (เช่น ใบเสร็จ) แล้วแนบไฟล์ ไฟล์ใหม่จะมาต่อท้ายหัวข้อเดิมในหน้านี้ จากนั้นพนักงานกด "ส่งกลับให้ GA ตรวจ" รายการจะกลับมาเป็น "รอตรวจ"</p>
+                        <label class="sm-wide">หมายเหตุถึงพนักงาน (เช่น ขอใบเสร็จตัวจริงเพิ่ม)<textarea name="note" maxlength="1000">${esc(r.admin_note || '')}</textarea></label>
                         <div class="sm-form-foot"><span class="sm-meta">${r.handled_by ? `ตรวจล่าสุดโดย ${esc(r.handled_by)} ${esc(when(r.handled_at))}` : 'ยังไม่ได้ตรวจ'}</span><button type="submit" class="fa-btn fa-btn-primary">บันทึกผลการตรวจ</button></div>
                     </form></section>
             </div>`;
         if (!$('smDialog').open) $('smDialog').showModal();
+        syncRecForm($('smRecForm'));
         $('smDetail').querySelectorAll('[data-rec-img]').forEach(img => {
             const [rid, n] = img.dataset.recImg.split('/');
             recordFileUrl(rid, n).then(url => { img.src = url; }).catch(() => { img.alt = 'เปิดไม่ได้'; });
         });
     }
+    function syncRecForm(form) {
+        if (!form) return;
+        form.querySelector('[data-slip]').hidden = form.status.value !== 'refunded';
+        form.querySelector('[data-reject-hint]').hidden = form.status.value !== 'rejected';
+    }
+    const toDataUrl = file => new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(new Error(`อ่านไฟล์ ${file.name} ไม่ได้`)); r.readAsDataURL(file); });
     async function saveRecord(form) {
         const button = form.querySelector('[type=submit]');
         button.disabled = true;
         try {
             await ensureCsrf();
+            const slips = form.status.value === 'refunded' ? [...form.slip.files] : [];
+            if (form.status.value === 'rejected' && !form.note.value.trim()) throw new Error('กรุณาเขียนหมายเหตุว่าต้องการเอกสารอะไรเพิ่ม');
+            for (let i = 0; i < slips.length; i++) {
+                if (slips[i].size > 8 * 1024 * 1024) throw new Error(`${slips[i].name} ใหญ่เกิน 8 MB`);
+                button.textContent = `กำลังอัปโหลดสลิป ${i + 1}/${slips.length}…`;
+                const response = await window.authFetch(docsApi(`/records/${form.dataset.id}/slip`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: await toDataUrl(slips[i]) }) });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || data.success === false) throw new Error(data.message || 'อัปโหลดสลิปไม่สำเร็จ');
+            }
+            button.textContent = 'กำลังบันทึก…';
             const response = await window.authFetch(docsApi(`/records/${form.dataset.id}/status`), { method: 'PUT', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: form.status.value, note: form.note.value }) });
             const data = await response.json().catch(() => ({}));
@@ -849,7 +872,29 @@
             render();
             openRecord(data.record.id);
             toast('บันทึกผลการตรวจแล้ว');
-        } catch (error) { toast(error.message, true); } finally { button.disabled = false; }
+        } catch (error) { toast(error.message, true); } finally { button.disabled = false; button.textContent = 'บันทึกผลการตรวจ'; }
+    }
+    // ดูรูปขยาย (ซูมเข้า-ออก) ในหน้าเดียวกัน — PDF เปิดแท็บใหม่เหมือนเดิม
+    function openViewer(url) {
+        let zoom = 1;
+        const box = document.createElement('div');
+        box.className = 'sm-viewer';
+        box.innerHTML = `<div class="sm-viewer-tools"><button type="button" data-z="-">－</button><button type="button" data-z="0">พอดีจอ</button><button type="button" data-z="+">＋</button><button type="button" data-z="x" aria-label="ปิด">×</button></div><div class="sm-viewer-stage"><img src="${url}" alt=""></div>`;
+        const img = box.querySelector('img');
+        const apply = () => { img.style.transform = `scale(${zoom})`; img.classList.toggle('is-zoomed', zoom > 1); };
+        box.addEventListener('click', event => {
+            const z = event.target.closest('[data-z]')?.dataset.z;
+            if (z === '+') zoom = Math.min(5, zoom + .5);
+            else if (z === '-') zoom = Math.max(.5, zoom - .5);
+            else if (z === '0') zoom = 1;
+            else if (z === 'x' || event.target === box || event.target.classList.contains('sm-viewer-stage')) return box.remove();
+            else if (event.target === img) zoom = zoom > 1 ? 1 : 2.5;
+            apply();
+        });
+        box.addEventListener('wheel', event => { event.preventDefault(); zoom = Math.min(5, Math.max(.5, zoom + (event.deltaY < 0 ? .25 : -.25))); apply(); }, { passive: false });
+        const onKey = event => { if (event.key === 'Escape') { box.remove(); document.removeEventListener('keydown', onKey); } };
+        document.addEventListener('keydown', onKey);
+        $('smDialog').append(box);
     }
 
     async function fileUrl(ref) {
@@ -993,6 +1038,7 @@
     // ตัวกรองถูกสร้างใหม่ตอนโหลด → ฟังที่แถบเครื่องมือแทน
     document.querySelector('.sm-toolbar').addEventListener('change', event => { if (event.target.matches('select')) render(); });
     $('smSearch').addEventListener('input', render);
+    $('smDialog').addEventListener('change', event => { if (event.target.closest('#smRecForm') && event.target.name === 'status') syncRecForm(event.target.form); });
     $('smDialog').addEventListener('submit', event => {
         if (event.target.id === 'smNewTask') { event.preventDefault(); createTask(event.target); }
         if (event.target.id === 'smRecForm') { event.preventDefault(); saveRecord(event.target); }
@@ -1124,7 +1170,13 @@
         const recordBtn = event.target.closest('[data-record]');
         if (recordBtn) return openRecord(recordBtn.dataset.record);
         const recFile = event.target.closest('[data-rec-file]');
-        if (recFile) { const [rid, n] = recFile.dataset.recFile.split('/'); const win = window.open('', '_blank'); recordFileUrl(rid, n).then(url => { if (win) win.location.href = url; else window.open(url, '_blank'); }).catch(error => { if (win) win.close(); toast(error.message, true); }); return; }
+        if (recFile) {
+            const [rid, n] = recFile.dataset.recFile.split('/');
+            if (/^image\//.test(recFile.dataset.mime)) { recordFileUrl(rid, n).then(openViewer).catch(error => toast(error.message, true)); return; }
+            const win = window.open('', '_blank');
+            recordFileUrl(rid, n).then(url => { if (win) win.location.href = url; else window.open(url, '_blank'); }).catch(error => { if (win) win.close(); toast(error.message, true); });
+            return;
+        }
         const boxTile = event.target.closest('[data-box]');
         if (boxTile) { state.box = state.box === boxTile.dataset.box ? '' : boxTile.dataset.box; return render(); }
         if (action === 'clear-filters') {

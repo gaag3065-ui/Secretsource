@@ -190,3 +190,17 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gd-lock-note { margin: 10px 0 0; padding: 10px 14px; border-radius: 12px; background: #fff7e6; border: 1px solid #f5c26b; color: #8a4b00; font-weight: 600; }
 #gdFields.is-locked { opacity: .5; pointer-events: none; }
 .gd-submit:disabled { opacity: .5; cursor: not-allowed; }
+
+/* สถานะเอกสารเบิกเงิน + สลิปโอนคืน + ส่งเอกสารเพิ่ม */
+.gd-pill.is-approved { background: #eaf1ff; color: #1d4ed8; border-color: #b8ccf8; }
+.gd-pill.is-insurance { background: #f3edff; color: #6d28d9; border-color: #d4c2fb; }
+.gd-pill.is-refunded { background: #e8f6ee; color: #067647; border-color: #a6dcb9; }
+.gd-slips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.gd-more { display: grid; gap: 6px; margin-top: 8px; padding: 10px; border: 1px dashed #f6b8a5; border-radius: 12px; background: #fff8f5; }
+.gd-more select { padding: 8px 10px; border: 1px solid var(--gd-line); border-radius: 10px; font: inherit; }
+.gd-more small { color: var(--gd-muted); }
+.gd-viewer { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; overflow: auto; background: rgba(15, 23, 42, .85); padding: 20px; }
+.gd-viewer img { max-width: 95vw; max-height: 90vh; border-radius: 8px; cursor: zoom-in; background: #fff; }
+.gd-viewer img.is-zoom { max-width: none; max-height: none; width: 180vw; cursor: zoom-out; }
+.gd-viewer button { position: fixed; top: 14px; right: 16px; width: 40px; height: 40px; border: 0; border-radius: 50%; background: #fff; font-size: 22px; cursor: pointer; }
+@media (max-width: 600px) { .gd-item { grid-template-columns: auto 1fr; } .gd-item .gd-pill { grid-column: 2; justify-self: start; } }
