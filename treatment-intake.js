@@ -14,11 +14,10 @@
     box.innerHTML = '<button type="button" class="intake-head" data-intake-toggle><b>📥 พนักงานแจ้งเข้ารักษา / ตรวจสุขภาพ</b><span class="intake-count" id="intakeCount">…</span><span class="intake-caret">▾</span></button><div class="intake-list" id="intakeList" hidden></div>';
     const form = document.getElementById('claimForm');
     if (!form) return;
-    // วางเป็นกล่องเล็กด้านบน ข้างช่องค้นหาพนักงาน (รายการเปิดเป็นแผงลอยด้านล่าง) · ไม่มีส่วนค้นหา → วางเหนือฟอร์มเหมือนเดิม
-    const header = document.querySelector('.employee-search-sticky-header');
-    if (header) { header.classList.add('has-intake'); header.append(box); box.classList.add('is-top'); }
-    else form.before(box);
-    document.addEventListener('click', event => { if (state.open && box.classList.contains('is-top') && !box.contains(event.target) && !event.target.closest('.intake-viewer, .intake-alert')) toggle(false); });
+    // ส่วนแยกด้านบนสุดของหน้าเปิดเคส (เหนือการ์ดค้นหาข้อมูล) — แถบหัวเล็ก กดเพื่อกาง/พับตาราง
+    const card = document.querySelector('.open-case-combined-card');
+    box.classList.add('is-strip');
+    if (card) card.before(box); else form.before(box);
 
     // รอรับเคส = ยังไม่มีเลขเคส (รวมรายการที่ถูกกดสถานะไปก่อนเปิดเคส)
     const pending = () => state.records.filter(r => !r.case_id && !['billed', 'deleted'].includes(r.status));
@@ -47,28 +46,26 @@
         count.textContent = list.length ? `รอรับเคส ${list.length}${urgent ? ` · ด่วน ${urgent}` : ''}` : 'ไม่มีเรื่องค้าง';
         count.className = `intake-count${urgent ? ' is-urgent' : list.length ? ' is-wait' : ''}`;
         const recent = state.records.filter(r => r.case_id).slice(0, 5);
-        document.getElementById('intakeList').innerHTML = (list.length ? list.map(r => {
-            const on = window.__treatmentIntake?.id === r.id;
-            const annual = isAnnual(r);
-            const date = annual ? thDate(val(r, 'check_date')) : `${thDate(val(r, 'treat_date'))} ${val(r, 'treat_time')}`.trim();
-            const imgs = r.files.filter(x => /^image\//.test(x.mime)).length;
-            return `
-            <article class="intake-item${r.urgent ? ' is-urgent' : ''}${on ? ' is-on' : ''}${annual ? ' is-annual' : ''}">
-                <div class="intake-main">
-                    <div class="intake-line1">
-                        <b class="intake-name">${r.urgent ? '🚨 ' : ''}${esc(r.fullname)}</b>
-                        <span class="intake-tag${annual ? ' is-annual' : r.urgent ? ' is-hot' : ''}">${annual ? 'ตรวจสุขภาพ' : r.urgent ? 'ด่วน >5,000' : 'แจ้งเข้ารักษา'}</span>
-                        ${annual ? `<span class="intake-amount">${esc(money(val(r, 'amount')))} ฿</span>` : ''}
-                    </div>
-                    <div class="intake-line2">${esc(date || '-')} · ${esc(val(r, 'hospital') || '-')}${annual ? '' : ` · ${esc(val(r, 'symptom') || '-')}`}</div>
-                    <div class="intake-line3">${esc(r.company || '')} · ${esc(r.insurance_code || r.employee_id || '')} · ${esc(contactOf(r) || '-')} · เลขที่ ${r.id} · ${esc(when(r.submitted_at))}</div>
-                    ${val(r, 'note') ? `<div class="intake-line3">หมายเหตุ: ${esc(val(r, 'note'))}</div>` : ''}
-                    ${r.files.length ? `<details class="intake-docs"><summary>📎 เอกสาร ${r.files.length} ไฟล์${imgs && imgs < r.files.length ? ` (รูป ${imgs})` : ''}</summary>
-                        <div class="intake-files">${r.files.map(x => `<button type="button" data-intake-file="${r.id}/${x.n}" data-mime="${esc(x.mime)}">${esc(x.field_label)} ${x.index}</button>`).join('')}</div></details>` : ''}
-                </div>
-                <button type="button" class="intake-take" data-intake-take="${r.id}" title="ค้นหาพนักงานและกรอกฟอร์มเปิดเคสให้">${on ? '✓ กำลังเปิดเคส' : 'รับเคส'}</button>
-            </article>`;
-        }).join('') : '<p class="intake-empty">ไม่มีเรื่องรอรับเคส ✓</p>')
+        document.getElementById('intakeList').innerHTML = (list.length ? `<table class="intake-table">
+            <thead><tr><th>ประเภท</th><th>พนักงาน</th><th>วันที่</th><th>โรงพยาบาล / อาการ</th><th class="num">ยอด (฿)</th><th>ติดต่อ</th><th>เอกสาร</th><th>แจ้งเมื่อ</th><th></th></tr></thead>
+            <tbody>${list.map(r => {
+                const on = window.__treatmentIntake?.id === r.id;
+                const annual = isAnnual(r);
+                const date = annual ? thDate(val(r, 'check_date')) : `${thDate(val(r, 'treat_date'))} ${val(r, 'treat_time')}`.trim();
+                const place = annual ? val(r, 'hospital') : [val(r, 'hospital'), val(r, 'symptom')].filter(Boolean).join(' · ');
+                return `<tr class="${r.urgent ? 'is-urgent' : ''}${on ? ' is-on' : ''}">
+                    <td><span class="intake-tag${annual ? ' is-annual' : r.urgent ? ' is-hot' : ''}">${annual ? 'ตรวจสุขภาพ' : r.urgent ? 'ด่วน >5,000' : 'เข้ารักษา'}</span></td>
+                    <td><b>${esc(r.fullname)}</b><small>${esc(r.company || '')} · ${esc(r.insurance_code || r.employee_id || '')}</small></td>
+                    <td class="nowrap">${esc(date || '-')}</td>
+                    <td class="clip" title="${esc(place)}${val(r, 'note') ? ` — หมายเหตุ: ${esc(val(r, 'note'))}` : ''}">${esc(place || '-')}${val(r, 'note') ? ' <i class="intake-note" aria-label="มีหมายเหตุ">💬</i>' : ''}</td>
+                    <td class="num">${annual ? esc(money(val(r, 'amount'))) : '-'}</td>
+                    <td class="nowrap">${esc(contactOf(r) || '-')}</td>
+                    <td>${r.files.length ? `<button type="button" class="intake-docbtn" data-intake-docs="${r.id}">📎 ${r.files.length}</button>` : '-'}</td>
+                    <td class="nowrap muted">${esc(when(r.submitted_at))}</td>
+                    <td><button type="button" class="intake-take" data-intake-take="${r.id}" title="ค้นหาพนักงานและกรอกฟอร์มเปิดเคสให้">${on ? '✓ กำลังเปิด' : 'รับเคส'}</button></td>
+                </tr>
+                <tr class="intake-docrow" data-docrow="${r.id}" hidden><td colspan="9"><div class="intake-files">${r.files.map(x => `<button type="button" data-intake-file="${r.id}/${x.n}" data-mime="${esc(x.mime)}">${esc(x.field_label)} ${x.index}</button>`).join('')}</div></td></tr>`;
+            }).join('')}</tbody></table>` : '<p class="intake-empty">ไม่มีเรื่องรอรับเคส ✓</p>')
             + (recent.length ? `<p class="intake-recent">ล่าสุด: ${recent.map(r => `${esc(r.fullname)} ${r.case_id ? `→ เคส #${esc(r.case_id)}` : `(${esc(r.status_label)})`}`).join(' · ')}</p>` : '');
         if (urgent && !state.open) toggle(true);
     }
@@ -113,7 +110,6 @@
     async function take(id) {
         const r = state.records.find(x => x.id === Number(id));
         if (!r) return;
-        if (box.classList.contains('is-top')) toggle(false);
         const keyword = document.getElementById('keywordInput');
         if (!keyword || typeof performEmployeeSearch !== 'function') return alert('บัญชีนี้ไม่มีสิทธิ์ค้นหาพนักงาน — ค้นหาและกรอกเองได้');
         keyword.value = r.insurance_code || r.employee_id;
@@ -177,6 +173,8 @@
 
     box.addEventListener('click', event => {
         if (event.target.closest('[data-intake-toggle]')) return toggle();
+        const docs = event.target.closest('[data-intake-docs]');
+        if (docs) { const row = box.querySelector(`[data-docrow="${docs.dataset.intakeDocs}"]`); if (row) row.hidden = !row.hidden; return; }
         const takeBtn = event.target.closest('[data-intake-take]');
         if (takeBtn) { takeBtn.disabled = true; take(takeBtn.dataset.intakeTake).finally(() => { takeBtn.disabled = false; }); return; }
         const file = event.target.closest('[data-intake-file]');

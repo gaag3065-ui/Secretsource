@@ -2976,3 +2976,26 @@ body.login-page {
 .intake-docs .intake-files button { padding: 2px 8px !important; font-size: 11.5px !important; border-radius: 6px !important; }
 .intake-item .intake-take { align-self: center; padding: 6px 14px !important; border-radius: 6px !important; font-size: 12.5px !important; white-space: nowrap; }
 .intake-item.is-on .intake-take { background: #059669 !important; }
+/* กล่องรับเรื่อง: ส่วนแยกด้านบน (แถบหัวเล็ก + ตารางกระชับ) */
+.intake-box.is-strip { margin: 0 0 10px; border: 1px solid #f1d5db; border-radius: 12px; background: #fff; overflow: hidden; box-shadow: 0 1px 3px rgba(16, 24, 40, .05); }
+.intake-box.is-strip .intake-head { padding: 8px 14px; background: #fff7f8; font-size: 13.5px; }
+.intake-box.is-strip .intake-list { position: static !important; width: auto !important; max-height: 340px; padding: 0 !important; border: 0; border-top: 1px solid #f1d5db; border-radius: 0; box-shadow: none; overflow: auto; }
+.intake-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.intake-table th { position: sticky; top: 0; z-index: 1; padding: 6px 10px; background: #f9fafb; color: #6b7280; font-size: 11.5px; font-weight: 600; text-align: left; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
+.intake-table td { padding: 6px 10px; border-bottom: 1px solid #f1f2f4; vertical-align: middle; }
+.intake-table tr:hover td { background: #fafbff; }
+.intake-table tr.is-urgent td { background: #fff1f2; }
+.intake-table tr.is-on td { background: #ecfdf5; }
+.intake-table td b { display: block; color: #111827; font-weight: 600; white-space: nowrap; }
+.intake-table td small { color: #9ca3af; font-size: 11px; white-space: nowrap; }
+.intake-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.intake-table .nowrap { white-space: nowrap; }
+.intake-table .muted { color: #9ca3af; font-size: 11.5px; }
+.intake-table .clip { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.intake-table .intake-take { padding: 4px 12px !important; border-radius: 6px !important; font-size: 12px !important; white-space: nowrap; }
+.intake-table tr.is-on .intake-take { background: #059669 !important; }
+.intake-docbtn { padding: 2px 8px; border: 1px solid #dbe3f0; border-radius: 6px; background: #fff; color: #1d4ed8; font: inherit; font-size: 12px; cursor: pointer; }
+.intake-docrow td { background: #f8fafc; }
+.intake-docrow .intake-files { gap: 4px !important; }
+.intake-docrow .intake-files button { padding: 2px 8px !important; font-size: 11.5px !important; border-radius: 6px !important; }
+.intake-note { font-style: normal; font-size: 11px; }
