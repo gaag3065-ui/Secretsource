@@ -1434,3 +1434,23 @@ body.second-sidebar-open
         font-size: 10px;
     }
 }
+
+/* ปุ่มจัดการสิทธิ์ STAFF (เฉพาะ ADMIN) */
+.topbar-admin-button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1px solid #c7d7fe;
+    border-radius: 12px;
+    background: #eef4ff;
+    color: #1d4ed8;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background var(--transition), transform var(--transition);
+}
+.topbar-admin-button:hover { background: #dbe7ff; transform: translateY(-1px); }
+.topbar-admin-button[hidden] { display: none; }
+@media (max-width: 760px) { .topbar-admin-button { padding: 0 10px; font-size: 12px; } }

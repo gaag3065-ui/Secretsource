@@ -1023,6 +1023,10 @@ function renderTaskContent(
 
         const isAdmin = isAdminSession();
 
+        // ปุ่มไปหน้าจัดการสิทธิ์ STAFF (แสดงเฉพาะ ADMIN — หน้า admin.html ตรวจซ้ำอีกชั้น)
+        const adminButton = document.getElementById('adminPermissionButton');
+        if (adminButton) adminButton.hidden = !isAdmin;
+
         document.getElementById('accountName').textContent =
             displayName;
 

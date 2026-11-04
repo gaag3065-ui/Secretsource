@@ -12,7 +12,7 @@
         rel="stylesheet"
     >
 
-    <link rel="stylesheet" href="portal.css?v=20260904-brand-09">
+    <link rel="stylesheet" href="portal.css?v=20261104-admin-01">
     <link rel="stylesheet" href="portal-sidebar.css?v=20261025-2">
     <link rel="stylesheet" href="portal-split.css?v=20261027-2">
     <link rel="stylesheet" href="portal-fullpage.css?v=20261027-2">
@@ -101,6 +101,8 @@
         <div class="topbar-spacer"></div>
 
         <div class="topbar-actions">
+            <!-- เฉพาะบัญชี ADMIN: ไปหน้าจัดการสิทธิ์ STAFF -->
+            <a id="adminPermissionButton" class="topbar-admin-button" href="admin.html" hidden>🔐 จัดการสิทธิ์ STAFF</a>
             <span class="system-status">
                 <span class="status-dot"></span>
                 ระบบพร้อมใช้งาน
@@ -340,7 +342,7 @@
     </div>
 
     <script src="config.js?v=20260902-mobile-auth-01"></script>
-    <script src="portal.js?v=20261104-2"></script>
+    <script src="portal.js?v=20261104-3"></script>
     <script src="portal-split.js?v=20261104-1"></script>
     <script src="portal-fullpage.js?v=20261027-2"></script>
     <script src="pwa.js"></script>
