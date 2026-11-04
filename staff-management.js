@@ -21,6 +21,8 @@
     // ห้องที่กรอกเป็นชื่อตึกซ้ำ (ไม่มีเลขห้อง) ไม่ต้องแสดงซ้ำ
     const roomOf = e => (e.room && e.room !== e.building ? e.room : '');
     const state = { data: null, byKey: new Map(), current: null, drafts: new Map() };
+    // สิทธิ์ย่อยของบัญชีนี้ (จาก /employees) — ไม่มีข้อมูล (หลังบ้านเก่า) = แสดงปุ่มตามเดิม
+    const can = key => state.data?.can ? Boolean(state.data.can[key]) : true;
 
     // หน้านี้เปิดตรง/ฝังใน iframe ได้โดยไม่ผ่านหน้าที่เก็บ csrfToken ไว้ → ขอจาก /api/session ก่อนส่งคำขอแก้ไขครั้งแรก
     async function ensureCsrf() {
@@ -142,7 +144,7 @@
             return `<button type="button" class="sm-box${total ? '' : ' is-empty'}${state.box === b.key ? ' is-on' : ''}" data-box="${esc(b.key)}"
                 title="${esc(titles.length ? `งาน: ${titles.join(' · ')}` : 'ยังไม่มีงานในกล่องนี้')}">
                 <span class="sm-box-count${waiting ? ' is-wait' : ''}" aria-label="ได้รับงาน/ส่งเอกสาร ${total} คน">${total}</span>
-                ${b.key !== 'quests' ? `<span class="sm-box-del" data-del-box="${esc(b.key)}" role="button" title="ลบกล่องงานนี้ (ลบงาน เอกสาร และไฟล์ที่เกี่ยวข้องทั้งหมด)">🗑</span>` : ''}
+                ${b.key !== 'quests' && can('deleteWork') ? `<span class="sm-box-del" data-del-box="${esc(b.key)}" role="button" title="ลบกล่องงานนี้ (ลบงาน เอกสาร และไฟล์ที่เกี่ยวข้องทั้งหมด)">🗑</span>` : ''}
                 <span class="sm-box-icon">${esc(b.icon || '📌')}</span>
                 <b>${esc(b.title)}</b>
                 <i class="sm-box-scope is-${b.scope === 'personal' ? 'personal' : 'main'}">${b.scope === 'personal' ? '👤 เฉพาะบุคคล' : '🌐 งานหลัก'}</i>
@@ -182,7 +184,7 @@
         }));
         state.groups = [...groups.values()].sort((a, b) => b.tasks.length - a.tasks.length);
         const groupChips = state.groups.map((g, i) => `<button type="button" class="sm-group" data-group="${i}" title="${esc(`${g.title} · ${g.tasks.length} คน`)}"><span>${esc(g.title)}</span><i>${g.tasks.length}</i></button>`).join('');
-        $('smHead').innerHTML = `<th class="sm-no">ลำดับ</th><th>บริษัท</th><th>สถานะปัจจุบัน</th><th>ชื่อเล่น</th><th>ชื่อพนักงาน</th>${extra.map(f => `<th>${esc(f.label)}</th>`).join('')}<th class="sm-tasks-head">งานที่มอบหมาย ${groupChips ? `<span class="sm-groups">${groupChips}</span>` : ''}</th><th class="sm-bulk-head"><button type="button" class="fa-btn sm-broadcast" data-action="broadcast" title="ส่งข้อความถึงพนักงานที่แสดงอยู่ทั้งหมด ผ่านคิว LINE OA">📢 ส่งข้อความแบบหมู่ (${rows.length})</button></th>`;
+        $('smHead').innerHTML = `<th class="sm-no">ลำดับ</th><th>บริษัท</th><th>สถานะปัจจุบัน</th><th>ชื่อเล่น</th><th>ชื่อพนักงาน</th>${extra.map(f => `<th>${esc(f.label)}</th>`).join('')}<th class="sm-tasks-head">งานที่มอบหมาย ${groupChips ? `<span class="sm-groups">${groupChips}</span>` : ''}</th><th class="sm-bulk-head">${can('broadcast') ? `<button type="button" class="fa-btn sm-broadcast" data-action="broadcast" title="ส่งข้อความถึงพนักงานที่แสดงอยู่ทั้งหมด ผ่านคิว LINE OA">📢 ส่งข้อความแบบหมู่ (${rows.length})</button>` : ''}</th>`;
         const span = 7 + extra.length;
         if (!rows.length) { $('smRows').innerHTML = `<tr><td colspan="${span}" class="fa-empty">ไม่พบพนักงานตามตัวกรอง</td></tr>`; return; }
         $('smRows').innerHTML = rows.map((e, index) => {
@@ -683,6 +685,7 @@
     // ลบงาน: ยืนยัน 2 รอบ — งานที่มีไฟล์รายงาน/ไฟล์ที่พนักงานส่ง จะลบไฟล์บน Drive ด้วย
     async function deleteTasks(ids, label) {
         if (!ids.length) return false;
+        if (!can('deleteWork')) { toast('บัญชีนี้ไม่มีสิทธิ์ลบงาน (ลบงานและกล่องงาน) — ขอสิทธิ์จากผู้ดูแลระบบ', true); return false; }
         const withFiles = state.data.tasks.some(t => ids.map(Number).includes(t.id) && t.dest);
         if (!confirm(`ต้องการ${label}ใช่ไหม?\n\nพนักงานจะไม่เห็นงานนี้ในหน้าระบบจัดการองค์กรอีก`)) return false;
         if (!confirm(withFiles
@@ -1004,7 +1007,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
                         <label class="sm-wide">หมายเหตุถึงพนักงาน (เช่น ขอใบเสร็จตัวจริงเพิ่ม)<textarea name="note" maxlength="1000">${esc(r.admin_note || '')}</textarea></label>
                         <div class="sm-form-foot"><span class="sm-meta">${r.handled_by ? `ตรวจล่าสุดโดย ${esc(r.handled_by)} ${esc(when(r.handled_at))}` : 'ยังไม่ได้ตรวจ'}</span><button type="submit" class="fa-btn fa-btn-primary">บันทึกผลการตรวจ</button></div>
                     </form></section>
-                <div class="sm-rec-danger"><button type="button" class="fa-btn sm-btn-danger" data-del-record="${r.id}">🗑️ ลบรายการนี้</button><small>ลบออกจากทุกหน้า (พนักงานจะไม่เห็นแล้ว) และย้ายไฟล์แนบไปถังขยะ Drive</small></div>
+                ${can('deleteDocs') ? `<div class="sm-rec-danger"><button type="button" class="fa-btn sm-btn-danger" data-del-record="${r.id}">🗑️ ลบรายการนี้</button><small>ลบออกจากทุกหน้า (พนักงานจะไม่เห็นแล้ว) และย้ายไฟล์แนบไปถังขยะ Drive</small></div>` : ''}
             </div>`;
         if (!$('smDialog').open) $('smDialog').showModal();
         syncRecForm($('smRecForm'));

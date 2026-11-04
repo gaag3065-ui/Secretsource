@@ -372,7 +372,7 @@ if (basePage === 'internal-support.html') {
 }
 
 if (basePage === 'ga-work.html') {
-    return permissions.ManageStaff === true;
+    return permissions.ManageWorkflow === true;
 }
 
 if (basePage === 'monitoring.html') {
