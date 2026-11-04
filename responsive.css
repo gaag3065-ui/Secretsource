@@ -3009,3 +3009,26 @@ body.login-page {
 .intake-sub.is-bill { background: #fff7ed; color: #9a3412; }
 .intake-notice-text { display: block; width: 100%; margin-top: 4px; padding: 4px 8px; border: 1px solid #f59e0b; border-radius: 6px; font: inherit; font-size: 12px; }
 .intake-notice-text[hidden] { display: none; }
+/* ===== กล่องรับเรื่อง: ปุ่มลูกกลมลอย + แผงขยาย ===== */
+.intake-box.is-fab { position: fixed; right: 22px; bottom: 22px; z-index: 900; margin: 0; border: 0; background: none; overflow: visible; box-shadow: none; }
+.intake-fab { position: relative; display: grid; place-items: center; width: 62px; height: 62px; border: 0; border-radius: 50%; background: linear-gradient(135deg, #e11d48, #be123c); color: #fff; font-size: 26px; cursor: pointer; box-shadow: 0 10px 28px rgba(225, 29, 72, .38), inset 0 -3px 0 rgba(0, 0, 0, .12); transition: transform .25s cubic-bezier(.34, 1.56, .64, 1), box-shadow .25s; animation: intake-float 3.2s ease-in-out infinite; }
+.intake-fab:hover { transform: scale(1.08); box-shadow: 0 14px 34px rgba(225, 29, 72, .45); }
+.intake-box:not(.has-wait) .intake-fab { background: linear-gradient(135deg, #64748b, #475569); box-shadow: 0 8px 22px rgba(71, 85, 105, .3); animation: none; }
+.intake-box.has-wait .intake-fab::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid rgba(225, 29, 72, .45); animation: intake-ring 2s ease-out infinite; }
+.intake-fab-badge { position: absolute; top: -4px; right: -4px; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 999px; background: #fff; color: #be123c; font-size: 12.5px; font-weight: 800; line-height: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, .2); }
+.intake-box.has-urgent .intake-fab-badge { background: #fde047; color: #7f1d1d; }
+.intake-box.is-open .intake-fab { transform: scale(.85) rotate(-8deg); animation: none; }
+@keyframes intake-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+@keyframes intake-ring { 0% { opacity: .9; transform: scale(.9); } 100% { opacity: 0; transform: scale(1.35); } }
+.intake-panel { position: absolute; right: 0; bottom: 78px; width: min(980px, calc(100vw - 44px)); max-height: min(72vh, 640px); display: flex; flex-direction: column; border: 1px solid rgba(225, 29, 72, .15); border-radius: 20px; background: rgba(255, 255, 255, .97); backdrop-filter: blur(10px); box-shadow: 0 30px 70px rgba(15, 23, 42, .28); overflow: hidden; transform-origin: calc(100% - 31px) calc(100% + 47px); transform: scale(.08); opacity: 0; pointer-events: none; transition: transform .38s cubic-bezier(.34, 1.4, .64, 1), opacity .2s ease; }
+.intake-box.is-open .intake-panel { transform: scale(1); opacity: 1; pointer-events: auto; }
+.intake-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px; background: linear-gradient(135deg, #fff1f2, #fff); border-bottom: 1px solid #fde2e7; }
+.intake-panel-head > div { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.intake-panel-head b { color: #9f1239; font-size: 15px; }
+.intake-close { width: 32px; height: 32px; border: 0; border-radius: 50%; background: #fff; color: #9f1239; font-size: 20px; line-height: 1; cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, .1); }
+.intake-close:hover { background: #ffe4e6; }
+.intake-box.is-fab .intake-list { position: static !important; display: block; width: auto !important; max-height: none; flex: 1 1 auto; padding: 0 !important; border: 0; box-shadow: none; overflow: auto; }
+@media (max-width: 640px) {
+    .intake-box.is-fab { right: 14px; bottom: 14px; }
+    .intake-panel { width: calc(100vw - 28px); bottom: 74px; max-height: 76vh; }
+}

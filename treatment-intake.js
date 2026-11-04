@@ -11,13 +11,20 @@
 
     const box = document.createElement('section');
     box.className = 'intake-box';
-    box.innerHTML = '<button type="button" class="intake-head" data-intake-toggle><b>📥 พนักงานแจ้งเข้ารักษา / ตรวจสุขภาพ</b><span class="intake-count" id="intakeCount">…</span><span class="intake-caret">▾</span></button><div class="intake-list" id="intakeList" hidden></div>';
+    // ปุ่มลูกกลมลอยมุมขวาล่าง (มีตัวเลขเรื่องค้าง) → กดแล้วขยายเป็นแผงรายการ
+    box.innerHTML = `<button type="button" class="intake-fab" data-intake-toggle aria-label="พนักงานแจ้งเข้ารักษา / ตรวจสุขภาพ" title="พนักงานแจ้งเข้ารักษา / ตรวจสุขภาพ">
+            <span class="intake-fab-icon" aria-hidden="true">📥</span><span class="intake-fab-badge" id="intakeFabBadge" hidden>0</span></button>
+        <div class="intake-panel" role="dialog" aria-label="พนักงานแจ้งเข้ารักษา / ตรวจสุขภาพ">
+            <header class="intake-panel-head"><div><b>📥 พนักงานแจ้งเข้ารักษา / ตรวจสุขภาพ</b><span class="intake-count" id="intakeCount">…</span></div>
+                <button type="button" class="intake-close" data-intake-toggle aria-label="ปิด">×</button></header>
+            <div class="intake-list" id="intakeList"></div>
+        </div>`;
     const form = document.getElementById('claimForm');
     if (!form) return;
-    // ส่วนแยกด้านบนสุดของหน้าเปิดเคส (เหนือการ์ดค้นหาข้อมูล) — แถบหัวเล็ก กดเพื่อกาง/พับตาราง
-    const card = document.querySelector('.open-case-combined-card');
-    box.classList.add('is-strip');
-    if (card) card.before(box); else form.before(box);
+    box.classList.add('is-fab');
+    document.body.append(box);
+    document.addEventListener('keydown', event => { if (event.key === 'Escape' && state.open) toggle(false); });
+    document.addEventListener('click', event => { if (state.open && !box.contains(event.target) && !event.target.closest('.intake-viewer, .intake-alert')) toggle(false); });
 
     // รอรับเคส = ยังไม่มีเลขเคส (รวมรายการที่ถูกกดสถานะไปก่อนเปิดเคส)
     const pending = () => state.records.filter(r => r.type !== 'medical' && !r.case_id && !['billed', 'deleted'].includes(r.status));
@@ -67,6 +74,11 @@
         const billWait = state.records.filter(r => r.type === 'medical' && ['pending', 'rejected', 'approved'].includes(r.status)).length;
         count.textContent = [list.length ? `รอรับเคส ${list.length}` : '', urgent ? `ด่วน ${urgent}` : '', billWait ? `บิลรอปิดเคส ${billWait}` : ''].filter(Boolean).join(' · ') || 'ไม่มีเรื่องค้าง';
         count.className = `intake-count${urgent ? ' is-urgent' : list.length || billWait ? ' is-wait' : ''}`;
+        const fabBadge = document.getElementById('intakeFabBadge');
+        fabBadge.textContent = list.length + billWait;
+        fabBadge.hidden = !(list.length + billWait);
+        box.classList.toggle('has-wait', Boolean(list.length + billWait));
+        box.classList.toggle('has-urgent', Boolean(urgent));
         // เปิดเคสแล้ว (ยังไม่ส่งบิล) → GA เลือกสถานะแจ้งกลับให้พนักงาน
         const recent = state.records.filter(r => r.type !== 'medical' && r.case_id && !['billed', 'deleted', 'waiting', 'insurance', 'refunded', 'done'].includes(r.status)).slice(0, 15);
         // บิลค่ารักษาที่พนักงานส่งจากเคส → GA บันทึกลงเคส แล้วกด "ปิดเคสแล้ว"
@@ -121,7 +133,6 @@
     }
     function toggle(force) {
         state.open = force ?? !state.open;
-        document.getElementById('intakeList').hidden = !state.open;
         box.classList.toggle('is-open', state.open);
     }
 
@@ -141,7 +152,7 @@
             ${fresh.map(r => `<p><b>${esc(r.fullname)}</b> · ${esc(val(r, 'treat_type'))} · ${esc(val(r, 'hospital'))}<br><small>${esc(thDate(val(r, 'treat_date')))} ${esc(val(r, 'treat_time'))} · อาการ: ${esc(val(r, 'symptom'))}</small></p>`).join('')}
             <p class="intake-meta">พนักงานแจ้งว่าค่าใช้จ่ายอาจเกิน 5,000 บาท — ประสานประกันให้จ่ายตรงก่อนพนักงานเข้ารักษา</p>
             <button type="button" data-intake-alert-ok>รับทราบ ไปที่รายการ</button></div>`;
-        pop.addEventListener('click', event => { if (event.target.closest('[data-intake-alert-ok]') || event.target === pop) { pop.remove(); toggle(true); box.scrollIntoView({ behavior: 'smooth' }); } });
+        pop.addEventListener('click', event => { if (event.target.closest('[data-intake-alert-ok]') || event.target === pop) { pop.remove(); toggle(true); } });
         document.body.append(pop);
     }
 
@@ -160,6 +171,7 @@
     async function take(id) {
         const r = state.records.find(x => x.id === Number(id));
         if (!r) return;
+        toggle(false);   // ปิดแผงให้เห็นฟอร์มเปิดเคส
         const keyword = document.getElementById('keywordInput');
         if (!keyword || typeof performEmployeeSearch !== 'function') return alert('บัญชีนี้ไม่มีสิทธิ์ค้นหาพนักงาน — ค้นหาและกรอกเองได้');
         keyword.value = r.insurance_code || r.employee_id;
