@@ -291,3 +291,5 @@ button, input, select, textarea { font: inherit; color: inherit; }
     .gd-main-home > .gd-contacts { grid-column: 2; grid-row: 1 / span 2; }
 }
 @media (max-width: 1639px) { .gd-personal { margin-top: 4px; } }
+.gd-bill-case { margin: 0 0 12px; padding: 12px 14px; border: 1px solid #fecdd3; border-left: 5px solid #e11d48; border-radius: 12px; background: #fff1f2; font-size: 14px; }
+.gd-bill-case small { display: block; margin-top: 4px; color: #6b7280; font-size: 12.5px; }

@@ -322,7 +322,7 @@
                     <span class="gd-item-icon">${esc(icon(r.type))}</span>
                     <div><b>${esc(r.type_title)}</b><small>เลขที่ ${r.id} · ส่งเมื่อ ${esc(when(r.submitted_at))} · ไฟล์แนบ ${r.files.length - slips.length}</small>
                         ${r.admin_note ? `<span class="gd-note">GA: ${esc(r.admin_note)}</span>` : ''}
-                        ${r.type === 'treatment' && !['billed', 'deleted', 'rejected'].includes(r.status) ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm gd-bill" data-bill-from="${r.id}">📤 รักษาเสร็จ / ส่งบิล${r.case_id ? ` (เคส #${esc(r.case_id)})` : ''}</button>` : ''}
+                        ${r.type === 'treatment' && !['billed', 'deleted', 'rejected'].includes(r.status) ? (r.case_id ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm gd-bill" data-bill-from="${r.id}">📤 รักษาเสร็จ / ส่งบิล (เคส #${esc(r.case_id)})</button>` : '<span class="gd-pill is-pending">รอ GA เปิดเคสก่อน จึงบันทึกค่ารักษาได้</span>') : ''}
                         ${slips.length ? `<span class="gd-slips">${slips.map(f => `<button type="button" class="gd-btn gd-btn-sm" data-own-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">🧾 ดูสลิปโอนเงินคืน${slips.length > 1 ? ` ${f.index}` : ''}</button>`).join('')}</span>` : ''}
                         ${more}</div>
                     <span class="gd-pill is-${esc(r.status)}">${esc(r.status_label)}</span>
@@ -379,6 +379,8 @@
             };
             set('case_ref', r.case_id ? `เคส #${r.case_id} (แจ้งเลขที่ ${r.id})` : `แจ้งเลขที่ ${r.id}`);
             // ข้อมูลจากตอนแจ้งเข้ารักษา: แสดงให้เห็นแต่แก้ไม่ได้
+            // บอกให้ชัดว่ากำลังบันทึกค่ารักษาของเคสไหน
+            $('gdInfo').insertAdjacentHTML('afterbegin', `<div class="gd-bill-case">🩺 บันทึกค่ารักษาของ <b>เคส #${esc(r.case_id || '-')}</b> · ${esc(r.fields?.hospital || '-')} · ${esc(thDate(r.fields?.treat_date || ''))}<small>บิลนี้จะผูกกับเคสนี้เท่านั้น — ถ้ารักษาคนละครั้ง ให้กดบันทึกที่เคสของครั้งนั้น</small></div>`);
             ['treat_date', 'hospital', 'symptom'].forEach(k => {
                 set(k, r.fields?.[k]);
                 const input = $('gdFields').querySelector(`[name="${k}"]`);
@@ -415,7 +417,7 @@
         const casesHtml = cases.length ? `<section class="gd-care-section"><h3>🩺 เคสที่แจ้งไว้ (${cases.length}) — รักษาเสร็จแล้วกดบันทึกค่ารักษา</h3>
             ${cases.map(r => `<div class="gd-care-case"><div><b>${esc(r.fields?.hospital || '-')}</b><small>${esc(thDate(r.fields?.treat_date || ''))} ${esc(r.fields?.treat_time || '')} · ${esc(r.fields?.symptom || '')}</small>
                 <small>เลขที่ ${r.id}${r.case_id ? ` · เคสประกัน #${esc(r.case_id)}` : ''} · <span class="gd-pill is-${r.case_id ? 'received' : 'pending'}">${r.case_id ? 'GA เปิดเคสแล้ว' : 'รอ GA เปิดเคส'}</span></small></div>
-                <button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-bill-from="${r.id}">📤 บันทึกค่ารักษา</button></div>`).join('')}</section>` : '';
+                ${r.case_id ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-bill-from="${r.id}">📤 บันทึกค่ารักษา (เคส #${esc(r.case_id)})</button>` : '<button type="button" class="gd-btn gd-btn-sm" disabled title="รอ GA เปิดเคสกับประกันก่อน">รอ GA เปิดเคส</button>'}</div>`).join('')}</section>` : '';
         let summary = null;
         try { summary = (await call('/care')).summary; } catch (error) { box.innerHTML = casesHtml + `<p class="gd-empty">${esc(error.message)}</p>`; return; }
         if (!summary) { box.innerHTML = casesHtml + '<p class="gd-empty">ยังไม่พบข้อมูลวงเงินประกันของคุณ — กรุณาติดต่อ GA</p>'; return; }
