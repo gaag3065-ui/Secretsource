@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>งาน GA | GA Operations</title>
     <link rel="stylesheet" href="fitness-admin.css?v=20261102-2">
-    <link rel="stylesheet" href="ga-work.css?v=20261103-1">
+    <link rel="stylesheet" href="ga-work.css?v=20261104-1">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
@@ -14,23 +14,32 @@
             <div>
                 <p class="fa-eyebrow">GA WORK · สนับสนุนกิจการภายใน</p>
                 <h1>งาน GA</h1>
-                <p class="fa-sub">เจ้าหน้าที่ GA ทั้งหมด หน้าที่ที่รับผิดชอบ และสัดส่วนงานของแต่ละคน</p>
+                <p class="fa-sub">งานที่กำลังดำเนินการ (WORKFLOW) · เจ้าหน้าที่ GA หน้าที่ที่รับผิดชอบ และสัดส่วนงานของแต่ละคน</p>
             </div>
             <div class="fa-actions">
                 <button type="button" class="fa-btn fa-btn-ghost" data-action="refresh">รีเฟรชข้อมูล</button>
             </div>
         </header>
 
-        <!-- สัดส่วนงาน -->
-        <section class="fa-card gw-chart-card">
-            <div class="gw-chart-head"><h2>สัดส่วนงานของแต่ละคน</h2><div id="gwLegend" class="gw-legend"></div></div>
-            <div id="gwChart" class="gw-chart"><p class="fa-empty">กำลังโหลด…</p></div>
-            <div id="gwShare" class="gw-share"></div>
+        <!-- งานที่กำลังดำเนินการ (WORKFLOW) — ga-workflow.js -->
+        <section class="fa-card wf-board">
+            <div class="wf-board-head"><h2>งานที่กำลังดำเนินการ <small id="wfCount"></small></h2>
+                <button type="button" class="fa-btn fa-btn-primary" data-wf-new>＋ สร้างงาน (WORKFLOW)</button></div>
+            <div id="wfCards" class="wf-cards"><p class="fa-empty">กำลังโหลด…</p></div>
+            <details id="wfClosed" class="wf-closed" hidden></details>
         </section>
+
 
         <!-- เจ้าหน้าที่ -->
         <h2 class="gw-title">เจ้าหน้าที่ GA (STAFF)</h2>
         <section id="gwStaff" class="gw-staff"></section>
+
+        <!-- สัดส่วนงาน -->
+        <section class="fa-card gw-chart-card gw-chart-bottom">
+            <div class="gw-chart-head"><h2>สัดส่วนงานของแต่ละคน</h2><div id="gwLegend" class="gw-legend"></div></div>
+            <div id="gwChart" class="gw-chart"><p class="fa-empty">กำลังโหลด…</p></div>
+            <div id="gwShare" class="gw-share"></div>
+        </section>
 
         <!-- ส่วนงาน -->
         <h2 class="gw-title">ส่วนงาน และผู้รับผิดชอบ</h2>
@@ -38,9 +47,12 @@
     </main>
 
     <dialog id="gwDialog" class="fa-dialog gw-dialog"><div id="gwEdit"></div></dialog>
+    <dialog id="wfDialog" class="fa-dialog wf-dialog"><div id="wfDetail"></div></dialog>
+    <dialog id="wfEditDialog" class="fa-dialog wf-dialog"><div id="wfEditor"></div></dialog>
     <div id="gwToast" class="fa-toast" role="status"></div>
 
     <script src="config.js"></script>
-    <script src="ga-work.js?v=20261103-1"></script>
+    <script src="ga-work.js?v=20261104-1"></script>
+    <script src="ga-workflow.js?v=20261104-1"></script>
 </body>
 </html>

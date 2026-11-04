@@ -49,3 +49,105 @@
 .gw-edit-group input { accent-color: var(--c); width: 16px; height: 16px; }
 .gw-edit textarea { width: 100%; min-height: 80px; border: 1px solid var(--fa-line); border-radius: 9px; padding: 8px 10px; font: inherit; }
 .gw-edit-foot { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ---------------------------------------------------------------- งานที่กำลังดำเนินการ (WORKFLOW) */
+.gw-chart-bottom { margin-top: 18px; }
+.wf-board { padding: 16px 18px; margin-bottom: 8px; }
+.wf-board-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.wf-board-head h2 { margin: 0; font-size: 16px; }
+.wf-board-head small { color: var(--fa-muted); font-weight: 400; font-size: 13px; }
+.wf-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.wf-card { display: flex; flex-direction: column; gap: 7px; text-align: left; padding: 13px 14px; border: 1px solid var(--fa-line); border-left: 4px solid #4f46e5; border-radius: 12px; background: #fff; cursor: pointer; font: inherit; color: inherit; transition: box-shadow .15s, transform .15s; }
+.wf-card:hover { box-shadow: 0 6px 18px rgba(79, 70, 229, .14); transform: translateY(-1px); }
+.wf-card.is-done { border-left-color: #16a34a; opacity: .8; }
+.wf-card b { font-size: 14.5px; line-height: 1.35; }
+.wf-card-top { display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+.wf-chip { display: inline-block; padding: 2px 9px; border-radius: 999px; background: #eef0ff; color: #3730a3; font-size: 11.5px; font-weight: 600; }
+.wf-due { font-size: 11.5px; color: var(--fa-muted); }
+.wf-due.is-late { color: #b42318; font-weight: 700; }
+.wf-dots { display: flex; gap: 4px; flex-wrap: wrap; }
+.wf-dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #cbd5e1; background: #fff; }
+.wf-dots i.st-done { background: #16a34a; border-color: #16a34a; }
+.wf-dots i.st-doing { background: #2563eb; border-color: #2563eb; }
+.wf-dots i.st-ready { border-color: #2563eb; }
+.wf-progress { height: 6px; border-radius: 6px; background: #eef1f3; overflow: hidden; }
+.wf-progress i { display: block; height: 100%; background: linear-gradient(90deg, #4f46e5, #16a34a); }
+.wf-card-foot { font-size: 12.5px; color: #334155; }
+.wf-card-foot small { display: block; color: var(--fa-muted); margin-top: 2px; }
+.wf-closed { margin-top: 12px; }
+.wf-closed summary { cursor: pointer; color: var(--fa-muted); font-size: 13px; margin-bottom: 8px; }
+
+/* หน้าต่างงาน + ผังขั้นตอน */
+.wf-dialog { width: min(1280px, calc(100vw - 24px)); }
+.wf-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.wf-toolbar a { text-decoration: none; }
+.wf-danger { margin-left: auto; color: #b42318; border-color: #f5b5b5; background: #fff5f5; }
+.wf-detail { margin: 0 0 10px; color: #334155; white-space: pre-line; }
+.wf-legend { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 12px; margin-bottom: 8px; }
+.wf-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.wf-legend span::before { content: ""; width: 12px; height: 12px; border-radius: 4px; border: 2px solid; }
+.wf-legend .st-ready::before { border-color: #2563eb; background: #fff; }
+.wf-legend .st-doing::before { border-color: #2563eb; background: #dbeafe; }
+.wf-legend .st-done::before { border-color: #16a34a; background: #dcfce7; }
+.wf-legend .st-lock::before { border-color: #cbd5e1; background: #f1f5f9; }
+.wf-legend small { color: var(--fa-muted); }
+.wf-diagram { overflow: auto; border: 1px solid var(--fa-line); border-radius: 12px; background: radial-gradient(circle, #e2e8f0 1px, transparent 1px) 0 0 / 18px 18px, #fbfcfe; max-height: 460px; }
+.wf-canvas { position: relative; }
+.wf-canvas svg { position: absolute; inset: 0; pointer-events: none; }
+.wf-canvas path { fill: none; stroke: #9aa8bb; stroke-width: 2; }
+.wf-canvas path.is-done { stroke: #16a34a; stroke-width: 2.5; }
+.wf-node { position: absolute; display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 8px 10px; border: 2px solid #cbd5e1; border-radius: 12px; background: #f8fafc; cursor: pointer; font: inherit; color: #475569; box-shadow: 0 2px 6px rgba(15, 23, 42, .06); }
+.wf-node b { font-size: 13px; line-height: 1.3; color: #0f172a; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.wf-node small { font-size: 11px; color: #64748b; }
+.wf-node-top { display: flex; justify-content: space-between; gap: 6px; font-size: 11px; font-weight: 700; }
+.wf-node-top em { font-style: normal; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wf-node.st-ready { background: #fff; border-color: #2563eb; }
+.wf-node.st-ready em { color: #2563eb; }
+.wf-node.st-doing { background: #dbeafe; border-color: #2563eb; }
+.wf-node.st-doing em { color: #1d4ed8; }
+.wf-node.st-done { background: #dcfce7; border-color: #16a34a; }
+.wf-node.st-done em { color: #15803d; }
+.wf-node.st-skip { background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 6px, #e2e8f0 6px, #e2e8f0 12px); border-color: #94a3b8; }
+.wf-node.st-lock { opacity: .75; }
+.wf-node.is-on { box-shadow: 0 0 0 4px rgba(79, 70, 229, .3); }
+.wf-step { margin-top: 14px; padding: 14px 16px; border: 1px solid var(--fa-line); border-radius: 12px; background: #fff; }
+.wf-step-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.wf-step-head h3 { margin: 0; font-size: 16px; }
+.wf-step p { margin: 8px 0; }
+.wf-meta { color: var(--fa-muted); font-size: 12.5px; }
+.wf-step-grid { display: grid; grid-template-columns: 220px 1fr; gap: 12px; margin-top: 10px; }
+.wf-step-grid label, .wf-collect label { display: grid; gap: 4px; font-weight: 600; font-size: 13px; }
+.wf-step select, .wf-step textarea, .wf-step input, .wf-editor input, .wf-editor select, .wf-editor textarea { border: 1px solid var(--fa-line); border-radius: 9px; padding: 8px 10px; font: inherit; font-weight: 400; background: #fff; }
+.wf-step-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+.wf-link { margin: 10px 0; padding: 10px 12px; border-radius: 10px; background: #f0f7ff; border: 1px solid #c7ddf7; font-size: 13.5px; }
+.wf-collect { display: grid; gap: 8px; margin: 10px 0; padding: 12px; border-radius: 10px; background: #f8fafc; border: 1px solid var(--fa-line); }
+.wf-collect small { color: var(--fa-muted); }
+.wf-pick-tools { display: flex; gap: 10px; align-items: center; }
+.wf-pick-tools input { flex: 1; }
+.wf-pick-list { max-height: 240px; overflow: auto; border: 1px solid var(--fa-line); border-radius: 10px; background: #fff; }
+.wf-pick { display: flex; gap: 8px; align-items: center; padding: 6px 10px; border-bottom: 1px solid #f1f3f6; font-size: 13px; cursor: pointer; }
+.wf-pick small { margin-left: auto; color: var(--fa-muted); }
+
+/* ตัวสร้าง / แก้ไขขั้นตอน */
+.wf-editor h3 { margin: 16px 0 8px; font-size: 15px; }
+.wf-edit-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.wf-edit-grid label { display: grid; gap: 4px; font-weight: 600; font-size: 13px; }
+.wf-wide { grid-column: 1 / -1; }
+.wf-req { color: #b42318; }
+.wf-edit-steps { display: grid; gap: 8px; margin-bottom: 8px; }
+.wf-erow { display: grid; grid-template-columns: 34px 1fr; gap: 8px; padding: 10px; border: 1px solid var(--fa-line); border-radius: 12px; background: #fbfcfe; }
+.wf-enum { width: 30px; height: 30px; border-radius: 50%; background: #4f46e5; color: #fff; display: grid; place-items: center; font-weight: 700; }
+.wf-ebody { display: grid; gap: 6px; }
+.wf-eline { display: grid; grid-template-columns: 1fr 200px 160px auto; gap: 6px; }
+.wf-emove { display: flex; gap: 2px; }
+.wf-emove button { width: 30px; border: 1px solid var(--fa-line); border-radius: 8px; background: #fff; cursor: pointer; }
+.wf-emove [data-wfe-del] { color: #b42318; }
+.wf-after { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: 12.5px; }
+.wf-after span { color: var(--fa-muted); font-weight: 600; }
+.wf-after label { display: inline-flex; gap: 4px; align-items: center; }
+.wf-efields { display: grid; gap: 4px; font-size: 12.5px; font-weight: 600; }
+.wf-edit-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+@media (max-width: 760px) {
+    .wf-step-grid, .wf-edit-grid { grid-template-columns: 1fr; }
+    .wf-eline { grid-template-columns: 1fr 1fr; }
+}
