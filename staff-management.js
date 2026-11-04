@@ -52,7 +52,7 @@
 
     // ---------------------------------------------------------------- โหลด
     async function load(refresh = false) {
-        $('smRows').innerHTML = '<tr><td colspan="6" class="fa-empty">กำลังโหลด…</td></tr>';
+        $('smRows').innerHTML = '<tr><td colspan="7" class="fa-empty">กำลังโหลด…</td></tr>';
         try {
             const [data, records] = await Promise.all([request(`/employees${refresh ? '?refresh=1' : ''}`), loadRecords()]);
             state.data = { ...data, boxes: workBoxes(data.boxes) };
@@ -62,7 +62,7 @@
             fillFilters();
             render();
         } catch (error) {
-            $('smRows').innerHTML = `<tr><td colspan="6" class="fa-empty">${esc(error.message)}</td></tr>`;
+            $('smRows').innerHTML = `<tr><td colspan="7" class="fa-empty">${esc(error.message)}</td></tr>`;
         }
     }
 
@@ -182,10 +182,10 @@
         }));
         state.groups = [...groups.values()].sort((a, b) => b.tasks.length - a.tasks.length);
         const groupChips = state.groups.map((g, i) => `<button type="button" class="sm-group" data-group="${i}" title="${esc(`${g.title} · ${g.tasks.length} คน`)}"><span>${esc(g.title)}</span><i>${g.tasks.length}</i></button>`).join('');
-        $('smHead').innerHTML = `<th>บริษัท</th><th>สถานะปัจจุบัน</th><th>ชื่อเล่น</th><th>ชื่อพนักงาน</th>${extra.map(f => `<th>${esc(f.label)}</th>`).join('')}<th class="sm-tasks-head">งานที่มอบหมาย ${groupChips ? `<span class="sm-groups">${groupChips}</span>` : ''}</th><th class="sm-bulk-head"><button type="button" class="fa-btn sm-broadcast" data-action="broadcast" title="ส่งข้อความถึงพนักงานที่แสดงอยู่ทั้งหมด ผ่านคิว LINE OA">📢 ส่งข้อความแบบหมู่ (${rows.length})</button></th>`;
-        const span = 6 + extra.length;
+        $('smHead').innerHTML = `<th class="sm-no">ลำดับ</th><th>บริษัท</th><th>สถานะปัจจุบัน</th><th>ชื่อเล่น</th><th>ชื่อพนักงาน</th>${extra.map(f => `<th>${esc(f.label)}</th>`).join('')}<th class="sm-tasks-head">งานที่มอบหมาย ${groupChips ? `<span class="sm-groups">${groupChips}</span>` : ''}</th><th class="sm-bulk-head"><button type="button" class="fa-btn sm-broadcast" data-action="broadcast" title="ส่งข้อความถึงพนักงานที่แสดงอยู่ทั้งหมด ผ่านคิว LINE OA">📢 ส่งข้อความแบบหมู่ (${rows.length})</button></th>`;
+        const span = 7 + extra.length;
         if (!rows.length) { $('smRows').innerHTML = `<tr><td colspan="${span}" class="fa-empty">ไม่พบพนักงานตามตัวกรอง</td></tr>`; return; }
-        $('smRows').innerHTML = rows.map(e => {
+        $('smRows').innerHTML = rows.map((e, index) => {
             const list = tasksOf(e.key).filter(t => t.status !== 'cancelled');
             const pills = list.slice(0, 6).map(t => {
                 const stages = stagesOf(t);
@@ -194,6 +194,7 @@
                 + (list.length > 6 ? `<span class="sm-task-pill more">+${list.length - 6}</span>` : '')
                 + recordsOf(e).slice(0, 4).map(r => `<button type="button" class="sm-task-pill sm-rec${REVIEW.has(r.status) ? ' is-wait' : ''}" data-record="${r.id}" title="เอกสารที่พนักงานส่งเอง — กดเพื่อดู/ตรวจ"><span class="sm-task-title">📥 ${esc(r.type_title)}</span><i class="sm-ack ${REVIEW.has(r.status) ? 'unread' : 'checked'}">${esc(r.status_label)}</i></button>`).join('');
             return `<tr>
+                <td class="sm-no">${index + 1}</td>
                 <td>${esc(e.company || '-')}</td>
                 <td><span class="fa-badge ${isOnWork(e) ? 'ok' : 'dim'}">${esc(e.status || '-')}</span></td>
                 <td class="sm-nick">${esc(e.nickname || '-')}</td>
@@ -1133,7 +1134,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         const button = form.querySelector('button[type=submit]');
         button.disabled = true;
         try {
-            const { tasks, boxes, destError } = await request('/tasks', { method: 'POST', body: JSON.stringify({ ...fd, bulk: undefined, employee_keys: keys }) });
+            const { tasks, boxes, destError, skipped } = await request('/tasks', { method: 'POST', body: JSON.stringify({ ...fd, bulk: undefined, employee_keys: keys }) });
             if (destError) alert(destError);
             else if (tasks[0]?.dest) toast(`สร้างชีตเก็บข้อมูลใน "${tasks[0].dest.section_title}" แล้ว`);
             state.data.tasks.push(...tasks);
@@ -1143,7 +1144,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
             else openPlan(state.current);      // วาดฟอร์มใหม่ (มีกล่องที่เพิ่งสร้างให้เลือก)
             if ($('smTaskList')) renderTasks();
             render();
-            toast(`มอบหมายงานแล้ว ${tasks.length} คน`);
+            toast(`มอบหมายงานแล้ว ${tasks.length} คน${skipped ? ` · ข้าม ${skipped} คนที่มีงานนี้อยู่แล้ว` : ''}`);
         } catch (error) { toast(error.message, true); } finally { button.disabled = false; }
     }
     async function updateTask(id, patch, done) {

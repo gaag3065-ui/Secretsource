@@ -253,3 +253,4 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 .sm-box-scope { display: inline-block; margin-top: 2px; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-style: normal; font-weight: 700; }
 .sm-box-scope.is-main { background: #ecfdf3; color: #067647; }
 .sm-box-scope.is-personal { background: #eef2ff; color: #3730a3; }
+.sm-no { width: 52px; text-align: center !important; color: #667085; font-variant-numeric: tabular-nums; font-weight: 700; }
