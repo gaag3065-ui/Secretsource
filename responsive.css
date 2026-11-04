@@ -2911,3 +2911,35 @@ body.login-page {
 .limit-consent p { margin: 4px 0 8px; }
 .limit-consent-button { padding: 7px 12px; border: 0; border-radius: 6px; background: #b42318; color: #fff; font-weight: 700; cursor: pointer; }
 .limit-money-table .limit-other { color: #7c3aed; }
+
+/* แจ้งเข้ารักษาจากพนักงาน (treatment-intake.js) */
+.intake-box { margin: 0 0 14px; border: 1px solid #f3c1cc; border-radius: 12px; background: #fff; overflow: hidden; }
+.intake-head { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 14px; border: 0; background: #fff5f7; font: inherit; font-size: 14px; cursor: pointer; text-align: left; }
+.intake-head b { color: #9f1239; }
+.intake-count { padding: 2px 10px; border-radius: 999px; background: #e5e7eb; color: #374151; font-size: 12px; font-weight: 700; }
+.intake-count.is-wait { background: #fef3c7; color: #92400e; }
+.intake-count.is-urgent { background: #e11d48; color: #fff; animation: intake-pulse 1.2s infinite; }
+@keyframes intake-pulse { 50% { box-shadow: 0 0 0 6px rgba(225, 29, 72, .2); } }
+.intake-caret { margin-left: auto; transition: transform .2s; }
+.intake-box.is-open .intake-caret { transform: rotate(180deg); }
+.intake-list { display: grid; gap: 10px; padding: 12px; max-height: 520px; overflow: auto; }
+.intake-item { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid #e5e7eb; border-left: 4px solid #f59e0b; border-radius: 10px; font-size: 13.5px; }
+.intake-item.is-urgent { border-left-color: #e11d48; background: #fff1f2; }
+.intake-item.is-on { box-shadow: 0 0 0 3px rgba(37, 99, 235, .25); }
+.intake-item header small { display: block; color: #6b7280; font-size: 12px; }
+.intake-item p { margin: 0; }
+.intake-chip { padding: 1px 8px; border-radius: 999px; background: #eef2ff; color: #3730a3; font-size: 12px; font-weight: 700; }
+.intake-meta { color: #4b5563; font-size: 12.5px; }
+.intake-hot { color: #be123c; }
+.intake-files { display: flex; flex-wrap: wrap; gap: 6px; }
+.intake-files button, .treatment-share { padding: 5px 10px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; font: inherit; font-size: 12.5px; cursor: pointer; }
+.intake-take { justify-self: start; padding: 7px 14px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.intake-empty, .intake-recent { margin: 0; color: #6b7280; font-size: 13px; }
+.intake-alert { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 16px; background: rgba(15, 23, 42, .6); }
+.intake-alert > div { max-width: 480px; width: 100%; padding: 18px 20px; border-radius: 14px; background: #fff; border-top: 6px solid #e11d48; box-shadow: 0 20px 50px rgba(0, 0, 0, .3); }
+.intake-alert h3 { margin: 0 0 8px; color: #be123c; }
+.intake-alert button { margin-top: 10px; padding: 9px 16px; border: 0; border-radius: 8px; background: #e11d48; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.intake-viewer img { max-width: 92vw; max-height: 88vh; border-radius: 8px; background: #fff; cursor: zoom-in; }
+.intake-viewer img.is-zoom { max-width: none; max-height: none; width: 170vw; cursor: zoom-out; }
+.intake-viewer { overflow: auto; }
+.treatment-share { margin-left: 6px; font-weight: 700; }

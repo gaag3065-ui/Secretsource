@@ -412,7 +412,7 @@
         return row;
     }
     // ช่องของแบบฟอร์มในกล่องที่เลือก — ให้เห็นว่าพนักงานต้องกรอก/อัปโหลดอะไรในกล่องนี้อยู่แล้ว
-    const FIELD_TYPES = { text: 'ข้อความ', textarea: 'ข้อความยาว', number: 'ตัวเลข', date: 'วันที่', tel: 'เบอร์โทร', select: 'เลือก 1 ข้อ', radio: 'เลือก 1 ข้อ', files: 'อัปโหลดรูป/PDF' };
+    const FIELD_TYPES = { text: 'ข้อความ', textarea: 'ข้อความยาว', number: 'ตัวเลข', date: 'วันที่', time: 'เวลา', tel: 'เบอร์โทร', select: 'เลือก 1 ข้อ', radio: 'เลือก 1 ข้อ', files: 'อัปโหลดรูป/PDF' };
     function renderBoxForm(form) {
         const box = (state.data.boxes || []).find(b => b.key === form.box.value);
         const slot = form.querySelector('[data-boxform]');
@@ -434,7 +434,7 @@
                     ${box.edited ? '<button type="button" class="fa-btn fa-btn-ghost" data-form-reset>↺ คืนค่าเริ่มต้น</button><small>แก้ไขแล้ว</small>' : ''}</div>` : ''}`;
     }
     // ตัวแก้ช่องของแบบฟอร์ม — บันทึกแล้วหน้าระบบจัดการองค์กรใช้ช่องชุดใหม่ทันที
-    const EDIT_TYPES = [['text', 'ข้อความ'], ['textarea', 'ข้อความยาว'], ['number', 'ตัวเลข / จำนวนเงิน'], ['date', 'วันที่'], ['tel', 'เบอร์โทร'], ['select', 'เลือก 1 ข้อ (รายการ)'], ['radio', 'เลือก 1 ข้อ (ปุ่ม)'], ['files', 'อัปโหลดรูป/PDF']];
+    const EDIT_TYPES = [['text', 'ข้อความ'], ['textarea', 'ข้อความยาว'], ['number', 'ตัวเลข / จำนวนเงิน'], ['date', 'วันที่'], ['time', 'เวลา'], ['tel', 'เบอร์โทร'], ['select', 'เลือก 1 ข้อ (รายการ)'], ['radio', 'เลือก 1 ข้อ (ปุ่ม)'], ['files', 'อัปโหลดรูป/PDF']];
     function formEditRow(f = { label: '', type: 'text' }) {
         const row = document.createElement('div');
         row.className = 'sm-fe-row';

@@ -237,7 +237,9 @@ let isClaimSubmissionInProgress = false;
         
          // 🔒 [ตัวล็อกกรณีที่ 1]: ตรวจเช็คการแนบรูปภาพก่อนเปิดเคสใหม่เข้าสู่ระบบ
         const fileInput = document.getElementById('imageUpload');
-        if (!fileInput || fileInput.files.length === 0) {
+        // เคสที่พนักงานแจ้งเข้ามาเองพร้อมรูป (treatment-intake.js) → ใช้หลักฐานของพนักงาน ไม่ต้องแนบรูปเปิดเคสซ้ำ
+        const intakeLinks = window.__treatmentIntake?.links || [];
+        if ((!fileInput || fileInput.files.length === 0) && !intakeLinks.length) {
         alert("🚨 ปฏิเสธการบันทึก: คุณยังไม่ได้อัปโหลดรูปภาพเพิ่มเติม! \nกรุณาคลิกปุ่ม '📁 เลือกรูปภาพ...' เพื่อแนบหลักฐานเข้าสู่ระบบก่อนครับ");
         
         // ขยับสายตาพาแอดมินไปโฟกัสที่ปุ่มอัปโหลดทันที
@@ -422,7 +424,8 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
             statusText: "เปิดเคสและแจ้งประกันแล้ว รอเข้ารับการรักษา",
             DocumentsAttached: [
                 driveFileUrl ? `OPEN_CASE|${driveFileUrl}` : '',
-                ...additionalUrls.map(url => `ADDITIONAL|${url}`)
+                ...additionalUrls.map(url => `ADDITIONAL|${url}`),
+                ...intakeLinks.map(url => `ADDITIONAL|${url}`)
             ].filter(Boolean).join('\n') || '-',
             notes: document.getElementById('notesInput').value
         };
@@ -438,6 +441,7 @@ console.log(`🎫 Frontend จอง Case ID สำเร็จ: ${caseId}`);
             const result = await response.json();
             
             if (response.ok && result.success) {
+                window.TreatmentIntake?.linkCase(caseId);   // เคสที่รับจากการแจ้งของพนักงาน → ผูกเลขเคส
                 claimStatus.innerText = `✅ ${result.message}`;
                 claimStatus.style.color = 'green';
 
