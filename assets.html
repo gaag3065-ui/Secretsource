@@ -1694,7 +1694,8 @@
 <!-- #endregion -->
 
 
-    <script src="version.js"></script>
+    <!-- version.js ต้องโหลดใหม่ทุกครั้ง (หน้านี้เปิดใน iframe ของพอร์ทัล กด Ctrl+F5 แล้วไม่รีเฟรช) -->
+<script>document.write('<script src="version.js?t=' + Date.now() + '"><\/script>');</script>
     <script src="config.js"></script>
     <script src="assets.js?v=20261101-2"></script>
     <script src="pwa.js"></script>
