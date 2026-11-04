@@ -143,3 +143,20 @@ body.insurance-all-mode .open-case-form-section { padding: 4px 8px 10px !importa
 body.insurance-all-mode .treatment-panel-heading { min-height: 0 !important; padding: 2px 0 !important; margin-bottom: 4px !important; }
 body.insurance-all-mode .card-container form { padding-top: 6px !important; } /* คง padding-bottom เดิม: แถบ "กรุณาเลือกพนักงาน" วางทับพื้นที่นี้ */
 body.insurance-all-mode .treatment-form-footer { margin-top: 8px !important; padding-top: 8px !important; }
+
+/* ประวัติการรักษา: ไม่มีกรอบเลื่อนซ้อน — การ์ดเคสเรียงต่อกันยาวลงไป เลื่อนทั้งหน้าดูได้จนสุด */
+body .history-table-shell,
+body.insurance-all-mode .history-table-shell {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+body .history-table-shell .responsive-table-wrapper,
+body #table-box-placeholder .history-table-shell .responsive-table-wrapper {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
