@@ -134,11 +134,11 @@
         if (isAnnual(r)) {
             setField('symptomsInput', 'ตรวจสุขภาพประจำปี 2026 (เบิกย้อนหลัง)');
             setField('contactInput', val(r, 'phone') ? `เบอร์ ${val(r, 'phone')}` : '');
-            setField('notesInput', [`ส่งเอกสารผ่านระบบจัดการองค์กร เลขที่ ${r.id}`, `ยอดตามใบเสร็จ ${money(val(r, 'amount'))} บาท (หักวงเงินอื่นๆ ตอนปิดเคส)`, val(r, 'note')].filter(Boolean).join(' · '));
+            { const notes = document.getElementById('notesInput'); if (notes) notes.value = ''; }   // หมายเหตุเพิ่มเติม: ไม่กรอกข้อความให้ (GA กรอกเองถ้าต้องการ)
         } else {
             setField('symptomsInput', `${val(r, 'symptom')}${val(r, 'treat_type') ? ` (${val(r, 'treat_type')})` : ''}`);
             setField('contactInput', contactOf(r));
-            setField('notesInput', [`แจ้งผ่านระบบจัดการองค์กร เลขที่ ${r.id}`, r.urgent ? 'ค่าใช้จ่ายอาจเกิน 5,000 บาท — ให้ประกันจ่ายตรง' : '', val(r, 'note')].filter(Boolean).join(' · '));
+            { const notes = document.getElementById('notesInput'); if (notes) notes.value = ''; }   // หมายเหตุเพิ่มเติม: ไม่กรอกข้อความให้ (GA กรอกเองถ้าต้องการ)
         }
         window.__treatmentIntake = { id: r.id, links: r.files.map(f => f.link).filter(Boolean), name: r.fullname };
         render();
