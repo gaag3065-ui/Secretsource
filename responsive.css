@@ -3007,3 +3007,5 @@ body.login-page {
 .intake-end { margin-left: 4px; padding: 4px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; color: #374151; font: inherit; font-size: 12px; cursor: pointer; }
 .intake-end:hover { background: #f3f4f6; }
 .intake-sub.is-bill { background: #fff7ed; color: #9a3412; }
+.intake-notice-text { display: block; width: 100%; margin-top: 4px; padding: 4px 8px; border: 1px solid #f59e0b; border-radius: 6px; font: inherit; font-size: 12px; }
+.intake-notice-text[hidden] { display: none; }

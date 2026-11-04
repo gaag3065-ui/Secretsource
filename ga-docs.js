@@ -315,11 +315,18 @@
             bar.hidden = true;
         }
     }
-    async function loadMine() {
+    // สถานะที่ GA เลือกแจ้ง (หน้างานประกัน) แทนป้าย "รับเรื่องแล้ว" — ไม่ใช้ข้อความอัตโนมัติตอนเปิดเคส
+    const gaStatus = r => (r.case_id && ['received', 'waiting'].includes(r.status) && r.admin_note && !/^เปิดเคสประกันแล้ว/.test(r.admin_note)) ? r.admin_note : '';
+    const mineSig = list => (list || []).map(r => [r.id, r.status, r.admin_note, r.handled_at, r.case_id, r.files.length].join('~')).join('|');
+    async function loadMine(silent = false) {
         const box = $('gdMine');
-        box.innerHTML = '<p class="gd-empty">กำลังโหลด…</p>';
+        if (!silent) box.innerHTML = '<p class="gd-empty">กำลังโหลด…</p>';
         try {
             const { records } = await call('/mine');
+            if (silent) {
+                if (mineSig(records) === mineSig(state.mine)) return;
+                if ([...box.querySelectorAll('[data-more-files]')].some(i => i.files?.length) || box.querySelector('.gd-more [data-more-msg]:not(:empty)')) return;
+            }
             state.mine = records;
             renderBadges();
             renderAlerts();
@@ -343,7 +350,7 @@
                         ${r.type === 'treatment' && !['billed', 'deleted', 'rejected'].includes(r.status) ? (r.case_id ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm gd-bill" data-bill-from="${r.id}">📤 รักษาเสร็จ / ส่งบิล (เคส #${esc(r.case_id)})</button>` : '<span class="gd-pill is-pending">รอ GA เปิดเคสก่อน จึงบันทึกค่ารักษาได้</span>') : ''}
                         ${slips.length ? `<span class="gd-slips">${slips.map(f => `<button type="button" class="gd-btn gd-btn-sm" data-own-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">🧾 ดูสลิปโอนเงินคืน${slips.length > 1 ? ` ${f.index}` : ''}</button>`).join('')}</span>` : ''}
                         ${more}</div>
-                    <span class="gd-pill is-${esc(r.status)}">${esc(r.status_label)}</span>
+                    <span class="gd-pill is-${esc(r.status)}${gaStatus(r) ? ' is-ga' : ''}">${esc(gaStatus(r) || r.status_label)}</span>
                 </div>`;
             }).join('') : '<p class="gd-empty">ยังไม่มีรายการที่ส่ง</p>';
         } catch (error) { box.innerHTML = `<p class="gd-empty">${esc(error.message)}</p>`; }
@@ -750,9 +757,10 @@
             if (saved?.token && !config.locked) { state.session = saved; openHome(); }
             booted();
             // แจ้งเตือนใหม่: ถามหลังบ้านทุก 15 วินาทีระหว่างเปิดหน้าไว้ และทันทีที่กลับมาที่หน้านี้
-            setInterval(() => { if (state.session && !document.hidden) loadTasks(); }, 15 * 1000);
-            document.addEventListener('visibilitychange', () => { if (state.session && !document.hidden) loadTasks(); });
-            window.addEventListener('focus', () => { if (state.session) loadTasks(); });
+            const live = () => { if (!state.session) return; loadTasks(); if (!$('gdHome').hidden) loadMine(true); };
+            setInterval(() => { if (!document.hidden) live(); }, 15 * 1000);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) live(); });
+            window.addEventListener('focus', live);
         } catch (error) { msg($('gdLoginMsg'), error.message, 'bad'); booted(); }
     })();
 })();

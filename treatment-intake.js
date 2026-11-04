@@ -29,7 +29,11 @@
     async function sendNotice(id, button) {
         const pick = box.querySelector(`[data-notice-pick="${id}"]`);
         let message = pick?.value || '';
-        if (message === '__custom') message = (prompt('พิมพ์สถานะที่จะแจ้งพนักงาน') || '').trim();
+        if (message === '__custom') {
+            const input = box.querySelector(`[data-notice-text="${id}"]`);
+            message = (input?.value || '').trim();
+            if (!message) { input?.focus(); return; }
+        }
         if (!message) return;
         button.disabled = true;
         try {
@@ -95,6 +99,7 @@
                 <td class="nowrap">#${esc(r.case_id)} <button type="button" class="intake-fixcase" data-fix-case="${r.id}" title="แก้เลขเคสที่ผูกกับเรื่องนี้">✏️</button></td>
                 <td class="clip" title="${esc(r.admin_note || '')}">${esc(r.admin_note || '-')}</td>
                 <td class="nowrap"><select data-notice-pick="${r.id}">${NOTICES(r).map(n => `<option>${esc(n)}</option>`).join('')}<option value="__custom">✏️ พิมพ์เอง…</option></select>
+                    <input type="text" class="intake-notice-text" data-notice-text="${r.id}" maxlength="300" placeholder="พิมพ์ข้อความที่จะแจ้งพนักงาน" hidden>
                     <button type="button" class="intake-take" data-notice-send="${r.id}">แจ้ง</button>
                     <button type="button" class="intake-end" data-step="${r.id}" data-step-to="${isAnnual(r) ? 'insurance' : 'waiting'}" title="${isAnnual(r) ? 'จบงานนี้ — ส่งเบิกประกันแล้ว' : 'แจ้งพนักงานแล้ว ซ่อนไว้ — กลับมาแสดงเมื่อพนักงานส่งบิลค่ารักษา'}">สิ้นสุด</button></td>
             </tr>`).join('')}</tbody></table>` : '')
@@ -216,6 +221,16 @@
         document.body.append(view);
     }
 
+    box.addEventListener('change', event => {
+        const pick = event.target.closest('[data-notice-pick]');
+        if (!pick) return;
+        const input = box.querySelector(`[data-notice-text="${pick.dataset.noticePick}"]`);
+        if (input) { input.hidden = pick.value !== '__custom'; if (!input.hidden) input.focus(); }
+    });
+    box.addEventListener('keydown', event => {
+        const input = event.target.closest('[data-notice-text]');
+        if (input && event.key === 'Enter') { event.preventDefault(); box.querySelector(`[data-notice-send="${input.dataset.noticeText}"]`)?.click(); }
+    });
     box.addEventListener('click', event => {
         if (event.target.closest('[data-intake-toggle]')) return toggle();
         const fix = event.target.closest('[data-fix-case]');
