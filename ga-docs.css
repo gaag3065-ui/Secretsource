@@ -247,3 +247,20 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* ข้อมูลจากตอนแจ้งเข้ารักษา: เห็นได้แต่แก้ไม่ได้ */
 .gd-field.is-readonly input, .gd-field.is-readonly textarea { background: #e5e7eb; color: #374151; border-color: #d1d5db; cursor: not-allowed; pointer-events: none; }
 .gd-field.is-readonly label::after { content: ' 🔒'; font-size: 12px; }
+/* หน้าแรก: ช่องทางการติดต่อ (คอลัมน์ขวา · จอแคบอยู่ล่างสุด) */
+.gd-main-home { max-width: 1320px; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+.gd-contacts { position: sticky; top: 16px; display: grid; gap: 8px; padding: 14px; border: 1px solid var(--gd-line); border-radius: 16px; background: #fff; box-shadow: 0 6px 18px rgba(15, 23, 42, .05); }
+.gd-contacts h3 { margin: 0; font-size: 16px; }
+.gd-contacts > p { margin: 0 0 4px; color: var(--gd-muted); font-size: 12.5px; }
+.gd-contact { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--gd-line); border-left: 4px solid var(--c); border-radius: 12px; color: inherit; text-decoration: none; transition: background .15s, transform .15s; }
+.gd-contact:hover { background: #f0fdf4; transform: translateY(-1px); }
+.gd-contact-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--c) 14%, #fff); font-size: 19px; }
+.gd-contact-body { display: grid; gap: 1px; min-width: 0; }
+.gd-contact-body small { color: var(--gd-muted); font-size: 11px; }
+.gd-contact-body b { font-size: 14.5px; }
+.gd-contact-body em { font-style: normal; font-weight: 500; color: var(--gd-muted); font-size: 12px; }
+.gd-contact-body code { justify-self: start; padding: 1px 8px; border-radius: 999px; background: #06c755; color: #fff; font-family: inherit; font-size: 12px; font-weight: 700; }
+.gd-contact-for { color: #475569; font-size: 12px; line-height: 1.45; }
+.gd-contact-go { grid-column: 2; justify-self: end; color: #06c755; font-size: 12px; font-weight: 800; }
+.gd-contacts-foot { color: var(--gd-muted); font-size: 11.5px; text-align: center; }
+@media (max-width: 1100px) { .gd-main-home { max-width: 980px; grid-template-columns: 1fr; } .gd-contacts { position: static; } }

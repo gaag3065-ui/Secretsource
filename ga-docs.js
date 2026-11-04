@@ -92,7 +92,7 @@
         loadTasks();
     }
     function renderMenu() {
-        $('gdMenu').innerHTML = menuItems().map(f => `
+        $('gdMenu').innerHTML = menuItems().filter(f => !f.menuHidden).map(f => `
             <button type="button" class="gd-tile" style="--c:${esc(f.color)}" data-open="${esc(f.key)}">
                 <span class="gd-count" data-badge="${esc(f.key)}" hidden></span>
                 <span class="gd-tile-icon" aria-hidden="true">${esc(f.icon)}</span>
