@@ -19,7 +19,7 @@
     // ปุ่มส่งต่อข้อความแจ้งประกัน (ต่อจากปุ่มคัดลอกเดิม)
     const copyBtn = document.getElementById('btnCopyToClaim');
     if (copyBtn) copyBtn.insertAdjacentHTML('afterend', `
-        <button type="button" class="treatment-share" data-share="line" title="เปิด LINE พร้อมข้อความ แล้วเลือกห้อง/กลุ่มที่จะส่ง">💚 ส่งผ่าน LINE</button>
+        <button type="button" class="treatment-share" data-share="line" title="คัดลอกข้อความและเปิดโปรแกรม LINE (มือถือ: เลือกห้องที่จะส่งได้เลย)">💚 ส่งผ่าน LINE</button>
         <button type="button" class="treatment-share" data-share="telegram" title="เปิด Telegram พร้อมข้อความ แล้วเลือกห้อง/กลุ่มที่จะส่ง">✈️ ส่งผ่าน Telegram</button>`);
 
     // รอรับเคส = ยังไม่มีเลขเคส (รวมรายการที่ถูกกดสถานะไปก่อนเปิดเคส)
@@ -168,9 +168,24 @@ InsuranceId : ${get('hiddenInsuranceId') || '-'}
 เบอร์โทรติดต่อพนักงานหรือ ID Line : ${get('contactInput')}
 หมายเหตุ : ${get('notesInput') || '-'}`;
     }
-    async function share(target) {
+
+    // LINE บนคอมพิวเตอร์ (โปรแกรม LINE PC) ไม่รองรับลิงก์ส่งข้อความ → คัดลอกข้อความ + เปิดโปรแกรม LINE ให้ แล้ววางเอง
+    const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    function linePcHelp(anchor) {
+        const a = document.createElement('a'); a.href = 'line://'; a.style.display = 'none';
+        document.body.appendChild(a); a.click(); a.remove();
+        document.getElementById('linePcHelp')?.remove();
+        const tip = document.createElement('div');
+        tip.id = 'linePcHelp'; tip.className = 'line-pc-help';
+        tip.innerHTML = '<b>📋 คัดลอกข้อความแล้ว — ส่งผ่านโปรแกรม LINE ในเครื่อง</b><ol><li>เปิดโปรแกรม LINE (ถ้าเบราว์เซอร์ถาม "เปิด LINE?" กด เปิด)</li><li>เลือกกลุ่ม <b>แจ้งรักษาฝั่งไทยและแจ้งตรวจสุขภาพ</b></li><li>คลิกช่องพิมพ์ข้อความ กด <kbd>Ctrl</kbd>+<kbd>V</kbd> แล้วกด <kbd>Enter</kbd></li><li>แคปหน้าจอแชท (<kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>) แล้วแนบเป็นรูปหลักฐานเปิดเคส</li></ol><button type="button" aria-label="ปิด">×</button>';
+        tip.querySelector('button').onclick = () => tip.remove();
+        (anchor?.closest('div, li') || document.body).after(tip);
+        setTimeout(() => tip.remove(), 30000);
+    }
+    async function share(target, btn) {
         const text = shareText();
         try { await navigator.clipboard.writeText(text); } catch { /* ยังเปิดแอปพร้อมข้อความได้ */ }
+        if (target === 'line' && !IS_MOBILE) return linePcHelp(btn);
         const url = target === 'line'
             ? `https://line.me/R/msg/text/?${encodeURIComponent(text)}`
             : `https://t.me/share/url?url=${encodeURIComponent(' ')}&text=${encodeURIComponent(text)}`;
@@ -184,7 +199,7 @@ InsuranceId : ${get('hiddenInsuranceId') || '-'}
         const file = event.target.closest('[data-intake-file]');
         if (file) openFile(file.dataset.intakeFile, file.dataset.mime);
     });
-    document.addEventListener('click', event => { const s = event.target.closest('[data-share]'); if (s) share(s.dataset.share); });
+    document.addEventListener('click', event => { const s = event.target.closest('[data-share]'); if (s) share(s.dataset.share, s); });
 
     // มาจากปุ่ม "เปิดเคส / แจ้งประกัน" ในหน้าจัดการพนักงาน → เปิดรายการและรับเคสนั้นเลย
     const wanted = new URLSearchParams(location.search).get('intake');
