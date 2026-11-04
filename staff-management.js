@@ -55,8 +55,8 @@
         $('smRows').innerHTML = '<tr><td colspan="6" class="fa-empty">กำลังโหลด…</td></tr>';
         try {
             const [data, records] = await Promise.all([request(`/employees${refresh ? '?refresh=1' : ''}`), loadRecords()]);
-            state.data = data;
-            state.records = records;
+            state.data = { ...data, boxes: workBoxes(data.boxes) };
+            state.records = records.filter(r => !INSURANCE_BOXES.has(r.type));
             state.byKey = new Map(state.data.employees.map(e => [e.key, e]));
             $('smUpdated').textContent = `· อัปเดต ${new Date(state.data.updatedAt).toLocaleTimeString('th-TH')}`;
             fillFilters();
@@ -68,6 +68,9 @@
 
     // ---------------------------------------------------------------- เอกสารที่พนักงานส่งเองจากหน้าระบบจัดการองค์กร (ไม่ต้องมีงานมอบหมาย)
     // เช่น กล่องตรวจ 4 โรค: พนักงานกดส่งเอง → ขึ้นที่นี่ว่า "รอตรวจ" ให้ GA เปิดดูและเปลี่ยนสถานะได้
+    // งานประกัน (แจ้งเข้ารักษา / บิลค่ารักษา) ดูที่หน้างานประกันที่เดียว — หน้านี้เป็นงานอื่น ๆ
+    const INSURANCE_BOXES = new Set(['treatment', 'medical']);
+    const workBoxes = list => (list || []).filter(b => !INSURANCE_BOXES.has(b.key));
     const docsApi = path => `${window.APP_CONFIG.API_BASE_URL}/api/ga-docs/admin${path}`;
     async function loadRecords() {
         try {
@@ -478,7 +481,7 @@
         button.disabled = true;
         try {
             const { boxes } = await request(`/boxes/${encodeURIComponent(key)}/form`, { method: 'PUT', body: JSON.stringify(reset ? { reset: true } : { fields }) });
-            state.data.boxes = boxes;
+            state.data.boxes = workBoxes(boxes);
             delete form.querySelector('[data-boxform]').dataset.editing;
             renderBoxForm(form);
             toast(reset ? 'คืนค่าเริ่มต้นแล้ว' : 'บันทึกแบบฟอร์มแล้ว — หน้าระบบจัดการองค์กรเปลี่ยนตามแล้ว');
@@ -809,7 +812,7 @@
         if (!confirm(`⚠️ ยืนยันอีกครั้ง\n\nถ้าลบ ข้อมูลต่อไปนี้จะหายจากทุกส่วนและทุกโฟลเดอร์ และอาจกู้คืนไม่ได้:\n${detail}\n\nกด "ตกลง" เพื่อลบ`)) return;
         try {
             const result = await request(`/boxes/${encodeURIComponent(key)}/delete`, { method: 'POST', body: JSON.stringify({ trashFiles: true }) });
-            state.data.boxes = result.boxes;
+            state.data.boxes = workBoxes(result.boxes);
             state.data.removedBoxes = result.removedBoxes;
             state.data.tasks = state.data.tasks.filter(t => t.box !== key);
             state.records = (state.records || []).filter(r => r.type !== key);
@@ -831,7 +834,7 @@
     async function restoreBox(key) {
         try {
             const result = await request(`/boxes/${encodeURIComponent(key)}/restore`, { method: 'POST', body: '{}' });
-            state.data.boxes = result.boxes;
+            state.data.boxes = workBoxes(result.boxes);
             state.data.removedBoxes = result.removedBoxes;
             render();
             openRestore();
@@ -1128,7 +1131,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
             if (destError) alert(destError);
             else if (tasks[0]?.dest) toast(`สร้างชีตเก็บข้อมูลใน "${tasks[0].dest.section_title}" แล้ว`);
             state.data.tasks.push(...tasks);
-            if (boxes) state.data.boxes = boxes;
+            if (boxes) state.data.boxes = workBoxes(boxes);
             state.drafts.delete(state.current);
             if (creating) { state.picks.clear(); $('smDialog').close(); }
             else openPlan(state.current);      // วาดฟอร์มใหม่ (มีกล่องที่เพิ่งสร้างให้เลือก)
