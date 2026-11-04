@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="ga-docs.css?v=20261104-care5">
+    <link rel="stylesheet" href="ga-docs.css?v=20261104-care6">
     <link rel="icon" href="icons/icon-192.png">
     <!-- เปิด/รีเฟรชหน้า: ซ่อนทุกหน้าจนกว่าจะรู้ว่าเข้าสู่ระบบอยู่หรือไม่ (ไม่ให้หน้าเข้าสู่ระบบโผล่ขึ้นมาแวบหนึ่ง) -->
     <script>document.documentElement.classList.add('gd-booting');</script>
@@ -67,6 +67,12 @@
                 <div id="gdMine" class="gd-mine-list"><p class="gd-empty">กำลังโหลด…</p></div>
             </section>
             </div>
+                <!-- รายการเฉพาะคุณ: กล่องงานส่วนบุคคลที่ GA มอบหมายให้คนนี้ (ไม่ใช่ทุกคนจะเห็น) -->
+                <aside id="gdPersonal" class="gd-personal" aria-label="รายการเฉพาะคุณ" hidden>
+                    <h3>👤 รายการเฉพาะคุณ</h3>
+                    <p>งานที่ GA มอบหมายให้คุณโดยเฉพาะ</p>
+                    <div id="gdPersonalList" class="gd-personal-list"></div>
+                </aside>
                 <!-- ช่องทางการติดต่อ (LINE Official) — กดแล้วเปิด LINE ไปที่บัญชีนั้น -->
                 <aside class="gd-contacts" aria-label="ช่องทางการติดต่อ">
                     <h3>💬 ช่องทางการติดต่อ</h3>
@@ -129,6 +135,6 @@
     </section>
 
     <script src="config.js"></script>
-    <script src="ga-docs.js?v=20261104-care5"></script>
+    <script src="ga-docs.js?v=20261104-care6"></script>
 </body>
 </html>

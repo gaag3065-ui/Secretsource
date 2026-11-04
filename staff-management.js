@@ -142,6 +142,7 @@
                 ${b.key !== 'quests' ? `<span class="sm-box-del" data-del-box="${esc(b.key)}" role="button" title="ลบกล่องงานนี้ (ลบงาน เอกสาร และไฟล์ที่เกี่ยวข้องทั้งหมด)">🗑</span>` : ''}
                 <span class="sm-box-icon">${esc(b.icon || '📌')}</span>
                 <b>${esc(b.title)}</b>
+                <i class="sm-box-scope is-${b.scope === 'personal' ? 'personal' : 'main'}">${b.scope === 'personal' ? '👤 เฉพาะบุคคล' : '🌐 งานหลัก'}</i>
                 <small>${titles.length ? `${titles.length} งาน · ค้าง ${open} คน` : recs.length ? '' : 'ยังไม่มีงาน'}</small>
                 ${recs.length ? `<span class="sm-box-review${waiting ? ' is-wait' : ''}" data-review-box="${esc(b.key)}" title="เอกสารที่พนักงานส่งมาในกล่องนี้ — กดเพื่อดู/ตรวจ">📥 ส่งมา ${recs.length}${waiting ? ` · รอตรวจ ${waiting}` : ''}</span>` : ''}
             </button>`;
@@ -256,7 +257,10 @@
     function taskFields(boxKey = 'quests') {
         const opt = list => list.map(v => `<option>${esc(v)}</option>`).join('');
         return `
-                        <label class="sm-wide">หัวเรื่องงาน <span class="sm-req">*</span><input name="title" maxlength="150" required placeholder="เช่น ส่งเอกสารตรวจสุขภาพประจำปี"></label>
+                        <div class="sm-wide sm-scope"><span>หัวเรื่องงาน <span class="sm-req">*</span></span>
+                            <label class="sm-scope-opt"><input type="radio" name="scope" value="main"> 🌐 งานหลัก <small>ทุกคนเห็นกล่องนี้ในเมนู</small></label>
+                            <label class="sm-scope-opt"><input type="radio" name="scope" value="personal"> 👤 งานส่วนบุคคล <small>เห็นเฉพาะคนที่เลือก ในแถบ "รายการเฉพาะคุณ"</small></label></div>
+                        <label class="sm-wide sm-title-input"><input name="title" maxlength="150" required placeholder="เช่น ส่งเอกสารตรวจสุขภาพประจำปี" aria-label="หัวเรื่องงาน"></label>
                         <label class="sm-wide">รายละเอียด<textarea name="detail" maxlength="3000" placeholder="สิ่งที่ต้องทำ ขั้นตอน เอกสารที่ต้องใช้ ผู้ประสานงาน"></textarea></label>
                         <label class="sm-wide">ลงกล่องงาน (หน้าระบบจัดการองค์กร)<select name="box">
                             ${(state.data.boxes || []).map(b => `<option value="${esc(b.key)}" ${b.key === boxKey ? 'selected' : ''}>${esc(`${b.icon} ${b.title}`)}</option>`).join('')}
@@ -500,6 +504,14 @@
         row.querySelector('[data-fe=options]').hidden = !/select|radio/.test(type.value);
     });
     function syncBuilder(form) {
+        // เปลี่ยนกล่อง → ตั้งประเภทงานตามกล่องนั้น (กล่องใหม่ = ส่วนบุคคล)
+        if (form.box && form.dataset.scopeBox !== form.box.value) {
+            form.dataset.scopeBox = form.box.value;
+            const box = (state.data.boxes || []).find(b => b.key === form.box.value);
+            const scope = form.box.value === '__new' ? 'personal' : box?.scope || 'main';
+            const radio = form.querySelector(`[name=scope][value="${scope}"]`);
+            if (radio) radio.checked = true;
+        }
         const kind = form.querySelector('[name=kind]:checked').value;
         form.querySelector('.sm-newbox').hidden = form.box.value !== '__new';
         const sectionPick = form.querySelector('[data-section]');

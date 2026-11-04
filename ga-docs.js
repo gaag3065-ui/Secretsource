@@ -18,7 +18,10 @@
     ];
     // กล่องที่ GA สร้างเอง (แสดงเฉพาะคนที่มีงานในกล่องนั้น)
     const customTiles = () => state.taskBoxes.map(b => ({ key: b.key, icon: b.icon || '📌', color: '#16a34a', title: b.title, short: b.title,
-        description: 'งานที่ได้รับมอบหมายจาก GA', box: true }));
+        description: 'งานที่ได้รับมอบหมายจาก GA', box: true, scope: b.scope || 'personal' }));
+    // งานส่วนบุคคล: แสดงเฉพาะกล่องที่คนนี้มีงาน (แถบ "รายการเฉพาะคุณ") · งานหลัก: ทุกคนเห็นในเมนู
+    const isPersonal = f => f.scope === 'personal';
+    const personalItems = () => { const used = new Set(state.tasks.map(t => t.box)); return menuItems().filter(f => isPersonal(f) && !f.menuHidden && (f.box || used.has(f.key))); };
     // หัวข้อที่เปิดอยู่ + กล่องที่คนนี้มีงาน (กล่องที่สร้างเอง หรือหัวข้อที่ปิดไปแล้วแต่ยังมีงานค้าง)
     const menuItems = () => [...state.config.forms, ...customTiles()];
     const boxInfo = key => [...menuItems(), ...CONCEPTS].find(f => f.key === key) || { key, icon: '📌', color: '#16a34a', title: key };
@@ -92,7 +95,8 @@
         loadTasks();
     }
     function renderMenu() {
-        $('gdMenu').innerHTML = menuItems().filter(f => !f.menuHidden).map(f => `
+        renderPersonal();
+        $('gdMenu').innerHTML = menuItems().filter(f => !f.menuHidden && !isPersonal(f)).map(f => `
             <button type="button" class="gd-tile" style="--c:${esc(f.color)}" data-open="${esc(f.key)}">
                 <span class="gd-count" data-badge="${esc(f.key)}" hidden></span>
                 <span class="gd-tile-icon" aria-hidden="true">${esc(f.icon)}</span>
@@ -106,16 +110,29 @@
     async function loadTasks() {
         try {
             const { tasks, boxes } = await call('/tasks');
-            const hadBoxes = state.taskBoxes.map(b => b.key).join();
+            const sig = () => [...state.taskBoxes.map(b => b.key + b.scope), '|', ...new Set(state.tasks.map(t => t.box))].join();
+            const before = sig();
             state.tasks = tasks;
             state.taskBoxes = boxes || [];
-            if (hadBoxes !== state.taskBoxes.map(b => b.key).join() && !$('gdHome').hidden) renderMenu();
+            if (before !== sig() && !$('gdHome').hidden) renderMenu();
             renderAlerts();
             renderBadges();
         } catch { /* หลังบ้านยังไม่อัปเดต — ไม่แสดงแจ้งเตือน */ }
     }
     // เคสรักษาที่แจ้งไว้และยังไม่ได้บันทึกค่ารักษา
     const openCareCases = () => (state.mine || []).filter(r => r.type === 'treatment' && !['billed', 'deleted', 'rejected'].includes(r.status));
+    function renderPersonal() {
+        const list = personalItems();
+        const box = $('gdPersonal');
+        if (!box) return;
+        box.hidden = !list.length;
+        $('gdPersonalList').innerHTML = list.map(f => `
+            <button type="button" class="gd-personal-item" style="--c:${esc(f.color)}" data-open="${esc(f.key)}">
+                <span class="gd-personal-icon" aria-hidden="true">${esc(f.icon)}</span>
+                <span class="gd-personal-body"><b>${esc(f.title)}</b><small>${esc(f.description || '')}</small></span>
+                <span class="gd-count" data-badge="${esc(f.key)}" hidden></span>
+            </button>`).join('');
+    }
     function renderBadges() {
         const counts = new Map();
         unread().forEach(t => counts.set(t.box, (counts.get(t.box) || 0) + 1));
