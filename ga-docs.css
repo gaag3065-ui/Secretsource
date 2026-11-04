@@ -244,3 +244,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) { .gd-splash-spin { animation: none; } }
 .gd-care-dates { display: flex !important; flex-wrap: wrap; gap: 4px 12px; margin-top: 2px; }
 .gd-care-dates span::before { content: '•'; margin-right: 4px; color: #cbd5e1; }
+/* ข้อมูลจากตอนแจ้งเข้ารักษา: เห็นได้แต่แก้ไม่ได้ */
+.gd-field.is-readonly input, .gd-field.is-readonly textarea { background: #e5e7eb; color: #374151; border-color: #d1d5db; cursor: not-allowed; pointer-events: none; }
+.gd-field.is-readonly label::after { content: ' 🔒'; font-size: 12px; }

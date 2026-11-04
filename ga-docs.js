@@ -361,7 +361,12 @@
                 if (input) input.value = value;
             };
             set('case_ref', r.case_id ? `เคส #${r.case_id} (แจ้งเลขที่ ${r.id})` : `แจ้งเลขที่ ${r.id}`);
-            ['treat_date', 'hospital', 'symptom'].forEach(k => set(k, r.fields?.[k]));
+            // ข้อมูลจากตอนแจ้งเข้ารักษา: แสดงให้เห็นแต่แก้ไม่ได้
+            ['treat_date', 'hospital', 'symptom'].forEach(k => {
+                set(k, r.fields?.[k]);
+                const input = $('gdFields').querySelector(`[name="${k}"]`);
+                if (input && input.value) { input.readOnly = true; input.closest('.gd-field').classList.add('is-readonly'); }
+            });
             refreshVisibility();
             return;
         }
@@ -501,7 +506,7 @@
         new FormData($('gdFields')).forEach((value, key) => { if (typeof value === 'string') out[key] = value.trim(); });
         return out;
     };
-    const isVisible = (f, v) => !f.showIf || v[f.showIf.name] === f.showIf.value;
+    const isVisible = (f, v) => !f.hidden && (!f.showIf || v[f.showIf.name] === f.showIf.value);
     function refreshVisibility() {
         const v = values();
         state.form.fields.forEach(f => { $('gdFields').querySelector(`[data-field="${f.name}"]`).hidden = !isVisible(f, v); });

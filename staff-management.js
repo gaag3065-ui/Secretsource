@@ -868,30 +868,15 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
 คลินิกหรือสถานพยาบาล : ${f.hospital || '-'}
 เบอร์โทรติดต่อพนักงานหรือ ID Line : ${[f.line_id, f.phone && `เบอร์ ${f.phone}`].filter(Boolean).join(' ') || f.contact || '-'}
 หมายเหตุ : ${[f.cost_level && /เกิน/.test(f.cost_level) ? 'ค่าใช้จ่ายอาจเกิน 5,000 บาท ขอให้ประกันจ่ายตรง' : '', f.note].filter(Boolean).join(' · ') || '-'}`;
-    }
-    // LINE บนคอมพิวเตอร์ (โปรแกรม LINE PC) ไม่รองรับลิงก์ส่งข้อความ → คัดลอกข้อความ + เปิดโปรแกรม LINE ให้ แล้ววางเอง
-    const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    function linePcHelp(anchor) {
-        const a = document.createElement('a'); a.href = 'line://'; a.style.display = 'none';
-        document.body.appendChild(a); a.click(); a.remove();
-        document.getElementById('linePcHelp')?.remove();
-        const tip = document.createElement('div');
-        tip.id = 'linePcHelp'; tip.className = 'line-pc-help';
-        tip.innerHTML = '<b>📋 คัดลอกข้อความแล้ว — ส่งผ่านโปรแกรม LINE ในเครื่อง</b><ol><li>เปิดโปรแกรม LINE (ถ้าเบราว์เซอร์ถาม "เปิด LINE?" กด เปิด)</li><li>เลือกกลุ่ม <b>แจ้งรักษาฝั่งไทยและแจ้งตรวจสุขภาพ</b></li><li>คลิกช่องพิมพ์ข้อความ กด <kbd>Ctrl</kbd>+<kbd>V</kbd> แล้วกด <kbd>Enter</kbd></li><li>แคปหน้าจอแชท (<kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>) แล้วแนบเป็นรูปหลักฐานเปิดเคส</li></ol><button type="button" aria-label="ปิด">×</button>';
-        tip.querySelector('button').onclick = () => tip.remove();
-        (anchor?.closest('div, li') || document.body).after(tip);
-        setTimeout(() => tip.remove(), 30000);
-    }
-    function treatmentSteps(r) {
+    }    function treatmentSteps(r) {
         const text = claimPattern(r);
         const opened = r.case_id || ['received', 'billed'].includes(r.status);
         return `<section class="sm-section sm-intake-steps"><h3>ขั้นตอนของ GA</h3>
             <ol>
-                <li class="${opened ? 'is-done' : ''}"><b>1. แจ้งประกัน</b> — คัดลอกข้อความ หรือกดส่งผ่าน LINE / Telegram แล้วเลือกกลุ่มประกันและกดส่งเอง
+                <li class="${opened ? 'is-done' : ''}"><b>1. แจ้งประกัน</b> — กดคัดลอกข้อความ แล้วไปวาง (Ctrl+V) ส่งในกลุ่ม LINE ประกันเอง
                     <pre class="sm-pattern">${esc(text)}</pre>
                     <div class="sm-pattern-actions"><button type="button" class="fa-btn" data-copy-pattern>📋 คัดลอกข้อความ</button>
-                        <a class="fa-btn" href="https://line.me/R/msg/text/?${encodeURIComponent(text)}" target="_blank" rel="noopener" data-copy-pattern data-line-share>💚 ส่งผ่าน LINE</a>
-                        <a class="fa-btn" href="https://t.me/share/url?url=%20&text=${encodeURIComponent(text)}" target="_blank" rel="noopener" data-copy-pattern>✈️ ส่งผ่าน Telegram</a></div></li>
+</div></li>
                 <li class="${opened ? 'is-done' : ''}"><b>2. เปิดเคสในระบบงานประกัน</b> — ระบบกรอกฟอร์มเปิดเคสให้ แนบรูปหลักฐานที่แจ้งประกันแล้ว (แคปแชท) แล้วกดบันทึก → เรื่องนี้จะเปลี่ยนเป็น "รับเรื่องแล้ว · เคส #" และพนักงานเห็นว่า GA เปิดเคสแล้ว
                     ${opened ? `<p class="sm-meta">✓ เปิดเคสแล้ว${r.case_id ? ` เลขเคส #${esc(r.case_id)}` : ''}</p>` : `<div class="sm-pattern-actions"><button type="button" class="fa-btn fa-btn-primary" data-open-intake="${r.id}">🛡️ เปิดเคสในหน้างานประกัน →</button></div>`}</li>
                 <li class="${r.status === 'billed' ? 'is-done' : ''}"><b>3. รอพนักงานรักษาเสร็จ</b> — พนักงานกด "บันทึกค่ารักษา" ที่เคสนี้ บิลจะเข้ากล่อง "ส่งบิลค่ารักษาพยาบาล" ให้ตรวจ${r.status === 'billed' ? ' · ✓ ส่งบิลแล้ว' : ''}</li>
@@ -1267,7 +1252,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         const recordBtn = event.target.closest('[data-record]');
         if (recordBtn) return openRecord(recordBtn.dataset.record);
         const copyPattern = event.target.closest('[data-copy-pattern]');
-        if (copyPattern) { const pre = $('smDetail').querySelector('.sm-pattern'); if (pre) navigator.clipboard?.writeText(pre.textContent).then(() => toast('คัดลอกข้อความแจ้งประกันแล้ว')).catch(() => {}); if (copyPattern.tagName === 'BUTTON') return; if ('lineShare' in copyPattern.dataset && !IS_MOBILE) { event.preventDefault(); return linePcHelp(copyPattern); } }
+        if (copyPattern) { const pre = $('smDetail').querySelector('.sm-pattern'); if (pre) navigator.clipboard?.writeText(pre.textContent).then(() => toast('คัดลอกข้อความแจ้งประกันแล้ว')).catch(() => {}); if (copyPattern.tagName === 'BUTTON') return; }
         const openIntake = event.target.closest('[data-open-intake]');
         if (openIntake) { $('smDialog').close(); window.parent.postMessage({ type: 'open-insurance-intake', id: openIntake.dataset.openIntake }, location.origin); return; }
         const recFile = event.target.closest('[data-rec-file]');
