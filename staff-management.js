@@ -238,8 +238,23 @@
                     <h3>สร้างงานใหม่</h3>
                     ${templatesHtml()}
                     <form class="sm-form" id="smNewTask">${taskFields()}
+                        <div class="sm-wide sm-target" data-target>
+                            <b>มอบหมายให้</b>
+                            <label><input type="radio" name="target" value="one" checked> เฉพาะ ${esc(e.fullname)}</label>
+                            <label><input type="radio" name="target" value="missing"> คนที่กรองอยู่ ที่<u>ยังไม่มี</u>งานนี้ (<span data-n="missing">0</span> คน)</label>
+                            <label><input type="radio" name="target" value="all"> คนที่กรองอยู่ทั้งหมด (${visible.length} คน) — คนที่มีงานนี้แล้ว <span data-n="has">0</span> คน จะได้งานซ้ำอีก 1 งาน</label>
+                            <label><input type="radio" name="target" value="pick"> เลือกเป็นรายคน…</label>
+                            <div class="sm-target-picks" data-target-picks hidden>
+                                <div class="sm-target-tools"><input type="search" data-tp-search placeholder="ค้นหาชื่อ ชื่อเล่น รหัสพนักงาน…">
+                                    <button type="button" class="fa-btn fa-btn-ghost" data-tp="missing">เลือกคนที่ยังไม่มีงานนี้</button>
+                                    <button type="button" class="fa-btn fa-btn-ghost" data-tp="all">เลือกทั้งหมด</button>
+                                    <button type="button" class="fa-btn fa-btn-ghost" data-tp="none">ล้าง</button>
+                                    <span class="sm-meta" data-tp-count></span></div>
+                                <div class="sm-pick-list" data-tp-list></div>
+                            </div>
+                        </div>
                         <div class="sm-form-foot">
-                            <label><input type="checkbox" name="bulk"> มอบหมายให้พนักงานที่กรองอยู่ทั้งหมด (${visible.length} คน)</label>
+                            <span class="sm-meta" data-target-sum></span>
                             <button type="submit" class="fa-btn fa-btn-primary">มอบหมายงาน</button>
                         </div>
                     </form>
@@ -252,8 +267,10 @@
         renderTasks();
         // ข้อมูลที่กรอกค้างไว้ของพนักงานคนนี้ (ปิดหน้าต่างไปก่อนส่ง) → ใส่คืน
         const draft = state.drafts.get(key);
+        state.targetPicks = new Set();
         if (draft) fillForm($('smNewTask'), draft);
         else syncBuilder($('smNewTask'));
+        syncTarget($('smNewTask'));
         const dialog = $('smDialog');
         if (!dialog.open) dialog.showModal();
     }
@@ -379,12 +396,65 @@
         return `<div class="sm-templates"><span>ใช้หัวเรื่องที่เคยสร้าง:</span>${list.map(t =>
             `<button type="button" class="sm-template" data-template="${t.id}" title="${esc(`${t.box_title || ''} · ${t.kind_label || ''}`)}">${esc(t.title)}</button>`).join('')}</div>`;
     }
+    // "งานนี้" = หัวเรื่องเดียวกันในกล่องเดียวกัน (ที่ยังไม่ยกเลิก/ลบ)
+    function hasThisTask(form, key) {
+        const title = form.title.value.trim();
+        if (!title) return false;
+        return tasksOf(key).some(t => t.title === title && t.box === form.box.value && !['cancelled', 'deleted'].includes(t.status));
+    }
+    function targetKeys(form, target) {
+        if (target === 'one') return [state.current];
+        if (target === 'pick') return [...(state.targetPicks || [])];
+        const pool = filtered().map(e => e.key);
+        return target === 'missing' ? pool.filter(k => !hasThisTask(form, k)) : pool;
+    }
+    function syncTarget(form) {
+        const box = form?.querySelector('[data-target]');
+        if (!box) return;
+        const pool = filtered();
+        const has = pool.filter(e => hasThisTask(form, e.key)).length;
+        box.querySelector('[data-n=missing]').textContent = pool.length - has;
+        box.querySelector('[data-n=has]').textContent = has;
+        const target = form.querySelector('[name=target]:checked')?.value || 'one';
+        const panel = box.querySelector('[data-target-picks]');
+        panel.hidden = target !== 'pick';
+        state.targetPicks ||= new Set();
+        if (target === 'pick') {
+            const q = (panel.querySelector('[data-tp-search]').value || '').trim().toLowerCase();
+            const list = pool.map((e, i) => ({ e, n: i + 1 })).filter(({ e }) => !q || [e.fullname, e.nickname, e.employeeId, e.centralId, e.insuranceCode].some(v => String(v || '').toLowerCase().includes(q)));
+            panel.querySelector('[data-tp-list]').innerHTML = list.map(({ e, n }) => `
+                <label class="sm-pick-row"><input type="checkbox" data-tp-pick="${esc(e.key)}" ${state.targetPicks.has(e.key) ? 'checked' : ''}>
+                    <span class="sm-no">${n}</span><b>${esc(e.fullname)}</b>${e.nickname ? ` <span class="fa-type">${esc(e.nickname)}</span>` : ''}
+                    ${hasThisTask(form, e.key) ? '<span class="sm-has-task">มีงานนี้แล้ว</span>' : ''}
+                    <small>${esc([e.employeeId || e.centralId, e.company].filter(Boolean).join(' · '))}</small></label>`).join('') || '<p class="fa-empty">ไม่พบพนักงาน</p>';
+            panel.querySelector('[data-tp-count]').textContent = `เลือกแล้ว ${state.targetPicks.size} คน`;
+        }
+        const keys = targetKeys(form, target);
+        const dup = keys.filter(k => hasThisTask(form, k)).length;
+        form.querySelector('[data-target-sum]').textContent = `จะมอบหมาย ${keys.length} คน${dup ? ` (ซ้ำ ${dup} คน)` : ''}`;
+    }
+    $('smDialog').addEventListener('input', event => { const form = event.target.closest('#smNewTask'); if (form && (event.target.name === 'title' || event.target.matches('[data-tp-search]'))) syncTarget(form); });
+    $('smDialog').addEventListener('change', event => {
+        const form = event.target.closest('#smNewTask');
+        if (!form) return;
+        const pick = event.target.closest('[data-tp-pick]');
+        if (pick) { state.targetPicks ||= new Set(); if (pick.checked) state.targetPicks.add(pick.dataset.tpPick); else state.targetPicks.delete(pick.dataset.tpPick); }
+        if (event.target.matches('[name=target], [name=box], [data-tp-pick]')) syncTarget(form);
+    });
+    $('smDialog').addEventListener('click', event => {
+        const btn = event.target.closest('[data-tp]');
+        if (!btn) return;
+        const form = btn.closest('#smNewTask');
+        const pool = filtered().map(e => e.key);
+        state.targetPicks = new Set(btn.dataset.tp === 'none' ? [] : btn.dataset.tp === 'missing' ? pool.filter(k => !hasThisTask(form, k)) : pool);
+        syncTarget(form);
+    });
     function readForm(form) {
         const rows = type => [...form.querySelectorAll(`[data-builder="${type}"] .sm-builder-row`)];
         return {
             title: form.title.value, detail: form.detail.value, box: form.box.value, new_box_title: form.new_box_title.value,
             priority: form.priority.value, due_date: form.due_date.value, section: form.section?.value || "", kind: form.querySelector('[name=kind]:checked')?.value || 'notice',
-            bulk: Boolean(form.bulk?.checked),
+            target: form.querySelector('[name=target]:checked')?.value || 'one',
             fields: rows('fields').map(r => ({ label: r.querySelector('[data-label]').value })),
             uploads: rows('uploads').map(r => ({ label: r.querySelector('[data-label]').value, type: r.querySelector('[data-type]').value }))
         };
@@ -394,7 +464,8 @@
         if (d.box && [...form.box.options].some(o => o.value === d.box)) form.box.value = d.box;
         const kind = form.querySelector(`[name=kind][value="${d.kind || 'notice'}"]`);
         if (kind) kind.checked = true;
-        if (form.bulk) form.bulk.checked = Boolean(d.bulk);
+        const target = form.querySelector(`[name=target][value="${d.target || 'one'}"]`);
+        if (target) target.checked = true;
         [['fields', d.fields || []], ['uploads', d.uploads || []]].forEach(([type, list]) => {
             const rows = form.querySelector(`[data-builder="${type}"] .sm-builder-rows`);
             rows.replaceChildren(...list.map(item => {
@@ -405,6 +476,7 @@
             }));
         });
         syncBuilder(form);
+        syncTarget(form);
     }
     function useTemplate(id) {
         const t = state.data.tasks.find(x => x.id === Number(id));
@@ -1127,14 +1199,16 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         if (fd.kind === 'info' && !fd.fields.length) return toast('งานเก็บข้อมูลต้องมีช่องกรอกข้อมูลอย่างน้อย 1 ช่อง', true);
         if (fd.kind === 'info_upload' && !fd.uploads.length) return toast('กรุณาเพิ่มช่องอัปโหลดอย่างน้อย 1 ช่อง', true);
         const creating = form.dataset.create === '1';
-        const keys = creating ? [...state.picks] : fd.bulk ? filtered().map(e => e.key) : [state.current];
-        if (creating && !keys.length) return toast('กรุณาเลือกพนักงานอย่างน้อย 1 คน', true);
-        if (creating && !confirm(`มอบหมายงาน "${fd.title}" ให้พนักงาน ${keys.length} คน?`)) return;
-        if (!creating && fd.bulk && !confirm(`มอบหมายงาน "${fd.title}" ให้พนักงาน ${keys.length} คน?`)) return;
+        const target = creating ? 'create' : fd.target || 'one';
+        const keys = creating ? [...state.picks] : targetKeys(form, target);
+        if (!keys.length) return toast(target === 'missing' ? 'ทุกคนที่กรองอยู่มีงานนี้แล้ว' : 'กรุณาเลือกพนักงานอย่างน้อย 1 คน', true);
+        const dup = keys.filter(k => hasThisTask(form, k)).length;
+        if ((creating || target !== 'one') && !confirm(`มอบหมายงาน "${fd.title}" ให้พนักงาน ${keys.length} คน?${dup ? `\n(ในนี้มี ${dup} คนที่มีงานนี้แล้ว — จะได้งานซ้ำอีก 1 งาน)` : ''}`)) return;
+        if (target === 'one' && dup && !confirm(`พนักงานคนนี้มีงาน "${fd.title}" อยู่แล้ว — มอบหมายซ้ำอีก 1 งานไหม?`)) return;
         const button = form.querySelector('button[type=submit]');
         button.disabled = true;
         try {
-            const { tasks, boxes, destError, skipped } = await request('/tasks', { method: 'POST', body: JSON.stringify({ ...fd, bulk: undefined, employee_keys: keys }) });
+            const { tasks, boxes, destError, skipped } = await request('/tasks', { method: 'POST', body: JSON.stringify({ ...fd, target: undefined, employee_keys: keys, allow_duplicate: target !== 'missing' }) });
             if (destError) alert(destError);
             else if (tasks[0]?.dest) toast(`สร้างชีตเก็บข้อมูลใน "${tasks[0].dest.section_title}" แล้ว`);
             state.data.tasks.push(...tasks);

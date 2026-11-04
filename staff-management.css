@@ -254,3 +254,11 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 .sm-box-scope.is-main { background: #ecfdf3; color: #067647; }
 .sm-box-scope.is-personal { background: #eef2ff; color: #3730a3; }
 .sm-no { width: 52px; text-align: center !important; color: #667085; font-variant-numeric: tabular-nums; font-weight: 700; }
+/* มอบหมายให้ใคร */
+.sm-target { display: grid; gap: 6px; padding: 12px 14px; border: 1px solid var(--fa-line); border-radius: 12px; background: #fafbff; }
+.sm-target > label { display: block !important; font-weight: 600; cursor: pointer; }
+.sm-target > label input { margin: 0 6px 0 0; vertical-align: -2px; }
+.sm-target-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.sm-target-tools input { flex: 1 1 220px; min-width: 0; }
+.sm-target .sm-pick-row .sm-no { width: 36px; }
+.sm-has-task { padding: 1px 8px; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: 11.5px; font-weight: 700; }
