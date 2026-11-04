@@ -611,9 +611,30 @@ async function performCaseSearch() {
         .trim();
 
     if (!caseId) {
-        setInsuranceSearchMessage('กรุณากรอกเลข Case ID', 'error');
-        setCaseSearchStatus('กรุณากรอกเลข Case ID', 'error');
+        setInsuranceSearchMessage('กรุณากรอกชื่อ รหัสพนักงาน รหัสประกัน หรือ Case ID', 'error');
+        setCaseSearchStatus('กรุณากรอกชื่อ รหัสพนักงาน รหัสประกัน หรือ Case ID', 'error');
         caseInput?.focus();
+        return;
+    }
+
+    // ไม่ใช่ตัวเลขล้วน (ชื่อ / รหัสพนักงาน / รหัสประกัน) → ค้นหาพนักงานแบบเดียวกับช่องค้นหาด้านบน
+    // พบคนเดียว → เลือกให้อัตโนมัติ (ประวัติขึ้นเลย) · พบหลายคน → เลื่อนขึ้นไปให้เลือกจากรายการด้านบน
+    if (!/^d{1,10}$/.test(caseId)) {
+        const keywordInput = document.getElementById('keywordInput');
+        if (!keywordInput) return;
+        keywordInput.value = caseId;
+        setCaseSearchStatus(`กำลังค้นหา "${caseId}"…`, 'loading');
+        await performEmployeeSearch();
+        const options = document.querySelectorAll('#resultsList .employee-result-option');
+        if (options.length === 1) {
+            options[0].click();
+            setCaseSearchStatus(`พบ "${caseId}" และแสดงประวัติแล้ว`, 'success');
+        } else if (options.length > 1) {
+            setCaseSearchStatus(`พบ ${options.length} คน — เลือกพนักงานจากรายการด้านบน`, 'warning');
+            document.getElementById('resultsList')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            setCaseSearchStatus(`ไม่พบ "${caseId}"`, 'error');
+        }
         return;
     }
 

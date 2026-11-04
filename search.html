@@ -147,12 +147,14 @@ async function loadComponent(placeholderId, filename) {
 // #all = รวมทั้ง 3 ส่วน (เปิดเคส → อัปเดต/ปิดเคส → ประวัติ) ในหน้าเดียวเลื่อนต่อกัน แบบกระชับ
 function applyCombinedInsuranceView() {
     const layout = document.querySelector('.insurance-workspace-layout');
+    // ส่วน "อัปเดตผล / ปิดเคส" (CASE FOLLOW-UP WORKSPACE) ซ่อนไว้ — ค้นหาด้านบนแล้วประวัติขึ้นให้เองอยู่แล้ว
     const views = [
         ['open-treatment-view', 'เปิดเคส เข้ารักษา'],
-        ['continuity-view', 'อัปเดตผล / ปิดเคส'],
         ['history-view', 'ประวัติการรักษา']
     ];
     views.forEach(([id]) => { const view = document.getElementById(id); if (view) view.hidden = false; });
+    const followUp = document.getElementById('continuity-view');
+    if (followUp) followUp.hidden = true;
     // ลำดับ: เปิดเคส → อัปเดต/ปิดเคส → ประวัติ
     const continuity = document.getElementById('continuity-view');
     const history = document.getElementById('history-view');
