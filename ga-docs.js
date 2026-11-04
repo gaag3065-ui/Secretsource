@@ -654,6 +654,37 @@
         if (document.body.classList.contains('contacts-open') && !event.target.closest('#gdContacts')) toggleContacts(false);
     });
     document.addEventListener('keydown', event => { if (event.key === 'Escape') toggleContacts(false); });
+    // โทรศัพท์: กดช่องทางไหน → แสดง QR Code ของช่องทางนั้น + ปุ่มเปิด LINE (คอมพิวเตอร์กดแล้วเปิด LINE ตรงเหมือนเดิม)
+    const PHONE = window.matchMedia('(max-width: 760px)');
+    let qrLib = null;
+    const loadQr = () => qrLib ||= new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+        s.onload = () => resolve(window.qrcode);
+        s.onerror = () => { qrLib = null; reject(new Error('โหลด QR ไม่ได้')); };
+        document.head.append(s);
+    });
+    document.addEventListener('click', async event => {
+        const card = event.target.closest('.gd-contact');
+        if (!card || !PHONE.matches) return;
+        if (event.target.closest('[data-qr-open]')) return;   // ปุ่มเปิด LINE ในแผง QR
+        event.preventDefault();
+        const opened = card.nextElementSibling?.classList.contains('gd-contact-qr');
+        document.querySelectorAll('.gd-contact-qr').forEach(n => n.remove());
+        if (opened) return;
+        const id = card.querySelector('code')?.textContent || '';
+        const panel = document.createElement('div');
+        panel.className = 'gd-contact-qr';
+        panel.innerHTML = `<div class="gd-qr-img">กำลังสร้าง QR…</div><p>สแกนเพื่อเพิ่มเพื่อน <b>${esc(id)}</b></p><a class="gd-btn gd-btn-primary" data-qr-open href="${esc(card.href)}" target="_blank" rel="noopener">เปิด LINE ›</a>`;
+        card.after(panel);
+        try {
+            const qrcode = await loadQr();
+            const qr = qrcode(0, 'M');
+            qr.addData(card.href);
+            qr.make();
+            panel.querySelector('.gd-qr-img').innerHTML = qr.createSvgTag({ cellSize: 5, margin: 2, scalable: true });
+        } catch (error) { panel.querySelector('.gd-qr-img').textContent = error.message; }
+    });
 
     // ---------------------------------------------------------------- ปุ่ม
     document.addEventListener('click', event => {
