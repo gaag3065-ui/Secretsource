@@ -516,6 +516,9 @@
             const scope = form.box.value === '__new' ? 'personal' : box?.scope || 'main';
             const radio = form.querySelector(`[name=scope][value="${scope}"]`);
             if (radio) radio.checked = true;
+            // กล่องที่มีแบบฟอร์มอยู่แล้ว → ใช้แบบฟอร์มของกล่อง ไม่ต้องขออะไรเพิ่ม (เลือกเพิ่มเองได้)
+            const notice = form.querySelector('[name=kind][value=notice]');
+            if (notice && ((box?.form || []).length || box?.link)) notice.checked = true;
         }
         const kind = form.querySelector('[name=kind]:checked').value;
         form.querySelector('.sm-newbox').hidden = form.box.value !== '__new';
@@ -1111,12 +1114,15 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         const fd = Object.fromEntries(new FormData(form));
         if (!fd.title?.trim()) return toast('กรุณากรอกหัวเรื่องงาน', true);
         if (fd.box === '__new' && !fd.new_box_title?.trim()) return toast('กรุณาตั้งชื่อกล่องใหม่', true);
-        if (fd.kind !== 'notice' && !fd.section) return toast('กรุณาเลือกส่วนงานที่จะเก็บข้อมูลของงานนี้', true);
         const rowsOf = type => [...form.querySelectorAll(`[data-builder="${type}"] .sm-builder-row`)];
         fd.fields = fd.kind === 'notice' ? [] : rowsOf('fields').map(r => ({ label: r.querySelector('[data-label]').value.trim() })).filter(f => f.label);
         fd.uploads = fd.kind !== 'info_upload' ? [] : rowsOf('uploads').map(r => ({ label: r.querySelector('[data-label]').value.trim(), type: r.querySelector('[data-type]').value })).filter(u => u.label);
         // เลือก "เก็บข้อมูลและอัปโหลด" แต่ไม่ได้ตั้งช่องอัปโหลด → เป็นงานเก็บข้อมูล
         if (fd.kind === 'info_upload' && !fd.uploads.length && fd.fields.length) fd.kind = 'info';
+        // กล่องที่มีแบบฟอร์มอยู่แล้ว: ไม่ได้ตั้งช่องเพิ่มเติม → ใช้แบบฟอร์มของกล่องอย่างเดียว (ไม่ต้องเลือกส่วนงาน)
+        const pickedBox = (state.data.boxes || []).find(b => b.key === fd.box);
+        if (((pickedBox?.form || []).length || pickedBox?.link) && !fd.fields.length && !fd.uploads.length) { fd.kind = 'notice'; fd.section = ''; }
+        if (fd.kind !== 'notice' && !fd.section) return toast('กรุณาเลือกส่วนงานที่จะเก็บข้อมูลที่ขอเพิ่ม', true);
         if (fd.kind === 'info' && !fd.fields.length) return toast('งานเก็บข้อมูลต้องมีช่องกรอกข้อมูลอย่างน้อย 1 ช่อง', true);
         if (fd.kind === 'info_upload' && !fd.uploads.length) return toast('กรุณาเพิ่มช่องอัปโหลดอย่างน้อย 1 ช่อง', true);
         const creating = form.dataset.create === '1';
