@@ -1,4 +1,4 @@
-window.APP_VERSION = '20261104-care-10';
+window.APP_VERSION = '20261104-care-11';
 
 console.log(
     `🚀 Secretsource Version: ${window.APP_VERSION}`

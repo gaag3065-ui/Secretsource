@@ -416,7 +416,7 @@
         const cases = openCareCases();
         const casesHtml = cases.length ? `<section class="gd-care-section"><h3>🩺 เคสที่แจ้งไว้ (${cases.length}) — รักษาเสร็จแล้วกดบันทึกค่ารักษา</h3>
             ${cases.map(r => `<div class="gd-care-case"><div><b>${esc(r.fields?.hospital || '-')}</b><small>${esc(thDate(r.fields?.treat_date || ''))} ${esc(r.fields?.treat_time || '')} · ${esc(r.fields?.symptom || '')}</small>
-                <small>เลขที่ ${r.id}${r.case_id ? ` · เคสประกัน #${esc(r.case_id)}` : ''} · <span class="gd-pill is-${r.case_id ? 'received' : 'pending'}">${r.case_id ? 'GA เปิดเคสแล้ว' : 'รอ GA เปิดเคส'}</span></small></div>
+                <small>เลขที่ ${r.id}${r.case_id ? ` · เคสประกัน #${esc(r.case_id)}` : ''} · <span class="gd-pill is-${r.case_id ? 'received' : 'pending'}">${r.case_id ? 'GA เปิดเคสแล้ว' : 'รอ GA เปิดเคส'}</span></small>${r.case_id && r.admin_note ? `<small class="gd-ga-status">📣 GA: ${esc(r.admin_note)}</small>` : ''}</div>
                 ${r.case_id ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-bill-from="${r.id}">📤 บันทึกค่ารักษา (เคส #${esc(r.case_id)})</button>` : '<button type="button" class="gd-btn gd-btn-sm" disabled title="รอ GA เปิดเคสกับประกันก่อน">รอ GA เปิดเคส</button>'}</div>`).join('')}</section>` : '';
         let summary = null;
         try { summary = (await call('/care')).summary; } catch (error) { box.innerHTML = casesHtml + `<p class="gd-empty">${esc(error.message)}</p>`; return; }

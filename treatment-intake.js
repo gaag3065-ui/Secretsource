@@ -22,6 +22,23 @@
     // รอรับเคส = ยังไม่มีเลขเคส (รวมรายการที่ถูกกดสถานะไปก่อนเปิดเคส)
     const pending = () => state.records.filter(r => !r.case_id && !['billed', 'deleted'].includes(r.status));
     const isAnnual = r => r.type === 'annual';
+    // สถานะสำเร็จรูปที่ GA เลือกแจ้งกลับให้พนักงาน
+    const NOTICES = r => isAnnual(r)
+        ? [`เปิดเคส #${r.case_id} แล้ว — ส่งเรื่องให้ประกันพิจารณาเบิก`, 'เอกสารครบ ส่งเบิกประกันเรียบร้อย รอประกันโอนเงินคืน', 'เอกสารไม่ครบ กรุณาส่งเอกสารเพิ่ม / ติดต่อ GA']
+        : ['แจ้งประกันเรียบร้อย เข้ารักษาตามเวลาที่แจ้งได้เลย', 'แจ้งประกันเรียบร้อย ประกันจ่ายตรงกับโรงพยาบาล ไม่ต้องสำรองจ่าย', 'แจ้งประกันแล้ว รอประกันตอบกลับ — GA จะแจ้งอีกครั้ง', 'กรุณาติดต่อ GA ด่วน'];
+    async function sendNotice(id, button) {
+        const pick = box.querySelector(`[data-notice-pick="${id}"]`);
+        let message = pick?.value || '';
+        if (message === '__custom') message = (prompt('พิมพ์สถานะที่จะแจ้งพนักงาน') || '').trim();
+        if (!message) return;
+        button.disabled = true;
+        try {
+            const response = await window.authFetch(`${API()}/records/${id}/notice`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message }) });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) throw new Error(data.message || 'แจ้งสถานะไม่สำเร็จ');
+            await load();
+        } catch (error) { alert(error.message); button.disabled = false; }
+    }
     const money = v => Number(v || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 });
     const val = (r, k) => r.fields?.[k] || '';
     // แพทเทิร์นเดิม: "wowmai285 เบอร์ 0892303860" (รายการเก่าที่กรอกช่องเดียวใช้ contact)
@@ -45,7 +62,8 @@
         const count = document.getElementById('intakeCount');
         count.textContent = list.length ? `รอรับเคส ${list.length}${urgent ? ` · ด่วน ${urgent}` : ''}` : 'ไม่มีเรื่องค้าง';
         count.className = `intake-count${urgent ? ' is-urgent' : list.length ? ' is-wait' : ''}`;
-        const recent = state.records.filter(r => r.case_id).slice(0, 5);
+        // เปิดเคสแล้ว (ยังไม่ส่งบิล) → GA เลือกสถานะแจ้งกลับให้พนักงาน
+        const recent = state.records.filter(r => r.case_id && !['billed', 'deleted'].includes(r.status)).slice(0, 15);
         document.getElementById('intakeList').innerHTML = (list.length ? `<table class="intake-table">
             <thead><tr><th>ประเภท</th><th>พนักงาน</th><th>วันที่</th><th>โรงพยาบาล / อาการ</th><th class="num">ยอด (฿)</th><th>ติดต่อ</th><th>เอกสาร</th><th>แจ้งเมื่อ</th><th></th></tr></thead>
             <tbody>${list.map(r => {
@@ -66,7 +84,16 @@
                 </tr>
                 <tr class="intake-docrow" data-docrow="${r.id}" hidden><td colspan="9"><div class="intake-files">${r.files.map(x => `<button type="button" data-intake-file="${r.id}/${x.n}" data-mime="${esc(x.mime)}">${esc(x.field_label)} ${x.index}</button>`).join('')}</div></td></tr>`;
             }).join('')}</tbody></table>` : '<p class="intake-empty">ไม่มีเรื่องรอรับเคส ✓</p>')
-            + (recent.length ? `<p class="intake-recent">ล่าสุด: ${recent.map(r => `${esc(r.fullname)} ${r.case_id ? `→ เคส #${esc(r.case_id)}` : `(${esc(r.status_label)})`}`).join(' · ')}</p>` : '');
+            + (recent.length ? `<div class="intake-sub">✅ เปิดเคสแล้ว — แจ้งสถานะกลับให้พนักงาน <small>(พนักงานเห็นที่หน้าระบบจัดการองค์กร)</small></div>
+            <table class="intake-table"><thead><tr><th>ประเภท</th><th>พนักงาน</th><th>เคส</th><th>สถานะที่พนักงานเห็นตอนนี้</th><th>แจ้งสถานะใหม่</th></tr></thead><tbody>
+            ${recent.map(r => `<tr>
+                <td><span class="intake-tag${isAnnual(r) ? ' is-annual' : ''}">${isAnnual(r) ? 'ตรวจสุขภาพ' : 'เข้ารักษา'}</span></td>
+                <td><b>${esc(r.fullname)}</b><small>${esc(r.company || '')} · ${esc(r.insurance_code || r.employee_id || '')}</small></td>
+                <td class="nowrap">#${esc(r.case_id)}</td>
+                <td class="clip" title="${esc(r.admin_note || '')}">${esc(r.admin_note || '-')}</td>
+                <td class="nowrap"><select data-notice-pick="${r.id}">${NOTICES(r).map(n => `<option>${esc(n)}</option>`).join('')}<option value="__custom">✏️ พิมพ์เอง…</option></select>
+                    <button type="button" class="intake-take" data-notice-send="${r.id}">แจ้ง</button></td>
+            </tr>`).join('')}</tbody></table>` : '');
         if (urgent && !state.open) toggle(true);
     }
     function toggle(force) {
@@ -173,6 +200,8 @@
 
     box.addEventListener('click', event => {
         if (event.target.closest('[data-intake-toggle]')) return toggle();
+        const notice = event.target.closest('[data-notice-send]');
+        if (notice) return sendNotice(notice.dataset.noticeSend, notice);
         const docs = event.target.closest('[data-intake-docs]');
         if (docs) { const row = box.querySelector(`[data-docrow="${docs.dataset.intakeDocs}"]`); if (row) row.hidden = !row.hidden; return; }
         const takeBtn = event.target.closest('[data-intake-take]');

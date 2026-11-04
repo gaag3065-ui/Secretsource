@@ -310,3 +310,4 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gd-contact-qr p { margin: 0; font-size: 13px; color: #166534; }
 .gd-qr-img { width: 200px; height: 200px; display: grid; place-items: center; padding: 6px; border-radius: 10px; background: #fff; color: #6b7280; font-size: 12px; }
 .gd-qr-img svg { width: 100%; height: 100%; }
+.gd-ga-status { display: block; margin-top: 4px; padding: 4px 8px; border-radius: 8px; background: #ecfdf5; color: #065f46 !important; font-weight: 700; }
