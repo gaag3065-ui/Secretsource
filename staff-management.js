@@ -257,10 +257,12 @@
     function taskFields(boxKey = 'quests') {
         const opt = list => list.map(v => `<option>${esc(v)}</option>`).join('');
         return `
-                        <div class="sm-wide sm-scope"><span>หัวเรื่องงาน <span class="sm-req">*</span></span>
-                            <label class="sm-scope-opt"><input type="radio" name="scope" value="main"> 🌐 งานหลัก <small>ทุกคนเห็นกล่องนี้ในเมนู</small></label>
-                            <label class="sm-scope-opt"><input type="radio" name="scope" value="personal"> 👤 งานส่วนบุคคล <small>เห็นเฉพาะคนที่เลือก ในแถบ "รายการเฉพาะคุณ"</small></label></div>
-                        <label class="sm-wide sm-title-input"><input name="title" maxlength="150" required placeholder="เช่น ส่งเอกสารตรวจสุขภาพประจำปี" aria-label="หัวเรื่องงาน"></label>
+                        <label class="sm-wide">หัวเรื่องงาน <span class="sm-req">*</span><input name="title" maxlength="150" required placeholder="เช่น ส่งเอกสารตรวจสุขภาพประจำปี"></label>
+                        <div class="sm-wide sm-kinds">
+                            <span class="sm-kinds-title">ใครเห็นกล่องงานนี้</span>
+                            <label><input type="radio" name="scope" value="main"> งานหลัก (ทุกคนเห็นในเมนู)</label>
+                            <label><input type="radio" name="scope" value="personal"> งานส่วนบุคคล (เฉพาะคนที่เลือก · แถบ &quot;รายการเฉพาะคุณ&quot;)</label>
+                        </div>
                         <label class="sm-wide">รายละเอียด<textarea name="detail" maxlength="3000" placeholder="สิ่งที่ต้องทำ ขั้นตอน เอกสารที่ต้องใช้ ผู้ประสานงาน"></textarea></label>
                         <label class="sm-wide">ลงกล่องงาน (หน้าระบบจัดการองค์กร)<select name="box">
                             ${(state.data.boxes || []).map(b => `<option value="${esc(b.key)}" ${b.key === boxKey ? 'selected' : ''}>${esc(`${b.icon} ${b.title}`)}</option>`).join('')}
