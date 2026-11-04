@@ -54,7 +54,9 @@
     async function load(refresh = false) {
         $('smRows').innerHTML = '<tr><td colspan="6" class="fa-empty">กำลังโหลด…</td></tr>';
         try {
-            state.data = await request(`/employees${refresh ? '?refresh=1' : ''}`);
+            const [data, records] = await Promise.all([request(`/employees${refresh ? '?refresh=1' : ''}`), loadRecords()]);
+            state.data = data;
+            state.records = records;
             state.byKey = new Map(state.data.employees.map(e => [e.key, e]));
             $('smUpdated').textContent = `· อัปเดต ${new Date(state.data.updatedAt).toLocaleTimeString('th-TH')}`;
             fillFilters();
@@ -63,6 +65,22 @@
             $('smRows').innerHTML = `<tr><td colspan="6" class="fa-empty">${esc(error.message)}</td></tr>`;
         }
     }
+
+    // ---------------------------------------------------------------- เอกสารที่พนักงานส่งเองจากหน้าระบบจัดการองค์กร (ไม่ต้องมีงานมอบหมาย)
+    // เช่น กล่องตรวจ 4 โรค: พนักงานกดส่งเอง → ขึ้นที่นี่ว่า "รอตรวจ" ให้ GA เปิดดูและเปลี่ยนสถานะได้
+    const docsApi = path => `${window.APP_CONFIG.API_BASE_URL}/api/ga-docs/admin${path}`;
+    async function loadRecords() {
+        try {
+            const response = await window.authFetch(docsApi('/list'));
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) return [];
+            state.docStatuses = data.statuses || {};
+            return data.records || [];
+        } catch { return []; }
+    }
+    const REVIEW = new Set(['pending']);
+    const recIds = e => [e.employeeId, e.centralId, e.insuranceCode, e.key].filter(Boolean).map(x => String(x).toUpperCase());
+    const recordsOf = e => { const ids = recIds(e); return (state.records || []).filter(r => ids.includes(String(r.employee_id || '').toUpperCase()) || ids.includes(String(r.insurance_code || '').toUpperCase())); };
 
     // ตัวเลือกในตัวกรองมาจากข้อมูลจริง (พร้อมจำนวนคน)
     // หัวตัวเลือก: "ตึกพัก : ยังไม่เลือก" / "ตึกพัก : ทุกตึก" / "ตึกพัก : <ค่า> (จำนวน)"
@@ -92,11 +110,14 @@
                 if (want && want !== '*' && ((f.key === 'room' ? roomOf(e) : e[f.key]) || '(ว่าง)') !== want) return false;
             }
             const tasks = tasksOf(e.key);
-            if (state.box && !tasks.some(t => t.box === state.box && t.status !== 'cancelled')) return false;
+            const recs = recordsOf(e);
+            if (state.box && !tasks.some(t => t.box === state.box && t.status !== 'cancelled') && !recs.some(r => r.type === state.box)) return false;
+            if (taskMode === 'review' && !recs.some(r => REVIEW.has(r.status)) && !tasks.some(t => t.status === 'submitted')) return false;
             if (taskMode === 'open' && !tasks.some(t => OPEN.has(t.status))) return false;
             if (taskMode === 'none' && tasks.some(t => t.status !== 'cancelled')) return false;
             if (taskMode === 'done' && !tasks.some(t => t.status === 'done')) return false;
-            if (q && ![e.fullname, e.nickname, e.employeeId, e.centralId, e.insuranceCode, e.company, e.building, e.room, ...tasks.map(t => t.title)]
+            if (q && ![e.fullname, e.nickname, e.employeeId, e.centralId, e.insuranceCode, e.company, e.building, e.room, ...tasks.map(t => t.title),
+                ...recs.flatMap(r => [r.type_title, r.status_label])]
                 .some(v => String(v || '').toLowerCase().includes(q))) return false;
             return true;
         });
@@ -110,12 +131,15 @@
             const people = new Set(list.map(t => t.employee_key)).size;
             const open = new Set(list.filter(t => OPEN.has(t.status)).map(t => t.employee_key)).size;
             const titles = [...new Set(list.map(t => t.title))];
-            return `<button type="button" class="sm-box${people ? '' : ' is-empty'}${state.box === b.key ? ' is-on' : ''}" data-box="${esc(b.key)}"
+            const recs = (state.records || []).filter(r => r.type === b.key);
+            const waiting = recs.filter(r => REVIEW.has(r.status)).length;
+            return `<button type="button" class="sm-box${people || recs.length ? '' : ' is-empty'}${state.box === b.key ? ' is-on' : ''}" data-box="${esc(b.key)}"
                 title="${esc(titles.length ? `งาน: ${titles.join(' · ')}` : 'ยังไม่มีงานในกล่องนี้')}">
                 <span class="sm-box-count" aria-label="ได้รับมอบหมาย ${people} คน">${people}</span>
                 <span class="sm-box-icon">${esc(b.icon || '📌')}</span>
                 <b>${esc(b.title)}</b>
-                <small>${titles.length ? `${titles.length} งาน · ค้าง ${open} คน` : 'ยังไม่มีงาน'}</small>
+                <small>${titles.length ? `${titles.length} งาน · ค้าง ${open} คน` : recs.length ? '' : 'ยังไม่มีงาน'}</small>
+                ${recs.length ? `<span class="sm-box-review${waiting ? ' is-wait' : ''}" data-review-box="${esc(b.key)}" title="เอกสารที่พนักงานส่งมาในกล่องนี้ — กดเพื่อดู/ตรวจ">📥 ส่งมา ${recs.length}${waiting ? ` · รอตรวจ ${waiting}` : ''}</span>` : ''}
             </button>`;
         }).join('') + '<button type="button" class="sm-box sm-box-add" data-action="create-task" title="สร้างงานใหม่ แล้วเลือกพนักงานที่จะได้รับงาน"><span class="sm-box-icon">＋</span><b>สร้างงาน</b><small>ตั้งงานแล้วเลือกคน</small></button>';
     }
@@ -129,7 +153,8 @@
         $('smStats').innerHTML = stat(all.length, 'พนักงานทั้งหมด') + stat(all.filter(isOnWork).length, 'สถานะ on work')
             + stat(new Set(tasks.filter(t => OPEN.has(t.status)).map(t => t.employee_key)).size, 'คนที่มีงานค้าง')
             + stat(tasks.filter(t => OPEN.has(t.status)).length, 'งานที่ยังไม่เสร็จ') + stat(tasks.filter(t => t.status === 'done').length, 'งานเสร็จแล้ว')
-            + stat(all.filter(e => e.contracts > 0).length, 'เคยเซ็นสัญญาเช่าบ้าน SL');
+            + stat(all.filter(e => e.contracts > 0).length, 'เคยเซ็นสัญญาเช่าบ้าน SL')
+            + stat((state.records || []).filter(r => REVIEW.has(r.status)).length, 'เอกสารส่งมา รอตรวจ');
         renderBoxes();
         document.querySelectorAll('.sm-toolbar select').forEach(s => s.classList.toggle('is-set', Boolean(s.value)));
         $('smCount').textContent = `แสดง ${rows.length.toLocaleString('th-TH')} จาก ${all.length.toLocaleString('th-TH')} คน`;
@@ -158,7 +183,8 @@
                 const stages = stagesOf(t);
                 return `<button type="button" class="sm-task-pill ${esc(t.status)}" data-task-open="${t.id}" title="${esc(`${t.title} · ${stages.map(s => s[1]).join(' · ')} — กดเพื่อดู/ลบ`)}"><span class="sm-task-title">${esc(t.title)}</span>${stages.map(([cls, text]) => `<i class="sm-ack ${cls}">${text}</i>`).join('')}</button>`;
             }).join('')
-                + (list.length > 6 ? `<span class="sm-task-pill more">+${list.length - 6}</span>` : '');
+                + (list.length > 6 ? `<span class="sm-task-pill more">+${list.length - 6}</span>` : '')
+                + recordsOf(e).slice(0, 4).map(r => `<button type="button" class="sm-task-pill sm-rec${REVIEW.has(r.status) ? ' is-wait' : ''}" data-record="${r.id}" title="เอกสารที่พนักงานส่งเอง — กดเพื่อดู/ตรวจ"><span class="sm-task-title">📥 ${esc(r.type_title)}</span><i class="sm-ack ${REVIEW.has(r.status) ? 'unread' : 'checked'}">${esc(r.status_label)}</i></button>`).join('');
             return `<tr>
                 <td>${esc(e.company || '-')}</td>
                 <td><span class="fa-badge ${isOnWork(e) ? 'ok' : 'dim'}">${esc(e.status || '-')}</span></td>
@@ -166,7 +192,15 @@
                 <td><b>${esc(e.fullname)}</b><small>${esc([e.employeeId || e.centralId, e.insuranceCode].filter(Boolean).join(' · '))}</small></td>
                 ${extra.map(f => `<td>${cell(e, f.key)}</td>`).join('')}
                 <td class="sm-tasks-cell"><div class="sm-tasks">${pills || '<span class="fa-badge dim">ยังไม่มีงาน</span>'}</div></td>
-                <td class="sm-actions"><button type="button" class="fa-btn sm-check" data-check="${esc(e.key)}" ${list.some(t => (t.fields || []).length || (t.uploads || []).length || t.submitted_at) ? '' : 'disabled title="ยังไม่มีงานที่ต้องส่งข้อมูล"'}>ตรวจ${list.some(t => t.status === 'submitted') ? ' <i class="sm-dot"></i>' : ''}</button><button type="button" class="fa-btn sm-plan" data-plan="${esc(e.key)}">จัดงาน</button></td>
+                <td class="sm-actions">${(() => {
+                    // ปุ่มตรวจ: งานที่มอบหมาย (มีข้อมูลให้ส่ง) → หน้าตรวจงาน · ไม่มีงานแต่ส่งเอกสารเองมา → เปิดเอกสารที่รอตรวจ
+                    const recs = recordsOf(e).sort((x, y) => (REVIEW.has(y.status) - REVIEW.has(x.status)) || y.id - x.id);
+                    const hasTask = list.some(t => (t.fields || []).length || (t.uploads || []).length || t.submitted_at);
+                    const dot = list.some(t => t.status === 'submitted') || recs.some(r => REVIEW.has(r.status)) ? ' <i class="sm-dot"></i>' : '';
+                    if (hasTask) return `<button type="button" class="fa-btn sm-check" data-check="${esc(e.key)}">ตรวจ${dot}</button>`;
+                    if (recs.length) return `<button type="button" class="fa-btn sm-check" data-record="${recs[0].id}">ตรวจ${dot}</button>`;
+                    return '<button type="button" class="fa-btn sm-check" disabled title="ยังไม่มีงานที่ต้องส่งข้อมูล">ตรวจ</button>';
+                })()}<button type="button" class="fa-btn sm-plan" data-plan="${esc(e.key)}">จัดงาน</button></td>
             </tr>`;
         }).join('');
     }
@@ -740,6 +774,84 @@
 
     // ---------------------------------------------------------------- ตรวจเอกสารที่พนักงานส่ง (ครบ/ไม่ครบ + ดูรูป/ไฟล์บนเว็บ)
     const blobCache = new Map();
+    const recBlob = new Map();
+    async function recordFileUrl(id, n) {
+        const key = `${id}/${n}`;
+        if (recBlob.has(key)) return recBlob.get(key);
+        const response = await window.authFetch(docsApi(`/file/${id}/${n}`));
+        if (!response.ok) throw new Error('เปิดไฟล์ไม่ได้');
+        const url = URL.createObjectURL(await response.blob());
+        recBlob.set(key, url);
+        return url;
+    }
+    function openReviewList(boxKey) {
+        const box = (state.data.boxes || []).find(b => b.key === boxKey);
+        const recs = (state.records || []).filter(r => r.type === boxKey).sort((a, b) => (REVIEW.has(b.status) - REVIEW.has(a.status)) || b.id - a.id);
+        state.mode = 'review';
+        state.current = null;
+        $('smDetail').innerHTML = `
+            <header class="fa-detail-head">
+                <div><h2>📥 ${esc(box?.title || boxKey)}</h2><p>เอกสารที่พนักงานส่งเองจากหน้าระบบจัดการองค์กร · ${recs.length} รายการ · รอตรวจ ${recs.filter(r => REVIEW.has(r.status)).length}</p></div>
+                <button type="button" class="fa-close" data-close aria-label="ปิด">×</button>
+            </header>
+            <div class="fa-detail-body">
+                <table class="sm-group-table"><thead><tr><th>เลขที่</th><th>พนักงาน</th><th>ส่งเมื่อ</th><th>สถานะ</th><th></th></tr></thead><tbody>
+                ${recs.map(r => `<tr><td>#${r.id}</td><td><b>${esc(r.fullname)}</b><small>${esc([r.employee_id, r.insurance_code, r.company].filter(Boolean).join(' · '))}</small></td>
+                    <td>${esc(when(r.submitted_at))}</td><td><span class="fa-badge ${REVIEW.has(r.status) ? 'warn' : 'ok'}">${esc(r.status_label)}</span></td>
+                    <td><button type="button" class="fa-btn fa-btn-primary" data-record="${r.id}">ตรวจ</button></td></tr>`).join('') || '<tr><td colspan="5" class="fa-empty">ยังไม่มีรายการ</td></tr>'}
+                </tbody></table>
+            </div>`;
+        if (!$('smDialog').open) $('smDialog').showModal();
+    }
+    function openRecord(id) {
+        const r = (state.records || []).find(x => x.id === Number(id));
+        if (!r) return;
+        const box = (state.data.boxes || []).find(b => b.key === r.type);
+        const labelOf = name => box?.form?.find(f => f.name === name)?.label || name;
+        const money = v => Number(v).toLocaleString('th-TH', { minimumFractionDigits: 2 });
+        const rows = Object.entries(r.fields || {}).filter(([, v]) => v).map(([k, v]) => `<div><small>${esc(labelOf(k))}</small><b>${esc(/amount/.test(k) ? `${money(v)} บาท` : v)}</b></div>`).join('');
+        const groups = new Map();
+        r.files.forEach(f => { if (!groups.has(f.field_label)) groups.set(f.field_label, []); groups.get(f.field_label).push(f); });
+        state.mode = 'record';
+        $('smDetail').innerHTML = `
+            <header class="fa-detail-head">
+                <div><h2>📥 ${esc(r.type_title)} · #${r.id}</h2><p>${esc(r.fullname)} · ${esc([r.employee_id, r.insurance_code, r.company].filter(Boolean).join(' · '))} · ส่งเมื่อ ${esc(when(r.submitted_at))}</p></div>
+                <button type="button" class="fa-close" data-close aria-label="ปิด">×</button>
+            </header>
+            <div class="fa-detail-body">
+                <div class="sm-info sm-rec-info">${rows || '<p class="fa-empty">ไม่มีข้อมูลที่กรอก</p>'}</div>
+                ${[...groups.entries()].map(([label, files]) => `<section class="sm-section"><h3>${esc(label)} (${files.length})</h3><div class="sm-rec-files">
+                    ${files.map(f => `<button type="button" class="sm-rec-file" data-rec-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">${/^image\//.test(f.mime) ? `<img alt="" data-rec-img="${r.id}/${f.n}">` : '<span>📄 PDF</span>'}<small>ไฟล์ ${f.index}</small></button>`).join('')}</div></section>`).join('')}
+                <section class="sm-section"><h3>ผลการตรวจ</h3>
+                    <form class="sm-form" id="smRecForm" data-id="${r.id}">
+                        <label>สถานะ<select name="status">${Object.entries(state.docStatuses || {}).filter(([k]) => k !== 'draft').map(([k, v]) => `<option value="${k}" ${k === r.status ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>
+                        <label class="sm-wide">หมายเหตุถึงพนักงาน (เช่น ขอเอกสารเพิ่ม)<textarea name="note" maxlength="1000">${esc(r.admin_note || '')}</textarea></label>
+                        <div class="sm-form-foot"><span class="sm-meta">${r.handled_by ? `ตรวจล่าสุดโดย ${esc(r.handled_by)} ${esc(when(r.handled_at))}` : 'ยังไม่ได้ตรวจ'}</span><button type="submit" class="fa-btn fa-btn-primary">บันทึกผลการตรวจ</button></div>
+                    </form></section>
+            </div>`;
+        if (!$('smDialog').open) $('smDialog').showModal();
+        $('smDetail').querySelectorAll('[data-rec-img]').forEach(img => {
+            const [rid, n] = img.dataset.recImg.split('/');
+            recordFileUrl(rid, n).then(url => { img.src = url; }).catch(() => { img.alt = 'เปิดไม่ได้'; });
+        });
+    }
+    async function saveRecord(form) {
+        const button = form.querySelector('[type=submit]');
+        button.disabled = true;
+        try {
+            await ensureCsrf();
+            const response = await window.authFetch(docsApi(`/records/${form.dataset.id}/status`), { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: form.status.value, note: form.note.value }) });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) throw new Error(data.message || (response.status === 403 ? 'บัญชีนี้ไม่มีสิทธิ์ตรวจเอกสาร (ReviewGaDocs)' : 'บันทึกไม่สำเร็จ'));
+            const i = state.records.findIndex(x => x.id === data.record.id);
+            if (i >= 0) state.records[i] = data.record;
+            render();
+            openRecord(data.record.id);
+            toast('บันทึกผลการตรวจแล้ว');
+        } catch (error) { toast(error.message, true); } finally { button.disabled = false; }
+    }
+
     async function fileUrl(ref) {
         if (blobCache.has(ref)) return blobCache.get(ref);
         const [id, n] = ref.split('/');
@@ -881,7 +993,10 @@
     // ตัวกรองถูกสร้างใหม่ตอนโหลด → ฟังที่แถบเครื่องมือแทน
     document.querySelector('.sm-toolbar').addEventListener('change', event => { if (event.target.matches('select')) render(); });
     $('smSearch').addEventListener('input', render);
-    $('smDialog').addEventListener('submit', event => { if (event.target.id === 'smNewTask') { event.preventDefault(); createTask(event.target); } });
+    $('smDialog').addEventListener('submit', event => {
+        if (event.target.id === 'smNewTask') { event.preventDefault(); createTask(event.target); }
+        if (event.target.id === 'smRecForm') { event.preventDefault(); saveRecord(event.target); }
+    });
     // ปิดหน้าต่าง (ปุ่ม × / Esc) → เก็บข้อมูลที่กรอกไว้ เปิดพนักงานคนเดิมอีกครั้งจะกรอกคืนให้
     $('smDialog').addEventListener('close', () => {
         const form = $('smNewTask');
@@ -1004,6 +1119,12 @@
         }
         const lmApply = event.target.closest('[data-lm-apply]');
         if (lmApply) return applyLineMatch(lmApply);
+        const reviewBox = event.target.closest('[data-review-box]');
+        if (reviewBox) { event.stopPropagation(); return openReviewList(reviewBox.dataset.reviewBox); }
+        const recordBtn = event.target.closest('[data-record]');
+        if (recordBtn) return openRecord(recordBtn.dataset.record);
+        const recFile = event.target.closest('[data-rec-file]');
+        if (recFile) { const [rid, n] = recFile.dataset.recFile.split('/'); const win = window.open('', '_blank'); recordFileUrl(rid, n).then(url => { if (win) win.location.href = url; else window.open(url, '_blank'); }).catch(error => { if (win) win.close(); toast(error.message, true); }); return; }
         const boxTile = event.target.closest('[data-box]');
         if (boxTile) { state.box = state.box === boxTile.dataset.box ? '' : boxTile.dataset.box; return render(); }
         if (action === 'clear-filters') {

@@ -196,3 +196,15 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 @media (max-width: 700px) { .sm-form .sm-fe-row { grid-template-columns: 1fr 1fr; } }
 .sm-dest { margin: 10px 0; padding: 10px 14px; border-radius: 10px; background: #ecfdf3; border: 1px solid #b9e6c6; font-size: 13px; }
 .sm-section-pick small { color: #6b7280; font-weight: 400; }
+
+/* เอกสารที่พนักงานส่งเอง (ga-docs) */
+.sm-box-review { margin-top: 4px; padding: 2px 8px; border-radius: 999px; background: #ecfdf3; color: #067647; font-size: 11px; font-weight: 700; }
+.sm-box-review.is-wait { background: #fff4e0; color: #a35d00; border: 1px solid #f5c26b; }
+.sm-task-pill.sm-rec { border-color: #b9e6c6; background: #f3fbf6; }
+.sm-task-pill.sm-rec.is-wait { border-color: #f5c26b; background: #fff8e8; }
+.sm-rec-info { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.sm-rec-files { display: flex; flex-wrap: wrap; gap: 10px; }
+.sm-rec-file { display: grid; gap: 4px; justify-items: center; width: 130px; padding: 6px; border: 1px solid var(--fa-line); border-radius: 10px; background: #fff; cursor: pointer; }
+.sm-rec-file img { width: 116px; height: 116px; object-fit: cover; border-radius: 6px; background: #f1f5f9; }
+.sm-rec-file span { display: grid; place-items: center; width: 116px; height: 116px; border-radius: 6px; background: #f1f5f9; font-weight: 700; }
+.fa-badge.warn { background: #fff4e0; color: #a35d00; }
