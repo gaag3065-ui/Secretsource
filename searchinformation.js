@@ -272,7 +272,8 @@ function analyzeLimits(employee) {
         const opd = limitNumber(item.PPUsageOPD) + limitNumber(item.SLKUsageOpdThB);
         const ipd = limitNumber(item.PPUsageIPD) + limitNumber(item.SLKUsageIpdThB);
         const consent = events.some(e => /(^|\n)\s*IPD_SHARE_CONSENT\|/i.test(String(e.DocumentsAttached || '')));
-        return { caseId, date: parseTreatmentDate(item.treatmentDateTime), opd, ipd, dental, total: opd + ipd + dental, consent };
+        const other = limitNumber(item.OtherUsage);   // วงเงินอื่นๆ — แยก ไม่รวม OPD/IPD/ทำฟัน
+        return { caseId, date: parseTreatmentDate(item.treatmentDateTime), opd, ipd, dental, other, total: opd + ipd + dental + other, consent };
     }).filter(visit => visit.total > 0)
         .sort((a, b) => a.date.time - b.date.time || Number(a.caseId) - Number(b.caseId));
 
@@ -298,12 +299,14 @@ function analyzeLimits(employee) {
 
     const opdUsed = visits.reduce((sum, v) => sum + v.opd + v.dental, 0);
     const ipdUsed = visits.reduce((sum, v) => sum + v.ipd, 0);
-    const mismatches = [['OPD', opdLimit - opdUsed, employee.colBA], ['IPD', ipdLimit - ipdUsed, employee.colBB]]
+    const otherLimit = limitNumber(employee.colBK), otherUsed = visits.reduce((sum, v) => sum + v.other, 0);
+    const hasOther = hasLimitValue(employee.colBK) || otherUsed > 0;
+    const mismatches = [['OPD', opdLimit - opdUsed, employee.colBA], ['IPD', ipdLimit - ipdUsed, employee.colBB], ...(hasOther ? [['วงเงินอื่นๆ', otherLimit - otherUsed, employee.colBM]] : [])]
         .filter(([, calculated, sheet]) => hasLimitValue(sheet) && Math.abs(calculated - limitNumber(sheet)) > 0.5);
-    const low = [['OPD', employee.colBA], ['IPD', employee.colBB]]
+    const low = [['OPD', employee.colBA], ['IPD', employee.colBB], ...(hasOther ? [['วงเงินอื่นๆ', employee.colBM]] : [])]
         .filter(([, sheet]) => hasLimitValue(sheet) && limitNumber(sheet) < LOW_LIMIT);
     const needConsent = sharedCase && !sharedCase.consent ? sharedCase : null;
-    return { visits, opdLimit, ipdLimit, opdUsed, ipdUsed, mismatches, low, sharedCase, needConsent, problems,
+    return { visits, opdLimit, ipdLimit, opdUsed, ipdUsed, otherLimit, otherUsed, hasOther, mismatches, low, sharedCase, needConsent, problems,
         checked: hasLimitValue(employee.colBA) || hasLimitValue(employee.colBB) };
 }
 
@@ -352,8 +355,9 @@ function buildLimitSummary(employee) {
         `📌วงเงินค่ารักษาพยาบาล Size ${employee.colD || '-'}  รวม ${limitMoney(a.opdLimit + a.ipdLimit)} บาท`,
         `- ผู้ป่วยใน IPD วงเงิน ${limitMoney(a.ipdLimit)}  คงเหลือ ${limitMoney(employee.colBB)} บาท`,
         `- ผู้ป่วยนอก OPD วงเงิน ${limitMoney(a.opdLimit)}  คงเหลือ ${limitMoney(employee.colBA)} บาท`,
+        ...(a.hasOther ? [`- วงเงินอื่นๆ (แยกต่างหาก) วงเงิน ${limitMoney(a.otherLimit)}  คงเหลือ ${limitMoney(employee.colBM)} บาท`] : []),
         ...a.visits.map(v => {
-            const parts = [v.opd && `OPD ${limitMoney(v.opd)}`, v.dental && `ทำฟัน OPD ${limitMoney(v.dental)}`, v.ipd && `IPD ${limitMoney(v.ipd)}`].filter(Boolean);
+            const parts = [v.opd && `OPD ${limitMoney(v.opd)}`, v.dental && `ทำฟัน OPD ${limitMoney(v.dental)}`, v.ipd && `IPD ${limitMoney(v.ipd)}`, v.other && `วงเงินอื่นๆ ${limitMoney(v.other)}`].filter(Boolean);
             return `${v.date.text}  ค่ารักษา ${limitMoney(v.total)} บาท (${parts.join(' · ')})${v === a.sharedCase ? ' — ใช้วงเงิน IPD ร่วม' : ''}`;
         })
     ];
@@ -381,6 +385,7 @@ function buildLimitSummary(employee) {
             <span></span><b>วงเงิน</b><b>ใช้ไป (จากประวัติ)</b><b>คงเหลือ</b>
             <b class="limit-row">OPD (รวมทำฟัน)</b><span>${limitMoney(a.opdLimit)}</span><span>${limitMoney(a.opdUsed)}</span><span class="limit-balance${a.low.some(([t]) => t === 'OPD') ? ' is-low' : ''}">${escapeSearchHtml(employee.colBA || '-')}</span>
             <b class="limit-row">IPD</b><span>${limitMoney(a.ipdLimit)}</span><span>${limitMoney(a.ipdUsed)}</span><span class="limit-balance${a.low.some(([t]) => t === 'IPD') ? ' is-low' : ''}">${escapeSearchHtml(employee.colBB || '-')}</span>
+            ${a.hasOther ? `<b class="limit-row limit-other" title="แยกต่างหาก ไม่รวมกับ OPD / IPD / ทำฟัน">วงเงินอื่นๆ</b><span>${limitMoney(a.otherLimit)}</span><span>${limitMoney(a.otherUsed)}</span><span class="limit-balance${a.low.some(([t]) => t === 'วงเงินอื่นๆ') ? ' is-low' : ''}">${escapeSearchHtml(employee.colBM || '-')}</span>` : ''}
         </div>`;
 
     return `

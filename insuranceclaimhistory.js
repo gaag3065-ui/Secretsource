@@ -669,6 +669,7 @@ window.injectNewRowToTableRealtime = function (payloadData) {
         DentalOPD: payloadData.DentalOPD || '0',
         PPUsageOPD: payloadData.PPUsageOPD || '0',
         PPUsageIPD: payloadData.PPUsageIPD || '0',
+        OtherUsage: payloadData.OtherUsage || '0',
         SLKUsageOpdThB: payloadData.SLKUsageOpdThB || '0',
         SLKUsageIpdThB: payloadData.SLKUsageIpdThB || '0',
         SLKUsageOpdLkr: payloadData.SLKUsageOpdLkr || '0',
@@ -1099,6 +1100,7 @@ window.injectNewRowToTableRealtime = function (payloadData) {
             setOcInput('ocInpDentalOPD', eventItem.DentalOPD);
             setOcInput('ocInpPPUsageOPD', eventItem.PPUsageOPD);
             setOcInput('ocInpPPUsageIPD', eventItem.PPUsageIPD);
+            setOcInput('ocInpOtherUsage', eventItem.OtherUsage);
 
       
             setOcInput('ocInpSlkOpdThb', eventItem.SLKUsageOpdThB);
@@ -1665,6 +1667,7 @@ window.openEditModal = function (eventItem, domIndex) {
     setVal('mdInpDentalOPD', eventItem.DentalOPD || '0');
     setVal('mdInpPPUsageOPD', eventItem.PPUsageOPD || '0');
     setVal('mdInpPPUsageIPD', eventItem.PPUsageIPD || '0');
+    setVal('mdInpOtherUsage', eventItem.OtherUsage || '0');
     setVal('mdInpSLKUsageOpdThB', eventItem.SLKUsageOpdThB || '0');
     setVal('mdInpSLKUsageIpdThB', eventItem.SLKUsageIpdThB || '0');
     setVal('mdInpSLKUsageOpdLkr', eventItem.SLKUsageOpdLkr || '0');
@@ -1744,6 +1747,7 @@ function initHistoryModalEvents() {
                     DentalOPD: document.getElementById('mdInpDentalOPD').value || '0',
                     PPUsageOPD: document.getElementById('mdInpPPUsageOPD').value || '0',
                     PPUsageIPD: document.getElementById('mdInpPPUsageIPD').value || '0',
+                    OtherUsage: document.getElementById('mdInpOtherUsage')?.value || '0',
                     SLKUsageOpdThB: document.getElementById('mdInpSLKUsageOpdThB').value || '0',
                     SLKUsageIpdThB: document.getElementById('mdInpSLKUsageIpdThB').value || '0',
                     SLKUsageOpdLkr: document.getElementById('mdInpSLKUsageOpdLkr').value || '0',
@@ -2066,6 +2070,7 @@ if (response.ok && result.success) {
             DentalOPD: document.getElementById('ocInpDentalOPD').value || '0',
             PPUsageOPD: document.getElementById('ocInpPPUsageOPD').value || '0',
             PPUsageIPD: document.getElementById('ocInpPPUsageIPD').value || '0',
+            OtherUsage: document.getElementById('ocInpOtherUsage')?.value || '0',
             
             // ดึงสิทธิ์ค่าเงิน SLK มาฝากส่งให้ครบถ้วนป้องกันการบันทึกสูญหาย
             SLKUsageOpdThB: document.getElementById('ocInpSlkOpdThb')?.value || '0',
