@@ -151,3 +151,8 @@
     .wf-step-grid, .wf-edit-grid { grid-template-columns: 1fr; }
     .wf-eline { grid-template-columns: 1fr 1fr; }
 }
+/* ช่องกรอกใหญ่ขึ้น ขยายลงด้านล่างได้ */
+.wf-editor textarea, .wf-step textarea { width: 100%; box-sizing: border-box; min-height: 72px; resize: vertical; line-height: 1.5; font-size: 14px; }
+.wf-editor input, .wf-step input, .wf-editor select { font-size: 14px; min-height: 40px; }
+.wf-editor [name=detail] { min-height: 110px; }
+.wf-ebody textarea[data-e=detail] { min-height: 64px; }

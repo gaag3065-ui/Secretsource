@@ -174,7 +174,7 @@
                 : canWork ? `<div class="wf-collect">
                     <b>📋 เก็บข้อมูลจากพนักงาน</b><small>ระบบจะส่งงานไปที่หน้าระบบจัดการองค์กรของพนักงานที่เลือก (กล่อง "${esc(p.title)}") และสร้างชีตรายงานให้</small>
                     <label>ข้อมูลที่ให้พนักงานกรอก (1 บรรทัด = 1 ช่อง)<textarea id="wfFields" rows="5">${esc(s.fields.join('\n'))}</textarea></label>
-                    <label>ข้อความถึงพนักงาน (ถ้ามี)<textarea id="wfMessage" rows="2" placeholder="เช่น ขอข้อมูลเพื่อฝากของไป SL ภายในวันศุกร์"></textarea></label>
+                    <label>ข้อความถึงพนักงาน (ถ้ามี)<textarea id="wfMessage" rows="3" placeholder="เช่น ขอข้อมูลเพื่อฝากของไป SL ภายในวันศุกร์"></textarea></label>
                     <div class="wf-pick-tools"><input type="search" id="wfPickSearch" placeholder="ค้นหาชื่อ / รหัส / บริษัท / พื้นที่…"><span id="wfPickCount">เลือกแล้ว ${state.picks.size} คน</span></div>
                     <div class="wf-pick-list" id="wfPickList"><p class="fa-empty">กำลังโหลดรายชื่อ…</p></div>
                     <button type="button" class="fa-btn fa-btn-primary" data-wf-collect>ส่งงานให้พนักงานที่เลือก</button>
@@ -192,7 +192,7 @@
             ${action}
             <div class="wf-step-grid">
                 <label>ผู้รับผิดชอบ<select id="wfAssignee"><option value="">— ไม่ระบุ —</option>${state.staff.map(x => `<option value="${esc(x.username)}" ${x.username === s.assignee ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
-                <label>บันทึก / ผลลัพธ์ของขั้นตอนนี้<textarea id="wfNote" rows="3" placeholder="เช่น ของ 2 ลัง ฝากกับคุณ… เที่ยวบิน UL… ถึง 14:30">${esc(s.note)}</textarea></label>
+                <label>บันทึก / ผลลัพธ์ของขั้นตอนนี้<textarea id="wfNote" rows="5" placeholder="เช่น ของ 2 ลัง ฝากกับคุณ… เที่ยวบิน UL… ถึง 14:30">${esc(s.note)}</textarea></label>
             </div>
             <div class="wf-step-actions"><button type="button" class="fa-btn fa-btn-ghost" data-wf-save-note>บันทึก</button>${statusButtons}</div>`;
         if (s.type === 'collect' && !s.progress && canWork) loadEmployees();
@@ -273,7 +273,7 @@
                     ${p ? '' : `<label>แม่แบบ<select name="template">${state.data.templates.map(t => `<option value="${esc(t.key)}">${esc(t.title)}</option>`).join('')}</select></label>`}
                     <label>ส่วนงาน (โฟลเดอร์เก็บไฟล์)<select name="section" ${p ? 'disabled' : ''}>${Object.entries(state.data.sections).map(([k, v]) => `<option value="${k}" ${(p?.section || tpl.section) === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>
                     <label>กำหนดเสร็จ<input type="date" name="due_date" value="${esc(p?.due_date || '')}"></label>
-                    <label class="wf-wide">รายละเอียดงาน<textarea name="detail" rows="2" maxlength="2000">${esc(p?.detail || '')}</textarea></label>
+                    <label class="wf-wide">รายละเอียดงาน<textarea name="detail" rows="5" maxlength="2000" placeholder="เช่น จาก: K012500516 กร ธีรเทพ · ส่งไป: ทีม บ้าน BKK">${esc(p?.detail || '')}</textarea></label>
                 </div>
                 <h3>ขั้นตอน</h3>
                 <div id="wfEditSteps" class="wf-edit-steps"></div>
@@ -304,9 +304,9 @@
                     <select data-e="assignee"><option value="">ผู้รับผิดชอบ —</option>${state.staff.map(x => `<option value="${esc(x.username)}" ${x.username === s.assignee ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
                     <span class="wf-emove"><button type="button" data-wfe-up title="เลื่อนขึ้น">↑</button><button type="button" data-wfe-down title="เลื่อนลง">↓</button><button type="button" data-wfe-del title="ลบขั้นตอน">×</button></span>
                 </div>
-                <input data-e="detail" maxlength="1000" placeholder="รายละเอียด / สิ่งที่ต้องทำในขั้นนี้" value="${esc(s.detail || '')}">
+                <textarea data-e="detail" rows="3" maxlength="1000" placeholder="รายละเอียด / สิ่งที่ต้องทำในขั้นนี้">${esc(s.detail || '')}</textarea>
                 ${i ? `<div class="wf-after"><span>ต้องทำหลังจาก:</span>${steps.slice(0, i).map((x, j) => `<label><input type="checkbox" data-e="after" value="${esc(x.id)}" ${(s.after || []).includes(x.id) ? 'checked' : ''}>${j + 1}. ${esc(x.title || '…')}</label>`).join('')}</div>` : '<div class="wf-after"><span>จุดเริ่มต้น (ทำได้ทันที)</span></div>'}
-                ${s.type === 'collect' ? `<label class="wf-efields">ข้อมูลที่ให้พนักงานกรอก (1 บรรทัด = 1 ช่อง)<textarea data-e="fields" rows="3">${esc((s.fields || []).join('\n'))}</textarea></label>` : ''}
+                ${s.type === 'collect' ? `<label class="wf-efields">ข้อมูลที่ให้พนักงานกรอก (1 บรรทัด = 1 ช่อง)<textarea data-e="fields" rows="5">${esc((s.fields || []).join('\n'))}</textarea></label>` : ''}
             </div></div>`).join('');
     }
     async function saveEditor(form) {

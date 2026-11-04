@@ -31,6 +31,19 @@ document.addEventListener('DOMContentLoaded', () => {
     pane.innerHTML = '<header class="split-head"><b></b><button type="button" class="split-close" aria-label="ปิดหน้าที่แบ่ง">✕ ปิด</button></header><iframe title="หน้าที่เปิดคู่กับแชท"></iframe>';
     container.prepend(pane);
     const paneFrame = pane.querySelector('iframe');
+    // หน้าในช่องแบ่งจอแคบเหมือนแท็บเล็ต → ใส่คลาส in-split + split-embed.css (ห้ามเลื่อนซ้าย-ขวา ตารางเป็นการ์ดเรียงลง)
+    paneFrame.addEventListener('load', () => {
+        try {
+            const doc = paneFrame.contentDocument;
+            if (!doc?.documentElement || doc.getElementById('splitEmbedCss')) return;
+            doc.documentElement.classList.add('in-split');
+            const link = doc.createElement('link');
+            link.id = 'splitEmbedCss';
+            link.rel = 'stylesheet';
+            link.href = new URL('split-embed.css?v=20261104-1', location.href).href;
+            doc.head.append(link);
+        } catch { /* หน้าต่างโดเมนอื่น — ข้าม */ }
+    });
 
     function open(item) {
         if (current?.service.id === item.service.id) return close();
