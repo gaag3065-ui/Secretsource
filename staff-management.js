@@ -719,9 +719,11 @@
             </header>
             <div class="fa-detail-body">
                 <div class="sm-group-actions">
+                    <button type="button" class="fa-btn fa-btn-primary" data-add-people>＋ เพิ่มพนักงานในงานนี้</button>
                     <button type="button" class="fa-btn sm-danger" data-del-group>🗑 ลบงานนี้ทั้งหมด (${g.tasks.length} คน)</button>
                     <span class="sm-meta">ลบแล้วงานจะหายจากหน้าระบบจัดการองค์กรของพนักงานด้วย</span>
                 </div>
+                <div class="sm-add-people" id="smAddPeople" hidden></div>
                 ${[...new Map(g.tasks.filter(t => t.dest).map(t => [t.dest.sheet, t.dest])).values()].map(d => `<div class="sm-dest">📊 รายงานงานนี้ (${esc(d.section_title)}): <a href="${esc(d.sheet)}" target="_blank" rel="noopener">เปิด Google Sheet ↗</a> · <a href="${esc(d.folder)}" target="_blank" rel="noopener">โฟลเดอร์ไฟล์ ↗</a></div>`).join('')}
                 <table class="sm-group-table"><thead><tr><th>พนักงาน</th><th>บริษัท</th><th>ขั้นตอน</th><th></th></tr></thead><tbody>
                 ${g.tasks.map(t => {
@@ -734,6 +736,91 @@
             </div>`;
         if (!$('smDialog').open) $('smDialog').showModal();
     }
+    // ---------------------------------------------------------------- เพิ่มพนักงานเข้างานเดิม (ตัวกรองย่อย + เลือกรายคน)
+    const addState = { picks: new Set(), filters: {}, q: '', hideHas: true };
+    function groupSource() {
+        const g = state.groups?.find(x => x.title === state.groupTitle);
+        return g ? [...g.tasks].sort((a, b) => a.id - b.id)[0] : null;
+    }
+    const hasTitle = (key, src) => tasksOf(key).some(t => t.title === src.title && t.box === src.box && !['deleted', 'cancelled'].includes(t.status));
+    function addPool(src) {
+        const q = addState.q.trim().toLowerCase();
+        return state.data.employees.filter(e => FILTERS.every(f => !addState.filters[f.key] || ((f.key === 'room' ? roomOf(e) : e[f.key]) || '(ว่าง)') === addState.filters[f.key])
+            && (!q || [e.fullname, e.nickname, e.employeeId, e.centralId, e.insuranceCode, e.company, e.building].some(v => String(v || '').toLowerCase().includes(q)))
+            && (!addState.hideHas || !hasTitle(e.key, src)));
+    }
+    function renderAddPeople() {
+        const box = $('smAddPeople');
+        const src = groupSource();
+        if (!box || !src) return;
+        const sortTh = (a, b) => a.localeCompare(b, 'th', { numeric: true });
+        const pool = addPool(src);
+        const selects = FILTERS.map(f => {
+            const counts = new Map();
+            state.data.employees.forEach(e => { const v = (f.key === 'room' ? roomOf(e) : e[f.key]) || '(ว่าง)'; counts.set(v, (counts.get(v) || 0) + 1); });
+            return `<select data-add-filter="${f.key}" title="${esc(f.label)}"><option value="">${esc(f.label)}: ทั้งหมด</option>${[...counts.keys()].sort(sortTh).map(v => `<option value="${esc(v)}" ${addState.filters[f.key] === v ? 'selected' : ''}>${esc(v)} (${counts.get(v)})</option>`).join('')}</select>`;
+        }).join('');
+        box.innerHTML = `
+            <div class="sm-add-head"><b>＋ เพิ่มพนักงานในงาน "${esc(src.title)}"</b><small>ได้งานเหมือนคนเดิมทุกอย่าง และรายงานรวมอยู่ชีตเดิม</small></div>
+            <div class="sm-add-filters">${selects}</div>
+            <div class="sm-add-tools"><input type="search" data-add-q placeholder="ค้นหาชื่อ ชื่อเล่น รหัส…" value="${esc(addState.q)}">
+                <label><input type="checkbox" data-add-hide ${addState.hideHas ? 'checked' : ''}> ซ่อนคนที่มีงานนี้แล้ว</label>
+                <button type="button" class="fa-btn fa-btn-ghost" data-add-all>เลือกทั้งหมดที่แสดง (${pool.length})</button>
+                <button type="button" class="fa-btn fa-btn-ghost" data-add-none>ล้าง</button>
+                <button type="button" class="fa-btn fa-btn-ghost" data-add-reset>ล้างตัวกรอง</button></div>
+            <div class="sm-pick-list sm-add-list">${pool.slice(0, 400).map((e, i) => `<label class="sm-pick-row"><input type="checkbox" data-add-pick="${esc(e.key)}" ${addState.picks.has(e.key) ? 'checked' : ''}>
+                <span class="sm-no">${i + 1}</span><b>${esc(e.fullname)}</b>${e.nickname ? ` <span class="fa-type">${esc(e.nickname)}</span>` : ''}${hasTitle(e.key, src) ? '<span class="sm-has-task">มีงานนี้แล้ว</span>' : ''}
+                <small>${esc([e.company, e.area, e.building, e.status].filter(Boolean).join(' · '))}</small></label>`).join('') || '<p class="fa-empty">ไม่พบพนักงานตามตัวกรอง</p>'}
+                ${pool.length > 400 ? `<p class="sm-meta">แสดง 400 จาก ${pool.length} คน — กรองเพิ่มเพื่อหาคนอื่น</p>` : ''}</div>
+            <div class="sm-add-foot"><span class="sm-meta" data-add-count>เลือกแล้ว ${addState.picks.size} คน</span><button type="button" class="fa-btn fa-btn-primary" data-add-go>เพิ่ม ${addState.picks.size} คนเข้างานนี้</button></div>`;
+    }
+    async function addPeopleGo(button) {
+        const src = groupSource();
+        if (!src || !addState.picks.size) return toast('กรุณาเลือกพนักงานอย่างน้อย 1 คน', true);
+        const keys = [...addState.picks];
+        const dup = keys.filter(k => hasTitle(k, src)).length;
+        if (!confirm(`เพิ่ม ${keys.length} คนเข้างาน "${src.title}"?${dup ? `\n(ในนี้ ${dup} คนมีงานนี้แล้ว — จะได้ซ้ำอีก 1 งาน)` : ''}`)) return;
+        button.disabled = true;
+        try {
+            const { tasks, boxes, skipped } = await request('/tasks', { method: 'POST', body: JSON.stringify({
+                title: src.title, detail: src.detail || '', box: src.box, priority: src.priority || 'ปกติ', due_date: src.due_date || '', kind: src.kind || 'notice', section: src.section || '',
+                fields: (src.fields || []).map(f => ({ label: f.label })), uploads: (src.uploads || []).map(u => ({ label: u.label, type: u.type })),
+                employee_keys: keys, allow_duplicate: dup > 0, join_group: src.dest_group || '' }) });
+            state.data.tasks.push(...tasks);
+            if (boxes) state.data.boxes = workBoxes(boxes);
+            addState.picks.clear();
+            render();
+            const again = (state.groups || []).findIndex(x => x.title === src.title);
+            if (again >= 0) openGroup(again);
+            toast(`เพิ่มแล้ว ${tasks.length} คน${skipped ? ` · ข้าม ${skipped} คนที่มีงานนี้อยู่แล้ว` : ''}`);
+        } catch (error) { toast(error.message, true); } finally { button.disabled = false; }
+    }
+    $('smDialog').addEventListener('click', event => {
+        if (event.target.closest('[data-add-people]')) { const b = $('smAddPeople'); b.hidden = !b.hidden; if (!b.hidden) renderAddPeople(); return; }
+        if (event.target.closest('[data-add-all]')) { addPool(groupSource()).forEach(e => addState.picks.add(e.key)); return renderAddPeople(); }
+        if (event.target.closest('[data-add-none]')) { addState.picks.clear(); return renderAddPeople(); }
+        if (event.target.closest('[data-add-reset]')) { addState.filters = {}; addState.q = ''; return renderAddPeople(); }
+        const go = event.target.closest('[data-add-go]');
+        if (go) addPeopleGo(go);
+    });
+    $('smDialog').addEventListener('change', event => {
+        const f = event.target.closest('[data-add-filter]');
+        if (f) { addState.filters[f.dataset.addFilter] = f.value; return renderAddPeople(); }
+        if (event.target.matches('[data-add-hide]')) { addState.hideHas = event.target.checked; return renderAddPeople(); }
+        const p = event.target.closest('[data-add-pick]');
+        if (p) {
+            if (p.checked) addState.picks.add(p.dataset.addPick); else addState.picks.delete(p.dataset.addPick);
+            $('smAddPeople').querySelector('[data-add-count]').textContent = `เลือกแล้ว ${addState.picks.size} คน`;
+            $('smAddPeople').querySelector('[data-add-go]').textContent = `เพิ่ม ${addState.picks.size} คนเข้างานนี้`;
+        }
+    });
+    $('smDialog').addEventListener('input', event => {
+        if (!event.target.matches('[data-add-q]')) return;
+        addState.q = event.target.value;
+        const pos = event.target.selectionStart;
+        renderAddPeople();
+        const q = $('smAddPeople').querySelector('[data-add-q]'); q.focus(); q.setSelectionRange(pos, pos);
+    });
     function openTaskInfo(id) {
         const t = state.data.tasks.find(x => x.id === Number(id));
         if (!t) return;

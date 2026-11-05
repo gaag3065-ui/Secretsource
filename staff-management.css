@@ -280,3 +280,16 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 .sm-box:hover .sm-box-edit, .sm-box:focus-within .sm-box-edit { opacity: 1; }
 @media (hover: none) { .sm-box-edit, .sm-box-del { opacity: 1; } }
 .sm-task.is-focus { box-shadow: 0 0 0 3px #a5b4fc; }
+/* เพิ่มพนักงานเข้างานเดิม */
+.sm-add-people { display: grid; gap: 8px; margin: 10px 0; padding: 12px 14px; border: 1px solid #c7d2fe; border-radius: 12px; background: #f8faff; }
+.sm-add-people[hidden] { display: none; }
+.sm-add-head small { margin-left: 8px; color: #6b7280; font-size: 12px; }
+.sm-add-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.sm-add-filters select { max-width: 170px; padding: 4px 6px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; font: inherit; font-size: 12px; }
+.sm-add-filters select:has(option:checked:not([value=""])) { border-color: #4f46e5; background: #eef2ff; }
+.sm-add-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.sm-add-tools input[type=search] { flex: 1 1 200px; min-width: 0; padding: 6px 8px; border: 1px solid #d0d5dd; border-radius: 8px; font: inherit; font-size: 12.5px; }
+.sm-add-tools label { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; }
+.sm-add-list { max-height: 280px; }
+.sm-add-list .sm-no { width: 34px; color: #9ca3af; text-align: right; }
+.sm-add-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
