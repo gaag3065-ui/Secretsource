@@ -2837,6 +2837,7 @@ async function loadFilteredAllHistory() {
 
         window.currentFilteredHistory =
             data.history || [];
+        window.currentCaseDocuments = data.caseDocuments || {};
 
         applyHistoryFilterOptions(data);
 
@@ -3673,6 +3674,17 @@ function renderFlatHistoryTable(history) {
             parentRow,
             latestEvent
         );
+
+        // เอกสารรวมทั้งเคส: แถวที่กรองเจออาจไม่มีรูปเปิดเคส (อยู่ในแถว "เปิดเคส" ที่ไม่ตรงเงื่อนไข)
+        const caseTimelines = [...(window.currentCaseDocuments?.[caseId] || []), ...events];
+        const caseEvidence = parentRow.querySelector('td.history-evidence-cell');
+        if (caseEvidence && caseTimelines.length) {
+            caseEvidence.replaceWith(createEvidenceDocumentsCell(
+                combineCaseEvidenceDocuments(caseTimelines) || '-',
+                latestEvent.statusText,
+                true
+            ));
+        }
 
         // ยอดเงิน OPD / IPD / ทำฟัน แสดงด้านขวาของการ์ด (ใส่ก่อนช่องปุ่มท้ายแถว)
         parentRow.insertBefore(
