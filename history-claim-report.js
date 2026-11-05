@@ -62,7 +62,7 @@
                 <label>ประเภทการเบิก<select name="type"><option value="all">ทั้งหมด</option><option value="opd">ค่ารักษาพยาบาล OPD</option><option value="ipd">ค่ารักษาพยาบาล IPD</option><option value="dental">ค่าเบิกทันตกรรม</option></select></label>
             </div>
             <div class="hcr-count"></div>
-            <label class="hcr-check"><input type="checkbox" name="withEvidence" checked> แนบรูปหลักฐาน ใบเสร็จ ใบรับรองแพทย์ ต่อท้าย PDF (หน้าละ 4 รูป แยกทีละคน)</label>
+            <label class="hcr-check"><input type="checkbox" name="withEvidence" checked> แนบรูปหลักฐาน ใบเสร็จ ใบรับรองแพทย์ (PDF: ต่อท้ายหน้าละ 4 รูป · XLSX: แท็บ "รูปหลักฐาน") — ไม่รวมหลักฐานการปิดเคส</label>
             <div class="hcr-sign">
                 ${['preparer', 'approver'].map(who => `<fieldset data-who="${who}"><legend>${who === 'preparer' ? 'ผู้จัดเตรียมเอกสาร (บริษัท)' : 'ผู้อนุมัติ GM ขึ้นไป'}</legend>
                     <label class="hcr-pick"><span>แตะเพื่อเลือกรูปลายเซ็น</span><input type="file" accept="image/*"></label>
