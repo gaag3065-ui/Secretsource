@@ -127,6 +127,7 @@
     // ---------------------------------------------------------------- กระดาน "พนักงานส่งบิลแล้ว — รอปิดเคส" (ด้านบนกล่องประวัติการรักษา)
     const keyOf = r => String(r.insurance_code || r.employee_id || '').toUpperCase();
     let lastBills = [];
+    let loadSequence = 0;
     function renderBillBoard(bills) {
         lastBills = bills;
         const wrap = historyBoards();
@@ -323,6 +324,7 @@
     // ป้ายบนการ์ดเคสในประวัติ: "🧾 พนักงานส่งบิลแล้ว" + เอกสาร + ปุ่มปิดเคสแล้ว
     function markCards() {
         document.querySelectorAll('.bill-flag').forEach(n => n.remove());
+        document.querySelectorAll('#tableBodyResult tr.has-bill').forEach(n => n.classList.remove('has-bill'));
         const cells = [...document.querySelectorAll('#tableBodyResult .txt-case-id')];
         lastBills.forEach(r => {
             const cell = cells.find(c => c.textContent.trim() === String(r.case_id));
@@ -363,13 +365,36 @@
             <span><button type="button" class="intake-take" data-bill-go>บันทึก</button><button type="button" class="bill-status-cancel" data-bill-cancel>ยกเลิก</button></span>`;
         flag.append(pop);
     }
-    function saveBillStatus(flag, r, button) {
+    async function saveBillStatus(flag, r, button) {
+        if (button.disabled) return;
         const statusText = flag.querySelector('[data-bill-select]')?.value || '';
         button.disabled = true; button.textContent = '⏳ กำลังบันทึก…';
-        window.authFetch(`${API()}/records/${r.id}/step`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: 'insurance', status_text: statusText }) })
-            .then(res => res.json().then(d => { if (!res.ok || d.success === false) throw new Error(d.message || 'บันทึกไม่สำเร็จ'); return d; }))
-            .then(d => { alert(`บันทึกเข้าเคส #${r.case_id} แล้ว · สถานะ "${statusText}" (เอกสาร ${d.copied || 0} ไฟล์)\n\nค้นหาเคสอีกครั้งเพื่อดูรายการใหม่`); load(); })
-            .catch(error => { alert(error.message); button.disabled = false; button.textContent = 'บันทึก'; });
+        let data;
+        try {
+            const res = await window.authFetch(`${API()}/records/${r.id}/step`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: 'insurance', status_text: statusText }) });
+            data = await res.json();
+            if (!res.ok || data.success === false) throw new Error(data.message || 'บันทึกไม่สำเร็จ');
+        } catch (error) {
+            alert(error.message); button.disabled = false; button.textContent = 'บันทึก';
+            return;
+        }
+        // Apply only the confirmed bill; another pending bill for this employee must stay visible.
+        ++loadSequence; // Ignore polling responses started before the successful save.
+        state.records = state.records.map(item => String(item.id) === String(r.id) ? { ...item, status: 'insurance' } : item);
+        render();
+        window.showInsuranceToast?.(`บันทึกเข้าเคส #${r.case_id} แล้ว (เอกสาร ${data.copied || 0} ไฟล์)`, 'success');
+        const refreshHistory = async () => {
+            if (window.historyDisplayMode === 'filtered' && typeof window.loadFilteredAllHistory === 'function') {
+                await window.loadFilteredAllHistory();
+            } else {
+                await loadHistoryFor(r.insurance_code || r.employee_id || String(r.case_id));
+            }
+        };
+        const results = await Promise.allSettled([load(), refreshHistory()]);
+        markCards();
+        if (results.some(result => result.status === 'rejected')) {
+            window.showInsuranceToast?.('บันทึกสำเร็จแล้ว แต่โหลดประวัติล่าสุดไม่สำเร็จ กรุณาค้นหาเคสอีกครั้ง', 'warning');
+        }
     }
     async function openBillHistory(key) {
         const bills = lastBills.filter(r => keyOf(r) === key);
@@ -417,9 +442,11 @@
     const when = text => text ? new Date(text).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }) : '';
 
     async function load() {
+        const sequence = ++loadSequence;
         try {
             const response = await window.authFetch(`${API()}/list`, { cache: 'no-store' });
             const data = await response.json().catch(() => ({}));
+            if (sequence !== loadSequence) return;
             if (!response.ok || data.success === false) { document.getElementById('intakeCount').textContent = response.status === 404 ? 'หลังบ้านยังไม่อัปเดต' : '—'; return; }
             state.records = data.records || [];
             state.billBackfill = Number(data.bill_backfill || 0);
