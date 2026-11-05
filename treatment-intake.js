@@ -127,10 +127,9 @@
     let lastBills = [];
     function renderBillBoard(bills) {
         lastBills = bills;
-        const title = document.querySelector('#table-box-placeholder .insurance-panel-shell > h2');
-        if (!title) return;
-        let board = document.getElementById('billBoard');
-        if (!board) { board = document.createElement('section'); board.id = 'billBoard'; board.className = 'bill-board'; title.after(board); }
+        const wrap = historyBoards();
+        if (!wrap) return;
+        const board = wrap.querySelector('#billBoard');
         const groups = new Map();
         bills.forEach(r => { const k = keyOf(r); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
         board.hidden = !bills.length;
@@ -144,6 +143,115 @@
                 </button>`).join('')}</div>`;
         markCards();
     }
+    // ที่ห่อกระดานบนกล่องประวัติ: ตรวจสุขภาพ (บน) + บิลรอปิดเคส (ล่าง)
+    function historyBoards() {
+        let wrap = document.getElementById('historyBoards');
+        if (wrap) return wrap;
+        const title = document.querySelector('#table-box-placeholder .insurance-panel-shell > h2');
+        if (!title) return null;
+        wrap = document.createElement('div');
+        wrap.id = 'historyBoards';
+        wrap.innerHTML = '<section id="annualBoard" class="bill-board is-annual" hidden></section><section id="billBoard" class="bill-board" hidden></section>';
+        title.after(wrap);
+        return wrap;
+    }
+
+    // ---------------------------------------------------------------- กระดาน "พนักงานแจ้งเข้ารักษา" (บนสุดของหน้าเปิดเคส) — กดแล้วกรอกฟอร์มเปิดเคสให้
+    function renderTreatBoard(items) {
+        const card = document.querySelector('.open-case-combined-card');
+        if (!card) return;
+        let board = document.getElementById('treatBoard');
+        if (!board) { board = document.createElement('section'); board.id = 'treatBoard'; board.className = 'bill-board is-treat'; card.before(board); }
+        board.hidden = !items.length;
+        board.innerHTML = `<header><b>🚑 พนักงานแจ้งเข้ารักษา — รอรับเคส</b><span class="bill-board-count">${items.length}</span><small>กดชื่อเพื่อกรอกฟอร์มเปิดเคสให้อัตโนมัติ</small></header>
+            <div class="bill-board-list">${items.map(r => `
+                <button type="button" class="bill-item${r.urgent ? ' is-hot' : ''}${window.__treatmentIntake?.id === r.id ? ' is-on' : ''}" data-board-take="${r.id}">
+                    ${r.urgent ? '<span class="bill-item-badge">ด่วน</span>' : ''}
+                    <b>${esc(r.fullname)}</b>
+                    <small>${esc(r.company || '')} · ${esc(r.insurance_code || r.employee_id || '')}</small>
+                    <span class="bill-item-cases">${esc(`${thDate(val(r, 'treat_date'))} ${val(r, 'treat_time')}`.trim())} · ${esc(val(r, 'hospital') || '-')}</span>
+                </button>`).join('')}</div>`;
+    }
+
+    // ---------------------------------------------------------------- กระดาน "ตรวจสุขภาพประจำปี (เบิกย้อนหลัง)" (บนกล่องประวัติ)
+    let annualItems = [];
+    let annualPicked = null;
+    function renderAnnualBoard(items) {
+        annualItems = items;
+        const board = historyBoards()?.querySelector('#annualBoard');
+        if (!board) return;
+        if (annualPicked && !items.some(r => r.id === annualPicked)) annualPicked = null;
+        board.hidden = !items.length;
+        const picked = items.find(r => r.id === annualPicked);
+        board.innerHTML = `<header><b>🩺 ตรวจสุขภาพประจำปี (เบิกย้อนหลัง) — รอบันทึก</b><span class="bill-board-count">${items.length}</span><small>กดชื่อเพื่อเปิดประวัติ แล้วเลือก เปิดเคสใหม่ หรือ บันทึกเข้าเคสที่มีอยู่แล้ว</small></header>
+            <div class="bill-board-list">${items.map(r => `
+                <button type="button" class="bill-item${r.id === annualPicked ? ' is-on' : ''}" data-annual-open="${r.id}">
+                    <b>${esc(r.fullname)}</b>
+                    <small>${esc(r.company || '')} · ${esc(r.insurance_code || r.employee_id || '')}</small>
+                    <span class="bill-item-cases">ตรวจ ${esc(thDate(val(r, 'check_date')))} · ${esc(money(val(r, 'amount')))} ฿</span>
+                </button>`).join('')}</div>
+            ${picked ? annualPanel(picked) : ''}`;
+    }
+    function annualPanel(r) {
+        const cases = [...document.querySelectorAll('#tableBodyResult .txt-case-id')].map(c => c.textContent.trim()).filter(Boolean);
+        return `<div class="annual-panel">
+            <div class="annual-facts"><b>${esc(r.fullname)}</b> · ตรวจเมื่อ ${esc(thDate(val(r, 'check_date')))} · ${esc(val(r, 'hospital') || '-')} · ยอด <b>${esc(money(val(r, 'amount')))} บาท</b> · ${esc(val(r, 'pay') || '-')}${val(r, 'refund_account_no') ? ` (${esc(val(r, 'refund_bank'))} ${esc(val(r, 'refund_account_no'))})` : ''}
+                <span class="bill-flag-files">${r.files.map(x => `<button type="button" data-annual-file="${r.id}/${x.n}" data-mime="${esc(x.mime)}">${esc(x.field_label)} ${x.index}</button>`).join('')}</span></div>
+            <div class="annual-actions">
+                <button type="button" class="intake-take" data-annual-new="${r.id}">🆕 เปิดเคส</button>
+                <span class="annual-or">หรือ</span>
+                <label>📂 มีเคสอยู่แล้ว <select data-annual-case>${cases.length ? cases.map(c => `<option value="${esc(c)}">เคส #${esc(c)}</option>`).join('') : '<option value="">— ยังไม่พบเคสในประวัติ —</option>'}</select></label>
+                <button type="button" class="intake-end" data-annual-attach="${r.id}" ${cases.length ? '' : 'disabled'}>บันทึกเข้าเคสนี้และปิดเคส</button>
+            </div>
+            <p class="ib-msg" data-annual-msg></p></div>`;
+    }
+    async function openAnnual(id) {
+        const r = annualItems.find(x => x.id === Number(id));
+        if (!r) return;
+        annualPicked = r.id;
+        renderAnnualBoard(annualItems);
+        const input = document.getElementById('caseSearchInput');
+        if (input && typeof window.performCaseSearch === 'function') {
+            input.value = r.insurance_code || r.employee_id;
+            window.performCaseSearch();
+            await waitFor(() => document.querySelector('#tableBodyResult .txt-case-id'), 8000);
+        }
+        renderAnnualBoard(annualItems);   // ใส่รายการเคสของคนนี้ในช่องเลือก
+        document.getElementById('annualBoard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    async function attachAnnual(id, button) {
+        const board = document.getElementById('annualBoard');
+        const caseId = board.querySelector('[data-annual-case]')?.value;
+        const out = board.querySelector('[data-annual-msg]');
+        const r = annualItems.find(x => x.id === Number(id));
+        if (!caseId || !r) return;
+        if (!confirm(`บันทึกตรวจสุขภาพของ ${r.fullname} เข้าเคส #${caseId} และปิดเคส?\n\n• คัดลอกเอกสารเข้าโฟลเดอร์เคสด้วยชื่อมาตรฐาน (ใบเสร็จ / ใบรับรองแพทย์ / รูปเพิ่มเติม)\n• ใส่ยอด ${money(val(r, 'amount'))} บาท ในวงเงินอื่นๆ\n• สถานะ "ปิดเคส เอกสารและบัญชีครบถ้วน"`)) return;
+        button.disabled = true;
+        out.textContent = 'กำลังคัดลอกเอกสารและบันทึกเข้าเคส…';
+        try {
+            const res = await window.authFetch(`${API()}/records/${id}/attach-case`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ case_id: caseId }) });
+            const d = await res.json().catch(() => ({}));
+            if (!res.ok || d.success === false) throw new Error(d.message || (res.status === 403 ? 'บัญชีนี้ไม่มีสิทธิ์แก้ไขข้อมูลการรักษา' : 'บันทึกไม่สำเร็จ'));
+            out.textContent = `✓ บันทึกเข้าเคส #${caseId} และปิดเคสแล้ว (เอกสาร ${d.copied || 0} ไฟล์)`;
+            annualPicked = null;
+            await load();
+            if (typeof window.performCaseSearch === 'function') window.performCaseSearch();   // อ่านประวัติใหม่
+        } catch (error) { out.textContent = '⚠️ ' + error.message; button.disabled = false; }
+    }
+    document.addEventListener('click', event => {
+        const t = event.target;
+        const boardTake = t.closest('[data-board-take]');
+        if (boardTake) return take(boardTake.dataset.boardTake);
+        const ao = t.closest('[data-annual-open]');
+        if (ao) return openAnnual(ao.dataset.annualOpen);
+        const an = t.closest('[data-annual-new]');
+        if (an) return take(an.dataset.annualNew);
+        const aa = t.closest('[data-annual-attach]');
+        if (aa) return attachAnnual(aa.dataset.annualAttach, aa);
+        const af = t.closest('[data-annual-file]');
+        if (af) return openFile(af.dataset.annualFile, af.dataset.mime);
+    });
+
     // ป้ายบนการ์ดเคสในประวัติ: "🧾 พนักงานส่งบิลแล้ว" + เอกสาร + ปุ่มปิดเคสแล้ว
     function markCards() {
         document.querySelectorAll('.bill-flag').forEach(n => n.remove());
@@ -187,7 +295,7 @@
         const body = document.getElementById('tableBodyResult');
         if (!body) return setTimeout(watchHistory, 1000);
         new MutationObserver(() => { if (!body.querySelector('.bill-flag') && lastBills.length) markCards(); }).observe(body, { childList: true });
-        if (!document.getElementById('billBoard') && lastBills.length) renderBillBoard(lastBills);
+        if (!document.getElementById('historyBoards')) { renderBillBoard(lastBills); renderAnnualBoard(annualItems); }
     })();
 
     async function sendNotice(id, button) {
@@ -273,6 +381,8 @@
                     <button type="button" class="intake-end" data-step="${r.id}" data-step-to="${isAnnual(r) ? 'insurance' : 'waiting'}" title="${isAnnual(r) ? 'จบงานนี้ — ส่งเบิกประกันแล้ว' : 'แจ้งพนักงานแล้ว ซ่อนไว้ — กลับมาแสดงเมื่อพนักงานส่งบิลค่ารักษา'}">สิ้นสุด</button></td>
             </tr>`).join('')}</tbody></table>` : '');
         renderBillBoard(bills);
+        renderTreatBoard(list.filter(r => r.type === 'treatment'));
+        renderAnnualBoard(list.filter(r => isAnnual(r)));
         if (urgent && !state.open) toggle(true);
     }
     function toggle(force) {

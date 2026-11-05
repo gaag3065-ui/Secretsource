@@ -3075,3 +3075,20 @@ tr.has-bill { outline: 2px solid #fb923c; outline-offset: -2px; }
 .bill-flag-files { display: flex; flex-wrap: wrap; gap: 4px; }
 .bill-flag-files button { padding: 2px 8px; border: 1px solid #fdba74; border-radius: 6px; background: #fff; font: inherit; font-size: 11.5px; cursor: pointer; }
 .bill-flag .intake-take { margin-left: auto; padding: 4px 12px !important; font-size: 12px !important; }
+/* กระดานแจ้งเข้ารักษา (บนสุด) + ตรวจสุขภาพ (บนกล่องประวัติ) */
+.bill-board.is-treat { margin: 0 0 12px; border-color: #fecdd3; background: linear-gradient(135deg, #fff1f2, #fff); }
+.bill-board.is-treat header b { color: #9f1239; }
+.bill-board.is-treat .bill-board-count { background: #e11d48; }
+.bill-board.is-treat .bill-item { border-left-color: #e11d48; }
+.bill-item.is-hot { background: #fff1f2; }
+.bill-item.is-on { box-shadow: 0 0 0 3px rgba(37, 99, 235, .3); }
+.bill-board.is-annual { border-color: #bfdbfe; background: linear-gradient(135deg, #eff6ff, #fff); }
+.bill-board.is-annual header b { color: #1e40af; }
+.bill-board.is-annual .bill-board-count { background: #2563eb; }
+.bill-board.is-annual .bill-item { border-left-color: #2563eb; }
+.annual-panel { display: grid; gap: 8px; margin-top: 12px; padding: 12px 14px; border: 1px dashed #93c5fd; border-radius: 12px; background: #fff; font-size: 12.5px; }
+.annual-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: #1f2937; }
+.annual-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.annual-actions select { margin-left: 6px; padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 6px; font: inherit; font-size: 12.5px; }
+.annual-actions label { display: inline-flex; align-items: center; font-weight: 600; white-space: nowrap; }
+.annual-or { color: #9ca3af; }
