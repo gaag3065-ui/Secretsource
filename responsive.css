@@ -3120,3 +3120,5 @@ tr.has-bill { outline: 2px solid #fb923c; outline-offset: -2px; }
 .md-status-row { display: grid; gap: 4px; margin: 0 0 10px; }
 .md-status-row label { font-weight: 700; font-size: 13px; }
 .md-status-row select { padding: 8px 10px; border: 1px solid #d0d5dd; border-radius: 8px; font: inherit; }
+.edit-evidence-extra { display: grid; gap: 4px; align-content: start; padding: 8px; border: 1px dashed #cbd5e1; border-radius: 10px; color: #475569; font-size: 12px; font-weight: 700; text-decoration: none; text-align: center; }
+.edit-evidence-extra img { width: 100%; height: 90px; object-fit: cover; border-radius: 6px; background: #f1f5f9; }

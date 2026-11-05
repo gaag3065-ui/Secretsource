@@ -1190,6 +1190,25 @@ function renderEditEvidenceEditor(eventItem, editorEl) {
         const config =
             EDIT_EVIDENCE_TYPES[documentItem.label];
 
+        // รูปเพิ่มเติม (Additional) / ใบยินยอม IPD: แสดงอย่างเดียว (ตอนบันทึกระบบคงไว้ให้ครบจากค่าเดิม)
+        if (!config) {
+            if (!documentItem.url) continue;
+            const extra = document.createElement('a');
+            extra.className = 'edit-evidence-extra';
+            extra.href = documentItem.url;
+            extra.target = '_blank';
+            extra.rel = 'noopener';
+            extra.title = 'รูปนี้แก้ในหน้านี้ไม่ได้ · ระบบเก็บไว้ให้เหมือนเดิมเมื่อบันทึก';
+            const img = document.createElement('img');
+            img.src = getEvidencePreviewUrl(documentItem.url, 'w320');
+            img.alt = documentItem.label;
+            const cap = document.createElement('span');
+            cap.textContent = documentItem.label + ' (คงไว้)';
+            extra.append(img, cap);
+            editor.appendChild(extra);
+            continue;
+        }
+
         const card = document.createElement('div');
         card.className = 'edit-evidence-card';
         card.dataset.evidenceType = config.type;
@@ -1293,6 +1312,13 @@ async function collectEditedEvidenceDocuments(editorEl, originalRaw = '') {
                 `${card.dataset.evidenceType}|${url}`
             );
         }
+    }
+
+    // รูปประเภทที่ไม่มีช่องแก้ในฟอร์มนี้ (เช่น รูปเปิดเคสในแถวปิดเคส) → คงไว้ตามเดิม ไม่หาย
+    const shownTypes = new Set([...cards].map(card => card.dataset.evidenceType));
+    for (const line of String(originalRaw || '').split(/\r?\n/).map(x => x.trim())) {
+        const m = /^(OPEN_CASE|RECEIPT|MEDICAL_CERTIFICATE|CLOSE_CASE)\|(.+)$/i.exec(line);
+        if (m && !shownTypes.has(m[1].toUpperCase())) lines.push(`${m[1].toUpperCase()}|${m[2]}`);
     }
 
     // รูปเพิ่มเติม (Additional) และใบยินยอมใช้วงเงิน IPD ร่วม ไม่มีช่องแก้ในฟอร์มนี้ — คงไว้ตามเดิม
