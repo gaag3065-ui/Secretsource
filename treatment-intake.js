@@ -396,6 +396,7 @@
             if (!response.ok || data.success === false) { document.getElementById('intakeCount').textContent = response.status === 404 ? 'หลังบ้านยังไม่อัปเดต' : '—'; return; }
             state.records = data.records || [];
             state.billBackfill = Number(data.bill_backfill || 0);
+            state.billBackfillList = data.bill_backfill_list || [];
             render();
             alertUrgent();
         } catch { /* ออฟไลน์ชั่วคราว */ }
@@ -408,7 +409,7 @@
         count.textContent = [list.length ? `รอรับเคส ${list.length}` : '', urgent ? `ด่วน ${urgent}` : '', billWait ? `บิลรอปิดเคส ${billWait}` : ''].filter(Boolean).join(' · ') || 'ไม่มีเรื่องค้าง';
         count.className = `intake-count${urgent ? ' is-urgent' : list.length || billWait ? ' is-wait' : ''}`;
         const backfill = box.querySelector('[data-bill-backfill]');
-        if (backfill) { backfill.hidden = !state.billBackfill; backfill.textContent = `🧩 ลงรูปบิลเข้าเคสย้อนหลัง (${state.billBackfill})`; }
+        if (backfill) { backfill.hidden = !state.billBackfill; backfill.textContent = `🧩 ลงรูปบิลเข้าเคสย้อนหลัง (${state.billBackfill})`; backfill.title = (state.billBackfillList || []).map(x => `${x.fullname} — เคส #${x.case_id}`).join(String.fromCharCode(10)); }
         const fabBadge = document.getElementById('intakeFabBadge');
         fabBadge.textContent = list.length;
         fabBadge.hidden = !list.length;
@@ -575,7 +576,9 @@
         if (event.target.closest('[data-intake-toggle]')) return toggle();
         const bfill = event.target.closest('[data-bill-backfill]');
         if (bfill) {
-            if (!confirm(`ลงรูปใบเสร็จ / ใบรับรองแพทย์ของบิลที่ปิดเคสไปแล้ว ${state.billBackfill} รายการ เข้าเคสในประวัติการรักษา?\n\n(คัดลอกไฟล์เข้าโฟลเดอร์เคสด้วยชื่อมาตรฐาน + เพิ่มรายการปิดเคส · ยอดวงเงินคงเดิม)`)) return;
+            if (!confirm(`ลงรูปใบเสร็จ / ใบรับรองแพทย์ของบิลที่ปิดเคสไปแล้ว ${state.billBackfill} รายการ เข้าเคสในประวัติการรักษา?
+
+${(state.billBackfillList || []).map(x => `• ${x.fullname} — เคส #${x.case_id} (บิลเลขที่ ${x.id})`).join(String.fromCharCode(10))}\n\n(คัดลอกไฟล์เข้าโฟลเดอร์เคสด้วยชื่อมาตรฐาน + เพิ่มรายการปิดเคส · ยอดวงเงินคงเดิม)`)) return;
             bfill.disabled = true; bfill.textContent = '⏳ กำลังลงรูปเข้าเคส…';
             window.authFetch(`${API()}/bills/backfill`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
                 .then(res => res.json().then(d => { if (!res.ok || d.success === false) throw new Error(d.message || 'ไม่สำเร็จ'); return d; }))
