@@ -16,7 +16,9 @@
             <span class="intake-fab-icon" aria-hidden="true">📥</span><span class="intake-fab-badge" id="intakeFabBadge" hidden>0</span></button>
         <div class="intake-panel" role="dialog" aria-label="พนักงานแจ้งเข้ารักษา / ตรวจสุขภาพ">
             <header class="intake-panel-head"><div><b>📥 พนักงานแจ้งเข้ารักษา / ตรวจสุขภาพ</b><span class="intake-count" id="intakeCount">…</span></div>
-                <button type="button" class="intake-close" data-intake-toggle aria-label="ปิด">×</button></header>
+                <span class="intake-head-actions"><button type="button" class="intake-bulk-btn" data-bulk-toggle>📢 ส่งข้อความแบบหมู่</button>
+                <button type="button" class="intake-close" data-intake-toggle aria-label="ปิด">×</button></span></header>
+            <div class="intake-bulk" id="intakeBulk" hidden></div>
             <div class="intake-list" id="intakeList"></div>
         </div>`;
     const form = document.getElementById('claimForm');
@@ -24,7 +26,7 @@
     box.classList.add('is-fab');
     document.body.append(box);
     document.addEventListener('keydown', event => { if (event.key === 'Escape' && state.open) toggle(false); });
-    document.addEventListener('click', event => { if (state.open && !box.contains(event.target) && !event.target.closest('.intake-viewer, .intake-alert')) toggle(false); });
+    document.addEventListener('click', event => { if (state.open && event.target.isConnected && !box.contains(event.target) && !event.target.closest('.intake-viewer, .intake-alert')) toggle(false); });
 
     // รอรับเคส = ยังไม่มีเลขเคส (รวมรายการที่ถูกกดสถานะไปก่อนเปิดเคส)
     const pending = () => state.records.filter(r => r.type !== 'medical' && !r.case_id && !['billed', 'deleted'].includes(r.status));
@@ -33,6 +35,81 @@
     const NOTICES = r => isAnnual(r)
         ? [`เปิดเคส #${r.case_id} แล้ว — ส่งเรื่องให้ประกันพิจารณาเบิก`, 'เอกสารครบ ส่งเบิกประกันเรียบร้อย รอประกันโอนเงินคืน', 'เอกสารไม่ครบ กรุณาส่งเอกสารเพิ่ม / ติดต่อ GA']
         : ['แจ้งประกันเรียบร้อย เข้ารักษาตามเวลาที่แจ้งได้เลย', 'แจ้งประกันเรียบร้อย ประกันจ่ายตรงกับโรงพยาบาล ไม่ต้องสำรองจ่าย', 'แจ้งประกันแล้ว รอประกันตอบกลับ — GA จะแจ้งอีกครั้ง', 'กรุณาติดต่อ GA ด่วน'];
+    // ---------------------------------------------------------------- ส่งข้อความแบบหมู่ (เลือกคน + เลือกแพทเทิร์น)
+    const BULK_PATTERNS = [
+        'เอกสารไม่ครบ กรุณาอัปโหลดเอกสารเพิ่มในระบบจัดการองค์กร (รายการเดิม)',
+        'รูปใบเสร็จ / ใบรับรองแพทย์ไม่ชัด กรุณาถ่ายใหม่ให้เห็นชัดทั้งใบ แล้วส่งอีกครั้ง',
+        'ข้อมูลบัญชีรับเงินคืนไม่ถูกต้อง กรุณาตรวจสอบเลขบัญชี / ชื่อบัญชี แล้วแจ้ง GA',
+        'กรุณาเก็บบิลตัวจริงไว้ GA จะเรียกเก็บภายหลัง',
+        'กรุณาติดต่อ GA ด่วน'
+    ];
+    const bulk = { filter: 'all', picks: new Set() };
+    const catOf = r => r.type === 'medical' ? 'bill' : isAnnual(r) ? 'annual' : !r.case_id ? 'pending' : 'opened';
+    const CATS = { all: 'ทั้งหมด', pending: 'รอรับเคส', opened: 'เปิดเคสแล้ว', bill: 'ส่งบิลแล้ว', annual: 'ตรวจสุขภาพ' };
+    function bulkPeople() {
+        const latest = new Map();
+        state.records.filter(r => r.status !== 'deleted').forEach(r => {
+            const key = String(r.employee_id || r.insurance_code || '').toUpperCase();
+            if (key && (!latest.has(key) || latest.get(key).id < r.id)) latest.set(key, r);
+        });
+        return [...latest.entries()].map(([key, r]) => ({ key, r, cat: catOf(r) })).sort((a, b) => b.r.id - a.r.id);
+    }
+    function renderBulk() {
+        const el = document.getElementById('intakeBulk');
+        const people = bulkPeople();
+        const shown = people.filter(p => bulk.filter === 'all' || p.cat === bulk.filter);
+        el.innerHTML = `
+            <div class="ib-row ib-chips">${Object.entries(CATS).map(([k, v]) => `<button type="button" class="ib-chip${bulk.filter === k ? ' is-on' : ''}" data-bulk-filter="${k}">${v} (${k === 'all' ? people.length : people.filter(p => p.cat === k).length})</button>`).join('')}
+                <span class="ib-gap"></span><button type="button" class="ib-link" data-bulk-all>เลือกทั้งหมดที่แสดง</button><button type="button" class="ib-link" data-bulk-none>ล้าง</button></div>
+            <div class="ib-people">${shown.map(p => `<label class="ib-person"><input type="checkbox" data-bulk-pick="${esc(p.key)}" ${bulk.picks.has(p.key) ? 'checked' : ''}>
+                <b>${esc(p.r.fullname)}</b><small>${esc(CATS[p.cat])} · เลขที่ ${p.r.id}${p.r.case_id ? ` · เคส #${esc(p.r.case_id)}` : ''}</small></label>`).join('') || '<p class="intake-empty">ไม่มีรายชื่อ</p>'}</div>
+            <div class="ib-row"><select data-bulk-pattern><option value="">— เลือกแพทเทิร์นข้อความ —</option>${BULK_PATTERNS.map(t => `<option>${esc(t)}</option>`).join('')}</select></div>
+            <textarea class="ib-text" data-bulk-text rows="2" maxlength="300" placeholder="ข้อความที่จะแจ้งพนักงาน (เลือกแพทเทิร์นด้านบน หรือพิมพ์เอง)"></textarea>
+            <div class="ib-row ib-opts">
+                <label><input type="checkbox" checked disabled> แจ้งในหน้าระบบจัดการองค์กร (🔔 + สถานะ)</label>
+                <label title="บิลค่ารักษา / ตรวจสุขภาพ: พนักงานเห็นปุ่ม '＋ ส่งเอกสารเพิ่ม' ที่รายการเดิม"><input type="checkbox" data-bulk-more> ขอเอกสารเพิ่มในรายการเดิม</label>
+                <label title="ส่งผ่านคิว LINE OA ถึงห้องแชทที่จับคู่กับพนักงานไว้แล้ว (สิทธิ์ ส่งข้อความ LINE แบบหมู่)"><input type="checkbox" data-bulk-line> ส่ง LINE ด้วย</label>
+                <span class="ib-gap"></span><span class="ib-count">เลือก ${bulk.picks.size} คน</span>
+                <button type="button" class="intake-take" data-bulk-send>ส่งข้อความ</button></div>
+            <p class="ib-msg" data-bulk-msg></p>`;
+    }
+    async function sendBulk(button) {
+        const el = document.getElementById('intakeBulk');
+        const text = el.querySelector('[data-bulk-text]').value.trim();
+        const out = el.querySelector('[data-bulk-msg]');
+        if (!bulk.picks.size) { out.textContent = 'กรุณาเลือกพนักงานอย่างน้อย 1 คน'; return; }
+        if (!text) { out.textContent = 'กรุณาเลือกแพทเทิร์นหรือพิมพ์ข้อความ'; return; }
+        const people = bulkPeople().filter(p => bulk.picks.has(p.key));
+        const more = el.querySelector('[data-bulk-more]').checked;
+        const viaLine = el.querySelector('[data-bulk-line]').checked;
+        if (!confirm(`ส่งข้อความถึงพนักงาน ${people.length} คน?\n\n"${text}"${viaLine ? '\n\n(ส่ง LINE ด้วย)' : ''}`)) return;
+        button.disabled = true;
+        let ok = 0; const failed = [];
+        for (const p of people) {
+            out.textContent = `กำลังแจ้งในหน้าเว็บ ${ok + failed.length + 1}/${people.length}…`;
+            try {
+                const res = await window.authFetch(`${API()}/records/${p.r.id}/notice`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, request_more: more }) });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok || d.success === false) throw new Error(d.message || 'ไม่สำเร็จ');
+                ok++;
+            } catch (error) { failed.push(`${p.r.fullname}: ${error.message}`); }
+        }
+        let lineNote = '';
+        if (viaLine) {
+            try {
+                out.textContent = 'กำลังหาห้อง LINE ของพนักงาน…';
+                const staffApi = path => `${window.APP_CONFIG.API_BASE_URL}/api/staff${path}`;
+                const call = async (path, body) => { const res = await window.authFetch(staffApi(path), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const d = await res.json().catch(() => ({})); if (!res.ok || d.success === false) throw new Error(d.message || (res.status === 403 ? 'บัญชีนี้ไม่มีสิทธิ์ส่ง LINE แบบหมู่' : 'ส่ง LINE ไม่สำเร็จ')); return d; };
+                const { targets } = await call('/line-targets', { keys: people.map(p => p.key) });
+                const ready = targets.filter(t => t.selected).map(t => ({ key: t.key, room: t.selected, roomName: (() => { const s = (t.suggestions || []).find(x => `${x.channelId}|${x.conversationId}` === t.selected); return s ? (s.customName || s.managerName || s.lineName || '') : ''; })() }));
+                const result = ready.length ? await call('/line-broadcast', { text, targets: ready }) : { people: 0 };
+                lineNote = ` · LINE ส่งแล้ว ${result.people || 0} คน${targets.length - ready.length ? ` (ยังไม่ได้จับคู่ห้อง LINE ${targets.length - ready.length} คน)` : ''}`;
+            } catch (error) { lineNote = ` · LINE: ${error.message}`; }
+        }
+        out.textContent = `แจ้งในหน้าเว็บแล้ว ${ok} คน${lineNote}${failed.length ? ` · ไม่สำเร็จ ${failed.length}: ${failed.join(', ')}` : ''}`;
+        button.disabled = false;
+        if (ok) { bulk.picks.clear(); load(); }
+    }
     async function sendNotice(id, button) {
         const pick = box.querySelector(`[data-notice-pick="${id}"]`);
         let message = pick?.value || '';
@@ -234,6 +311,10 @@
     }
 
     box.addEventListener('change', event => {
+        const bp = event.target.closest('[data-bulk-pick]');
+        if (bp) { if (bp.checked) bulk.picks.add(bp.dataset.bulkPick); else bulk.picks.delete(bp.dataset.bulkPick); box.querySelector('.ib-count').textContent = `เลือก ${bulk.picks.size} คน`; return; }
+        const pattern = event.target.closest('[data-bulk-pattern]');
+        if (pattern) { if (pattern.value) box.querySelector('[data-bulk-text]').value = pattern.value; box.querySelector('[data-bulk-more]').checked = /เอกสารไม่ครบ|ไม่ชัด/.test(pattern.value); return; }
         const pick = event.target.closest('[data-notice-pick]');
         if (!pick) return;
         const input = box.querySelector(`[data-notice-text="${pick.dataset.noticePick}"]`);
@@ -245,6 +326,13 @@
     });
     box.addEventListener('click', event => {
         if (event.target.closest('[data-intake-toggle]')) return toggle();
+        if (event.target.closest('[data-bulk-toggle]')) { const el = document.getElementById('intakeBulk'); el.hidden = !el.hidden; if (!el.hidden) renderBulk(); return; }
+        const bf = event.target.closest('[data-bulk-filter]');
+        if (bf) { bulk.filter = bf.dataset.bulkFilter; return renderBulk(); }
+        if (event.target.closest('[data-bulk-all]')) { bulkPeople().filter(p => bulk.filter === 'all' || p.cat === bulk.filter).forEach(p => bulk.picks.add(p.key)); return renderBulk(); }
+        if (event.target.closest('[data-bulk-none]')) { bulk.picks.clear(); return renderBulk(); }
+        const bs = event.target.closest('[data-bulk-send]');
+        if (bs) return sendBulk(bs);
         const fix = event.target.closest('[data-fix-case]');
         if (fix) {
             const r = state.records.find(x => x.id === Number(fix.dataset.fixCase));
@@ -286,5 +374,5 @@
         toggle(true);
         if (pending().some(r => String(r.id) === wanted)) take(wanted);
     });
-    setInterval(() => { if (!document.hidden) load(); }, 60000);
+    setInterval(() => { if (!document.hidden) load(); }, 15000);   // อัปเดตเองทุก 15 วินาที (ไม่ต้องรีเฟรช)
 })();

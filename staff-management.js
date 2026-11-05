@@ -71,7 +71,8 @@
     // ---------------------------------------------------------------- เอกสารที่พนักงานส่งเองจากหน้าระบบจัดการองค์กร (ไม่ต้องมีงานมอบหมาย)
     // เช่น กล่องตรวจ 4 โรค: พนักงานกดส่งเอง → ขึ้นที่นี่ว่า "รอตรวจ" ให้ GA เปิดดูและเปลี่ยนสถานะได้
     // งานประกัน (แจ้งเข้ารักษา / บิลค่ารักษา) ดูที่หน้างานประกันที่เดียว — หน้านี้เป็นงานอื่น ๆ
-    const INSURANCE_BOXES = new Set(['treatment', 'medical']);
+    // งานหลักแยกไปอยู่หน้าของตัวเอง: รักษาพยาบาล/บิล → งานประกันและการรักษา · รูปออกกำลังกาย → ออกกำลังกายและฟิตเนส 15 ครั้ง
+    const INSURANCE_BOXES = new Set(['treatment', 'medical', 'exercise']);
     const workBoxes = list => (list || []).filter(b => !INSURANCE_BOXES.has(b.key));
     const docsApi = path => `${window.APP_CONFIG.API_BASE_URL}/api/ga-docs/admin${path}`;
     async function loadRecords() {
