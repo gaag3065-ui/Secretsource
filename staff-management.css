@@ -279,3 +279,4 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 .sm-box-edit { opacity: 0; transition: opacity .15s; }
 .sm-box:hover .sm-box-edit, .sm-box:focus-within .sm-box-edit { opacity: 1; }
 @media (hover: none) { .sm-box-edit, .sm-box-del { opacity: 1; } }
+.sm-task.is-focus { box-shadow: 0 0 0 3px #a5b4fc; }

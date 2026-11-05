@@ -697,7 +697,8 @@
                     <select data-field="status">${Object.entries(statuses).map(([k, v]) => `<option value="${k}" ${k === t.status ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>
                     <input data-field="note" value="${esc(t.note)}" placeholder="บันทึกติดตามงาน">
                     <button type="button" class="fa-btn" data-save="${t.id}">บันทึก</button>
-                    <button type="button" class="fa-btn fa-btn-ghost" data-delete="${t.id}" title="ลบงานนี้ออกจากรายการ">ลบ</button>
+                    ${(t.fields || []).length || (t.uploads || []).length ? `<button type="button" class="fa-btn" data-goto-check="${esc(t.employee_key)}" title="ดู/ตรวจข้อมูลและเอกสารที่พนักงานส่ง">ตรวจ</button>` : ''}
+                    <button type="button" class="fa-btn fa-btn-ghost" data-delete="${t.id}" title="ลบงานนี้เฉพาะพนักงานคนนี้">ลบ</button>
                 </div>
                 ${t.updated_by && t.updated_at !== t.created_at ? `<span class="sm-meta">แก้ไขล่าสุดโดย ${esc(t.updated_by)} ${esc(when(t.updated_at))}</span>` : ''}
             </article>`).join('') : '<p class="fa-empty">ยังไม่มีงาน — สร้างงานใหม่ด้านบน</p>';
@@ -756,8 +757,26 @@
             </div>`;
         if (!$('smDialog').open) $('smDialog').showModal();
     }
+    function openPersonTasks(key, focusId) {
+        const e = state.byKey.get(key) || personOf(state.data.tasks.find(t => t.employee_key === key) || {});
+        state.current = key;
+        state.mode = 'tasks';
+        $('smDetail').innerHTML = `
+            <header class="fa-detail-head">
+                <div><h2>งานของ ${esc(e.fullname || key)}${e.nickname ? ` (${esc(e.nickname)})` : ''}</h2><p>${esc([e.company, e.employeeId || e.centralId, e.insuranceCode].filter(Boolean).join(' · '))} — แก้สถานะ บันทึก ลบ หรือตรวจ ได้ที่นี่ (มีผลเฉพาะพนักงานคนนี้)</p></div>
+                <button type="button" class="fa-close" data-close aria-label="ปิด">×</button>
+            </header>
+            <div class="fa-detail-body">
+                <div class="sm-group-actions"><button type="button" class="fa-btn" data-goto-plan="${esc(key)}">＋ จัดงานเพิ่มให้คนนี้</button></div>
+                <section class="sm-section"><div class="sm-task-list" id="smTaskList"></div></section>
+            </div>`;
+        renderTasks();
+        if (!$('smDialog').open) $('smDialog').showModal();
+        const card = focusId && $('smTaskList').querySelector(`[data-task="${focusId}"]`);
+        if (card) { card.classList.add('is-focus'); setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); }
+    }
     // ลบงาน: ยืนยัน 2 รอบ — งานที่มีไฟล์รายงาน/ไฟล์ที่พนักงานส่ง จะลบไฟล์บน Drive ด้วย
-    async function deleteTasks(ids, label) {
+    async function deleteTasks(ids, label, onlyPerson = false) {
         if (!ids.length) return false;
         if (!can('deleteWork')) { toast('บัญชีนี้ไม่มีสิทธิ์ลบงาน (ลบงานและกล่องงาน) — ขอสิทธิ์จากผู้ดูแลระบบ', true); return false; }
         const withFiles = state.data.tasks.some(t => ids.map(Number).includes(t.id) && t.dest);
@@ -765,7 +784,7 @@
         if (!confirm(withFiles
             ? '⚠️ ยืนยันอีกครั้ง\n\nถ้าลบ ข้อมูลและไฟล์ทั้งหมดของงานนี้ (ชีตรายงาน รูป PDF ที่พนักงานส่ง) จะหายจากทุกโฟลเดอร์ และอาจกู้คืนไม่ได้\n\nกด "ตกลง" เพื่อลบ'
             : '⚠️ ยืนยันอีกครั้ง\n\nถ้าลบ ข้อมูลงานนี้จะหายและอาจกู้คืนไม่ได้\n\nกด "ตกลง" เพื่อลบ')) return false;
-        const { deleted, trashed, trashError } = await request('/tasks/delete', { method: 'POST', body: JSON.stringify({ ids, trashFiles: true }) });
+        const { deleted, trashed, trashError } = await request('/tasks/delete', { method: 'POST', body: JSON.stringify({ ids, trashFiles: true, only_person: onlyPerson }) });
         const gone = new Set(ids.map(Number));
         state.data.tasks = state.data.tasks.filter(t => !gone.has(t.id));
         render();
@@ -1390,7 +1409,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
                 const group = state.mode === 'group' ? state.groups.find(g => g.title === state.groupTitle) : null;
                 const ids = delGroup ? group.tasks.map(t => t.id) : [Number(delTask.dataset.delTask)];
                 const label = delGroup ? `ลบงาน "${state.groupTitle}" ทั้งหมด ${ids.length} คน` : 'ลบงานนี้ออกจากพนักงานคนนี้';
-                if (await deleteTasks(ids, label)) {
+                if (await deleteTasks(ids, label, !delGroup)) {
                     const again = state.mode === 'group' && state.groups.findIndex(g => g.title === state.groupTitle);
                     if (state.mode === 'group' && again >= 0) openGroup(again); else $('smDialog').close();
                 }
@@ -1412,7 +1431,8 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         button.disabled = true;
         try {
             if (del) {
-                if (!confirm('ลบงานนี้ออกจากรายการ?')) return;
+                const t = state.data.tasks.find(x => x.id === Number(del.dataset.delete));
+                if (!confirm(`ลบงาน "${t?.title || ''}" ของ ${t?.fullname || 'พนักงานคนนี้'} ?\n\nมีผลเฉพาะคนนี้ — กล่องงาน งานของคนอื่น และชีตรายงานรวมไม่ถูกลบ`)) return;
                 await updateTask(del.dataset.delete, { status: 'deleted' }, 'ลบงานแล้ว');
             } else {
                 await updateTask(save.dataset.save, { status: card.querySelector('[data-field=status]').value, note: card.querySelector('[data-field=note]').value }, 'บันทึกแล้ว');
@@ -1427,7 +1447,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         const groupBtn = event.target.closest('[data-group]');
         if (groupBtn) return openGroup(Number(groupBtn.dataset.group));
         const taskPill = event.target.closest('[data-task-open]');
-        if (taskPill) return openTaskInfo(taskPill.dataset.taskOpen);
+        if (taskPill) { const t = state.data.tasks.find(x => x.id === Number(taskPill.dataset.taskOpen)); if (t) return openPersonTasks(t.employee_key, t.id); return; }
         const action = event.target.closest('[data-action]')?.dataset.action;
         if (action === 'refresh') load(true);
         if (action === 'broadcast') openBroadcast();
