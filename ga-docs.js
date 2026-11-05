@@ -120,7 +120,7 @@
         } catch { /* หลังบ้านยังไม่อัปเดต — ไม่แสดงแจ้งเตือน */ }
     }
     // เคสรักษาที่แจ้งไว้และยังไม่ได้บันทึกค่ารักษา
-    const openCareCases = () => (state.mine || []).filter(r => r.type === 'treatment' && !['billed', 'deleted', 'rejected'].includes(r.status));
+    const openCareCases = () => (state.mine || []).filter(r => r.type === 'treatment' && !['billed', 'deleted', 'rejected', 'cancelled'].includes(r.status));
     function renderPersonal() {
         const list = personalItems();
         const box = $('gdPersonal');
@@ -347,7 +347,7 @@
                     <span class="gd-item-icon">${esc(icon(r.type))}</span>
                     <div><b>${esc(r.type_title)}</b><small>เลขที่ ${r.id} · ส่งเมื่อ ${esc(when(r.submitted_at))} · ไฟล์แนบ ${r.files.length - slips.length}</small>
                         ${r.admin_note ? `<span class="gd-note">GA: ${esc(r.admin_note)}</span>` : ''}
-                        ${r.type === 'treatment' && !['billed', 'deleted', 'rejected'].includes(r.status) ? (r.case_id ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm gd-bill" data-bill-from="${r.id}">📤 รักษาเสร็จ / ส่งบิล (เคส #${esc(r.case_id)})</button>` : '<span class="gd-pill is-pending">รอ GA เปิดเคสก่อน จึงบันทึกค่ารักษาได้</span>') : ''}
+                        ${r.type === 'treatment' && !['billed', 'deleted', 'rejected', 'cancelled'].includes(r.status) ? (r.case_id ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm gd-bill" data-bill-from="${r.id}">📤 รักษาเสร็จ / ส่งบิล (เคส #${esc(r.case_id)})</button>` : '<span class="gd-pill is-pending">รอ GA เปิดเคสก่อน จึงบันทึกค่ารักษาได้</span>') : ''}
                         ${slips.length ? `<span class="gd-slips">${slips.map(f => `<button type="button" class="gd-btn gd-btn-sm" data-own-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">🧾 ดูสลิปโอนเงินคืน${slips.length > 1 ? ` ${f.index}` : ''}</button>`).join('')}</span>` : ''}
                         ${more}</div>
                     <span class="gd-pill is-${esc(r.status)}${gaStatus(r) ? ' is-ga' : ''}">${esc(gaStatus(r) || r.status_label)}</span>

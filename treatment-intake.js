@@ -29,7 +29,7 @@
     document.addEventListener('click', event => { if (state.open && event.target.isConnected && !box.contains(event.target) && !event.target.closest('.intake-viewer, .intake-alert')) toggle(false); });
 
     // รอรับเคส = ยังไม่มีเลขเคส (รวมรายการที่ถูกกดสถานะไปก่อนเปิดเคส)
-    const pending = () => state.records.filter(r => r.type !== 'medical' && !r.case_id && !['billed', 'deleted'].includes(r.status));
+    const pending = () => state.records.filter(r => r.type !== 'medical' && !r.case_id && !['billed', 'deleted', 'cancelled'].includes(r.status));
     const isAnnual = r => r.type === 'annual';
     // สถานะสำเร็จรูปที่ GA เลือกแจ้งกลับให้พนักงาน
     const NOTICES = r => isAnnual(r)
@@ -167,6 +167,7 @@
             <div class="bill-board-list">${items.map(r => `
                 <button type="button" class="bill-item${r.urgent ? ' is-hot' : ''}${window.__treatmentIntake?.id === r.id ? ' is-on' : ''}" data-board-take="${r.id}">
                     ${r.urgent ? '<span class="bill-item-badge">ด่วน</span>' : ''}
+                    <span class="bill-item-x" role="button" data-cancel-open="${r.id}" title="ยกเลิกเรื่องนี้">✕ ยกเลิก</span>
                     <b>${esc(r.fullname)}</b>
                     <small>${esc(r.company || '')} · ${esc(r.insurance_code || r.employee_id || '')}</small>
                     <span class="bill-item-cases">${esc(`${thDate(val(r, 'treat_date'))} ${val(r, 'treat_time')}`.trim())} · ${esc(val(r, 'hospital') || '-')}</span>
@@ -186,6 +187,7 @@
         board.innerHTML = `<header><b>🩺 ตรวจสุขภาพประจำปี (เบิกย้อนหลัง) — รอบันทึก</b><span class="bill-board-count">${items.length}</span><small>กดชื่อเพื่อเปิดประวัติ แล้วเลือก เปิดเคสใหม่ หรือ บันทึกเข้าเคสที่มีอยู่แล้ว</small></header>
             <div class="bill-board-list">${items.map(r => `
                 <button type="button" class="bill-item${r.id === annualPicked ? ' is-on' : ''}" data-annual-open="${r.id}">
+                    <span class="bill-item-x" role="button" data-cancel-open="${r.id}" title="ยกเลิกเรื่องนี้">✕ ยกเลิก</span>
                     <b>${esc(r.fullname)}</b>
                     <small>${esc(r.company || '')} · ${esc(r.insurance_code || r.employee_id || '')}</small>
                     <span class="bill-item-cases">ตรวจ ${esc(thDate(val(r, 'check_date')))} · ${esc(money(val(r, 'amount')))} ฿</span>
@@ -258,8 +260,48 @@
             if (typeof window.performCaseSearch === 'function') window.performCaseSearch();   // อ่านประวัติใหม่
         } catch (error) { out.textContent = '⚠️ ' + error.message; button.disabled = false; }
     }
+    // ---------------------------------------------------------------- ยกเลิก (ต้องใส่สาเหตุ)
+    function openCancel(id) {
+        const r = state.records.find(x => x.id === Number(id));
+        if (!r) return;
+        document.getElementById('intakeCancel')?.remove();
+        const pop = document.createElement('div');
+        pop.id = 'intakeCancel';
+        pop.className = 'intake-alert';
+        pop.innerHTML = `<div class="intake-cancel">
+            <h3>🚫 ยกเลิกเรื่องของ ${esc(r.fullname)}</h3>
+            <p class="intake-meta">${isAnnual(r) ? `ตรวจสุขภาพ · ตรวจเมื่อ ${esc(thDate(val(r, 'check_date')))} · ${esc(money(val(r, 'amount')))} บาท` : `แจ้งเข้ารักษา · ${esc(thDate(val(r, 'treat_date')))} ${esc(val(r, 'treat_time'))} · ${esc(val(r, 'hospital'))}`} · เลขที่ ${r.id}</p>
+            <label>สาเหตุที่ยกเลิก <span style="color:#e11d48">*</span>
+                <select data-cancel-pick><option value="">— เลือกสาเหตุ —</option><option>พนักงานแจ้งซ้ำ</option><option>พนักงานไม่ได้ไปรักษา / ยกเลิกเอง</option><option>ข้อมูลไม่ถูกต้อง ให้พนักงานแจ้งใหม่</option><option>ไม่อยู่ในเงื่อนไขการเบิก</option><option>ทดสอบระบบ</option></select></label>
+            <textarea data-cancel-reason rows="2" maxlength="300" placeholder="หรือพิมพ์สาเหตุเพิ่มเติม"></textarea>
+            <p class="ib-msg" data-cancel-msg></p>
+            <div class="intake-cancel-actions"><button type="button" class="intake-end" data-cancel-close>ไม่ยกเลิก</button><button type="button" class="intake-cancel-go" data-cancel-go="${r.id}">ยืนยันยกเลิก</button></div></div>`;
+        pop.addEventListener('change', e => { if (e.target.matches('[data-cancel-pick]') && e.target.value) pop.querySelector('[data-cancel-reason]').value = e.target.value; });
+        pop.addEventListener('click', async e => {
+            if (e.target === pop || e.target.closest('[data-cancel-close]')) return pop.remove();
+            const go = e.target.closest('[data-cancel-go]');
+            if (!go) return;
+            const reason = pop.querySelector('[data-cancel-reason]').value.trim();
+            const out = pop.querySelector('[data-cancel-msg]');
+            if (!reason) { out.textContent = 'กรุณาเลือกหรือพิมพ์สาเหตุที่ยกเลิก'; return; }
+            go.disabled = true;
+            try {
+                const res = await window.authFetch(`${API()}/records/${r.id}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok || d.success === false) throw new Error(d.message || 'ยกเลิกไม่สำเร็จ');
+                pop.remove();
+                if (annualPicked === r.id) annualPicked = null;
+                load();
+            } catch (error) { out.textContent = '⚠️ ' + error.message; go.disabled = false; }
+        });
+        document.body.append(pop);
+        pop.querySelector('[data-cancel-pick]').focus();
+    }
+
     document.addEventListener('click', event => {
         const t = event.target;
+        const cancelOpen = t.closest('[data-cancel-open]');
+        if (cancelOpen) { event.stopPropagation(); return openCancel(cancelOpen.dataset.cancelOpen); }
         const boardTake = t.closest('[data-board-take]');
         if (boardTake) {
             const r = state.records.find(x => x.id === Number(boardTake.dataset.boardTake));
@@ -368,7 +410,7 @@
         box.classList.toggle('has-wait', Boolean(list.length));
         box.classList.toggle('has-urgent', Boolean(urgent));
         // เปิดเคสแล้ว (ยังไม่ส่งบิล) → GA เลือกสถานะแจ้งกลับให้พนักงาน
-        const recent = state.records.filter(r => r.type !== 'medical' && r.case_id && !['billed', 'deleted', 'waiting', 'insurance', 'refunded', 'done'].includes(r.status)).slice(0, 15);
+        const recent = state.records.filter(r => r.type !== 'medical' && r.case_id && !['billed', 'deleted', 'waiting', 'insurance', 'refunded', 'done', 'cancelled'].includes(r.status)).slice(0, 15);
         // บิลค่ารักษาที่พนักงานส่งจากเคส → GA บันทึกลงเคส แล้วกด "ปิดเคสแล้ว"
         const bills = state.records.filter(r => r.type === 'medical' && ['pending', 'rejected', 'approved'].includes(r.status)).slice(0, 30);
         document.getElementById('intakeList').innerHTML = (list.length ? `<table class="intake-table">

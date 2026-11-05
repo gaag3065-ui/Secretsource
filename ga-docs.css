@@ -314,3 +314,4 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gd-alert.is-ga-note { border-color: #a7f3d0; background: #ecfdf5; }
 .gd-alert.is-ga-note small { color: #065f46; font-weight: 600; white-space: normal; }
 .gd-pill.is-ga { max-width: 260px; white-space: normal; text-align: center; line-height: 1.35; background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+.gd-pill.is-cancelled { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
