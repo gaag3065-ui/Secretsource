@@ -110,6 +110,86 @@
         button.disabled = false;
         if (ok) { bulk.picks.clear(); load(); }
     }
+    function runStep(stepBtn) {
+        const r = state.records.find(x => x.id === Number(stepBtn.dataset.step));
+        const msg = stepBtn.dataset.stepTo === 'waiting'
+            ? `สิ้นสุดการแจ้งของ ${r?.fullname || ''} (เคส #${r?.case_id || '-'})?\n\nเรื่องนี้จะหายจากรายการ และกลับมาที่ "พนักงานส่งบิลแล้ว" เมื่อพนักงานอัปโหลดบิลค่ารักษา`
+            : `ยืนยัน${r?.type === 'medical' ? 'บันทึกบิลลงเคสแล้ว (ปิดเคส)' : 'จบงาน'}ของ ${r?.fullname || ''} (เคส #${r?.case_id || '-'})?\n\nพนักงานจะเห็นสถานะ "รอประกันตรวจสอบและโอนเงินคืน"`;
+        if (!confirm(msg)) return;
+        stepBtn.disabled = true;
+        window.authFetch(`${API()}/records/${stepBtn.dataset.step}/step`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: stepBtn.dataset.stepTo }) })
+            .then(res => res.json().then(d => { if (!res.ok || d.success === false) throw new Error(d.message || 'บันทึกไม่สำเร็จ'); }))
+            .then(load).catch(error => { alert(error.message); stepBtn.disabled = false; });
+    }
+
+    // ---------------------------------------------------------------- กระดาน "พนักงานส่งบิลแล้ว — รอปิดเคส" (ด้านบนกล่องประวัติการรักษา)
+    const keyOf = r => String(r.insurance_code || r.employee_id || '').toUpperCase();
+    let lastBills = [];
+    function renderBillBoard(bills) {
+        lastBills = bills;
+        const title = document.querySelector('#table-box-placeholder .insurance-panel-shell > h2');
+        if (!title) return;
+        let board = document.getElementById('billBoard');
+        if (!board) { board = document.createElement('section'); board.id = 'billBoard'; board.className = 'bill-board'; title.after(board); }
+        const groups = new Map();
+        bills.forEach(r => { const k = keyOf(r); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
+        board.hidden = !bills.length;
+        board.innerHTML = `<header><b>🧾 พนักงานส่งบิลค่ารักษาแล้ว — รอปิดเคส</b><span class="bill-board-count">${bills.length}</span><small>กดชื่อเพื่อเปิดประวัติของพนักงานคนนั้น · เคสที่มีบิลใหม่จะขึ้นป้ายแจ้งเตือน</small></header>
+            <div class="bill-board-list">${[...groups.entries()].map(([k, list]) => `
+                <button type="button" class="bill-item" data-bill-open="${esc(k)}">
+                    <span class="bill-item-badge">${list.length}</span>
+                    <b>${esc(list[0].fullname)}</b>
+                    <small>${esc(list[0].company || '')} · ${esc(list[0].insurance_code || list[0].employee_id || '')}</small>
+                    <span class="bill-item-cases">${list.map(r => `เคส #${esc(r.case_id)} · ${esc(String(val(r, 'treat_type') || '').split(' ')[0] || '-')} · ${esc(money(val(r, 'amount')))} ฿`).join('<br>')}</span>
+                </button>`).join('')}</div>`;
+        markCards();
+    }
+    // ป้ายบนการ์ดเคสในประวัติ: "🧾 พนักงานส่งบิลแล้ว" + เอกสาร + ปุ่มปิดเคสแล้ว
+    function markCards() {
+        document.querySelectorAll('.bill-flag').forEach(n => n.remove());
+        const cells = [...document.querySelectorAll('#tableBodyResult .txt-case-id')];
+        lastBills.forEach(r => {
+            const cell = cells.find(c => c.textContent.trim() === String(r.case_id));
+            const host = cell?.closest('td');
+            if (!host) return;
+            const flag = document.createElement('div');
+            flag.className = 'bill-flag';
+            flag.innerHTML = `<span class="bill-flag-dot">1</span><b>🧾 พนักงานส่งบิลแล้ว</b> เลขที่ ${r.id} · ${esc(val(r, 'treat_type') || '-')} · ยอด ${esc(money(val(r, 'amount')))} ฿ · ${esc(val(r, 'pay') || '')}
+                <span class="bill-flag-files">${r.files.map(x => `<button type="button" data-intake-file="${r.id}/${x.n}" data-mime="${esc(x.mime)}">${esc(x.field_label)} ${x.index}</button>`).join('')}</span>
+                <button type="button" class="intake-take" data-step="${r.id}" data-step-to="insurance">✓ ปิดเคสแล้ว</button>`;
+            flag.addEventListener('click', event => {
+                event.stopPropagation();   // ไม่ให้การ์ดพับ/กาง
+                const file = event.target.closest('[data-intake-file]');
+                if (file) return openFile(file.dataset.intakeFile, file.dataset.mime);
+                const step = event.target.closest('[data-step]');
+                if (step) runStep(step);
+            });
+            host.append(flag);
+            host.closest('tr')?.classList.add('has-bill');
+        });
+    }
+    async function openBillHistory(key) {
+        const bills = lastBills.filter(r => keyOf(r) === key);
+        const input = document.getElementById('caseSearchInput');
+        if (!bills.length || !input || typeof window.performCaseSearch !== 'function') return;
+        input.value = bills[0].insurance_code || bills[0].employee_id;
+        window.performCaseSearch();
+        const card = await waitFor(() => [...document.querySelectorAll('#tableBodyResult .txt-case-id')].find(c => bills.some(b => c.textContent.trim() === String(b.case_id))), 10000);
+        markCards();
+        (card?.closest('tr') || document.getElementById('billBoard'))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    document.addEventListener('click', event => {
+        const item = event.target.closest('[data-bill-open]');
+        if (item) openBillHistory(item.dataset.billOpen);
+    });
+    // ประวัติวาดใหม่ (ค้นหา/กรอง) → ติดป้ายบิลใหม่อีกครั้ง
+    (function watchHistory() {
+        const body = document.getElementById('tableBodyResult');
+        if (!body) return setTimeout(watchHistory, 1000);
+        new MutationObserver(() => { if (!body.querySelector('.bill-flag') && lastBills.length) markCards(); }).observe(body, { childList: true });
+        if (!document.getElementById('billBoard') && lastBills.length) renderBillBoard(lastBills);
+    })();
+
     async function sendNotice(id, button) {
         const pick = box.querySelector(`[data-notice-pick="${id}"]`);
         let message = pick?.value || '';
@@ -152,9 +232,9 @@
         count.textContent = [list.length ? `รอรับเคส ${list.length}` : '', urgent ? `ด่วน ${urgent}` : '', billWait ? `บิลรอปิดเคส ${billWait}` : ''].filter(Boolean).join(' · ') || 'ไม่มีเรื่องค้าง';
         count.className = `intake-count${urgent ? ' is-urgent' : list.length || billWait ? ' is-wait' : ''}`;
         const fabBadge = document.getElementById('intakeFabBadge');
-        fabBadge.textContent = list.length + billWait;
-        fabBadge.hidden = !(list.length + billWait);
-        box.classList.toggle('has-wait', Boolean(list.length + billWait));
+        fabBadge.textContent = list.length;
+        fabBadge.hidden = !list.length;
+        box.classList.toggle('has-wait', Boolean(list.length));
         box.classList.toggle('has-urgent', Boolean(urgent));
         // เปิดเคสแล้ว (ยังไม่ส่งบิล) → GA เลือกสถานะแจ้งกลับให้พนักงาน
         const recent = state.records.filter(r => r.type !== 'medical' && r.case_id && !['billed', 'deleted', 'waiting', 'insurance', 'refunded', 'done'].includes(r.status)).slice(0, 15);
@@ -191,21 +271,8 @@
                     <input type="text" class="intake-notice-text" data-notice-text="${r.id}" maxlength="300" placeholder="พิมพ์ข้อความที่จะแจ้งพนักงาน" hidden>
                     <button type="button" class="intake-take" data-notice-send="${r.id}">แจ้ง</button>
                     <button type="button" class="intake-end" data-step="${r.id}" data-step-to="${isAnnual(r) ? 'insurance' : 'waiting'}" title="${isAnnual(r) ? 'จบงานนี้ — ส่งเบิกประกันแล้ว' : 'แจ้งพนักงานแล้ว ซ่อนไว้ — กลับมาแสดงเมื่อพนักงานส่งบิลค่ารักษา'}">สิ้นสุด</button></td>
-            </tr>`).join('')}</tbody></table>` : '')
-            + (bills.length ? `<div class="intake-sub is-bill">🧾 ส่งบิลค่ารักษาแล้ว — บันทึกยอดลงเคส แล้วกด "ปิดเคสแล้ว"</div>
-            <table class="intake-table"><thead><tr><th>พนักงาน</th><th>เคส</th><th>ประเภทการรักษา</th><th>วันที่</th><th>โรงพยาบาล</th><th class="num">ยอด (฿)</th><th>รับเงิน</th><th>เอกสาร</th><th></th></tr></thead><tbody>
-            ${bills.map(r => `<tr>
-                <td><b>${esc(r.fullname)}</b><small>${esc(r.company || '')} · ${esc(r.insurance_code || r.employee_id || '')}</small></td>
-                <td class="nowrap">#${esc(r.case_id)}</td>
-                <td>${esc(val(r, 'treat_type') || '-')}</td>
-                <td class="nowrap">${esc(thDate(val(r, 'treat_date')))}</td>
-                <td class="clip">${esc(val(r, 'hospital') || '-')}</td>
-                <td class="num">${esc(money(val(r, 'amount')))}</td>
-                <td class="nowrap">${esc(val(r, 'pay') || '-')}${val(r, 'refund_account_no') ? `<small>${esc(val(r, 'refund_bank'))} ${esc(val(r, 'refund_account_no'))}</small>` : ''}</td>
-                <td>${r.files.length ? `<button type="button" class="intake-docbtn" data-intake-docs="${r.id}">📎 ${r.files.length}</button>` : '-'}</td>
-                <td><button type="button" class="intake-take" data-step="${r.id}" data-step-to="insurance" title="บันทึกยอดลงเคสในประวัติการรักษาแล้ว — ซ่อนจากรายการ (พนักงานเห็น 'รอประกันตรวจสอบและโอนเงินคืน')">ปิดเคสแล้ว</button></td>
-            </tr>
-            <tr class="intake-docrow" data-docrow="${r.id}" hidden><td colspan="9"><div class="intake-files">${r.files.map(x => `<button type="button" data-intake-file="${r.id}/${x.n}" data-mime="${esc(x.mime)}">${esc(x.field_label)} ${x.index}</button>`).join('')}</div></td></tr>`).join('')}</tbody></table>` : '');
+            </tr>`).join('')}</tbody></table>` : '');
+        renderBillBoard(bills);
         if (urgent && !state.open) toggle(true);
     }
     function toggle(force) {
@@ -345,18 +412,7 @@
             return;
         }
         const stepBtn = event.target.closest('[data-step]');
-        if (stepBtn) {
-            const r = state.records.find(x => x.id === Number(stepBtn.dataset.step));
-            const msg = stepBtn.dataset.stepTo === 'waiting'
-                ? `สิ้นสุดการแจ้งของ ${r?.fullname || ''} (เคส #${r?.case_id || '-'})?\n\nเรื่องนี้จะหายจากรายการ และกลับมาที่ "ส่งบิลค่ารักษาแล้ว" เมื่อพนักงานอัปโหลดบิลค่ารักษา`
-                : `ยืนยัน${r?.type === 'medical' ? 'บันทึกบิลลงเคสแล้ว' : 'จบงาน'}ของ ${r?.fullname || ''} (เคส #${r?.case_id || '-'})?\n\nพนักงานจะเห็นสถานะ "รอประกันตรวจสอบและโอนเงินคืน"`;
-            if (!confirm(msg)) return;
-            stepBtn.disabled = true;
-            window.authFetch(`${API()}/records/${stepBtn.dataset.step}/step`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: stepBtn.dataset.stepTo }) })
-                .then(res => res.json().then(d => { if (!res.ok || d.success === false) throw new Error(d.message || 'บันทึกไม่สำเร็จ'); }))
-                .then(load).catch(error => { alert(error.message); stepBtn.disabled = false; });
-            return;
-        }
+        if (stepBtn) return runStep(stepBtn);
         const notice = event.target.closest('[data-notice-send]');
         if (notice) return sendNotice(notice.dataset.noticeSend, notice);
         const docs = event.target.closest('[data-intake-docs]');
