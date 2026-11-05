@@ -280,7 +280,7 @@ function renderHistoryTable(historyData) {
                 <td class="text-center" data-label="เวลาและวันที่บันทึกข้อมูล" style="font-size:12px;">${event.autoDateTime || '-'}</td>
                 <td class="text-center" data-label="แอดมินที่บันทึกข้อมูล" style="font-size:12px;">${event.adminName || '-'}</td>
                 <td class="text-center" style="background:#fff;">
-                    ${window.hasPermission?.('EditTreatment') === true ? `<button type="button" class="btn-edit-minimal" data-permission="EditTreatment" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${window.btoa(unescape(encodeURIComponent(JSON.stringify(event))))}')))); populateDataToForm(decodedData, event.currentTarget);">✏️ แก้ไข</button>` : ''}
+                    ${window.hasPermission?.('EditTreatment') === true ? `<button type="button" class="btn-edit-minimal" data-permission="EditTreatment" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${window.btoa(unescape(encodeURIComponent(JSON.stringify(event))))}')))); populateDataToForm(decodedData, event.currentTarget);">✏️ แก้ไข</button><button type="button" class="btn-edit-full" data-permission="EditTreatment" title="แก้ไขทุกรายละเอียดของรายการนี้ (วันเวลา สถานะ อาการ สถานพยาบาล ยอดวงเงินทุกช่อง ผลการรักษา เอกสาร หมายเหตุ)" onclick="event.stopPropagation(); window.openFullEdit(this);">📝 แก้ไขทุกรายละเอียด</button>` : ''}
                     ${window.hasPermission?.('DeleteTreatment') === true ? `<button type="button" data-permission="DeleteTreatment" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(${event.targetRowNumber}, '${caseId}')">🗑️ ลบ</button>` : ''}
                 </td>
             `;
@@ -779,7 +779,7 @@ window.injectNewRowToTableRealtime = function (payloadData) {
         <td class="text-center" data-label="เวลาและวันที่บันทึกข้อมูล" style="font-size:12px;">${mockEventItem.autoDateTime}</td>
         <td class="text-center" data-label="แอดมินที่บันทึกข้อมูล" style="font-size:12px;">${mockEventItem.adminName}</td>
         <td class="text-center" style="background:#fff; white-space: nowrap;">
-            ${window.hasPermission?.('EditTreatment') === true ? `<button type="button" class="btn-edit-minimal" data-permission="EditTreatment" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateDataToForm(decodedData, event.currentTarget);">✏️ แก้ไข</button>` : ''}
+            ${window.hasPermission?.('EditTreatment') === true ? `<button type="button" class="btn-edit-minimal" data-permission="EditTreatment" onclick="event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateDataToForm(decodedData, event.currentTarget);">✏️ แก้ไข</button><button type="button" class="btn-edit-full" data-permission="EditTreatment" title="แก้ไขทุกรายละเอียดของรายการนี้ (วันเวลา สถานะ อาการ สถานพยาบาล ยอดวงเงินทุกช่อง ผลการรักษา เอกสาร หมายเหตุ)" onclick="event.stopPropagation(); window.openFullEdit(this);">📝 แก้ไขทุกรายละเอียด</button>` : ''}
             ${window.hasPermission?.('DeleteTreatment') === true ? `<button type="button" data-permission="DeleteTreatment" style="padding: 2px 8px; background: transparent; border: 1px solid #dc3545; color: #dc3545; border-radius: 4px; font-size: 11px; cursor: pointer;" onclick="event.stopPropagation(); executeDeleteRow(${targetRowNo}, '${caseId}')">🗑️ ลบ</button>` : ''}
         </td>
     `;
@@ -1640,6 +1640,32 @@ window.executeFormUpdate = async function () {
 
 //window.openEditModal = function (eventItem, domIndex) {
 //#regionmodalOutcomeForm
+window.openFullEdit = function (button) {
+    const source = button.parentElement.querySelector('.btn-edit-minimal');
+    const m = /atob\('([^']+)'\)/.exec(source?.getAttribute('onclick') || '');
+    if (!m) return alert('เปิดข้อมูลรายการนี้ไม่ได้');
+    window.openFullEditItem(JSON.parse(decodeURIComponent(escape(window.atob(m[1])))), button.closest('tr')?.rowIndex ?? -1);
+};
+window.openFullEditItem = function (item, rowIndex) {
+    window.__fullEditItem = item;
+    window.openEditModal(item, rowIndex);
+    // ช่องเลือกสถานะ (ป๊อปอัปเดิมไม่มี) — ใช้ตัวเลือกเดียวกับหน้าอัปเดตเคส
+    let status = document.getElementById('mdStatusSelect');
+    if (!status) {
+        const anchor = document.getElementById('mdSymptomsInput');
+        const wrap = document.createElement('div');
+        wrap.className = 'md-status-row';
+        wrap.innerHTML = '<label for="mdStatusSelect">ขั้นตอนการรักษา (สถานะ)</label><select id="mdStatusSelect"></select>';
+        (anchor?.closest('.form-group, div') || anchor)?.before(wrap);
+        status = document.getElementById('mdStatusSelect');
+    }
+    const options = [...(document.getElementById('ocStatusSelect')?.options || [])].map(o => o.value).filter(v => v && v !== 'อื่นๆ');
+    const current = String(item.statusText || '').trim();
+    if (current && !options.includes(current)) options.unshift(current);
+    status.innerHTML = options.map(v => `<option value="${v.replace(/"/g, '&quot;')}">${v.replace(/</g, '&lt;')}</option>`).join('');
+    status.value = current || options[0] || '';
+};
+
 // 🎯 จัดการโหมดแก้ไขป๊อปอัป Modal (กล่องเหลืองทอง)
 window.openEditModal = function (eventItem, domIndex) {
     renderEditEvidenceEditor(eventItem);
@@ -1732,14 +1758,15 @@ function initHistoryModalEvents() {
                     autoDateTime: document.getElementById('headerDateTimeValue').innerText, 
                     adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin', 
                     treatmentDateTime: `${document.getElementById('mdManualDate').value} ${document.getElementById('mdManualTime').value}`.trim() || '-',
-                    company: document.getElementById('hiddenCompany').value || 'CALL 365',
-                    workLocation: document.getElementById('hiddenWorkLocation').value || '-',
+                    company: window.__fullEditItem?.company || document.getElementById('hiddenCompany').value || 'CALL 365',
+                    workLocation: window.__fullEditItem?.workLocation || document.getElementById('hiddenWorkLocation').value || '-',
                     hospital: document.getElementById('mdHospitalSelect').value,
                     symptoms: symptoms,
-                    insuranceId: document.getElementById('hiddenInsuranceId').value || '-',
-                    size: document.getElementById('hiddenSize').value || 'M',
-                    employeeName: document.getElementById('hiddenEmpName').value || '-',
+                    insuranceId: window.__fullEditItem?.insuranceId || document.getElementById('hiddenInsuranceId').value || '-',
+                    size: window.__fullEditItem?.size || document.getElementById('hiddenSize').value || 'M',
+                    employeeName: window.__fullEditItem?.employeeName || document.getElementById('hiddenEmpName').value || '-',
                     statusText:
+                        document.getElementById('mdStatusSelect')?.value ||
                         document.getElementById('mdEvidenceEditor')
                             ?.dataset.originalStatus || '-',
                     
@@ -2907,6 +2934,13 @@ function createHistoryActionCell(item) {
         );
 
         actionCell.appendChild(editButton);
+
+        const fullButton = document.createElement('button');
+        fullButton.type = 'button';
+        fullButton.textContent = '📝 แก้ไขทุกรายละเอียด';
+        fullButton.className = 'btn-edit-full';
+        fullButton.addEventListener('click', (event) => { event.stopPropagation(); window.openFullEditItem(item, event.currentTarget.closest('tr')?.rowIndex ?? -1); });
+        actionCell.appendChild(fullButton);
     }
 
     if (window.hasPermission('DeleteTreatment')) {

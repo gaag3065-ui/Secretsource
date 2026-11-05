@@ -3114,3 +3114,9 @@ tr.has-bill { outline: 2px solid #fb923c; outline-offset: -2px; }
 .intake-cancel .ib-msg { color: #b91c1c; }
 .intake-cancel-go { padding: 8px 16px; border: 0; border-radius: 8px; background: #b91c1c; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
 .intake-alert .intake-cancel button { margin-top: 0; }
+/* ปุ่มแก้ไขทุกรายละเอียด (ประวัติการรักษา) */
+.btn-edit-full { margin-left: 4px; padding: 2px 8px; border: 1px solid #6366f1; border-radius: 4px; background: #eef2ff; color: #3730a3; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.btn-edit-full:hover { background: #e0e7ff; }
+.md-status-row { display: grid; gap: 4px; margin: 0 0 10px; }
+.md-status-row label { font-weight: 700; font-size: 13px; }
+.md-status-row select { padding: 8px 10px; border: 1px solid #d0d5dd; border-radius: 8px; font: inherit; }
