@@ -3092,3 +3092,12 @@ tr.has-bill { outline: 2px solid #fb923c; outline-offset: -2px; }
 .annual-actions select { margin-left: 6px; padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 6px; font: inherit; font-size: 12.5px; }
 .annual-actions label { display: inline-flex; align-items: center; font-weight: 600; white-space: nowrap; }
 .annual-or { color: #9ca3af; }
+/* กำลังโหลด: แถบลอยกลางบน + การ์ดที่กด */
+.intake-loading { position: fixed; top: 70px; left: 50%; z-index: 2000; display: flex; align-items: center; gap: 10px; padding: 12px 22px; border-radius: 999px; background: #1e293b; color: #fff; font-size: 14px; font-weight: 700; box-shadow: 0 14px 34px rgba(15, 23, 42, .35); transform: translateX(-50%); animation: intake-drop .25s ease-out; }
+.intake-loading[hidden] { display: none; }
+@keyframes intake-drop { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.intake-spin { width: 18px; height: 18px; border: 3px solid rgba(255, 255, 255, .3); border-top-color: #fff; border-radius: 50%; animation: intake-rot .8s linear infinite; }
+@keyframes intake-rot { to { transform: rotate(360deg); } }
+.bill-item.is-loading { pointer-events: none; opacity: .75; }
+.bill-item.is-loading::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .65), transparent) no-repeat; background-size: 50% 100%; animation: intake-shimmer 1s linear infinite; }
+@keyframes intake-shimmer { from { background-position: -50% 0; } to { background-position: 150% 0; } }

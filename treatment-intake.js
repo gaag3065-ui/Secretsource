@@ -205,18 +205,33 @@
             </div>
             <p class="ib-msg" data-annual-msg></p></div>`;
     }
+    function busy(el, text) {
+        let bar = document.getElementById('intakeLoading');
+        if (!bar) { bar = document.createElement('div'); bar.id = 'intakeLoading'; bar.className = 'intake-loading'; document.body.append(bar); }
+        bar.innerHTML = `<span class="intake-spin" aria-hidden="true"></span>${esc(text)}`;
+        bar.hidden = false;
+        el?.classList.add('is-loading');
+        return () => { bar.hidden = true; el?.classList.remove('is-loading'); document.querySelectorAll('.bill-item.is-loading').forEach(n => n.classList.remove('is-loading')); };
+    }
+    async function loadHistoryFor(code) {
+        const input = document.getElementById('caseSearchInput');
+        const body = document.getElementById('tableBodyResult');
+        if (!input || !body || typeof window.performCaseSearch !== 'function') return;
+        body.innerHTML = '';   // ล้างประวัติของคนก่อน — ไม่ให้เลขเคสเก่าค้างในช่องเลือก
+        input.value = code;
+        window.performCaseSearch();
+        await waitFor(() => body.children.length, 15000);
+        await wait(150);
+    }
     async function openAnnual(id) {
         const r = annualItems.find(x => x.id === Number(id));
         if (!r) return;
-        annualPicked = r.id;
+        annualPicked = null;
         renderAnnualBoard(annualItems);
-        const input = document.getElementById('caseSearchInput');
-        if (input && typeof window.performCaseSearch === 'function') {
-            input.value = r.insurance_code || r.employee_id;
-            window.performCaseSearch();
-            await waitFor(() => document.querySelector('#tableBodyResult .txt-case-id'), 8000);
-        }
-        renderAnnualBoard(annualItems);   // ใส่รายการเคสของคนนี้ในช่องเลือก
+        const done = busy(document.querySelector(`[data-annual-open="${r.id}"]`), `กำลังโหลดประวัติการรักษาของ ${r.fullname}…`);
+        try { await loadHistoryFor(r.insurance_code || r.employee_id); } finally { done(); }
+        annualPicked = r.id;
+        renderAnnualBoard(annualItems);   // ใส่รายการเคสของคนนี้ในช่องเลือก (หลังโหลดเสร็จเท่านั้น)
         document.getElementById('annualBoard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     async function attachAnnual(id, button) {
@@ -241,11 +256,15 @@
     document.addEventListener('click', event => {
         const t = event.target;
         const boardTake = t.closest('[data-board-take]');
-        if (boardTake) return take(boardTake.dataset.boardTake);
+        if (boardTake) {
+            const r = state.records.find(x => x.id === Number(boardTake.dataset.boardTake));
+            const done = busy(boardTake, `กำลังค้นหา ${r?.fullname || 'พนักงาน'} และกรอกฟอร์มเปิดเคส…`);
+            return take(boardTake.dataset.boardTake).finally(done);
+        }
         const ao = t.closest('[data-annual-open]');
         if (ao) return openAnnual(ao.dataset.annualOpen);
         const an = t.closest('[data-annual-new]');
-        if (an) return take(an.dataset.annualNew);
+        if (an) { const done = busy(an, 'กำลังกรอกฟอร์มเปิดเคสจากข้อมูลตรวจสุขภาพ…'); return take(an.dataset.annualNew).finally(done); }
         const aa = t.closest('[data-annual-attach]');
         if (aa) return attachAnnual(aa.dataset.annualAttach, aa);
         const af = t.closest('[data-annual-file]');
@@ -278,11 +297,10 @@
     }
     async function openBillHistory(key) {
         const bills = lastBills.filter(r => keyOf(r) === key);
-        const input = document.getElementById('caseSearchInput');
-        if (!bills.length || !input || typeof window.performCaseSearch !== 'function') return;
-        input.value = bills[0].insurance_code || bills[0].employee_id;
-        window.performCaseSearch();
-        const card = await waitFor(() => [...document.querySelectorAll('#tableBodyResult .txt-case-id')].find(c => bills.some(b => c.textContent.trim() === String(b.case_id))), 10000);
+        if (!bills.length) return;
+        const done = busy(document.querySelector(`[data-bill-open="${key}"]`), `กำลังโหลดประวัติการรักษาของ ${bills[0].fullname}…`);
+        try { await loadHistoryFor(bills[0].insurance_code || bills[0].employee_id); } finally { done(); }
+        const card = [...document.querySelectorAll('#tableBodyResult .txt-case-id')].find(c => bills.some(b => c.textContent.trim() === String(b.case_id)));
         markCards();
         (card?.closest('tr') || document.getElementById('billBoard'))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
