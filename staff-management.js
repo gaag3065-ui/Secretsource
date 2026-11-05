@@ -587,8 +587,24 @@
     function syncBuilder(form) {
         // เปลี่ยนกล่อง → ตั้งประเภทงานตามกล่องนั้น (กล่องใหม่ = ส่วนบุคคล)
         if (form.box && form.dataset.scopeBox !== form.box.value) {
+            const changedByUser = form.dataset.scopeBox !== undefined && !form.dataset.filling;
             form.dataset.scopeBox = form.box.value;
             const box = (state.data.boxes || []).find(b => b.key === form.box.value);
+            // เลือกกล่องแล้ว → ใช้หัวเรื่อง (และการตั้งค่างาน) ตามงานแรกที่สร้างไว้ในกล่องนี้ · ยังไม่เคยมีงาน = ใช้ชื่อกล่อง
+            // ไม่ทับหัวเรื่องที่พิมพ์เอง (ทับได้เฉพาะช่องว่าง หรือค่าที่ระบบใส่ให้ก่อนหน้า)
+            if (changedByUser && box && form.box.value !== '__new' && (!form.title.value.trim() || form.title.value === form.dataset.autoTitle)) {
+                const first = (state.data.tasks || []).filter(t => t.box === box.key && !['deleted', 'cancelled'].includes(t.status)).sort((a, b) => a.id - b.id)[0];
+                const title = first ? first.title : box.title;
+                form.dataset.autoTitle = title;
+                if (first) {
+                    form.dataset.filling = '1';
+                    fillForm(form, { title, detail: first.detail || '', box: box.key, new_box_title: '', priority: first.priority || 'ปกติ', due_date: first.due_date || '',
+                        section: first.section || '', kind: first.kind || 'notice', fields: first.fields || [], uploads: first.uploads || [] });
+                    delete form.dataset.filling;
+                    form.dataset.scopeBox = box.key;
+                } else form.title.value = title;
+                syncTarget(form);
+            }
             const scope = form.box.value === '__new' ? 'personal' : box?.scope || 'main';
             const radio = form.querySelector(`[name=scope][value="${scope}"]`);
             if (radio) radio.checked = true;
