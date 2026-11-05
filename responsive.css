@@ -3122,3 +3122,10 @@ tr.has-bill { outline: 2px solid #fb923c; outline-offset: -2px; }
 .md-status-row select { padding: 8px 10px; border: 1px solid #d0d5dd; border-radius: 8px; font: inherit; }
 .edit-evidence-extra { display: grid; gap: 4px; align-content: start; padding: 8px; border: 1px dashed #cbd5e1; border-radius: 10px; color: #475569; font-size: 12px; font-weight: 700; text-decoration: none; text-align: center; }
 .edit-evidence-extra img { width: 100%; height: 90px; object-fit: cover; border-radius: 6px; background: #f1f5f9; }
+/* เลือกสถานะตอนลงบิลเข้าเคส */
+.bill-status-pop { flex-basis: 100%; max-width: 680px; box-sizing: border-box; display: grid; gap: 6px; margin-top: 8px; padding: 10px 12px; border: 1px solid #fdba74; border-radius: 10px; background: #fff; }
+.bill-status-pop label { font-weight: 700; font-size: 13px; color: #9a3412; }
+.bill-status-pop select { padding: 8px 10px; border: 1px solid #d0d5dd; border-radius: 8px; font: inherit; }
+.bill-status-pop small { color: #64748b; font-size: 12px; }
+.bill-status-pop span { display: flex; gap: 8px; justify-content: flex-end; }
+.bill-status-cancel { padding: 6px 14px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; cursor: pointer; font: inherit; }

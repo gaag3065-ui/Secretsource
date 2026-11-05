@@ -332,17 +332,44 @@
             flag.className = 'bill-flag';
             flag.innerHTML = `<span class="bill-flag-dot">1</span><b>🧾 พนักงานส่งบิลแล้ว</b> เลขที่ ${r.id} · ${esc(val(r, 'treat_type') || '-')} · ยอด ${esc(money(val(r, 'amount')))} ฿ · ${esc(val(r, 'pay') || '')}
                 <span class="bill-flag-files">${r.files.map(x => `<button type="button" data-intake-file="${r.id}/${x.n}" data-mime="${esc(x.mime)}">${esc(x.field_label)} ${x.index}</button>`).join('')}</span>
-                <button type="button" class="intake-take" data-step="${r.id}" data-step-to="insurance">✓ ปิดเคสแล้ว</button>`;
+                <button type="button" class="intake-take" data-bill-status="${r.id}">✓ บันทึกลงเคส / เลือกสถานะ ▾</button>`;
             flag.addEventListener('click', event => {
                 event.stopPropagation();   // ไม่ให้การ์ดพับ/กาง
                 const file = event.target.closest('[data-intake-file]');
                 if (file) return openFile(file.dataset.intakeFile, file.dataset.mime);
-                const step = event.target.closest('[data-step]');
-                if (step) runStep(step);
+                const pick = event.target.closest('[data-bill-status]');
+                if (pick) return openBillStatus(flag, r);
+                const go = event.target.closest('[data-bill-go]');
+                if (go) return saveBillStatus(flag, r, go);
+                if (event.target.closest('[data-bill-cancel]')) flag.querySelector('.bill-status-pop')?.remove();
             });
             host.append(flag);
             host.closest('tr')?.classList.add('has-bill');
         });
+    }
+    // เลือกสถานะของรายการที่จะเพิ่มในเคส (ค่าเริ่มต้น = ปิดเคส) · รูปจากพนักงานลงเคสด้วยชื่อมาตรฐานเหมือนเดิม
+    function statusOptions() {
+        const list = [...(document.getElementById('ocStatusSelect')?.options || [])].map(o => o.value).filter(v => v && v !== 'อื่นๆ');
+        const close = 'ปิดเคส เอกสารและบัญชีครบถ้วน';
+        return list.includes(close) ? list : [...list, close];
+    }
+    function openBillStatus(flag, r) {
+        flag.querySelector('.bill-status-pop')?.remove();
+        const pop = document.createElement('div');
+        pop.className = 'bill-status-pop';
+        pop.innerHTML = `<label>สถานะของเคส #${esc(r.case_id)} หลังลงบิลนี้</label>
+            <select data-bill-select>${statusOptions().map(v => `<option value="${esc(v)}"${v === 'ปิดเคส เอกสารและบัญชีครบถ้วน' ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select>
+            <small>ระบบคัดลอกใบเสร็จ / ใบรับรองแพทย์ / เอกสารอื่นที่พนักงานส่ง เข้าเคสด้วยชื่อมาตรฐาน และเพิ่มรายการตามสถานะที่เลือก (ยอดวงเงินคงตามเดิม) · พนักงานเห็นสถานะ "รอประกันตรวจสอบและโอนเงินคืน"</small>
+            <span><button type="button" class="intake-take" data-bill-go>บันทึก</button><button type="button" class="bill-status-cancel" data-bill-cancel>ยกเลิก</button></span>`;
+        flag.append(pop);
+    }
+    function saveBillStatus(flag, r, button) {
+        const statusText = flag.querySelector('[data-bill-select]')?.value || '';
+        button.disabled = true; button.textContent = '⏳ กำลังบันทึก…';
+        window.authFetch(`${API()}/records/${r.id}/step`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: 'insurance', status_text: statusText }) })
+            .then(res => res.json().then(d => { if (!res.ok || d.success === false) throw new Error(d.message || 'บันทึกไม่สำเร็จ'); return d; }))
+            .then(d => { alert(`บันทึกเข้าเคส #${r.case_id} แล้ว · สถานะ "${statusText}" (เอกสาร ${d.copied || 0} ไฟล์)\n\nค้นหาเคสอีกครั้งเพื่อดูรายการใหม่`); load(); })
+            .catch(error => { alert(error.message); button.disabled = false; button.textContent = 'บันทึก'; });
     }
     async function openBillHistory(key) {
         const bills = lastBills.filter(r => keyOf(r) === key);
