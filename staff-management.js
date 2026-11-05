@@ -145,6 +145,7 @@
             return `<button type="button" class="sm-box${total ? '' : ' is-empty'}${state.box === b.key ? ' is-on' : ''}" data-box="${esc(b.key)}"
                 title="${esc(titles.length ? `งาน: ${titles.join(' · ')}` : 'ยังไม่มีงานในกล่องนี้')}">
                 <span class="sm-box-count${waiting ? ' is-wait' : ''}" aria-label="ได้รับงาน/ส่งเอกสาร ${total} คน">${total}</span>
+                ${b.key !== 'quests' ? `<span class="sm-box-edit" data-edit-tpl="${esc(b.key)}" role="button" title="แก้ไขแม่พิมพ์ของกล่อง (หัวเรื่อง รายละเอียด ช่องกรอก/อัปโหลด)">✏️</span>` : ''}
                 ${b.key !== 'quests' && can('deleteWork') ? `<span class="sm-box-del" data-del-box="${esc(b.key)}" role="button" title="ลบกล่องงานนี้ (ลบงาน เอกสาร และไฟล์ที่เกี่ยวข้องทั้งหมด)">🗑</span>` : ''}
                 <span class="sm-box-icon">${esc(b.icon || '📌')}</span>
                 <b>${esc(b.title)}</b>
@@ -281,21 +282,22 @@
     function taskFields(boxKey = 'quests') {
         const opt = list => list.map(v => `<option>${esc(v)}</option>`).join('');
         return `
-                        <label class="sm-wide">หัวเรื่องงาน <span class="sm-req">*</span><input name="title" maxlength="150" required placeholder="เช่น ส่งเอกสารตรวจสุขภาพประจำปี"></label>
+                        <label class="sm-wide sm-f-title">หัวเรื่องงาน <span class="sm-req">*</span><input name="title" maxlength="150" required placeholder="เช่น ส่งเอกสารตรวจสุขภาพประจำปี"></label>
                         <div class="sm-wide sm-kinds">
                             <span class="sm-kinds-title">ใครเห็นกล่องงานนี้</span>
                             <label><input type="radio" name="scope" value="main"> งานหลัก (ทุกคนเห็นในเมนู)</label>
                             <label><input type="radio" name="scope" value="personal"> งานส่วนบุคคล (เฉพาะคนที่เลือก · แถบ &quot;รายการเฉพาะคุณ&quot;)</label>
                         </div>
-                        <label class="sm-wide">รายละเอียด<textarea name="detail" maxlength="3000" placeholder="สิ่งที่ต้องทำ ขั้นตอน เอกสารที่ต้องใช้ ผู้ประสานงาน"></textarea></label>
+                        <label class="sm-wide sm-f-detail">รายละเอียด<textarea name="detail" maxlength="3000" placeholder="สิ่งที่ต้องทำ ขั้นตอน เอกสารที่ต้องใช้ ผู้ประสานงาน"></textarea></label>
                         <label class="sm-wide">ลงกล่องงาน (หน้าระบบจัดการองค์กร)<select name="box">
                             ${(state.data.boxes || []).map(b => `<option value="${esc(b.key)}" ${b.key === boxKey ? 'selected' : ''}>${esc(`${b.icon} ${b.title}`)}</option>`).join('')}
                             <option value="__new">＋ สร้างกล่องใหม่…</option></select></label>
+                        <div class="sm-wide sm-tpl-summary" data-tpl-summary hidden></div>
                         <div class="sm-wide sm-boxform" data-boxform></div>
                         <label class="sm-newbox sm-wide" hidden>ชื่อกล่องใหม่ <span class="sm-req">*</span><input name="new_box_title" maxlength="80" placeholder="เช่น เอกสารเดินทางไป SL"></label>
                         <label>ความสำคัญ<select name="priority">${opt(state.data.priorities)}</select></label>
                         <label>กำหนดเสร็จ<input type="date" name="due_date"></label>
-                        <div class="sm-wide sm-kinds">
+                        <div class="sm-wide sm-kinds sm-f-kind">
                             <span class="sm-kinds-title" data-kinds-title>ประเภทงาน</span>
                             <label><input type="radio" name="kind" value="notice" checked> แจ้งให้รับทราบอย่างเดียว</label>
                             <label><input type="radio" name="kind" value="info"> งานเก็บข้อมูล (ให้กรอกข้อมูล)</label>
@@ -584,27 +586,82 @@
         row.querySelector('[data-fe=max]').hidden = type.value !== 'files';
         row.querySelector('[data-fe=options]').hidden = !/select|radio/.test(type.value);
     });
+    // ---------------------------------------------------------------- แม่พิมพ์กล่องงาน
+    function tplOf(box) {
+        if (!box || box.key === '__new') return null;
+        if (box.template?.title) return { ...box.template, saved: true };
+        if (box.key === 'quests') return null;
+        const first = (state.data.tasks || []).filter(t => t.box === box.key && !['deleted', 'cancelled'].includes(t.status)).sort((a, b) => a.id - b.id)[0];
+        return first ? { title: first.title, detail: first.detail || '', priority: first.priority || 'ปกติ', kind: first.kind || 'notice',
+            fields: (first.fields || []).map(x => x.label), uploads: (first.uploads || []).map(u => ({ label: u.label, type: u.type })), section: first.section || '', saved: false } : null;
+    }
+    const KIND_TEXT = { notice: 'แจ้งให้รับทราบ', info: 'เก็บข้อมูล', info_upload: 'เก็บข้อมูล + อัปโหลด' };
+    function applyTemplate(form, box) {
+        const tpl = tplOf(box);
+        const sum = form.querySelector('[data-tpl-summary]');
+        form.classList.toggle('is-tpl', Boolean(tpl));
+        if (sum) sum.hidden = !tpl;
+        if (!tpl) return;
+        form.dataset.filling = '1';
+        fillForm(form, { title: tpl.title, detail: tpl.detail, box: box.key, new_box_title: '', priority: tpl.priority || 'ปกติ', due_date: form.due_date.value,
+            section: tpl.section || '', kind: tpl.kind || 'notice', fields: (tpl.fields || []).map(label => ({ label })), uploads: tpl.uploads || [],
+            target: form.querySelector('[name=target]:checked')?.value });
+        delete form.dataset.filling;
+        form.dataset.scopeBox = box.key;
+        sum.innerHTML = `<div><b>📋 ใช้แม่พิมพ์ของกล่องนี้</b> — ทุกคนได้งานเหมือนกัน<small>${tpl.saved ? 'แม่พิมพ์ที่บันทึกไว้' : 'จากงานแรกในกล่อง'}</small></div>
+            <dl><dt>หัวเรื่อง</dt><dd>${esc(tpl.title)}</dd>
+                ${tpl.detail ? `<dt>รายละเอียด</dt><dd>${esc(tpl.detail)}</dd>` : ''}
+                <dt>ประเภทงาน</dt><dd>${esc(KIND_TEXT[tpl.kind] || '-')}${(tpl.fields || []).length ? ` · ช่องกรอก ${tpl.fields.length}: ${esc(tpl.fields.join(', '))}` : ''}${(tpl.uploads || []).length ? ` · อัปโหลด ${tpl.uploads.length}: ${esc(tpl.uploads.map(u => u.label).join(', '))}` : ''}</dd></dl>
+            <button type="button" class="fa-btn fa-btn-ghost" data-edit-tpl="${esc(box.key)}">✏️ แก้ไขแม่พิมพ์ของกล่อง</button>`;
+        syncTarget(form);
+    }
+    function openTplEditor(key) {
+        const box = (state.data.boxes || []).find(b => b.key === key);
+        if (!box) return;
+        const tpl = tplOf(box);
+        state.mode = 'template';
+        state.current = null;
+        const open = (state.data.tasks || []).filter(t => t.box === key && !t.submitted_at && !['deleted', 'cancelled', 'done', 'submitted'].includes(t.status)).length;
+        $('smDetail').innerHTML = `
+            <header class="fa-detail-head">
+                <div><h2>✏️ แม่พิมพ์กล่อง · ${esc(box.icon || '📌')} ${esc(box.title)}</h2><p>ตั้งครั้งเดียว — มอบหมายกล่องนี้ให้ใคร ทุกคนได้หัวเรื่อง รายละเอียด และช่องกรอก/อัปโหลดเหมือนกัน</p></div>
+                <button type="button" class="fa-close" data-close aria-label="ปิด">×</button>
+            </header>
+            <div class="fa-detail-body"><section class="sm-section">
+                <form class="sm-form sm-tpl-form" id="smTplForm" data-key="${esc(key)}">${taskFields(key)}
+                    <div class="sm-form-foot">
+                        <label><input type="checkbox" name="apply_existing" ${open ? 'checked' : ''}> ใช้กับงานเดิมในกล่องนี้ที่พนักงานยังไม่ส่งด้วย (${open} คน)</label>
+                        <button type="submit" class="fa-btn fa-btn-primary">บันทึกแม่พิมพ์</button>
+                    </div>
+                </form></section></div>`;
+        const form = $('smTplForm');
+        if (tpl) { form.dataset.filling = '1'; fillForm(form, { title: tpl.title, detail: tpl.detail, box: key, new_box_title: '', priority: tpl.priority || 'ปกติ', due_date: '', section: tpl.section || '', kind: tpl.kind || 'notice', fields: (tpl.fields || []).map(label => ({ label })), uploads: tpl.uploads || [] }); delete form.dataset.filling; }
+        else { form.title.value = box.title; syncBuilder(form); }
+        if (!$('smDialog').open) $('smDialog').showModal();
+    }
+    async function saveTemplate(form) {
+        const d = readForm(form);
+        const button = form.querySelector('[type=submit]');
+        button.disabled = true;
+        try {
+            const result = await request(`/boxes/${encodeURIComponent(form.dataset.key)}/template`, { method: 'PUT', body: JSON.stringify({
+                title: d.title, detail: d.detail, priority: d.priority, kind: d.kind, section: d.section,
+                fields: d.fields.filter(x => x.label.trim()), uploads: d.uploads.filter(x => x.label.trim()), apply_existing: form.apply_existing.checked }) });
+            state.data.boxes = workBoxes(result.boxes);
+            if (result.tasks) state.data.tasks = result.tasks;
+            $('smDialog').close();
+            render();
+            toast(`บันทึกแม่พิมพ์แล้ว${result.updated ? ` · อัปเดตงานเดิม ${result.updated} คน` : ''}`);
+        } catch (error) { toast(error.message, true); } finally { button.disabled = false; }
+    }
     function syncBuilder(form) {
         // เปลี่ยนกล่อง → ตั้งประเภทงานตามกล่องนั้น (กล่องใหม่ = ส่วนบุคคล)
         if (form.box && form.dataset.scopeBox !== form.box.value) {
-            const changedByUser = form.dataset.scopeBox !== undefined && !form.dataset.filling;
+            const changedByUser = !form.dataset.filling && form.id === 'smNewTask';
             form.dataset.scopeBox = form.box.value;
             const box = (state.data.boxes || []).find(b => b.key === form.box.value);
-            // เลือกกล่องแล้ว → ใช้หัวเรื่อง (และการตั้งค่างาน) ตามงานแรกที่สร้างไว้ในกล่องนี้ · ยังไม่เคยมีงาน = ใช้ชื่อกล่อง
-            // ไม่ทับหัวเรื่องที่พิมพ์เอง (ทับได้เฉพาะช่องว่าง หรือค่าที่ระบบใส่ให้ก่อนหน้า)
-            if (changedByUser && box && form.box.value !== '__new' && (!form.title.value.trim() || form.title.value === form.dataset.autoTitle)) {
-                const first = (state.data.tasks || []).filter(t => t.box === box.key && !['deleted', 'cancelled'].includes(t.status)).sort((a, b) => a.id - b.id)[0];
-                const title = first ? first.title : box.title;
-                form.dataset.autoTitle = title;
-                if (first) {
-                    form.dataset.filling = '1';
-                    fillForm(form, { title, detail: first.detail || '', box: box.key, new_box_title: '', priority: first.priority || 'ปกติ', due_date: first.due_date || '',
-                        section: first.section || '', kind: first.kind || 'notice', fields: first.fields || [], uploads: first.uploads || [] });
-                    delete form.dataset.filling;
-                    form.dataset.scopeBox = box.key;
-                } else form.title.value = title;
-                syncTarget(form);
-            }
+            // ฟอร์มมอบหมายงาน: กล่องที่มีแม่พิมพ์ → ล็อกตามแม่พิมพ์ (เลือกแค่คน) · กล่องใหม่/ไม่มีแม่พิมพ์ → กรอกเอง
+            if (changedByUser) applyTemplate(form, box);
             const scope = form.box.value === '__new' ? 'personal' : box?.scope || 'main';
             const radio = form.querySelector(`[name=scope][value="${scope}"]`);
             if (radio) radio.checked = true;
@@ -1228,7 +1285,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         const button = form.querySelector('button[type=submit]');
         button.disabled = true;
         try {
-            const { tasks, boxes, destError, skipped } = await request('/tasks', { method: 'POST', body: JSON.stringify({ ...fd, target: undefined, employee_keys: keys, allow_duplicate: target !== 'missing' }) });
+            const { tasks, boxes, destError, skipped } = await request('/tasks', { method: 'POST', body: JSON.stringify({ ...fd, target: undefined, employee_keys: keys, allow_duplicate: target !== 'missing', use_template: form.classList.contains('is-tpl') && tplOf((state.data.boxes || []).find(b => b.key === fd.box))?.saved === true }) });
             if (destError) alert(destError);
             else if (tasks[0]?.dest) toast(`สร้างชีตเก็บข้อมูลใน "${tasks[0].dest.section_title}" แล้ว`);
             state.data.tasks.push(...tasks);
@@ -1257,6 +1314,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
     $('smDialog').addEventListener('change', event => { if (event.target.closest('#smRecForm') && event.target.name === 'status') syncRecForm(event.target.form); });
     $('smDialog').addEventListener('submit', event => {
         if (event.target.id === 'smNewTask') { event.preventDefault(); createTask(event.target); }
+        if (event.target.id === 'smTplForm') { event.preventDefault(); saveTemplate(event.target); }
         if (event.target.id === 'smRecForm') { event.preventDefault(); saveRecord(event.target); }
     });
     // ปิดหน้าต่าง (ปุ่ม × / Esc) → เก็บข้อมูลที่กรอกไว้ เปิดพนักงานคนเดิมอีกครั้งจะกรอกคืนให้
@@ -1299,10 +1357,12 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
             return renderBroadcastTargets();
         }
     });
-    $('smDialog').addEventListener('change', event => { const form = event.target.closest('#smNewTask'); if (form && event.target.matches('[name=kind], [name=box]')) syncBuilder(form); });
+    $('smDialog').addEventListener('change', event => { const form = event.target.closest('#smNewTask, #smTplForm'); if (form && event.target.matches('[name=kind], [name=box]')) syncBuilder(form); });
     $('smDialog').addEventListener('click', async event => {
         // คลิกพื้นที่ว่างนอกหน้าต่างไม่ปิด (กันข้อมูลที่กรอกหาย) — ปิดด้วยปุ่ม × เท่านั้น
         if (event.target.closest('[data-close]')) return $('smDialog').close();
+        const editTpl = event.target.closest('[data-edit-tpl]');
+        if (editTpl) { event.stopPropagation(); return openTplEditor(editTpl.dataset.editTpl); }
         const template = event.target.closest('[data-template]');
         if (template) return useTemplate(template.dataset.template);
         const add = event.target.closest('[data-add]');
@@ -1381,6 +1441,8 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         }
         const lmApply = event.target.closest('[data-lm-apply]');
         if (lmApply) return applyLineMatch(lmApply);
+        const editTplBox = event.target.closest('[data-edit-tpl]');
+        if (editTplBox && !editTplBox.closest('#smDialog')) { event.stopPropagation(); return openTplEditor(editTplBox.dataset.editTpl); }
         const delBox = event.target.closest('[data-del-box]');
         if (delBox) { event.stopPropagation(); return deleteBox(delBox.dataset.delBox); }
         if (event.target.closest('[data-restore-list]')) return openRestore();
