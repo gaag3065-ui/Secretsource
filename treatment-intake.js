@@ -16,7 +16,7 @@
             <span class="intake-fab-icon" aria-hidden="true">📥</span><span class="intake-fab-badge" id="intakeFabBadge" hidden>0</span></button>
         <div class="intake-panel" role="dialog" aria-label="พนักงานแจ้งเข้ารักษา / ตรวจสุขภาพ">
             <header class="intake-panel-head"><div><b>📥 พนักงานแจ้งเข้ารักษา / ตรวจสุขภาพ</b><span class="intake-count" id="intakeCount">…</span></div>
-                <span class="intake-head-actions"><button type="button" class="intake-bulk-btn" data-bulk-toggle>📢 ส่งข้อความแบบหมู่</button>
+                <span class="intake-head-actions"><button type="button" class="intake-bulk-btn" data-bill-backfill hidden>🧩 ลงรูปบิลเข้าเคสย้อนหลัง</button><button type="button" class="intake-bulk-btn" data-bulk-toggle>📢 ส่งข้อความแบบหมู่</button>
                 <button type="button" class="intake-close" data-intake-toggle aria-label="ปิด">×</button></span></header>
             <div class="intake-bulk" id="intakeBulk" hidden></div>
             <div class="intake-list" id="intakeList"></div>
@@ -114,7 +114,9 @@
         const r = state.records.find(x => x.id === Number(stepBtn.dataset.step));
         const msg = stepBtn.dataset.stepTo === 'waiting'
             ? `สิ้นสุดการแจ้งของ ${r?.fullname || ''} (เคส #${r?.case_id || '-'})?\n\nเรื่องนี้จะหายจากรายการ และกลับมาที่ "พนักงานส่งบิลแล้ว" เมื่อพนักงานอัปโหลดบิลค่ารักษา`
-            : `ยืนยัน${r?.type === 'medical' ? 'บันทึกบิลลงเคสแล้ว (ปิดเคส)' : 'จบงาน'}ของ ${r?.fullname || ''} (เคส #${r?.case_id || '-'})?\n\nพนักงานจะเห็นสถานะ "รอประกันตรวจสอบและโอนเงินคืน"`;
+            : r?.type === 'medical'
+                ? `ปิดเคส #${r?.case_id || '-'} ของ ${r?.fullname || ''}?\n\n• คัดลอกใบเสร็จ / ใบรับรองแพทย์ / เอกสารอื่นที่พนักงานส่ง เข้าโฟลเดอร์เคสด้วยชื่อมาตรฐาน\n• เพิ่มรายการ "ปิดเคส เอกสารและบัญชีครบถ้วน" ในประวัติ (ยอดวงเงินคงตามที่บันทึกไว้ในเคส)\n• พนักงานเห็นสถานะ "รอประกันตรวจสอบและโอนเงินคืน"`
+                : `ยืนยันจบงานของ ${r?.fullname || ''} (เคส #${r?.case_id || '-'})?\n\nพนักงานจะเห็นสถานะ "รอประกันตรวจสอบและโอนเงินคืน"`;
         if (!confirm(msg)) return;
         stepBtn.disabled = true;
         window.authFetch(`${API()}/records/${stepBtn.dataset.step}/step`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: stepBtn.dataset.stepTo }) })
@@ -393,6 +395,7 @@
             const data = await response.json().catch(() => ({}));
             if (!response.ok || data.success === false) { document.getElementById('intakeCount').textContent = response.status === 404 ? 'หลังบ้านยังไม่อัปเดต' : '—'; return; }
             state.records = data.records || [];
+            state.billBackfill = Number(data.bill_backfill || 0);
             render();
             alertUrgent();
         } catch { /* ออฟไลน์ชั่วคราว */ }
@@ -404,6 +407,8 @@
         const billWait = state.records.filter(r => r.type === 'medical' && ['pending', 'rejected', 'approved'].includes(r.status)).length;
         count.textContent = [list.length ? `รอรับเคส ${list.length}` : '', urgent ? `ด่วน ${urgent}` : '', billWait ? `บิลรอปิดเคส ${billWait}` : ''].filter(Boolean).join(' · ') || 'ไม่มีเรื่องค้าง';
         count.className = `intake-count${urgent ? ' is-urgent' : list.length || billWait ? ' is-wait' : ''}`;
+        const backfill = box.querySelector('[data-bill-backfill]');
+        if (backfill) { backfill.hidden = !state.billBackfill; backfill.textContent = `🧩 ลงรูปบิลเข้าเคสย้อนหลัง (${state.billBackfill})`; }
         const fabBadge = document.getElementById('intakeFabBadge');
         fabBadge.textContent = list.length;
         fabBadge.hidden = !list.length;
@@ -568,6 +573,16 @@
     });
     box.addEventListener('click', event => {
         if (event.target.closest('[data-intake-toggle]')) return toggle();
+        const bfill = event.target.closest('[data-bill-backfill]');
+        if (bfill) {
+            if (!confirm(`ลงรูปใบเสร็จ / ใบรับรองแพทย์ของบิลที่ปิดเคสไปแล้ว ${state.billBackfill} รายการ เข้าเคสในประวัติการรักษา?\n\n(คัดลอกไฟล์เข้าโฟลเดอร์เคสด้วยชื่อมาตรฐาน + เพิ่มรายการปิดเคส · ยอดวงเงินคงเดิม)`)) return;
+            bfill.disabled = true; bfill.textContent = '⏳ กำลังลงรูปเข้าเคส…';
+            window.authFetch(`${API()}/bills/backfill`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+                .then(res => res.json().then(d => { if (!res.ok || d.success === false) throw new Error(d.message || 'ไม่สำเร็จ'); return d; }))
+                .then(d => { alert(`ลงรูปเข้าเคสแล้ว ${d.ok} รายการ (${d.copied} ไฟล์)${d.failed?.length ? `\n\nไม่สำเร็จ:\n${d.failed.join('\n')}` : ''}`); load(); })
+                .catch(error => alert(error.message)).finally(() => { bfill.disabled = false; });
+            return;
+        }
         if (event.target.closest('[data-bulk-toggle]')) { const el = document.getElementById('intakeBulk'); el.hidden = !el.hidden; if (!el.hidden) renderBulk(); return; }
         const bf = event.target.closest('[data-bulk-filter]');
         if (bf) { bulk.filter = bf.dataset.bulkFilter; return renderBulk(); }
