@@ -218,10 +218,15 @@
         const body = document.getElementById('tableBodyResult');
         if (!input || !body || typeof window.performCaseSearch !== 'function') return;
         body.innerHTML = '';   // ล้างประวัติของคนก่อน — ไม่ให้เลขเคสเก่าค้างในช่องเลือก
+        const picked = document.getElementById('hiddenInsuranceId');
+        if (picked) picked.value = '';
         input.value = code;
         window.performCaseSearch();
-        await waitFor(() => body.children.length, 15000);
-        await wait(150);
+        // รอจน "เลือกพนักงานคนนี้แล้ว" (ไม่ใช่แถวว่างตอนเริ่มค้นหา) แล้วประวัติวาดเสร็จ — หรือพบหลายคนให้เลือกเอง
+        const want = String(code || '').toUpperCase();
+        await waitFor(() => (picked && String(picked.value || '').toUpperCase() === want && body.children.length)
+            || document.querySelectorAll('#resultsList .employee-result-option').length > 1, 25000);
+        await wait(300);
     }
     async function openAnnual(id) {
         const r = annualItems.find(x => x.id === Number(id));
