@@ -769,7 +769,9 @@ window.injectNewRowToTableRealtime = function (payloadData) {
         createEvidenceDocumentsCell(
             mockEventItem.DocumentsAttached,
             mockEventItem.statusText,
-            true
+            true,
+            null,
+            caseId
         )
     );
 
@@ -3263,13 +3265,14 @@ function combineCaseEvidenceDocuments(timelines) {
         ['ใบยินยอมใช้วงเงิน IPD ร่วม OPD', 'IPD_SHARE_CONSENT']
     ];
 
+    const primaryIds = new Set(labels.filter(([label]) => combined.has(label)).map(([label]) => getDriveFileId(combined.get(label)) || combined.get(label)));
     const additional = [
         ...new Set(
             (timelines || []).flatMap((event) =>
                 parseAdditionalEvidence(event.DocumentsAttached)
             )
         )
-    ];
+    ].filter(url => !primaryIds.has(getDriveFileId(url) || url));
 
     return [
         ...labels
@@ -3282,17 +3285,36 @@ function combineCaseEvidenceDocuments(timelines) {
     ].join('\n');
 }
 
+const caseEvidenceRequests = new Map();
+document.addEventListener('click', event => {
+    const row = event.target.closest('tr.parent-row, tr.grouped-parent-row');
+    if (row) queueMicrotask(() => row.querySelector('.history-evidence-cell')?._normalizeCaseEvidence?.());
+});
 function createEvidenceDocumentsCell(
     rawValue,
     statusText = '',
     showCompleteCase = false,
-    addContext = null
+    addContext = null,
+    normalizeCaseId = addContext?.caseId
 ) {
     const cell = document.createElement('td');
     cell.className = 'history-evidence-cell';
     cell.dataset.label = 'เอกสารที่ต้องแนบ';
     cell.dataset.evidenceRaw =
         String(rawValue || '-');
+    if (showCompleteCase && normalizeCaseId) {
+        cell._normalizeCaseEvidence = async () => {
+            const caseId = String(normalizeCaseId);
+            const key = caseId + ':' + String(rawValue);
+            try {
+                if (caseEvidenceRequests.size > 200) caseEvidenceRequests.clear();
+                if (!caseEvidenceRequests.has(key)) caseEvidenceRequests.set(key, window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/case-evidence/${encodeURIComponent(caseId)}`, { cache: 'no-store' }).then(async res => { const data=await res.json();if(!res.ok||!data.success)throw new Error('normalize failed');return data.documents; }).catch(e=>{caseEvidenceRequests.delete(key);throw e;}));
+                const documents = await caseEvidenceRequests.get(key);
+                if (cell.isConnected) cell.replaceWith(createEvidenceDocumentsCell(documents, statusText, true, addContext, null));
+            } catch (error) { console.warn('ตรวจรูปซ้ำยังไม่สำเร็จ', caseId); }
+        };
+        queueMicrotask(() => { if (cell.closest('tr.parent-row.is-open')) cell._normalizeCaseEvidence(); });
+    }
 
     const container = document.createElement('div');
     container.className = 'history-evidence-grid';
@@ -3708,7 +3730,9 @@ function renderFlatHistoryTable(history) {
             caseEvidence.replaceWith(createEvidenceDocumentsCell(
                 combineCaseEvidenceDocuments(caseTimelines) || '-',
                 latestEvent.statusText,
-                true
+                true,
+                null,
+                caseId
             ));
         }
 

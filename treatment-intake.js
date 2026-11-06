@@ -654,7 +654,8 @@
             setField('contactInput', contactOf(r));
             { const notes = document.getElementById('notesInput'); if (notes) notes.value = ''; }   // หมายเหตุเพิ่มเติม: ไม่กรอกข้อความให้ (GA กรอกเองถ้าต้องการ)
         }
-        window.__treatmentIntake = { id: r.id, links: r.files.map(f => f.link).filter(Boolean), name: r.fullname };
+        // Annual result/receipt files are imported when saving treatment, not as opening evidence.
+        window.__treatmentIntake = { id: r.id, links: isAnnual(r) ? [] : r.files.map(f => f.link).filter(Boolean), name: r.fullname };
         closeContext = { id: r.id, caseId: null };
         renderCloseReadiness();
         render();
