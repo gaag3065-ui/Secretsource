@@ -92,6 +92,7 @@
         show('gdHome');
         window.scrollTo(0, 0);
         loadMine();
+        loadCaseHistory();
         loadTasks();
     }
     function renderMenu() {
@@ -317,6 +318,34 @@
     }
     // สถานะที่ GA เลือกแจ้ง (หน้างานประกัน) แทนป้าย "รับเรื่องแล้ว" — ไม่ใช้ข้อความอัตโนมัติตอนเปิดเคส
     const gaStatus = r => (r.case_id && ['received', 'waiting'].includes(r.status) && r.admin_note && !/^เปิดเคสประกันแล้ว/.test(r.admin_note)) ? r.admin_note : '';
+    let caseHistorySequence = 0;
+    let caseHistorySignature = '';
+    function caseHistoryHtml(cases) {
+        return cases.length ? cases.map(c => `<details class="gd-home-case" data-insurance-case="${esc(c.caseId)}"><summary><b>เคส #${esc(c.caseId)}</b><span>${esc(c.status || 'รออัปเดตสถานะ')}</span></summary>
+            <div class="gd-home-case-body"><b>${esc(c.hospital || '-')}</b><p>${esc(c.symptoms || '-')}</p><p>วันที่รักษา ${esc(c.date || '-')} · ยอดที่บันทึก ${money(c.total)} บาท</p>
+            <div class="gd-care-docs">${(c.docs || []).map(d => `<button type="button" class="gd-btn gd-btn-sm" data-care-doc="${esc(c.caseId)}/${d.n}">${esc(d.label)}</button>`).join('')}</div>
+            <ol class="gd-case-timeline">${(c.timeline || []).map(e => `<li><b>${esc(e.status || '-')}</b><small>บันทึกเมื่อ ${esc(e.recordedAt || '-')}</small><span>${esc(e.hospital || '-')} · ${esc(e.symptoms || '-')}</span><small>OPD ${money(e.opd)} · IPD ${money(e.ipd)} · ทำฟัน ${money(e.dental)} · วงเงินอื่นๆ ${money(e.other)} บาท</small></li>`).join('')}</ol></div></details>`).join('') : '<p class="gd-empty">ยังไม่มีเคสประกันของคุณ</p>';
+    }
+    async function loadCaseHistory(silent = false) {
+        const box = $('gdCaseHistory'); if (!box || !state.session) return;
+        const sequence = ++caseHistorySequence, token = state.session.token;
+        if (!silent) { box.innerHTML = '<p class="gd-empty">กำลังโหลดประวัติเคส…</p>'; caseHistorySignature = ''; }
+        try {
+            const { summary } = await call('/care');
+            if (sequence !== caseHistorySequence || state.session?.token !== token) return;
+            if (!summary) { box.innerHTML = '<p class="gd-empty">ยังไม่พบข้อมูลประกันของคุณ กรุณาติดต่อ GA</p>'; caseHistorySignature = 'unavailable'; return; }
+            const cases = summary?.cases || [];
+            const signature = JSON.stringify(cases);
+            if (silent && signature === caseHistorySignature) return;
+            const opened = new Set([...box.querySelectorAll('details[open]')].map(el => el.dataset.insuranceCase));
+            box.innerHTML = caseHistoryHtml(cases);
+            box.querySelectorAll('details').forEach(el => { el.open = opened.has(el.dataset.insuranceCase); });
+            caseHistorySignature = signature;
+        } catch (error) {
+            if (sequence !== caseHistorySequence || state.session?.token !== token) return;
+            if (!silent || !caseHistorySignature) box.innerHTML = `<p class="gd-empty">โหลดประวัติเคสไม่สำเร็จ: ${esc(error.message)}</p>`;
+        }
+    }
     const mineSig = list => (list || []).map(r => [r.id, r.status, r.admin_note, r.handled_at, r.case_id, r.files.length].join('~')).join('|');
     async function loadMine(silent = false) {
         const box = $('gdMine');
@@ -743,7 +772,8 @@
         }
         else if (action === 'alerts') { openHome(); $('gdAlerts').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
         else if (action === 'ack') ackTask(button);
-        else if (action === 'reload-mine') loadMine();
+        else if (action === 'reload-mine') { loadMine(); loadCaseHistory(); }
+        else if (action === 'reload-cases') loadCaseHistory();
         else if (action === 'submit') submit(button);
     });
 
@@ -757,7 +787,7 @@
             if (saved?.token && !config.locked) { state.session = saved; openHome(); }
             booted();
             // แจ้งเตือนใหม่: ถามหลังบ้านทุก 15 วินาทีระหว่างเปิดหน้าไว้ และทันทีที่กลับมาที่หน้านี้
-            const live = () => { if (!state.session) return; loadTasks(); if (!$('gdHome').hidden) loadMine(true); };
+            const live = () => { if (!state.session) return; loadTasks(); if (!$('gdHome').hidden) { loadMine(true); loadCaseHistory(true); } };
             setInterval(() => { if (!document.hidden) live(); }, 15 * 1000);
             document.addEventListener('visibilitychange', () => { if (!document.hidden) live(); });
             window.addEventListener('focus', live);

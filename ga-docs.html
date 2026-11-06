@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="ga-docs.css?v=20261104-care14">
+    <link rel="stylesheet" href="ga-docs.css?v=20261106-allcases-1">
     <link rel="icon" href="icons/icon-192.png">
     <!-- เปิด/รีเฟรชหน้า: ซ่อนทุกหน้าจนกว่าจะรู้ว่าเข้าสู่ระบบอยู่หรือไม่ (ไม่ให้หน้าเข้าสู่ระบบโผล่ขึ้นมาแวบหนึ่ง) -->
     <script>document.documentElement.classList.add('gd-booting');</script>
@@ -64,6 +64,11 @@
             </div>
             <div id="gdMenu" class="gd-menu"></div>
 
+            <section class="gd-mine" aria-labelledby="gdCaseHistoryTitle">
+                <div class="gd-mine-head"><h3 id="gdCaseHistoryTitle">เคสประกันของฉัน — รวมทุกช่องทาง</h3><button type="button" class="gd-btn gd-btn-ghost gd-btn-sm" data-action="reload-cases">อัปเดตประวัติ</button></div>
+                <p class="gd-case-history-note">รวมเคสที่ GA เปิดให้และเคสจากหน้าพนักงาน ทั้งประวัติเดิมและรายการล่าสุด</p>
+                <div id="gdCaseHistory" class="gd-case-history" aria-live="polite"><p class="gd-empty">กำลังโหลดประวัติเคส…</p></div>
+            </section>
             <section class="gd-mine">
                 <div class="gd-mine-head"><h3>รายการที่ฉันส่ง</h3><button type="button" class="gd-btn gd-btn-ghost gd-btn-sm" data-action="reload-mine">รีเฟรช</button></div>
                 <div id="gdMine" class="gd-mine-list"><p class="gd-empty">กำลังโหลด…</p></div>
@@ -137,6 +142,6 @@
     </section>
 
     <script src="config.js"></script>
-    <script src="ga-docs.js?v=20261104-care14"></script>
+    <script src="ga-docs.js?v=20261106-allcases-1"></script>
 </body>
 </html>
