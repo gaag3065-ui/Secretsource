@@ -10,6 +10,19 @@
     window.__treatmentIntake = null;   // รายการที่กำลังเปิดเคส (recordtreatment.js ใช้ตอนบันทึก)
     let closeContext = null;
     const filePreviews = new Map();
+    function billReadiness(r) {
+        const info = r.close_readiness;
+        if (info?.closed) return '<div class="intake-close-readiness">บันทึกปิดเคสแล้ว</div>';
+        const missing = [...(info?.missing || ['กำลังตรวจเงื่อนไขจากกล่องงาน'])];
+        if (!r.case_id) missing.unshift('เลขเคสที่ผูกกับบิล');
+        return `<div class="intake-close-readiness">${info?.ready && !missing.length ? `<button type="button" class="intake-take" data-bill-close="${r.id}">สามารถปิดเคสได้</button>` : `ยังขาด: ${missing.map(esc).join(' · ')}`}</div>`;
+    }
+    function closeBillFromButton(button) {
+        const r = state.records.find(r => String(r.id) === button.dataset.billClose);
+        if (!r?.close_readiness?.ready || !r.case_id || button.disabled) return;
+        if (!confirm(`ปิดเคส #${r.case_id} ของ ${r.fullname} และบันทึกเอกสารเข้าเคส?`)) return;
+        return saveBillStatus(button.parentElement, r, button, 'ปิดเคส เอกสารและบัญชีครบถ้วน');
+    }
     function evidenceGallery(r) {
         return `<div class="intake-evidence-gallery">${r.files.map(f => `<button type="button" class="intake-evidence-tile" data-annual-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">${/^image\//.test(f.mime) ? `<img data-intake-preview="${r.id}/${f.n}" alt="${esc(f.field_label)} ${f.index}" loading="lazy">` : '<span class="intake-file-icon">PDF / ไฟล์แนบ</span>'}<span>${esc(f.field_label)} ${f.index}</span></button>`).join('')}</div>`;
     }
@@ -35,6 +48,8 @@
         panel.innerHTML = `<b>ตรวจเอกสารและข้อมูลจากระบบจัดการองค์กร · ${esc(r.fullname)}</b>${info?.closed ? '<p>บันทึกปิดเคสแล้ว</p>' : missing.length ? `<p>ยังขาด: ${missing.map(esc).join(' · ')}</p>` : `<p>เอกสารและข้อมูลที่บังคับครบตามเงื่อนไขของกล่องงาน</p><button type="button" class="intake-take" data-intake-close-ready>สามารถปิดเคสได้</button>`}`;
     }
     document.addEventListener('click', async event => {
+        const billClose = event.target.closest('[data-bill-close]');
+        if (billClose) return closeBillFromButton(billClose);
         const button = event.target.closest('[data-intake-close-ready]');
         if (!button) return;
         const r = state.records.find(r => r.id === closeContext?.id);
@@ -189,7 +204,7 @@
                     <b>${esc(list[0].fullname)}</b>
                     <small>${esc(list[0].company || '')} · ${esc(list[0].insurance_code || list[0].employee_id || '')}</small>
                     <span class="bill-item-cases">${list.map(r => `เคส #${esc(r.case_id)} · ${esc(String(val(r, 'treat_type') || '').split(' ')[0] || '-')} · ${esc(money(val(r, 'amount')))} ฿`).join('<br>')}</span>
-                </button><div class="bill-item-actions">${list.map(r => `<button type="button" class="bill-status-cancel" data-cancel-open="${r.id}">ยกเลิกบิลเคส #${esc(r.case_id)}</button>`).join('')}</div></div>`).join('')}</div>`;
+                </button><div class="bill-item-actions">${list.map(r => `<div>${billReadiness(r)}<button type="button" class="bill-status-cancel" data-cancel-open="${r.id}">ยกเลิกบิลเคส #${esc(r.case_id)}</button></div>`).join('')}</div></div>`).join('')}</div>`;
         markCards();
     }
     // ที่ห่อกระดานบนกล่องประวัติ: ตรวจสุขภาพ (บน) + บิลรอปิดเคส (ล่าง)
@@ -248,7 +263,7 @@
         const cases = [...document.querySelectorAll('#tableBodyResult .txt-case-id')].map(c => c.textContent.trim()).filter(Boolean);
         return `<div class="annual-panel">
             <div class="annual-facts"><b>${esc(r.fullname)}</b> · ตรวจเมื่อ ${esc(thDate(val(r, 'check_date')))} · ${esc(val(r, 'hospital') || '-')} · ยอด <b>${esc(money(val(r, 'amount')))} บาท</b> · ${esc(val(r, 'pay') || '-')}${val(r, 'refund_account_no') ? ` (${esc(val(r, 'refund_bank'))} ${esc(val(r, 'refund_account_no'))})` : ''}
-                <span class="bill-flag-files">${r.files.map(x => `<button type="button" data-annual-file="${r.id}/${x.n}" data-mime="${esc(x.mime)}">${esc(x.field_label)} ${x.index}</button>`).join('')}</span></div>
+                </div>
             ${evidenceGallery(r)}
             <div class="annual-actions">
                 <button type="button" class="intake-take" data-annual-new="${r.id}">🆕 เปิดเคส</button>
@@ -383,10 +398,11 @@
             const flag = document.createElement('div');
             flag.className = 'bill-flag';
             flag.innerHTML = `<span class="bill-flag-dot">1</span><b>🧾 พนักงานส่งบิลแล้ว</b> เลขที่ ${r.id} · ${esc(val(r, 'treat_type') || '-')} · ยอด ${esc(money(val(r, 'amount')))} ฿ · ${esc(val(r, 'pay') || '')}
-                <span class="bill-flag-files">${r.files.map(x => `<button type="button" data-intake-file="${r.id}/${x.n}" data-mime="${esc(x.mime)}">${esc(x.field_label)} ${x.index}</button>`).join('')}</span>
-                <button type="button" class="intake-take" data-bill-status="${r.id}">✓ บันทึกลงเคส / เลือกสถานะ ▾</button>${evidenceGallery(r)}`;
+                <button type="button" class="intake-take" data-bill-status="${r.id}">✓ บันทึกลงเคส / เลือกสถานะ ▾</button>${billReadiness(r)}${evidenceGallery(r)}`;
             flag.addEventListener('click', event => {
                 event.stopPropagation();   // ไม่ให้การ์ดพับ/กาง
+                const close = event.target.closest('[data-bill-close]');
+                if (close) return closeBillFromButton(close);
                 const file = event.target.closest('[data-intake-file], [data-annual-file]');
                 if (file) return openFile(file.dataset.intakeFile || file.dataset.annualFile, file.dataset.mime);
                 const pick = event.target.closest('[data-bill-status]');
@@ -416,9 +432,9 @@
             <span><button type="button" class="intake-take" data-bill-go>บันทึก</button><button type="button" class="bill-status-cancel" data-bill-cancel>ยกเลิก</button></span>`;
         flag.append(pop);
     }
-    async function saveBillStatus(flag, r, button) {
+    async function saveBillStatus(flag, r, button, forcedStatus) {
         if (button.disabled) return;
-        const statusText = flag.querySelector('[data-bill-select]')?.value || '';
+        const statusText = forcedStatus || flag.querySelector('[data-bill-select]')?.value || '';
         button.disabled = true; button.textContent = '⏳ กำลังบันทึก…';
         let data;
         try {
