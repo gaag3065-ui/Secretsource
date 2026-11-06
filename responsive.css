@@ -2942,6 +2942,15 @@ body.login-page {
 .intake-viewer img { max-width: 92vw; max-height: 88vh; border-radius: 8px; background: #fff; cursor: zoom-in; }
 .intake-viewer img.is-zoom { max-width: none; max-height: none; width: 170vw; cursor: zoom-out; }
 .intake-viewer { overflow: auto; }
+.intake-viewer-tools { position: fixed; top: 12px; right: 20px; z-index: 1; display: flex; gap: 8px; }
+.intake-viewer-tools button { padding: 8px 14px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; cursor: pointer; }
+.intake-evidence-gallery { display: flex; flex-wrap: wrap; gap: 10px; min-width: 0; }
+.intake-evidence-tile { display: flex; flex-direction: column; gap: 6px; align-items: center; width: 145px; max-width: 100%; padding: 8px; border: 1px solid #dbe2ea; border-radius: 10px; background: #f8fafc; font: inherit; cursor: zoom-in; overflow-wrap: anywhere; }
+.intake-evidence-tile img { width: 128px; max-width: 100%; height: 95px; object-fit: contain; background: #fff; border-radius: 6px; }
+.intake-file-icon { display: grid; place-items: center; min-height: 95px; color: #2563eb; }
+.intake-close-readiness { margin-top: 12px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f0fdf4; font-size: 13px; white-space: normal; }
+.intake-close-readiness[hidden] { display: none; }
+.intake-close-readiness p { margin: 6px 0; overflow-wrap: anywhere; }
 .treatment-share { margin-left: 6px; font-weight: 700; }
 /* กล่องแจ้งเข้ารักษาด้านบน (ข้างช่องค้นหา) — กล่องเล็ก รายการเปิดเป็นแผงลอย */
 .employee-search-sticky-header.has-intake { position: relative; }

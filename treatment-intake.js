@@ -8,6 +8,52 @@
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
     const state = { records: [], open: false, alerted: new Set(JSON.parse(localStorage.getItem('intakeAlerted') || '[]')) };
     window.__treatmentIntake = null;   // รายการที่กำลังเปิดเคส (recordtreatment.js ใช้ตอนบันทึก)
+    let closeContext = null;
+    const filePreviews = new Map();
+    function evidenceGallery(r) {
+        return `<div class="intake-evidence-gallery">${r.files.map(f => `<button type="button" class="intake-evidence-tile" data-annual-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">${/^image\//.test(f.mime) ? `<img data-intake-preview="${r.id}/${f.n}" alt="${esc(f.field_label)} ${f.index}" loading="lazy">` : '<span class="intake-file-icon">PDF / ไฟล์แนบ</span>'}<span>${esc(f.field_label)} ${f.index}</span></button>`).join('')}</div>`;
+    }
+    function hydratePreviews() {
+        document.querySelectorAll('[data-intake-preview]').forEach(async img => {
+            const ref = img.dataset.intakePreview;
+            try {
+                if (!filePreviews.has(ref)) filePreviews.set(ref, window.authFetch(`${API()}/file/${ref}`).then(async res => { if (!res.ok) throw new Error('โหลดรูปไม่ได้'); return URL.createObjectURL(await res.blob()); }).catch(e => { filePreviews.delete(ref); throw e; }));
+                img.src = await filePreviews.get(ref);
+            } catch { img.alt = 'โหลดรูปไม่ได้ กดเพื่อเปิดอีกครั้ง'; }
+        });
+    }
+    function renderCloseReadiness() {
+        const panel = document.getElementById('intakeCloseReadiness');
+        if (!panel) return;
+        const r = state.records.find(r => r.id === closeContext?.id);
+        const insurance = document.getElementById('hiddenInsuranceId')?.value;
+        panel.hidden = !r || String(insurance || '').toUpperCase() !== String(r.insurance_code || '').toUpperCase();
+        if (panel.hidden) return;
+        const info = r.close_readiness;
+        const missing = [...(info?.missing || ['กำลังตรวจเงื่อนไขล่าสุดจากกล่องงาน'])];
+        if (!closeContext.caseId) missing.unshift('บันทึกเปิดเคสพร้อมรูปหลักฐานให้สำเร็จก่อน');
+        panel.innerHTML = `<b>ตรวจเอกสารและข้อมูลจากระบบจัดการองค์กร · ${esc(r.fullname)}</b>${info?.closed ? '<p>บันทึกปิดเคสแล้ว</p>' : missing.length ? `<p>ยังขาด: ${missing.map(esc).join(' · ')}</p>` : `<p>เอกสารและข้อมูลที่บังคับครบตามเงื่อนไขของกล่องงาน</p><button type="button" class="intake-take" data-intake-close-ready>สามารถปิดเคสได้</button>`}`;
+    }
+    document.addEventListener('click', async event => {
+        const button = event.target.closest('[data-intake-close-ready]');
+        if (!button) return;
+        const r = state.records.find(r => r.id === closeContext?.id);
+        if (!r?.close_readiness?.ready || !closeContext.caseId) return;
+        if (!confirm(`ปิดเคส #${closeContext.caseId} ของ ${r.fullname} และบันทึกเอกสารจากกล่องงานเข้าเคส?`)) return;
+        button.disabled = true;
+        try {
+            const info = r.close_readiness;
+            const annual = info.type === 'annual';
+            const res = await window.authFetch(`${API()}/records/${info.recordId}/${annual ? 'attach-case' : 'step'}`, { method: annual ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(annual ? { case_id: closeContext.caseId } : { step: 'insurance', status_text: 'ปิดเคส เอกสารและบัญชีครบถ้วน' }) });
+            const data = await res.json();
+            if (!res.ok || data.success === false) throw new Error(data.message || 'ปิดเคสไม่สำเร็จ');
+            await load();
+            await loadHistoryFor(r.insurance_code || r.employee_id);
+            renderCloseReadiness();
+            window.showInsuranceToast?.('ปิดเคสและบันทึกเอกสารแล้ว', 'success');
+        } catch (e) { alert(e.message); button.disabled = false; }
+    });
+    document.addEventListener('change', renderCloseReadiness);
 
     const box = document.createElement('section');
     box.className = 'intake-box';
@@ -196,18 +242,21 @@
                     <span class="bill-item-cases">ตรวจ ${esc(thDate(val(r, 'check_date')))} · ${esc(money(val(r, 'amount')))} ฿</span>
                 </button>`).join('')}</div>
             ${picked ? annualPanel(picked) : ''}`;
+        hydratePreviews();
     }
     function annualPanel(r) {
         const cases = [...document.querySelectorAll('#tableBodyResult .txt-case-id')].map(c => c.textContent.trim()).filter(Boolean);
         return `<div class="annual-panel">
             <div class="annual-facts"><b>${esc(r.fullname)}</b> · ตรวจเมื่อ ${esc(thDate(val(r, 'check_date')))} · ${esc(val(r, 'hospital') || '-')} · ยอด <b>${esc(money(val(r, 'amount')))} บาท</b> · ${esc(val(r, 'pay') || '-')}${val(r, 'refund_account_no') ? ` (${esc(val(r, 'refund_bank'))} ${esc(val(r, 'refund_account_no'))})` : ''}
                 <span class="bill-flag-files">${r.files.map(x => `<button type="button" data-annual-file="${r.id}/${x.n}" data-mime="${esc(x.mime)}">${esc(x.field_label)} ${x.index}</button>`).join('')}</span></div>
+            ${evidenceGallery(r)}
             <div class="annual-actions">
                 <button type="button" class="intake-take" data-annual-new="${r.id}">🆕 เปิดเคส</button>
                 <span class="annual-or">หรือ</span>
                 <label>📂 มีเคสอยู่แล้ว <select data-annual-case>${cases.length ? cases.map(c => `<option value="${esc(c)}">เคส #${esc(c)}</option>`).join('') : '<option value="">— ยังไม่พบเคสในประวัติ —</option>'}</select></label>
-                <button type="button" class="intake-end" data-annual-attach="${r.id}" ${cases.length ? '' : 'disabled'}>บันทึกเข้าเคสนี้และปิดเคส</button>
+                <button type="button" class="intake-end" data-annual-attach="${r.id}" ${cases.length && r.close_readiness?.ready ? '' : 'disabled'}>บันทึกเข้าเคสนี้และปิดเคส</button>
             </div>
+            ${r.close_readiness?.ready ? '' : `<p>ยังขาด: ${(r.close_readiness?.missing || ['กำลังตรวจเงื่อนไขจากกล่องงาน']).map(esc).join(' · ')}</p>`}
             <p class="ib-msg" data-annual-msg></p></div>`;
     }
     function busy(el, text) {
@@ -335,11 +384,11 @@
             flag.className = 'bill-flag';
             flag.innerHTML = `<span class="bill-flag-dot">1</span><b>🧾 พนักงานส่งบิลแล้ว</b> เลขที่ ${r.id} · ${esc(val(r, 'treat_type') || '-')} · ยอด ${esc(money(val(r, 'amount')))} ฿ · ${esc(val(r, 'pay') || '')}
                 <span class="bill-flag-files">${r.files.map(x => `<button type="button" data-intake-file="${r.id}/${x.n}" data-mime="${esc(x.mime)}">${esc(x.field_label)} ${x.index}</button>`).join('')}</span>
-                <button type="button" class="intake-take" data-bill-status="${r.id}">✓ บันทึกลงเคส / เลือกสถานะ ▾</button>`;
+                <button type="button" class="intake-take" data-bill-status="${r.id}">✓ บันทึกลงเคส / เลือกสถานะ ▾</button>${evidenceGallery(r)}`;
             flag.addEventListener('click', event => {
                 event.stopPropagation();   // ไม่ให้การ์ดพับ/กาง
-                const file = event.target.closest('[data-intake-file]');
-                if (file) return openFile(file.dataset.intakeFile, file.dataset.mime);
+                const file = event.target.closest('[data-intake-file], [data-annual-file]');
+                if (file) return openFile(file.dataset.intakeFile || file.dataset.annualFile, file.dataset.mime);
                 const pick = event.target.closest('[data-bill-status]');
                 if (pick) return openBillStatus(flag, r);
                 const go = event.target.closest('[data-bill-go]');
@@ -349,6 +398,7 @@
             host.append(flag);
             host.closest('tr')?.classList.add('has-bill');
         });
+        hydratePreviews();
     }
     // เลือกสถานะของรายการที่จะเพิ่มในเคส (ค่าเริ่มต้น = ปิดเคส) · รูปจากพนักงานลงเคสด้วยชื่อมาตรฐานเหมือนเดิม
     function statusOptions() {
@@ -510,6 +560,7 @@
         renderBillBoard(bills);
         renderTreatBoard(list.filter(r => r.type === 'treatment'));
         renderAnnualBoard(list.filter(r => isAnnual(r)));
+        renderCloseReadiness();
         if (urgent && !state.open) toggle(true);
     }
     function toggle(force) {
@@ -584,6 +635,8 @@
             { const notes = document.getElementById('notesInput'); if (notes) notes.value = ''; }   // หมายเหตุเพิ่มเติม: ไม่กรอกข้อความให้ (GA กรอกเองถ้าต้องการ)
         }
         window.__treatmentIntake = { id: r.id, links: r.files.map(f => f.link).filter(Boolean), name: r.fullname };
+        closeContext = { id: r.id, caseId: null };
+        renderCloseReadiness();
         render();
         form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -594,7 +647,12 @@
             if (!intake) return;
             window.__treatmentIntake = null;
             try {
-                await window.authFetch(`${API()}/records/${intake.id}/case`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ case_id: String(caseId) }) });
+                const res = await window.authFetch(`${API()}/records/${intake.id}/case`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ case_id: String(caseId) }) });
+                const data = await res.json();
+                if (!res.ok || data.success === false) throw new Error(data.message || 'ผูกเคสไม่สำเร็จ');
+                closeContext = { id: intake.id, caseId: String(caseId) };
+                if (data.record) state.records = state.records.map(r => r.id === intake.id ? data.record : r);
+                renderCloseReadiness();
             } catch { /* เปิดเคสแล้ว ผูกเลขไม่สำเร็จ — ไม่ขัดการทำงาน */ }
             load();
         }
@@ -609,8 +667,8 @@
         if (win) { win.location.href = url; return; }
         const view = document.createElement('div');
         view.className = 'intake-alert intake-viewer';
-        view.innerHTML = `<img src="${url}" alt="">`;
-        view.addEventListener('click', event => { if (event.target.tagName === 'IMG') event.target.classList.toggle('is-zoom'); else view.remove(); });
+        view.innerHTML = `<div class="intake-viewer-tools"><button type="button" data-view-zoom>ย่อ / ขยาย</button><button type="button" data-view-close>ปิด</button></div><img src="${url}" alt="รูปเอกสาร">`;
+        view.addEventListener('click', event => { if (event.target.tagName === 'IMG' || event.target.closest('[data-view-zoom]')) view.querySelector('img').classList.toggle('is-zoom'); else { URL.revokeObjectURL(url); view.remove(); } });
         document.body.append(view);
     }
 
