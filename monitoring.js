@@ -34,6 +34,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.body.classList.add('is-read-only');
     }
 
+    const installRunner = document.getElementById('installQueueRunner');
+    if (installRunner && String(state.me.role || '').toUpperCase() === 'ADMIN') {
+        installRunner.hidden = false;
+        installRunner.addEventListener('click', async () => {
+            installRunner.disabled = true;
+            try {
+                const response = await window.authFetch(`${apiBase}/api/line-oa/agent-package`, { cache: 'no-store' });
+                if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || 'ดาวน์โหลดตัวรันไม่สำเร็จ');
+                const url = URL.createObjectURL(await response.blob());
+                const link = document.createElement('a'); link.href = url; link.download = 'LINE-OA-Runner.zip'; link.click();
+                setTimeout(() => URL.revokeObjectURL(url), 60000);
+                const dialog = document.createElement('dialog');
+                dialog.style.cssText = 'max-width:520px;border:0;border-radius:14px;padding:24px;line-height:1.8';
+                dialog.innerHTML = '<h3>ติดตั้งตัวรันคิว LINE OA</h3><ol><li>แตกไฟล์ LINE-OA-Runner.zip ไว้ในเครื่อง</li><li>เปิด <b>chrome://extensions</b> เปิดโหมดนักพัฒนาซอฟต์แวร์ แล้วกด “โหลดส่วนขยายที่แตกไฟล์แล้ว” เลือกโฟลเดอร์ LINE-OA-Runner</li><li>เปิด LINE OA Manager ที่ <b>chat.line.biz</b> ด้วยบัญชีเดิม แผงคิวจะเชื่อมต่ออัตโนมัติ</li></ol><p>ใช้คิวส่วนกลางเดิม ไม่ต้องย้ายฐานข้อมูล และไม่ต้องคัดลอกรหัสเชื่อมต่อเอง</p><p>แพ็กเกจมีรหัสส่วนตัวของระบบ กรุณาเก็บในเครื่องนี้เท่านั้น</p><button type="button">รับทราบ</button>';
+                dialog.querySelector('button').onclick = () => { dialog.close(); dialog.remove(); };
+                document.body.append(dialog); dialog.showModal();
+            } catch (error) { alert(error.message); }
+            finally { installRunner.disabled = false; }
+        });
+    }
+
     const MEDIA_TYPES = new Set(['image', 'video', 'audio', 'file']);
     // เหตุการณ์ที่ไม่ใช่ข้อความ แสดงเป็นบรรทัดกลางแชตแบบ LINE OA
     const SYSTEM_EVENT_LABELS = { follow: 'เพิ่มเป็นเพื่อนแล้ว', unfollow: 'บล็อกบัญชีนี้', unsend: 'ยกเลิกการส่งข้อความ', join: 'เข้าร่วมกลุ่ม', leave: 'ออกจากกลุ่ม', memberJoined: 'มีสมาชิกเข้าร่วม', memberLeft: 'มีสมาชิกออกจากกลุ่ม', postback: 'กดเมนู/ปุ่ม', beacon: 'Beacon' };

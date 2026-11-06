@@ -362,6 +362,7 @@
                 const d = await res.json().catch(() => ({}));
                 if (!res.ok || d.success === false) throw new Error(d.message || 'ยกเลิกไม่สำเร็จ');
                 pop.remove();
+                window.showInsuranceToast?.(d.notification?.queued ? 'ยกเลิกแล้ว แจ้งในหน้าพนักงานและเข้าคิว LINE แล้ว' : `ยกเลิกและแจ้งหน้าพนักงานแล้ว · ${d.notification?.message || 'LINE รอส่ง ระบบจะลองใหม่อัตโนมัติ'}`, d.notification?.queued ? 'success' : 'warning', 6000);
                 if (annualPicked === r.id) annualPicked = null;
                 load();
             } catch (error) { out.textContent = '⚠️ ' + error.message; go.disabled = false; }

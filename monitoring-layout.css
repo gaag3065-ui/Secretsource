@@ -8,7 +8,8 @@
     border-radius: 0;
     box-shadow: none;
 }
-.oa-panel-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px 0; }
+.oa-panel-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 10px 14px 0; }
+#installQueueRunner { flex: 1 0 100%; }
 .oa-panel-toolbar .connection-state { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .oa-panel-toolbar .secondary-button { padding: 4px 10px; font-size: 12px; }
 .oa-panel .search-box { margin-top: 8px; }
