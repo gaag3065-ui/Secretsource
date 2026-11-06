@@ -148,6 +148,27 @@ function compareCaseIdDescending(a, b) {
     return String(b).localeCompare(String(a), 'th', { numeric: true });
 }
 
+function renderCaseTreatmentAmounts(event) {
+    const fields = [
+        ['DentalOPD', 'ทำฟัน หักวงเงิน OPD (บาท)'], ['PPUsageOPD', 'PP OPD (บาท)'], ['PPUsageIPD', 'PP IPD (บาท)'],
+        ['OtherUsage', 'วงเงินอื่นๆ (บาท)'], ['SLKUsageOpdThB', 'SL OPD (บาท)'], ['SLKUsageIpdThB', 'SL IPD (บาท)'],
+        ['SLKUsageOpdLkr', 'SL OPD (LKR)'], ['SLKUsageIpdLkr', 'SL IPD (LKR)'],
+        ['OverLimitCreditInsThB', 'ส่วนเกินวงเงินค่ารักษา (บาท)'], ['OverLimitCreditInsLkr', 'ส่วนเกินวงเงินค่ารักษา (LKR)'],
+        ['ExchangeRatesIns', 'เรทค่าเงินที่ประกันคิดให้ (THB/LKR)'], ['ExchangeRatesInt', 'เรทค่าเงินปัจจุบัน (THB/LKR)']
+    ];
+    const box = document.createElement('section');
+    box.className = 'case-treatment-amounts';
+    box.setAttribute('aria-label', 'ค่ารักษาทุกประเภท');
+    fields.forEach(([key, label]) => {
+        const item = document.createElement('div');
+        const title = document.createElement('span'); title.textContent = label;
+        const value = document.createElement('strong');
+        const raw = String(event[key] ?? '').trim(); const number = Number(raw.replace(/,/g, ''));
+        value.textContent = raw && raw !== '-' && Number.isFinite(number) ? number.toLocaleString('th-TH', { minimumFractionDigits: key.startsWith('Exchange') ? 0 : 2, maximumFractionDigits: key.startsWith('Exchange') ? 4 : 2 }) : '-';
+        item.append(title, value); box.append(item);
+    });
+    return box;
+}
 function renderHistoryTable(historyData) {
 
         window.historyDisplayMode = 'individual';
@@ -222,6 +243,7 @@ function renderHistoryTable(historyData) {
             <td class="text-center" data-label="แอดมินที่บันทึกข้อมูล">${latestEvent.adminName || '-'}</td>
             <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- คลิกเพื่อดูไทม์ไลน์ -</td>
         `;
+        parentTr.children[0].append(renderCaseTreatmentAmounts(latestEvent));
         const combinedCaseEvidence =
             combineCaseEvidenceDocuments(timelines);
 
@@ -742,6 +764,7 @@ window.injectNewRowToTableRealtime = function (payloadData) {
         <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- ไทม์ไลน์เรียลไทม์ -</td>
     `;
 
+    parentTr.children[0].append(renderCaseTreatmentAmounts(mockEventItem));
     parentTr.children[18].replaceWith(
         createEvidenceDocumentsCell(
             mockEventItem.DocumentsAttached,
@@ -802,6 +825,8 @@ window.injectNewRowToTableRealtime = function (payloadData) {
             });
 
             if (existingParent) {
+                existingParent.querySelector('.case-treatment-amounts')?.remove();
+                existingParent.children[0].append(renderCaseTreatmentAmounts(mockEventItem));
                 const existingEvidenceCell =
                     existingParent.children[18];
 
@@ -3668,6 +3693,7 @@ function renderFlatHistoryTable(history) {
             area
         );
 
+        caseCell.append(renderCaseTreatmentAmounts(latestEvent));
         parentRow.appendChild(caseCell);
 
         appendHistoryDataCells(
