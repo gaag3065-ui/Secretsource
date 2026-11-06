@@ -2951,6 +2951,7 @@ body.login-page {
 .intake-close-readiness { margin-top: 12px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f0fdf4; font-size: 13px; white-space: normal; }
 .intake-close-readiness[hidden] { display: none; }
 .intake-close-readiness p { margin: 6px 0; overflow-wrap: anywhere; }
+.intake-close-readiness select { display: block; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; margin: 6px 0; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; background: #fff; }
 .treatment-share { margin-left: 6px; font-weight: 700; }
 /* กล่องแจ้งเข้ารักษาด้านบน (ข้างช่องค้นหา) — กล่องเล็ก รายการเปิดเป็นแผงลอย */
 .employee-search-sticky-header.has-intake { position: relative; }

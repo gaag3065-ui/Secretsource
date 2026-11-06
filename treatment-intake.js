@@ -45,7 +45,9 @@
         const info = r.close_readiness;
         const missing = [...(info?.missing || ['กำลังตรวจเงื่อนไขล่าสุดจากกล่องงาน'])];
         if (!closeContext.caseId) missing.unshift('บันทึกเปิดเคสพร้อมรูปหลักฐานให้สำเร็จก่อน');
-        panel.innerHTML = `<b>ตรวจเอกสารและข้อมูลจากระบบจัดการองค์กร · ${esc(r.fullname)}</b>${info?.closed ? '<p>บันทึกปิดเคสแล้ว</p>' : missing.length ? `<p>ยังขาด: ${missing.map(esc).join(' · ')}</p>` : `<p>เอกสารและข้อมูลที่บังคับครบตามเงื่อนไขของกล่องงาน</p><button type="button" class="intake-take" data-intake-close-ready>สามารถปิดเคสได้</button>`}`;
+        const choices = ['ปิดเคส เอกสารและบัญชีครบถ้วน', 'ผู้ป่วยสำรองจ่าย รอนำส่งเอกสารเคลม'];
+        const selected = panel.querySelector('[data-intake-final-status]')?.value || r.case_status_text || choices[0];
+        panel.innerHTML = `<b>ตรวจเอกสารและข้อมูลจากระบบจัดการองค์กร · ${esc(r.fullname)}</b>${missing.length ? `<p>ยังขาด: ${missing.map(esc).join(' · ')}</p>` : `<p>เอกสารและข้อมูลครบ · เคส #${esc(closeContext.caseId)}</p><label>เลือกสถานะ <select data-intake-final-status>${choices.map(value => `<option value="${value}"${value === selected ? ' selected' : ''}>${value}</option>`).join('')}</select></label><button type="button" class="intake-take" data-intake-close-ready>บันทึกสถานะ</button>`}`;
     }
     document.addEventListener('click', async event => {
         const billClose = event.target.closest('[data-bill-close]');
@@ -54,18 +56,20 @@
         if (!button) return;
         const r = state.records.find(r => r.id === closeContext?.id);
         if (!r?.close_readiness?.ready || !closeContext.caseId) return;
-        if (!confirm(`ปิดเคส #${closeContext.caseId} ของ ${r.fullname} และบันทึกเอกสารจากกล่องงานเข้าเคส?`)) return;
+        const statusText = document.querySelector('[data-intake-final-status]')?.value;
+        if (!['ปิดเคส เอกสารและบัญชีครบถ้วน', 'ผู้ป่วยสำรองจ่าย รอนำส่งเอกสารเคลม'].includes(statusText)) return;
+        if (!confirm(`บันทึกเคส #${closeContext.caseId} ของ ${r.fullname} เป็นสถานะ "${statusText}"?`)) return;
         button.disabled = true;
         try {
             const info = r.close_readiness;
             const annual = info.type === 'annual';
-            const res = await window.authFetch(`${API()}/records/${info.recordId}/${annual ? 'attach-case' : 'step'}`, { method: annual ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(annual ? { case_id: closeContext.caseId } : { step: 'insurance', status_text: 'ปิดเคส เอกสารและบัญชีครบถ้วน' }) });
+            const res = await window.authFetch(`${API()}/records/${info.recordId}/${annual ? 'attach-case' : 'step'}`, { method: annual ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(annual ? { case_id: closeContext.caseId, status_text: statusText } : { step: 'insurance', status_text: statusText }) });
             const data = await res.json();
             if (!res.ok || data.success === false) throw new Error(data.message || 'ปิดเคสไม่สำเร็จ');
             await load();
             await loadHistoryFor(r.insurance_code || r.employee_id);
             renderCloseReadiness();
-            window.showInsuranceToast?.('ปิดเคสและบันทึกเอกสารแล้ว', 'success');
+            window.showInsuranceToast?.(`บันทึกสถานะ "${statusText}" แล้ว`, 'success');
         } catch (e) { alert(e.message); button.disabled = false; }
     });
     document.addEventListener('change', renderCloseReadiness);
