@@ -1227,7 +1227,7 @@ function renderEditEvidenceEditor(eventItem, editorEl) {
             extra.rel = 'noopener';
             extra.title = 'รูปนี้แก้ในหน้านี้ไม่ได้ · ระบบเก็บไว้ให้เหมือนเดิมเมื่อบันทึก';
             const img = document.createElement('img');
-            img.src = getEvidencePreviewUrl(documentItem.url, 'w320');
+            window.loadEvidenceImage(img, getEvidencePreviewUrl(documentItem.url, 'w320'));
             img.alt = documentItem.label;
             const cap = document.createElement('span');
             cap.textContent = documentItem.label + ' (คงไว้)';
@@ -1254,10 +1254,10 @@ function renderEditEvidenceEditor(eventItem, editorEl) {
         if (documentItem.url) {
             current.type = 'button';
             const image = document.createElement('img');
-            image.src = getEvidencePreviewUrl(
+            window.loadEvidenceImage(image, getEvidencePreviewUrl(
                 documentItem.url,
                 'w320'
-            );
+            ));
             image.alt = documentItem.label;
             current.appendChild(image);
             current.addEventListener('click', () =>
@@ -3054,13 +3054,39 @@ function getEvidencePreviewUrl(url, size = 'w320') {
         return String(url || '').trim();
     }
 
-    return (
-        'https://drive.google.com/thumbnail?id=' +
-        encodeURIComponent(fileId) +
-        '&sz=' +
-        encodeURIComponent(size)
-    );
+    return `${window.APP_CONFIG.API_BASE_URL}/api/case-evidence/file/${encodeURIComponent(fileId)}`;
 }
+
+// Private Drive files need the application's authenticated request, not a public thumbnail.
+const evidenceImageBlobs = new Map();
+window.loadEvidenceImage = async function (image, url) {
+    if (!String(url).startsWith(`${window.APP_CONFIG.API_BASE_URL}/api/case-evidence/file/`)) {
+        image.src = url;
+        return;
+    }
+    try {
+        if (!evidenceImageBlobs.has(url)) {
+            if (evidenceImageBlobs.size >= 60) evidenceImageBlobs.delete(evidenceImageBlobs.keys().next().value);
+            const request = window.authFetch(url, { cache: 'no-store' }).then(async response => {
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({}));
+                    throw new Error(data.message || 'โหลดรูปไม่สำเร็จ');
+                }
+                if (!/^image\//i.test(response.headers.get('Content-Type') || '')) throw new Error('ไฟล์ที่ได้รับไม่ใช่รูปภาพ');
+                return response.blob();
+            }).catch(error => { evidenceImageBlobs.delete(url); throw error; });
+            evidenceImageBlobs.set(url, request);
+        }
+        const objectUrl = URL.createObjectURL(await evidenceImageBlobs.get(url));
+        const release = () => URL.revokeObjectURL(objectUrl);
+        image.addEventListener('load', release, { once: true });
+        image.addEventListener('error', release, { once: true });
+        image.src = objectUrl;
+    } catch (error) {
+        image.dataset.loadError = error.message;
+        image.dispatchEvent(new Event('error'));
+    }
+};
 
 // แยกเอกสารแนบออกเป็นหลักฐานเปิดเคส ใบเสร็จ ใบรับรองแพทย์ และหลักฐานปิดเคส
 //#region parseEvidenceDocuments
@@ -3392,19 +3418,16 @@ function createEvidenceDocumentsCell(
                 `ขยายดู${documentItem.label}`;
 
             const image = document.createElement('img');
-            image.src = getEvidencePreviewUrl(
-                documentItem.url,
-                'w320'
-            );
             image.alt = documentItem.label;
             image.loading = 'lazy';
 
             image.addEventListener('error', () => {
                 image.style.display = 'none';
-                previewButton.textContent = 'เปิดดูรูป';
+                previewButton.textContent = image.dataset.loadError || 'โหลดรูปไม่สำเร็จ · กดลองอีกครั้ง';
             });
 
             previewButton.appendChild(image);
+            window.loadEvidenceImage(image, getEvidencePreviewUrl(documentItem.url, 'w320'));
 
             previewButton.addEventListener(
                 'click',

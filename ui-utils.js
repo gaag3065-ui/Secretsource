@@ -50,21 +50,32 @@ function openImageViewer(imageUrl, imageName = 'รูปภาพ') {
     viewer.className = 'image-viewer-overlay';
 
     const image = document.createElement('img');
-    image.src = imageUrl;
     image.alt = imageName;
     image.className = 'image-viewer-full';
+    const message = document.createElement('div');
+    message.setAttribute('role', 'status');
+    message.style.cssText = 'color:#fff;background:#252525;padding:18px;border-radius:8px;max-width:90vw;text-align:center';
+    message.textContent = 'กำลังโหลดรูป…';
+    image.addEventListener('load', () => message.remove(), { once: true });
+    image.addEventListener('error', () => {
+        image.style.display = 'none';
+        message.textContent = (image.dataset.loadError || 'โหลดรูปไม่สำเร็จ กรุณาลองเปิดอีกครั้ง') + ' · คลิกเพื่อปิด';
+    }, { once: true });
 
-    viewer.appendChild(image);
+    viewer.append(image, message);
     document.body.appendChild(viewer);
+    if (window.loadEvidenceImage) window.loadEvidenceImage(image, imageUrl);
+    else image.src = imageUrl;
 
-    viewer.addEventListener('click', () => viewer.remove());
+    const close = () => { viewer.remove(); document.removeEventListener('keydown', closeViewer); };
+    viewer.addEventListener('click', close);
 
-    document.addEventListener('keydown', function closeViewer(event) {
+    function closeViewer(event) {
         if (event.key === 'Escape') {
-            viewer.remove();
-            document.removeEventListener('keydown', closeViewer);
+            close();
         }
-    });
+    }
+    document.addEventListener('keydown', closeViewer);
 }
 //#endregion
 
