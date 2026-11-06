@@ -81,6 +81,7 @@
             const data = await response.json().catch(() => ({}));
             if (!response.ok || data.success === false) return [];
             state.docStatuses = data.statuses || {};
+            state.docDestinations = data.destinations || {};
             return data.records || [];
         } catch { return []; }
     }
@@ -149,6 +150,7 @@
                 ${b.key !== 'quests' && can('deleteWork') ? `<span class="sm-box-del" data-del-box="${esc(b.key)}" role="button" title="ลบกล่องงานนี้ (ลบงาน เอกสาร และไฟล์ที่เกี่ยวข้องทั้งหมด)">🗑</span>` : ''}
                 <span class="sm-box-icon">${esc(b.icon || '📌')}</span>
                 <b>${esc(b.title)}</b>
+                ${state.docDestinations?.[b.key] ? `<span class="sm-box-review" role="link" tabindex="0" data-doc-destination="${esc(b.key)}" data-doc-destination-kind="sheet">📊 เปิดรายงานข้อมูล</span><span class="sm-box-review" role="link" tabindex="0" data-doc-destination="${esc(b.key)}" data-doc-destination-kind="folder">📁 โฟลเดอร์รูปและข้อมูล</span>` : ''}
                 <i class="sm-box-scope is-${b.scope === 'personal' ? 'personal' : 'main'}">${b.scope === 'personal' ? '👤 เฉพาะบุคคล' : '🌐 งานหลัก'}</i>
                 <small>${titles.length ? `${titles.length} งาน · ค้าง ${open} คน` : recs.length ? '' : 'ยังไม่มีงาน'}</small>
                 ${recs.length ? `<span class="sm-box-review${waiting ? ' is-wait' : ''}" data-review-box="${esc(b.key)}" title="เอกสารที่พนักงานส่งมาในกล่องนี้ — กดเพื่อดู/ตรวจ">📥 ส่งมา ${recs.length}${waiting ? ` · รอตรวจ ${waiting}` : ''}</span>` : ''}
@@ -1526,7 +1528,18 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
             }
         } catch (error) { toast(error.message, true); } finally { button.disabled = false; }
     });
+    document.addEventListener('keydown', event => {
+        const destination = event.target.closest('[data-doc-destination]');
+        if (destination && ['Enter', ' '].includes(event.key)) { event.preventDefault(); destination.click(); }
+    });
     document.addEventListener('click', event => {
+        const destination = event.target.closest('[data-doc-destination]');
+        if (destination) {
+            event.stopPropagation();
+            const url = state.docDestinations?.[destination.dataset.docDestination]?.[destination.dataset.docDestinationKind];
+            if (url) window.open(url, '_blank', 'noopener');
+            return;
+        }
         const plan = event.target.closest('[data-plan]');
         if (plan) { state.mode = 'plan'; return openPlan(plan.dataset.plan); }
         const checkBtn = event.target.closest('[data-check]');
