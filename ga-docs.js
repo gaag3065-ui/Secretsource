@@ -191,6 +191,7 @@
                     <span class="gd-tag">${esc(t.submitted_at ? 'ส่งแล้ว' : t.kind_label)}</span>
                 </header>
                 <span class="gd-task-meta">${esc(when(t.created_at))}${t.due_date ? ` · กำหนดเสร็จ ${esc(thDate(t.due_date))}` : ''}</span>
+                ${t.repeatable ? `<p class="gd-task-meta">${esc((t.fields || []).filter(f => f.type === 'date' || f.type === 'select').map(f => t.response?.[f.id]).filter(Boolean).join(' · ') || 'รายการเดินทางใหม่')}</p>` : ''}
                 ${t.detail ? `<p>${esc(t.detail)}</p>` : ''}
                 <div class="gd-task-actions"><button type="button" class="gd-btn gd-btn-sm ${t.acknowledged_at ? 'gd-btn-primary' : 'gd-ack-go'}" data-task="${t.id}">${t.acknowledged_at ? 'เปิดงาน →' : '✓ รับทราบและดำเนินการ →'}</button></div>
             </article>`).join('')}</div>`;
@@ -230,7 +231,7 @@
             ${(t.fields || []).map(f => `<div><small>${esc(f.label)}</small>${esc(t.response?.[f.id] || '-')}</div>`).join('')}
             ${(t.uploads || []).map(u => `<div><small>${esc(u.label)}</small>ส่งแล้ว ${filesOf(u.id).length} ไฟล์</div>`).join('')}</div>` : '';
         const form = !done && needsForm ? `<form id="gdTaskForm" class="gd-task-form" novalidate>
-            ${(t.fields || []).map(f => `<div class="gd-field"><label for="gt_${f.id}">${esc(f.label)} <span class="gd-req">*</span></label><input type="text" id="gt_${f.id}" name="${esc(f.id)}" value="${esc(t.response?.[f.id] || '')}"></div>`).join('')}
+            ${(t.fields || []).map(f => `<div class="gd-field"><label for="gt_${f.id}">${esc(f.label)} <span class="gd-req">*</span></label>${f.type === 'select' ? `<select id="gt_${esc(f.id)}" name="${esc(f.id)}"><option value="">— เลือกเที่ยวเดินทาง —</option>${(f.options || []).map(option => `<option value="${esc(option)}"${t.response?.[f.id] === option ? ' selected' : ''}>${esc(option)}</option>`).join('')}</select>` : `<input type="${f.type === 'date' ? 'date' : 'text'}" id="gt_${esc(f.id)}" name="${esc(f.id)}" value="${esc(t.response?.[f.id] || (f.type === 'date' ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date()) : ''))}">`}</div>`).join('')}
             ${(t.uploads || []).map(u => `<div class="gd-field" data-slot="${esc(u.id)}"><span class="gd-label">${esc(u.label)} <span class="gd-req">*</span> <small>(${u.type === 'pdf' ? 'ไฟล์ PDF' : 'รูปภาพ'})</small></span>
                 ${filesOf(u.id).length ? `<small class="gd-task-meta">ส่งไว้แล้ว ${filesOf(u.id).length} ไฟล์ — แนบเพิ่มได้</small>` : ''}
                 <label class="gd-pick">＋ แนบ${u.type === 'pdf' ? 'ไฟล์ PDF' : 'รูป'}<input type="file" accept="${u.type === 'pdf' ? 'application/pdf' : 'image/*'}" multiple data-task-slot="${esc(u.id)}"></label>
@@ -243,6 +244,7 @@
             <span class="gd-task-meta">มอบหมายเมื่อ ${esc(when(t.created_at))}${t.due_date ? ` · กำหนดเสร็จ ${esc(thDate(t.due_date))}` : ''}${t.priority && t.priority !== 'ปกติ' ? ` · ${esc(t.priority)}` : ''}</span>
             ${t.detail ? `<p>${esc(t.detail)}</p>` : ''}
             ${answer}${form}
+            ${t.repeatable && done ? '<p>เพิ่มได้ทั้งเที่ยวไป เที่ยวกลับ และวันเดินทางอื่น โดยเก็บรายการที่ส่งแล้วไว้ครบ</p><button type="button" class="gd-btn gd-btn-primary" data-task-add="' + t.id + '">＋ เพิ่มเที่ยว / เพิ่มวันเดินทาง</button>' : ''}
             ${state.config.forms.some(f => f.key === t.box && f.fields) ? `<button type="button" class="gd-btn gd-btn-primary" data-open-box="${esc(t.box)}">กรอกแบบฟอร์ม "${esc(info.title)}" →</button>` : ''}
             ${t.acknowledged_at ? `<p class="gd-task-meta">✓ รับทราบแล้วเมื่อ ${esc(when(t.acknowledged_at))}</p>` : ''}
         </article>`;
@@ -258,6 +260,8 @@
     function replaceTask(task) {
         const i = state.tasks.findIndex(t => t.id === task.id);
         if (i >= 0) state.tasks[i] = task;
+        else state.tasks.unshift(task);
+        if (state.task?.id === task.id) state.task = task;
         renderAlerts();
         renderBadges();
     }
@@ -293,7 +297,7 @@
         for (const u of t.uploads || []) {
             if (!(state.taskFiles[u.id] || []).length && !(t.files || []).some(f => f.slot === u.id)) return msg($('gdFormMsg'), `กรุณาแนบ "${u.label}"`, 'bad');
         }
-        const jobs = (t.uploads || []).flatMap(u => (state.taskFiles[u.id] || []).map(item => ({ slot: u.id, file: item.file,
+        const jobs = (t.uploads || []).flatMap(u => (state.taskFiles[u.id] || []).map(item => ({ slot: u.id, file: item.file, uploadKey: item.uploadKey ||= crypto.randomUUID(),
             password: form.querySelector(`[data-password="${u.id}"]`)?.value.trim() || '' })));
         const button = form.querySelector('[type=submit]');
         button.disabled = true;
@@ -303,7 +307,8 @@
             for (let i = 0; i < jobs.length; i++) {
                 msg($('gdFormMsg'), `กำลังอัปโหลดไฟล์ ${i + 1}/${jobs.length}…`);
                 bar.firstElementChild.style.width = `${Math.round(i / (jobs.length + 1) * 100)}%`;
-                await call('/upload/task', { id: t.id, slot: jobs[i].slot, password: jobs[i].password, data: await toDataUrl(jobs[i].file) });
+                const uploaded = await call('/upload/task', { id: t.id, slot: jobs[i].slot, password: jobs[i].password, upload_key: jobs[i].uploadKey, data: await toDataUrl(jobs[i].file) });
+                if (uploaded.task) replaceTask(uploaded.task);
             }
             msg($('gdFormMsg'), 'กำลังส่งงาน…');
             const { task } = await call(`/tasks/${t.id}/respond`, { values });
@@ -315,6 +320,15 @@
             button.disabled = false;
             bar.hidden = true;
         }
+    }
+    async function addTravelEntry(button) {
+        button.disabled = true;
+        try {
+            const { task } = await call(`/tasks/${button.dataset.taskAdd}/entries`, {});
+            replaceTask(task);
+            openTask(task.id);
+            msg($('gdFormMsg'), 'กรอกรายการเที่ยวใหม่ แล้วแนบใบเสร็จของเที่ยวนี้', 'ok');
+        } catch (error) { msg($('gdFormMsg'), error.message, 'bad'); button.disabled = false; }
     }
     // สถานะที่ GA เลือกแจ้ง (หน้างานประกัน) แทนป้าย "รับเรื่องแล้ว" — ไม่ใช้ข้อความอัตโนมัติตอนเปิดเคส
     const gaStatus = r => (r.case_id && ['received', 'waiting'].includes(r.status) && r.admin_note && !/^เปิดเคสประกันแล้ว/.test(r.admin_note)) ? r.admin_note : '';
@@ -759,6 +773,8 @@
             const items = unread().filter(t => t.box === alertBox.dataset.box);
             return items.length === 1 ? goTask(items[0].id) : openBox(alertBox.dataset.box);
         }
+        const addEntryButton = event.target.closest('[data-task-add]');
+        if (addEntryButton) return addTravelEntry(addEntryButton);
         const taskButton = event.target.closest('[data-task]');
         if (taskButton) return goTask(taskButton.dataset.task);
         const button = event.target.closest('[data-action]');
