@@ -138,12 +138,12 @@
         board.hidden = !bills.length;
         board.innerHTML = `<header><b>🧾 พนักงานส่งบิลค่ารักษาแล้ว — รอปิดเคส</b><span class="bill-board-count">${bills.length}</span><small>กดชื่อเพื่อเปิดประวัติของพนักงานคนนั้น · เคสที่มีบิลใหม่จะขึ้นป้ายแจ้งเตือน</small></header>
             <div class="bill-board-list">${[...groups.entries()].map(([k, list]) => `
-                <button type="button" class="bill-item" data-bill-open="${esc(k)}">
+                <div class="bill-item-group"><button type="button" class="bill-item" data-bill-open="${esc(k)}">
                     <span class="bill-item-badge">${list.length}</span>
                     <b>${esc(list[0].fullname)}</b>
                     <small>${esc(list[0].company || '')} · ${esc(list[0].insurance_code || list[0].employee_id || '')}</small>
                     <span class="bill-item-cases">${list.map(r => `เคส #${esc(r.case_id)} · ${esc(String(val(r, 'treat_type') || '').split(' ')[0] || '-')} · ${esc(money(val(r, 'amount')))} ฿`).join('<br>')}</span>
-                </button>`).join('')}</div>`;
+                </button><div class="bill-item-actions">${list.map(r => `<button type="button" class="bill-status-cancel" data-cancel-open="${r.id}">ยกเลิกบิลเคส #${esc(r.case_id)}</button>`).join('')}</div></div>`).join('')}</div>`;
         markCards();
     }
     // ที่ห่อกระดานบนกล่องประวัติ: ตรวจสุขภาพ (บน) + บิลรอปิดเคส (ล่าง)
@@ -272,10 +272,11 @@
         pop.id = 'intakeCancel';
         pop.className = 'intake-alert';
         pop.innerHTML = `<div class="intake-cancel">
-            <h3>🚫 ยกเลิกเรื่องของ ${esc(r.fullname)}</h3>
+            <h3>🚫 ยกเลิก${r.type === 'medical' ? 'บิล' : 'เรื่อง'}ของ ${esc(r.fullname)}</h3>
+            ${r.type === 'medical' ? `<p>บิลเลขที่ ${r.id} · ผูกเคส #${esc(r.case_id)} · รหัสประกัน ${esc(r.insurance_code || '-')} · ยอด ${esc(money(val(r, 'amount')))} บาท</p><p>ยกเลิกเฉพาะบิลรายการนี้ โดยคงประวัติการรักษาของเคสไว้ หากผูกเลขเคสผิด ให้ส่งบิลใหม่โดยเลือกเคสที่ถูกต้อง</p>` : ''}
             <p class="intake-meta">${isAnnual(r) ? `ตรวจสุขภาพ · ตรวจเมื่อ ${esc(thDate(val(r, 'check_date')))} · ${esc(money(val(r, 'amount')))} บาท` : `แจ้งเข้ารักษา · ${esc(thDate(val(r, 'treat_date')))} ${esc(val(r, 'treat_time'))} · ${esc(val(r, 'hospital'))}`} · เลขที่ ${r.id}</p>
             <label>สาเหตุที่ยกเลิก <span style="color:#e11d48">*</span>
-                <select data-cancel-pick><option value="">— เลือกสาเหตุ —</option><option>พนักงานแจ้งซ้ำ</option><option>พนักงานไม่ได้ไปรักษา / ยกเลิกเอง</option><option>ข้อมูลไม่ถูกต้อง ให้พนักงานแจ้งใหม่</option><option>ไม่อยู่ในเงื่อนไขการเบิก</option><option>ทดสอบระบบ</option></select></label>
+                <select data-cancel-pick><option value="">— เลือกสาเหตุ —</option><option>พนักงานแจ้งซ้ำ</option><option>ผูกเลขเคสผิด ให้ส่งบิลใหม่</option><option>พนักงานไม่ได้ไปรักษา / ยกเลิกเอง</option><option>ข้อมูลไม่ถูกต้อง ให้พนักงานแจ้งใหม่</option><option>ไม่อยู่ในเงื่อนไขการเบิก</option><option>ทดสอบระบบ</option></select></label>
             <textarea data-cancel-reason rows="2" maxlength="300" placeholder="หรือพิมพ์สาเหตุเพิ่มเติม"></textarea>
             <p class="ib-msg" data-cancel-msg></p>
             <div class="intake-cancel-actions"><button type="button" class="intake-end" data-cancel-close>ไม่ยกเลิก</button><button type="button" class="intake-cancel-go" data-cancel-go="${r.id}">ยืนยันยกเลิก</button></div></div>`;
@@ -404,6 +405,7 @@
         const card = [...document.querySelectorAll('#tableBodyResult .txt-case-id')].find(c => bills.some(b => c.textContent.trim() === String(b.case_id)));
         markCards();
         (card?.closest('tr') || document.getElementById('billBoard'))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (!card) window.showInsuranceToast?.(`ไม่พบเคส ${bills.map(b => '#' + b.case_id).join(', ')} ในประวัติของพนักงานนี้ กรุณาตรวจเลขเคส หากเป็นรายการผิดหรือทดสอบ ให้กดยกเลิกบิลบนกระดาน`, 'warning', 10000);
     }
     document.addEventListener('click', event => {
         const item = event.target.closest('[data-bill-open]');
