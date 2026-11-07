@@ -463,9 +463,9 @@ function getImageExtension(file) {
     return mimeExtensions[file.type] || 'jpg';
 }
 
-function buildUpdateEvidenceName(prefix, file) {
-    const caseId = String(currentActiveCaseId || '').trim();
-    const employeeName = getSafeUpdateEmployeeName();
+function buildUpdateEvidenceName(prefix, file, context) {
+    const caseId = String((context?.caseId ?? currentActiveCaseId) || '').trim();
+    const employeeName = context?.employeeName || getSafeUpdateEmployeeName();
     const extension = getImageExtension(file);
 
     if (!caseId) {
@@ -492,10 +492,10 @@ function buildOpenCaseEvidenceName(file) {
 //เพิ่มฟังก์ชันอัปโหลดรูปไป Google Drive
 //async function uploadUpdateEvidence(file, prefix) {
 //#region
-async function uploadUpdateEvidence(file, prefix) {
+async function uploadUpdateEvidence(file, prefix, context) {
     if (!file) return '';
 
-    const fileName = buildUpdateEvidenceName(prefix, file);
+    const fileName = buildUpdateEvidenceName(prefix, file, context);
     const fileData = await fileToDataUrl(file);
 
     const response = await window.authFetch(
@@ -506,9 +506,9 @@ async function uploadUpdateEvidence(file, prefix) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                caseId: currentActiveCaseId,
+                caseId: context?.caseId ?? currentActiveCaseId,
                 fileName,
-                employeeName: getSafeUpdateEmployeeName(),
+                employeeName: context?.employeeName || getSafeUpdateEmployeeName(),
                 fileData
             })
         }
@@ -1179,8 +1179,31 @@ const EDIT_EVIDENCE_TYPES = {
     'รูปหลักฐานการปิดเคส': {
         type: 'CLOSE_CASE',
         prefix: 'Closecase'
-    }
+    },
+    'ใบยินยอมใช้วงเงิน IPD ร่วม OPD': { type: 'IPD_SHARE_CONSENT', prefix: 'IPDShareConsentcase' },
+    'รูปเพิ่มเติม': { type: 'ADDITIONAL', prefix: 'Additionalcase' }
 };
+
+function editEvidenceItems(rawValue, statusText) {
+    const types = new Map(Object.entries(EDIT_EVIDENCE_TYPES).map(([label, config]) => [config.type, { label, ...config }]));
+    const legacy = parseBaseEvidenceDocuments(rawValue, statusText, true);
+    const items = [];
+    const preserved = [];
+    for (const line of String(rawValue || '').split(/\r?\n/).map(value => value.trim()).filter(value => value && value !== '-')) {
+        const tagged = /^([\w-]+)\|\s*(https?:\/\/\S+)$/i.exec(line);
+        const url = tagged?.[2] || (/^https?:\/\/\S+$/i.test(line) ? line : '');
+        if (!url) { preserved.push(line); continue; }
+        const legacyLabel = legacy.find(slot => slot.url === url)?.label;
+        const type = tagged?.[1].toUpperCase() || EDIT_EVIDENCE_TYPES[legacyLabel]?.type || 'ADDITIONAL';
+        const config = types.get(type) || { label: type, type, prefix: 'Additionalcase' };
+        items.push({ ...config, url, originalLine: line });
+    }
+    for (const [type, config] of types) {
+        if (type !== 'ADDITIONAL' && items.some(item => item.type === type)) continue;
+        items.push({ ...config, url: '', label: type === 'ADDITIONAL' ? 'เพิ่มรูปเพิ่มเติม' : config.label });
+    }
+    return { items, preserved };
+}
 
 function renderEditEvidenceEditor(eventItem, editorEl) {
     const editor =
@@ -1204,47 +1227,29 @@ function renderEditEvidenceEditor(eventItem, editorEl) {
     const hiddenInput =
         document.getElementById('mdInpDocs');
 
-    if (hiddenInput) hiddenInput.value = rawValue;
-
-    const documents = parseEvidenceDocuments(
-        rawValue,
-        eventItem.statusText
-    );
+    if (hiddenInput && !editorEl) hiddenInput.value = rawValue;
+    const { items, preserved } = editEvidenceItems(rawValue, eventItem.statusText);
+    editor.dataset.preservedLines = JSON.stringify(preserved);
+    editor.dataset.caseId = currentActiveCaseId;
+    editor.dataset.employeeName = getSafeUpdateEmployeeName();
 
     editor.replaceChildren();
 
-    for (const documentItem of documents) {
-        const config =
-            EDIT_EVIDENCE_TYPES[documentItem.label];
-
-        // รูปเพิ่มเติม (Additional) / ใบยินยอม IPD: แสดงอย่างเดียว (ตอนบันทึกระบบคงไว้ให้ครบจากค่าเดิม)
-        if (!config) {
-            if (!documentItem.url) continue;
-            const extra = document.createElement('a');
-            extra.className = 'edit-evidence-extra';
-            extra.href = documentItem.url;
-            extra.target = '_blank';
-            extra.rel = 'noopener';
-            extra.title = 'รูปนี้แก้ในหน้านี้ไม่ได้ · ระบบเก็บไว้ให้เหมือนเดิมเมื่อบันทึก';
-            const img = document.createElement('img');
-            window.loadEvidenceImage(img, getEvidencePreviewUrl(documentItem.url, 'w320'));
-            img.alt = documentItem.label;
-            const cap = document.createElement('span');
-            cap.textContent = documentItem.label + ' (คงไว้)';
-            extra.append(img, cap);
-            editor.appendChild(extra);
-            continue;
-        }
+    const counts = new Map();
+    for (const documentItem of items) {
+        const count = (counts.get(documentItem.type) || 0) + 1;
+        counts.set(documentItem.type, count);
 
         const card = document.createElement('div');
         card.className = 'edit-evidence-card';
-        card.dataset.evidenceType = config.type;
-        card.dataset.evidencePrefix = config.prefix;
+        card.dataset.evidenceType = documentItem.type;
+        card.dataset.evidencePrefix = documentItem.prefix;
         card.dataset.currentUrl = documentItem.url || '';
+        card.dataset.originalLine = documentItem.originalLine || '';
 
         const title = document.createElement('div');
         title.className = 'edit-evidence-card-title';
-        title.textContent = documentItem.label;
+        title.textContent = documentItem.url && (count > 1 || documentItem.type === 'ADDITIONAL') ? `${documentItem.label} ${count}` : documentItem.label;
 
         const current = document.createElement(
             documentItem.url ? 'button' : 'div'
@@ -1275,6 +1280,7 @@ function renderEditEvidenceEditor(eventItem, editorEl) {
 
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
+        fileInput.multiple = documentItem.type === 'ADDITIONAL' && !documentItem.url;
         fileInput.accept = 'image/jpeg,image/png,image/webp';
         fileInput.className = 'edit-evidence-file';
         fileInput.title = `เลือกรูปใหม่สำหรับ${documentItem.label}`;
@@ -1286,6 +1292,9 @@ function renderEditEvidenceEditor(eventItem, editorEl) {
             const previewUrl = URL.createObjectURL(file);
             current.replaceChildren();
             const image = document.createElement('img');
+            const release = () => URL.revokeObjectURL(previewUrl);
+            image.addEventListener('load', release, { once: true });
+            image.addEventListener('error', release, { once: true });
             image.src = previewUrl;
             image.alt = file.name;
             current.appendChild(image);
@@ -1297,7 +1306,8 @@ function renderEditEvidenceEditor(eventItem, editorEl) {
         removeInput.type = 'checkbox';
         removeInput.className = 'edit-evidence-remove-input';
         removeInput.disabled = !documentItem.url;
-        removeLabel.append(removeInput, 'ลบรูปเดิม');
+        removeLabel.append(removeInput, 'นำออกจากแถวนี้');
+        removeLabel.hidden = !documentItem.url;
 
         card.append(
             title,
@@ -1311,50 +1321,24 @@ function renderEditEvidenceEditor(eventItem, editorEl) {
 
 async function collectEditedEvidenceDocuments(editorEl, originalRaw = '') {
     const editor = editorEl || document.getElementById('mdEvidenceEditor');
-    const cards = editor
-        ? editor.querySelectorAll('.edit-evidence-card')
-        : [];
+    if (!editor?.dataset.caseId) return originalRaw || '-';
+    const cards = editor.querySelectorAll('.edit-evidence-card');
+    const context = { caseId: editor.dataset.caseId, employeeName: editor.dataset.employeeName };
     const lines = [];
 
     for (const card of cards) {
-        const file = card.querySelector(
-            '.edit-evidence-file'
-        )?.files?.[0];
+        const files = [...(card.querySelector('.edit-evidence-file')?.files || [])];
         const removeExisting = card.querySelector(
             '.edit-evidence-remove-input'
         )?.checked === true;
-        let url = removeExisting
-            ? ''
-            : card.dataset.currentUrl || '';
-
-        if (file) {
-            url = await uploadUpdateEvidence(
-                file,
-                card.dataset.evidencePrefix
-            );
+        for (const file of files) {
+            const url = await uploadUpdateEvidence(file, card.dataset.evidencePrefix, context);
+            if (!url) throw new Error(`ไม่ได้รับลิงก์ไฟล์ ${file.name}`);
+            lines.push(`${card.dataset.evidenceType}|${url}`);
         }
-
-        if (url) {
-            lines.push(
-                `${card.dataset.evidenceType}|${url}`
-            );
-        }
+        if (!files.length && !removeExisting && card.dataset.originalLine) lines.push(card.dataset.originalLine);
     }
-
-    // รูปประเภทที่ไม่มีช่องแก้ในฟอร์มนี้ (เช่น รูปเปิดเคสในแถวปิดเคส) → คงไว้ตามเดิม ไม่หาย
-    const shownTypes = new Set([...cards].map(card => card.dataset.evidenceType));
-    for (const line of String(originalRaw || '').split(/\r?\n/).map(x => x.trim())) {
-        const m = /^(OPEN_CASE|RECEIPT|MEDICAL_CERTIFICATE|CLOSE_CASE)\|(.+)$/i.exec(line);
-        if (m && !shownTypes.has(m[1].toUpperCase())) lines.push(`${m[1].toUpperCase()}|${m[2]}`);
-    }
-
-    // รูปเพิ่มเติม (Additional) และใบยินยอมใช้วงเงิน IPD ร่วม ไม่มีช่องแก้ในฟอร์มนี้ — คงไว้ตามเดิม
-    for (const url of parseAdditionalEvidence(originalRaw)) {
-        lines.push(`ADDITIONAL|${url}`);
-    }
-    for (const url of parseIpdShareConsent(originalRaw)) {
-        lines.push(`IPD_SHARE_CONSENT|${url}`);
-    }
+    lines.push(...JSON.parse(editor.dataset.preservedLines || '[]'));
 
     return lines.join('\n') || '-';
 }
@@ -1599,6 +1583,7 @@ async function saveInlineRowEdit(row, eventItem) {
 }
 
 window.closeEditModal = function () {
+    if (document.getElementById('modalEditForm')?.dataset.saving === 'true') return;
     const modal = document.getElementById('editCaseModal');
     if (modal) modal.style.setProperty('display', 'none', 'important');
 };
@@ -1730,7 +1715,7 @@ window.openEditModal = function (eventItem, domIndex) {
 
     function setVal(id, val) {
         const el = document.getElementById(id);
-        if (el) el.value = (val !== undefined && val !== null) ? String(val).replace(/,/g, '').trim() : '';
+        if (el) el.value = el.type === 'number' ? String(val ?? '').replace(/,/g, '').trim() : String(val ?? '');
     }
 
     setVal('mdCaseId', eventItem.CaseIdNew);
@@ -1764,9 +1749,6 @@ window.openEditModal = function (eventItem, domIndex) {
     setVal('mdManualDate', parts[0] || '');
     setVal('mdManualTime', parts[1] || '');
 
-    const workLocation = document.getElementById('hiddenWorkLocation').value;
-    const modalSlk = document.querySelectorAll('#editCaseModal .slk-column');
-    modalSlk.forEach(el => el.style.display = workLocation.toUpperCase().includes('SL') ? '' : 'none');
 };
 //#endregion
 
@@ -1777,38 +1759,31 @@ window.openEditModal = function (eventItem, domIndex) {
 function initHistoryModalEvents() {
 //const editFormEl = document.getElementById('modalEditForm');
 //#region
-       const editFormEl = document.getElementById('modalEditForm');
-        if (editFormEl) {
-            editFormEl.addEventListener('submit', async (e) => {
-                e.preventDefault(); // บล็อกหน้าจอไม่ให้รีเฟรชทิ้ง
-
-                const symptoms = document.getElementById('mdSymptomsInput').value;
-                if (!symptoms.trim()) {
-                    alert("⚠️ กรุณากรอกรายละเอียดอาการป่วยในป๊อปอัปด้วยครับ"); 
-                    document.getElementById('mdSymptomsInput').focus();
-                    return;
-                }
-
-                let editedDocuments;
-
-                try {
-                    editedDocuments =
-                        await collectEditedEvidenceDocuments(
-                            null,
-                            document.getElementById('mdInpDocs')?.value || ''
-                        );
-                } catch (error) {
-                    alert(
-                        `อัปโหลดรูปสำหรับแก้ไขไม่สำเร็จ: ${error.message}`
-                    );
-                    return;
-                }
-
-                // รวบรวมก้อนข้อมูล Payload ทั้งหมดจากช่องฟอร์มป๊อปอัป
+    const editFormEl = document.getElementById('modalEditForm');
+    if (editFormEl) {
+        editFormEl.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (editFormEl.dataset.saving === 'true') return;
+            const symptoms = document.getElementById('mdSymptomsInput').value.trim();
+            if (!symptoms) {
+                alert('กรุณากรอกรายละเอียดอาการป่วย');
+                document.getElementById('mdSymptomsInput').focus();
+                return;
+            }
+            if (!Number.isInteger(Number(currentEditingRowIndex)) || Number(currentEditingRowIndex) < 2) {
+                alert('ไม่พบตำแหน่งแถว กรุณาเปิดรายการใหม่ก่อนบันทึก');
+                return;
+            }
+            const caseId = document.getElementById('mdCaseId').value;
+            if (!confirm(`ยืนยันบันทึกการแก้ไขเคส #${caseId} ในแถวที่เลือกหรือไม่?`)) return;
+            const submitButton = editFormEl.querySelector('[type="submit"]');
+            editFormEl.dataset.saving = 'true';
+            submitButton.disabled = true;
+            try {
                 const payload = {
                     sheetRowIndex: currentEditingRowIndex, 
                     CaseIdNew: document.getElementById('mdCaseId').value || '-',
-                    autoDateTime: document.getElementById('headerDateTimeValue').innerText, 
+                    autoDateTime: document.getElementById('headerDateTimeValue')?.innerText || new Date().toLocaleString('th-TH'),
                     adminName: sessionStorage.getItem('loggedInAdminName') || 'System Admin', 
                     treatmentDateTime: `${document.getElementById('mdManualDate').value} ${document.getElementById('mdManualTime').value}`.trim() || '-',
                     company: window.__fullEditItem?.company || document.getElementById('hiddenCompany').value || 'CALL 365',
@@ -1838,165 +1813,35 @@ function initHistoryModalEvents() {
                     ExchangeRatesInt: document.getElementById('mdInpExchangeRatesInt').value || '1',
                     
                     ClinicianReportedOutcomes: document.getElementById('mdInpClinician').value || '-',
-                    DocumentsAttached: editedDocuments,
-                    previousDocumentsAttached:
+                    expectedDocumentsAttached:
                         document.getElementById('mdInpDocs').value || '-',
                     notes: document.getElementById('mdNotesInput').value || '-'
                 };
-
-                // แสดงกล่องตรวจสอบความปลอดภัย Payload ก่อนปล่อยสัญญาณยิง
-                if (confirm(`🧪 [ระบบตรวจสอบ Payload ป๊อปอัปก่อนส่งจริง]\n\n• บรรทัดบนแผ่นชีต: แถวที่ ${payload.sheetRowIndex}\n• ยืนยันเคส ID: ${payload.CaseIdNew}\n• สถานพยาบาล: ${payload.hospital}\n\nกดปุ่ม "ตกลง (OK)" เพื่อส่งค่าไปอัปเดตหลังบ้านครับ`)) {
-                    try {
-                        const response = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/update-treatment`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        
-                        const result = await response.json();
-                        
-//------------------------------------------------------------------------------------------------------//
-
-if (response.ok && result.success) {
-            alert('🎉 บันทึกปรับปรุงแก้ไขข้อมูลและส่งแถวลง Google Sheets สำเร็จเรียบร้อย!');
-
-            if (result.driveCleanupWarning) {
-                alert(
-                    `ข้อมูลแก้ไขสำเร็จ แต่มีคำเตือนเรื่องรูปบน Drive: ${result.driveCleanupWarning}`
-                );
-            }
-            
-            const editModal = document.getElementById('editCaseModal');
-            if (editModal) { editModal.style.setProperty('display', 'none', 'important'); }
-
-            // 🎯 เจาะเป้าหมายตรงตัว: วิ่งไปหาบรรทัดแถวบนหน้าจอเบราว์เซอร์จริงตามพิกัดตัวแปรกลางที่จำไว้
-            const targetRow = document.getElementById('tableBodyResult').parentNode.rows[currentDomRowIndex];
-            
-            if (targetRow) {
-                // ฟังก์ชันช่วยจัดระเบียบสัญกรณ์การเงินและเศษทศนิยม 2 ตำแหน่งให้สวยงามกลมกลืน
-                const fmt = (val) => {
-                    if (val === undefined || val === null || val === '') return '0.00';
-                    let num = parseFloat(String(val).replace(/,/g, '').replace(/\s+/g, '').trim());
-                    return isNaN(num) ? '0.00' : num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                };
-
-                // 🎯 ทำการฉีดพ่นค่าตัวเลขและคำอธิบายชุดใหม่เข้าไปสับเปลี่ยนในช่องเซลล์ตารางย่อยเดิมทันทีคาตา
-                const cells = targetRow.children;
-
-                if (cells.length >= 22) {
-                    cells[1].innerText =
-                        payload.treatmentDateTime || '-';
-
-                    cells[2].innerText =
-                        payload.statusText || '-';
-
-                    cells[3].innerText =
-                        payload.symptoms || '-';
-
-                    cells[4].innerText =
-                        payload.workLocation || '-';
-
-                    cells[5].innerText =
-                        payload.hospital || '-';
-
-                    cells[6].innerText =
-                        fmt(payload.DentalOPD);
-
-                    cells[7].innerText =
-                        fmt(payload.PPUsageOPD);
-
-                    cells[8].innerText =
-                        fmt(payload.PPUsageIPD);
-
-                    cells[9].innerText =
-                        fmt(payload.SLKUsageOpdThB);
-
-                    cells[10].innerText =
-                        fmt(payload.SLKUsageIpdThB);
-
-                    cells[11].innerText =
-                        fmt(payload.SLKUsageOpdLkr);
-
-                    cells[12].innerText =
-                        fmt(payload.SLKUsageIpdLkr);
-
-                    cells[13].innerText =
-                        fmt(payload.OverLimitCreditInsThB);
-
-                    cells[14].innerText =
-                        fmt(payload.OverLimitCreditInsLkr);
-
-                    cells[15].innerText =
-                        payload.ExchangeRatesIns || '1';
-
-                    cells[16].innerText =
-                        payload.ExchangeRatesInt || '1';
-
-                    cells[17].innerText =
-                        payload.ClinicianReportedOutcomes || '-';
-
-                    cells[18].replaceWith(
-                        createEvidenceDocumentsCell(
-                            payload.DocumentsAttached,
-                            payload.statusText
-                        )
-                    );
-
-                    cells[19].innerText =
-                        payload.notes || '-';
-
-                    cells[20].innerText =
-                        payload.autoDateTime || displayAutoTime;
-
-                    cells[21].innerText =
-                        payload.adminName || '-';
-
-                    for (let index = 6; index <= 14; index++) {
-                        cells[index].style.fontWeight = 'bold';
-                    }
+                payload.DocumentsAttached = await collectEditedEvidenceDocuments(null, payload.expectedDocumentsAttached);
+                const response = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/update-treatment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.message || 'บันทึกไม่สำเร็จ');
+                for (const list of [window.currentIndividualHistory, window.currentFilteredHistory]) {
+                    const item = list?.find(row => Number(row.targetRowNumber) === Number(payload.sheetRowIndex));
+                    if (item) Object.assign(item, payload, { documentsAttached: payload.DocumentsAttached });
                 }
-
-                const historyIndex =
-                    (window.currentIndividualHistory || [])
-                        .findIndex(
-                            (item) =>
-                                Number(item.targetRowNumber) ===
-                                Number(payload.sheetRowIndex)
-                        );
-
-                if (historyIndex >= 0) {
-                    window.currentIndividualHistory[historyIndex] = {
-                        ...window.currentIndividualHistory[historyIndex],
-                        ...payload,
-                        targetRowNumber:
-                            Number(payload.sheetRowIndex)
-                    };
-
-                    renderHistoryTable(
-                        window.currentIndividualHistory
-                    );
-                }
-
-                   // 🎯 บันทึกครอบค่าล่าสุดฝังคืนลงไปในปุ่มแก้ไขของบรรทัดนั้นด้วย
-                const editButton = targetRow.querySelector('.btn-edit-minimal');
-                if (editButton) {
-                    const safeJsonString = JSON.stringify({ ...payload, targetRowNumber: payload.sheetRowIndex });
-                    const safeEncodedBase64 = window.btoa(unescape(encodeURIComponent(safeJsonString)));
-                    editButton.setAttribute('onclick', `event.stopPropagation(); const decodedData = JSON.parse(decodeURIComponent(escape(window.atob('${safeEncodedBase64}')))); populateDataToForm(decodedData, event.currentTarget);`);
-                }
-
-                // เปลี่ยนสีแถวเป้าหมายให้เป็นสีไฮไลต์สีเขียวอ่อนกระตุ้นสายตา
-                targetRow.style.backgroundColor = '#edf7ed';
-                console.log(`🎯 [Direct Row Update Success] สับเปลี่ยนค่าเงินในแถวหน้าจออันดับที่ ${currentDomRowIndex} สำเร็จเสร็จสิ้น!`);
+                const caseDocuments = window.currentCaseDocuments?.[payload.CaseIdNew];
+                const evidenceRow = caseDocuments?.find(row => Number(row.targetRowNumber) === Number(payload.sheetRowIndex));
+                if (evidenceRow) Object.assign(evidenceRow, { DocumentsAttached: payload.DocumentsAttached, statusText: payload.statusText });
+                document.getElementById('editCaseModal')?.style.setProperty('display', 'none', 'important');
+                cancelInlineRowEdit();
+                alert('บันทึกข้อมูลและเอกสารแนบเรียบร้อยแล้ว');
+            } catch (error) {
+                alert(`บันทึกการแก้ไขไม่สำเร็จ: ${error.message}`);
+            } finally {
+                delete editFormEl.dataset.saving;
+                submitButton.disabled = false;
             }
-        }
-
-          } catch (error) { 
-               console.error("Update Error:", error);
-                alert('❌ ขัดข้องทางเทคนิคในการติดต่อเชื่อมต่อ API อัปเดตหลังบ้าน'); 
-            }
-        }
-     });
+        });
     }
 //#endregion
 

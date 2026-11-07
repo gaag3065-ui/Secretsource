@@ -1699,14 +1699,15 @@
                 <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">SL IPD (L)</label><input type="number" id="mdInpSLKUsageIpdLkr" step="any" value="0"></div>
                 <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">ส่วนเกินวงเงินค่ารักษา (T)</label><input type="number" id="mdInpOverLimitThB" step="any" value="0"></div>
                 <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">ส่วนเกินวงเงินค่ารักษา (L)</label><input type="number" id="mdInpOverLimitLkr" step="any" value="0"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">เรทค่าเงินที่ประกันคิดให้</label><input type="number" id="mdInpExchangeRatesIns" value="1" step="0.01"></div>
-                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">เรทค่าเงินปัจจุบัน</label><input type="number" id="mdInpExchangeRatesInt" value="1" step="0.01"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">เรทค่าเงินที่ประกันคิดให้</label><input type="number" id="mdInpExchangeRatesIns" value="1" step="any"></div>
+                <div class="slk-column"><label style="font-size:11px; font-weight:bold; color:#555;">เรทค่าเงินปัจจุบัน</label><input type="number" id="mdInpExchangeRatesInt" value="1" step="any"></div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-bottom: 15px;">
                 <div><label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">ผลการรักษา</label><input type="text" id="mdInpClinician" placeholder="-"></div>
                 <div>
                     <label style="font-size:12px; font-weight:bold; display: block; margin-bottom: 4px;">เอกสารแนบ</label>
+                    <p style="margin: 0 0 8px; font-size: 12px;">เลือกรูปใหม่เพื่อแทนรูปเดิม หรือเลือก “นำออกจากแถวนี้” แล้วกดบันทึก</p>
                     <input type="hidden" id="mdInpDocs" value="-">
                     <div id="mdEvidenceEditor" class="edit-evidence-editor"></div>
                 </div>
