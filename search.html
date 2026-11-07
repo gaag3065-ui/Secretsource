@@ -453,6 +453,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // =====================================================
         // 4. โหลด Script ฝั่งซ้าย
         // =====================================================
+            if (canSearch || canViewHistory) await loadScript('treatment-rounds.js');
             if (canSearch) {
                 await loadScript('searchinformation.js');
 

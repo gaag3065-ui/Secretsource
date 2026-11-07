@@ -174,9 +174,13 @@ function beginInsuranceSearch() {
     };
 }
 
+let selectedLimitEmployee;
+let limitRefreshSequence = 0;
+
 function applySelectedEmployee(employee, selectedItem, options = {}) {
     const resultsList = document.getElementById('resultsList');
     if (!resultsList) return;
+    selectedLimitEmployee = { employee, item: selectedItem };
 
     resultsList
         .querySelectorAll('.employee-result-option')
@@ -240,6 +244,30 @@ function applySelectedEmployee(employee, selectedItem, options = {}) {
     );
 }
 
+window.refreshSelectedTreatmentLimits = async function (insuranceId) {
+    const selection = selectedLimitEmployee;
+    const code = String(insuranceId || '').trim();
+    if (!selection?.item?.isConnected || !code || code !== String(selection.employee.colC || '').trim()) return;
+    const sequence = ++limitRefreshSequence;
+    try {
+        const response = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/search`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
+            body: JSON.stringify({ keyword: code })
+        });
+        const data = await readSearchResponse(response);
+        const fresh = (data.employees || [data.employee]).find(employee => String(employee?.colC || '').trim() === code);
+        if (!response.ok || !data.success || !fresh || selectedLimitEmployee !== selection || sequence !== limitRefreshSequence || !selection.item.isConnected) return;
+        Object.assign(selection.employee, fresh);
+        const summary = selection.item.querySelector('.limit-summary');
+        if (summary) summary.outerHTML = buildLimitSummary(selection.employee);
+        const header = selection.item.querySelector('.employee-summary-line');
+        header?.querySelectorAll('.limit-badge').forEach(badge => badge.remove());
+        header?.querySelector('.employee-summary-arrow')?.insertAdjacentHTML('beforebegin', limitBadges(selection.employee));
+    } catch (error) {
+        console.error('Refresh treatment limits:', error);
+    }
+};
+
 // ---------------------------------------------------------------- สรุปวงเงิน: ยอดหักแต่ละครั้ง (ทุกเคส) เทียบกับยอดคงเหลือในชีต
 // กติกา: วงเงิน OPD ไม่พอ → ใช้วงเงิน IPD ร่วมได้ 1 ครั้ง (ครั้งที่วงเงิน OPD หมด) และต้องมีใบยินยอมที่เซ็นแล้วอัปโหลดในอัปเดตเคสนั้น
 const LOW_LIMIT = 1000;
@@ -250,32 +278,16 @@ const limitNumber = value => {
 const limitMoney = value => limitNumber(value).toLocaleString('th-TH', { maximumFractionDigits: 2 });
 const hasLimitValue = value => String(value ?? '').trim() !== '' && String(value).trim() !== '-';
 
-// "26/08/2026 19:23" / "18/4/2026, 0:00:00" → { time, text: "26-8-69" }
-function parseTreatmentDate(value) {
-    const match = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String(value || ''));
-    if (!match) return { time: Infinity, text: 'ไม่ระบุวันที่' };
-    const [, day, month, year] = match.map(Number);
-    const ad = year > 2400 ? year - 543 : year;
-    return { time: new Date(ad, month - 1, day).getTime(), text: `${day}-${month}-${String(ad + 543).slice(-2)}` };
-}
-
 function analyzeLimits(employee) {
-    const cases = new Map();
-    (Array.isArray(employee.history) ? employee.history : []).forEach(item => {
-        const id = String(item.CaseIdNew);
-        cases.set(id, [...(cases.get(id) || []), item]);
-    });
     const opdLimit = limitNumber(employee.colAV), ipdLimit = limitNumber(employee.colAW);
-    const visits = [...cases.entries()].map(([caseId, events]) => {
-        const item = events[events.length - 1]; // ยอดล่าสุดของเคส
+    const visits = collectTreatmentRounds(employee.history).map(({ caseId, date, expense: item, consent, status }) => {
         const dental = limitNumber(item.DentalOPD);
-        const opd = limitNumber(item.PPUsageOPD) + limitNumber(item.SLKUsageOpdThB);
-        const ipd = limitNumber(item.PPUsageIPD) + limitNumber(item.SLKUsageIpdThB);
-        const consent = events.some(e => /(^|\n)\s*IPD_SHARE_CONSENT\|/i.test(String(e.DocumentsAttached || '')));
+        // The sheet balance uses PP OPD/IPD and dental. SL expenses have their own columns.
+        const opd = limitNumber(item.PPUsageOPD);
+        const ipd = limitNumber(item.PPUsageIPD);
         const other = limitNumber(item.OtherUsage);   // วงเงินอื่นๆ — แยก ไม่รวม OPD/IPD/ทำฟัน
-        return { caseId, date: parseTreatmentDate(item.treatmentDateTime), opd, ipd, dental, other, total: opd + ipd + dental + other, consent };
-    }).filter(visit => visit.total > 0)
-        .sort((a, b) => a.date.time - b.date.time || Number(a.caseId) - Number(b.caseId));
+        return { caseId, date, status, item, opd, ipd, dental, other, total: opd + ipd + dental + other, consent };
+    });
 
     // ไล่ยอดตามลำดับวันที่: หาเคสที่ใช้วงเงินร่วม / บันทึก OPD เกินยอดคงเหลือ
     let opdLeft = opdLimit, sharedCase = null;
@@ -325,7 +337,7 @@ function openIpdShareConsentForm(employee, visit) {
     const win = window.open('', '_blank');
     if (!win) { alert('เบราว์เซอร์บล็อกหน้าต่างใหม่ — อนุญาตป๊อปอัปแล้วลองอีกครั้ง'); return; }
     const opdPart = visit ? Math.min(visit.opd + visit.dental, Math.max(visit.opdBefore, 0)) : 0;
-    const ipdPart = visit ? visit.total - opdPart : 0;
+    const ipdPart = visit ? visit.opd + visit.dental + visit.ipd - opdPart : 0;
     const field = value => escapeSearchHtml(value || '..............................');
     win.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>ใบยินยอมให้ใช้วงเงิน IPD ร่วม OPD</title>
         <style>body{font-family:'Sarabun','TH Sarabun New',Tahoma,sans-serif;max-width:720px;margin:40px auto;font-size:17px;line-height:1.9;color:#111}
@@ -338,7 +350,7 @@ function openIpdShareConsentForm(employee, visit) {
         <table>
             <tr><td>เลขเคส</td><td>${field(visit?.caseId)}</td></tr>
             <tr><td>วันที่เข้ารักษา</td><td>${field(visit?.date.text)}</td></tr>
-            <tr><td>ค่ารักษาทั้งหมด</td><td>${visit ? `${limitMoney(visit.total)} บาท` : field('')}</td></tr>
+            <tr><td>ค่ารักษาที่ใช้วงเงิน OPD/IPD</td><td>${visit ? `${limitMoney(visit.opd + visit.dental + visit.ipd)} บาท` : field('')}</td></tr>
             <tr><td>หักวงเงิน OPD (ยอดคงเหลือทั้งหมด)</td><td>${visit ? `${limitMoney(opdPart)} บาท` : field('')}</td></tr>
             <tr><td>หักวงเงิน IPD</td><td>${visit ? `${limitMoney(ipdPart)} บาท` : field('')}</td></tr>
         </table>
@@ -357,8 +369,9 @@ function buildLimitSummary(employee) {
         `- ผู้ป่วยนอก OPD วงเงิน ${limitMoney(a.opdLimit)}  คงเหลือ ${limitMoney(employee.colBA)} บาท`,
         ...(a.hasOther ? [`- วงเงินอื่นๆ (แยกต่างหาก) วงเงิน ${limitMoney(a.otherLimit)}  คงเหลือ ${limitMoney(employee.colBM)} บาท`] : []),
         ...a.visits.map(v => {
-            const parts = [v.opd && `OPD ${limitMoney(v.opd)}`, v.dental && `ทำฟัน OPD ${limitMoney(v.dental)}`, v.ipd && `IPD ${limitMoney(v.ipd)}`, v.other && `วงเงินอื่นๆ ${limitMoney(v.other)}`].filter(Boolean);
-            return `${v.date.text}  ค่ารักษา ${limitMoney(v.total)} บาท (${parts.join(' · ')})${v === a.sharedCase ? ' — ใช้วงเงิน IPD ร่วม' : ''}`;
+            const parts = treatmentAmountFields.filter(([field]) => !field.startsWith('Exchange') && limitNumber(v.item[field]))
+                .map(([field, label]) => `${label} ${limitMoney(v.item[field])}`);
+            return `${v.date.text || 'ไม่ระบุวันที่'} · เคส #${v.caseId}${v.status ? ` · ${v.status}` : ''} — ${parts.join(' · ')}${v === a.sharedCase ? ' — ใช้วงเงิน IPD ร่วม' : ''}`;
         })
     ];
     const text = lines.join('\n');

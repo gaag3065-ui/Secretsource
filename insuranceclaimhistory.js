@@ -148,25 +148,39 @@ function compareCaseIdDescending(a, b) {
     return String(b).localeCompare(String(a), 'th', { numeric: true });
 }
 
-function renderCaseTreatmentAmounts(event) {
-    const fields = [
-        ['DentalOPD', 'ทำฟัน หักวงเงิน OPD (บาท)'], ['PPUsageOPD', 'PP OPD (บาท)'], ['PPUsageIPD', 'PP IPD (บาท)'],
-        ['OtherUsage', 'วงเงินอื่นๆ (บาท)'], ['SLKUsageOpdThB', 'SL OPD (บาท)'], ['SLKUsageIpdThB', 'SL IPD (บาท)'],
-        ['SLKUsageOpdLkr', 'SL OPD (LKR)'], ['SLKUsageIpdLkr', 'SL IPD (LKR)'],
-        ['OverLimitCreditInsThB', 'ส่วนเกินวงเงินค่ารักษา (บาท)'], ['OverLimitCreditInsLkr', 'ส่วนเกินวงเงินค่ารักษา (LKR)'],
-        ['ExchangeRatesIns', 'เรทค่าเงินที่ประกันคิดให้ (THB/LKR)'], ['ExchangeRatesInt', 'เรทค่าเงินปัจจุบัน (THB/LKR)']
-    ];
+function renderCaseTreatmentAmounts(events) {
     const box = document.createElement('section');
-    box.className = 'case-treatment-amounts';
-    box.setAttribute('aria-label', 'ค่ารักษาทุกประเภท');
-    fields.forEach(([key, label]) => {
-        const item = document.createElement('div');
-        const title = document.createElement('span'); title.textContent = label;
-        const value = document.createElement('strong');
-        const raw = String(event[key] ?? '').trim(); const number = Number(raw.replace(/,/g, ''));
-        value.textContent = raw && raw !== '-' && Number.isFinite(number) ? number.toLocaleString('th-TH', { minimumFractionDigits: key.startsWith('Exchange') ? 0 : 2, maximumFractionDigits: key.startsWith('Exchange') ? 4 : 2 }) : '-';
-        item.append(title, value); box.append(item);
-    });
+    box.className = 'case-treatment-rounds';
+    const rounds = collectTreatmentRounds(events);
+    if (!rounds.length) return box;
+    const appendAmounts = (heading, values, fields) => {
+        const title = document.createElement('h4');
+        title.textContent = heading;
+        const grid = document.createElement('div');
+        grid.className = 'case-treatment-amounts';
+        for (const [key, label] of fields) {
+            const item = document.createElement('div');
+            const caption = document.createElement('span');
+            caption.textContent = label;
+            const value = document.createElement('strong');
+            const raw = String(values[key] ?? '').trim();
+            const number = Number(raw.replace(/,/g, ''));
+            const rate = key.startsWith('Exchange');
+            value.textContent = raw && raw !== '-' && Number.isFinite(number)
+                ? number.toLocaleString('th-TH', { minimumFractionDigits: rate ? 0 : 2, maximumFractionDigits: rate ? 6 : 2 }) : '-';
+            item.append(caption, value);
+            grid.append(item);
+        }
+        box.append(title, grid);
+    };
+    if (rounds.length > 1) {
+        const fields = treatmentAmountFields.filter(([key]) => !key.startsWith('Exchange'));
+        const totals = Object.fromEntries(fields.map(([key]) => [key, rounds.reduce((sum, round) => sum + (Number(String(round.expense[key] ?? '').replace(/,/g, '')) || 0), 0)]));
+        appendAmounts(`ยอดรวม ${rounds.length} รอบรักษา`, totals, fields);
+    }
+    rounds.forEach((round, index) => appendAmounts(
+        `รอบที่ ${index + 1} · ${round.date.text || 'ไม่ระบุวันที่'}${round.status ? ` · ${round.status}` : ''}`,
+        round.expense, treatmentAmountFields));
     return box;
 }
 function renderHistoryTable(historyData) {
@@ -243,7 +257,7 @@ function renderHistoryTable(historyData) {
             <td class="text-center" data-label="แอดมินที่บันทึกข้อมูล">${latestEvent.adminName || '-'}</td>
             <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- คลิกเพื่อดูไทม์ไลน์ -</td>
         `;
-        parentTr.children[0].append(renderCaseTreatmentAmounts(latestEvent));
+        parentTr.children[0].append(renderCaseTreatmentAmounts(timelines));
         const combinedCaseEvidence =
             combineCaseEvidenceDocuments(timelines);
 
@@ -727,6 +741,7 @@ window.injectNewRowToTableRealtime = function (payloadData) {
     }
 
     updateHistoryResultCount(window.currentIndividualHistory);
+    void window.refreshSelectedTreatmentLimits?.(payloadData.insuranceId || document.getElementById('hiddenInsuranceId')?.value);
 
     const safeJsonString = JSON.stringify(mockEventItem);
     const safeEncodedBase64 = window.btoa(unescape(encodeURIComponent(safeJsonString)));
@@ -764,7 +779,7 @@ window.injectNewRowToTableRealtime = function (payloadData) {
         <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- ไทม์ไลน์เรียลไทม์ -</td>
     `;
 
-    parentTr.children[0].append(renderCaseTreatmentAmounts(mockEventItem));
+    parentTr.children[0].append(renderCaseTreatmentAmounts([mockEventItem]));
     parentTr.children[18].replaceWith(
         createEvidenceDocumentsCell(
             mockEventItem.DocumentsAttached,
@@ -827,8 +842,8 @@ window.injectNewRowToTableRealtime = function (payloadData) {
             });
 
             if (existingParent) {
-                existingParent.querySelector('.case-treatment-amounts')?.remove();
-                existingParent.children[0].append(renderCaseTreatmentAmounts(mockEventItem));
+                existingParent.querySelector('.case-treatment-rounds')?.remove();
+                existingParent.children[0].append(renderCaseTreatmentAmounts(window.currentIndividualHistory.filter(item => String(item.CaseIdNew) === String(caseId))));
                 const existingEvidenceCell =
                     existingParent.children[18];
 
@@ -1571,6 +1586,8 @@ async function saveInlineRowEdit(row, eventItem) {
 
         applyUpdate(window.currentIndividualHistory);
         applyUpdate(window.currentFilteredHistory);
+        applyUpdate(window.currentCaseTreatmentEvents?.[payload.CaseIdNew]);
+        void window.refreshSelectedTreatmentLimits?.(payload.insuranceId);
 
         cancelInlineRowEdit();
     } catch (error) {
@@ -1825,7 +1842,7 @@ function initHistoryModalEvents() {
                 });
                 const result = await response.json();
                 if (!response.ok || !result.success) throw new Error(result.message || 'บันทึกไม่สำเร็จ');
-                for (const list of [window.currentIndividualHistory, window.currentFilteredHistory]) {
+                for (const list of [window.currentIndividualHistory, window.currentFilteredHistory, window.currentCaseTreatmentEvents?.[payload.CaseIdNew]]) {
                     const item = list?.find(row => Number(row.targetRowNumber) === Number(payload.sheetRowIndex));
                     if (item) Object.assign(item, payload, { documentsAttached: payload.DocumentsAttached });
                 }
@@ -1834,6 +1851,7 @@ function initHistoryModalEvents() {
                 if (evidenceRow) Object.assign(evidenceRow, { DocumentsAttached: payload.DocumentsAttached, statusText: payload.statusText });
                 document.getElementById('editCaseModal')?.style.setProperty('display', 'none', 'important');
                 cancelInlineRowEdit();
+                void window.refreshSelectedTreatmentLimits?.(payload.insuranceId);
                 alert('บันทึกข้อมูลและเอกสารแนบเรียบร้อยแล้ว');
             } catch (error) {
                 alert(`บันทึกการแก้ไขไม่สำเร็จ: ${error.message}`);
@@ -2146,6 +2164,14 @@ async function executeDeleteRow(
                 `ลบข้อมูลสำเร็จ แต่มีคำเตือนเรื่องรูปบน Drive: ${result.driveCleanupWarning}`
             );
         }
+        const removedRow = Number(sheetRowIndex);
+        for (const index of [window.currentCaseTreatmentEvents, window.currentCaseDocuments]) {
+            for (const id of Object.keys(index || {})) {
+                index[id] = index[id].filter(item => Number(item.targetRowNumber) !== removedRow).map(item =>
+                    Number(item.targetRowNumber) > removedRow ? { ...item, targetRowNumber: Number(item.targetRowNumber) - 1 } : item);
+            }
+        }
+        void window.refreshSelectedTreatmentLimits?.(document.getElementById('hiddenInsuranceId')?.value);
 
         if (
             window.historyDisplayMode ===
@@ -2710,6 +2736,7 @@ async function loadFilteredAllHistory() {
         window.currentFilteredHistory =
             data.history || [];
         window.currentCaseDocuments = data.caseDocuments || {};
+        window.currentCaseTreatmentEvents = data.caseTreatmentEvents || {};
 
         applyHistoryFilterOptions(data);
 
@@ -3583,7 +3610,10 @@ function renderFlatHistoryTable(history) {
             area
         );
 
-        caseCell.append(renderCaseTreatmentAmounts(latestEvent));
+        const fullCaseEvents = window.currentCaseTreatmentEvents?.[caseId] || [];
+        const amountEvents = new Map(fullCaseEvents.map(item => [String(item.targetRowNumber), item]));
+        for (const item of events) amountEvents.set(item.targetRowNumber ? String(item.targetRowNumber) : item, item);
+        caseCell.append(renderCaseTreatmentAmounts([...amountEvents.values()]));
         parentRow.appendChild(caseCell);
 
         appendHistoryDataCells(

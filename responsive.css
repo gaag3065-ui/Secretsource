@@ -2956,7 +2956,9 @@ body.login-page {
 .case-treatment-amounts span { font-size: 12px; color: #475569; overflow-wrap: anywhere; }
 .case-treatment-amounts strong { font-size: 14px; color: #0f172a; }
 #table-box-placeholder tr.parent-row > td:first-child { flex-direction: column !important; align-items: stretch !important; min-width: 0; }
-#table-box-placeholder tr.parent-row:not(.is-open) .case-treatment-amounts { display: none; }
+#table-box-placeholder tr.parent-row:not(.is-open) .case-treatment-rounds { display: none; }
+.case-treatment-rounds h4 { margin: 12px 0 0; font-size: 13px; color: #334155; white-space: normal; }
+.case-treatment-rounds .case-treatment-amounts { margin-top: 6px; }
 #table-box-placeholder tr.parent-row.is-open > td:nth-child(n+7):nth-child(-n+17) { display: none !important; }
 .intake-close-readiness select { display: block; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; margin: 6px 0; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; background: #fff; }
 .treatment-share { margin-left: 6px; font-weight: 700; }
