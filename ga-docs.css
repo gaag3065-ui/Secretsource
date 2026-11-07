@@ -325,3 +325,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gd-case-timeline { display: grid; gap: 12px; margin: 14px 0 0; padding-left: 22px; }
 .gd-case-timeline li > * { display: block; font-size: 13px; }
 .gd-case-timeline small { color: #64748b; margin-top: 4px; }
+
+/* Orion: date-first trip list, full available width. */
+#gdForm.is-travel .gd-main { max-width: none; width: 100%; padding: 24px 32px 48px; }
+.is-travel .gd-tasks { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.gd-travel-date { font-size: 21px !important; font-weight: 800; color: #1743a3; padding: 12px 0; }
+.gd-travel-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+.gd-travel-toolbar p { color: #475569; margin: 0; }
+.is-travel .gd-task-form { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.is-travel .gd-task-form [data-slot], .is-travel .gd-submit-task { grid-column: 1 / -1; }
+.gd-existing-file { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px; border: 1px solid #dbe3ef; border-radius: 8px; }
+.gd-existing-file input[type=checkbox] { width: auto; }
+@media(max-width:600px) { #gdForm.is-travel .gd-main { padding: 16px 12px; } .is-travel .gd-tasks, .is-travel .gd-task-form { grid-template-columns: minmax(0,1fr); } }
