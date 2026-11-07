@@ -341,9 +341,17 @@
     const gaStatus = r => (r.case_id && ['received', 'waiting'].includes(r.status) && r.admin_note && !/^เปิดเคสประกันแล้ว/.test(r.admin_note)) ? r.admin_note : '';
     let caseHistorySequence = 0;
     let caseHistorySignature = '';
+    // เคสที่ GA เปิดตรงในหน้าประกัน (ไม่มีรายการแจ้งเข้ารักษาในระบบนี้) → พนักงานบันทึกค่ารักษาได้จากเคสนั้นเลย
+    function insuranceBillButton(c) {
+        const id = String(c.caseId || '');
+        if (!id || /^ปิดเคส/.test(String(c.status || '').trim())) return '';
+        const linked = (state.mine || []).some(r => String(r.case_id) === id && (r.type === 'medical' ? !['draft', 'deleted', 'cancelled'].includes(r.status) : r.type === 'treatment' && !['deleted', 'cancelled'].includes(r.status)));
+        return linked ? '' : `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-bill-insurance="${esc(id)}">📤 บันทึกค่ารักษา (เคส #${esc(id)})</button>`;
+    }
     function caseHistoryHtml(cases) {
+        state.careCases = cases;
         return cases.length ? cases.map(c => `<details class="gd-home-case" data-insurance-case="${esc(c.caseId)}"><summary><b>เคส #${esc(c.caseId)}</b><span>${esc(c.status || 'รออัปเดตสถานะ')}</span></summary>
-            <div class="gd-home-case-body"><b>${esc(c.hospital || '-')}</b><p>${esc(c.symptoms || '-')}</p><p>วันที่รักษา ${esc(c.date || '-')} · ยอดที่บันทึก ${money(c.total)} บาท</p>
+            <div class="gd-home-case-body">${insuranceBillButton(c)}<b>${esc(c.hospital || '-')}</b><p>${esc(c.symptoms || '-')}</p><p>วันที่รักษา ${esc(c.date || '-')} · ยอดที่บันทึก ${money(c.total)} บาท</p>
             <div class="gd-care-docs">${(c.docs || []).map(d => `<button type="button" class="gd-btn gd-btn-sm" data-care-doc="${esc(c.caseId)}/${d.n}">${esc(d.label)}</button>`).join('')}</div>
             <ol class="gd-case-timeline">${(c.timeline || []).map(e => `<li><b>${esc(e.status || '-')}</b><small>บันทึกเมื่อ ${esc(e.recordedAt || '-')}</small><span>${esc(e.hospital || '-')} · ${esc(e.symptoms || '-')}</span><small>OPD ${money(e.opd)} · IPD ${money(e.ipd)} · ทำฟัน ${money(e.dental)} · วงเงินอื่นๆ ${money(e.other)} บาท</small></li>`).join('')}</ol></div></details>`).join('') : '<p class="gd-empty">ยังไม่มีเคสประกันของคุณ</p>';
     }
@@ -378,6 +386,7 @@
                 if ([...box.querySelectorAll('[data-more-files]')].some(i => i.files?.length) || box.querySelector('.gd-more [data-more-msg]:not(:empty)')) return;
             }
             state.mine = records;
+            { const hb = $('gdCaseHistory'); if (hb && state.careCases) { const opened = new Set([...hb.querySelectorAll('details[open]')].map(el => el.dataset.insuranceCase)); hb.innerHTML = caseHistoryHtml(state.careCases); hb.querySelectorAll('details').forEach(el => { el.open = opened.has(el.dataset.insuranceCase); }); } }
             renderBadges();
             renderAlerts();
             const icon = key => state.config.forms.find(f => f.key === key)?.icon || '📄';
@@ -439,12 +448,34 @@
     document.addEventListener('click', async event => {
         const own = event.target.closest('[data-own-file]');
         if (own) { own.disabled = true; try { await openOwnFile(own.dataset.ownFile, own.dataset.mime); } catch (error) { alert(error.message); } finally { own.disabled = false; } return; }
+        const billInsurance = event.target.closest('[data-bill-insurance]');
+        if (billInsurance) {
+            const c = (state.careCases || []).find(x => String(x.caseId) === billInsurance.dataset.billInsurance);
+            if (!c) return;
+            openForm('medical');
+            state.billFrom = null;
+            state.billInsurance = String(c.caseId);
+            const raw = String(c.date || '').trim();
+            const dmy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(raw), iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+            const date = dmy ? `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}` : iso ? iso[0] : '';
+            const preset = { case_ref: `เคส #${c.caseId}`, treat_date: date, hospital: c.hospital && c.hospital !== '-' ? c.hospital : '', symptom: c.symptoms && c.symptoms !== '-' ? c.symptoms : '' };
+            Object.entries(preset).forEach(([name, value]) => {
+                const input = $('gdFields').querySelector(`[name="${name}"]:not([type=radio])`);
+                if (!input || !value) return;
+                input.value = value;
+                if (name !== 'case_ref') { input.readOnly = true; input.closest('.gd-field')?.classList.add('is-readonly'); }
+            });
+            $('gdInfo').insertAdjacentHTML('afterbegin', `<div class="gd-bill-case">🩺 บันทึกค่ารักษาของ <b>เคส #${esc(c.caseId)}</b> · ${esc(c.hospital || '-')} · ${esc(raw.split(/[ ,]/)[0] || '-')}<small>บิลนี้จะผูกกับเคสนี้เท่านั้น — ถ้ารักษาคนละครั้ง ให้กดบันทึกที่เคสของครั้งนั้น</small></div>`);
+            refreshVisibility();
+            return;
+        }
         const bill = event.target.closest('[data-bill-from]');
         if (bill) {
             const r = (state.mine || []).find(x => x.id === Number(bill.dataset.billFrom));
             if (!r) return;
             openForm('medical');
             state.billFrom = r.id;
+            state.billInsurance = null;
             const set = (name, value) => {
                 if (!value) return;
                 const radio = $('gdFields').querySelector(`input[type=radio][name="${name}"][value="${CSS.escape(value)}"]`);
@@ -496,13 +527,14 @@
         let summary = null;
         try { summary = (await call('/care')).summary; } catch (error) { box.innerHTML = casesHtml + `<p class="gd-empty">${esc(error.message)}</p>`; return; }
         if (!summary) { box.innerHTML = casesHtml + '<p class="gd-empty">ยังไม่พบข้อมูลวงเงินประกันของคุณ — กรุณาติดต่อ GA</p>'; return; }
+        state.careCases = summary.cases;
         const history = summary.cases.length ? summary.cases.map(c => {
             const parts = [c.opd && `OPD ${money(c.opd)}`, c.dental && `ทันตกรรม (OPD) ${money(c.dental)}`, c.ipd && `IPD ${money(c.ipd)}`, c.other && `วงเงินอื่นๆ ${money(c.other)}`].filter(Boolean);
             return `<div class="gd-care-row"><div class="gd-care-main"><b>${esc(c.hospital || '-')}</b><small>เคส #${esc(c.caseId)} · ${esc(c.symptoms || '')}</small>
                 <small class="gd-care-dates"><span>แจ้งเคส ${esc(String(c.reportedAt || '-').split(/[ ,]/)[0])}</span><span>วันที่รักษา ${esc(String(c.date || '-').split(/[ ,]/)[0])}</span><span>รักษาเสร็จ ${esc(c.closedAt ? String(c.closedAt).split(/[ ,]/)[0] : '—')}</span></small>
                 <small class="gd-care-status">${esc(c.status || '')}</small></div>
                 <div class="gd-care-amount"><b>${c.total ? `${money(c.total)} บาท` : '—'}</b><small>${esc(parts.join(' · ') || 'ยังไม่บันทึกยอด')}</small></div>
-                ${c.docs.length ? `<div class="gd-care-docs">${c.docs.map(d => `<button type="button" class="gd-btn gd-btn-sm" data-care-doc="${esc(c.caseId)}/${d.n}">${d.label === 'ใบเสร็จ' ? '🧾' : '📎'} ${esc(d.label)}</button>`).join('')}</div>` : ''}</div>`;
+                ${c.docs.length ? `<div class="gd-care-docs">${c.docs.map(d => `<button type="button" class="gd-btn gd-btn-sm" data-care-doc="${esc(c.caseId)}/${d.n}">${d.label === 'ใบเสร็จ' ? '🧾' : '📎'} ${esc(d.label)}</button>`).join('')}</div>` : ''}${insuranceBillButton(c)}</div>`;
         }).join('') : '<p class="gd-empty">ยังไม่มีประวัติการรักษา</p>';
         box.innerHTML = `
             <section class="gd-care-section"><h3>💳 วงเงินค่ารักษาพยาบาลของคุณ <small>Size ${esc(summary.size || '-')}</small></h3>
@@ -538,7 +570,7 @@
     function openForm(key) {
         const form = menuItems().find(f => f.key === key);
         if (!form) return;
-        if (key !== 'medical') state.billFrom = null;
+        if (key !== 'medical') { state.billFrom = null; state.billInsurance = null; }
         if (form.link) { location.href = form.link; return; }
         if (form.concept || form.box) return openBox(key);
         document.querySelector('.gd-submit').hidden = false;
@@ -706,8 +738,10 @@
             }
             msg($('gdFormMsg'), 'กำลังยืนยันการส่ง…');
             step(95);
-            await call('/finalize', { id, from_case: fromCase || undefined });
+            await call('/finalize', { id, from_case: fromCase || undefined, from_insurance_case: form.key === 'medical' && !fromCase ? state.billInsurance || undefined : undefined });
             state.billFrom = null;
+            state.billInsurance = null;
+            loadCaseHistory(true);
             loadMine();
             $('gdDoneText').textContent = `${form.title} · เลขที่ ${id} — GA จะตรวจสอบและอัปเดตสถานะในหน้า "รายการที่ฉันส่ง"`;
             show('gdDone');
