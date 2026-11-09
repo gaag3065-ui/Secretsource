@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>จัดการพนักงาน | GA Operations</title>
     <link rel="stylesheet" href="fitness-admin.css?v=20261102-2">
-    <link rel="stylesheet" href="staff-management.css?v=20261105-5">
+    <link rel="stylesheet" href="staff-management.css?v=20261109-link-1">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
@@ -38,6 +38,15 @@
                 <option value="done">งาน : มีงานเสร็จแล้ว</option>
                 <option value="review">งาน : ส่งเอกสารมา รอตรวจ</option>
             </select>
+            <select id="smStage" title="กรองตามขั้นตอนของกล่องงาน">
+                <option value="">ขั้นตอน : ทั้งหมด</option>
+                <option value="unread">① ยังไม่รับทราบ</option>
+                <option value="read">② รับทราบแล้ว (ยังไม่ส่งข้อมูล)</option>
+                <option value="sent">③ ส่งข้อมูล/เอกสารแล้ว รอตรวจ</option>
+                <option value="more">③ ขอเอกสารเพิ่มแล้ว (รอพนักงานส่งกลับ)</option>
+                <option value="checked">④ ตรวจสอบแล้ว รอยืนยันลงรายงาน</option>
+                <option value="reported">⑤ ยืนยันลงรายงานแล้ว</option>
+            </select>
             <input id="smSearch" type="search" placeholder="ค้นหาชื่อ ชื่อเล่น รหัสพนักงาน รหัสประกัน…" autocomplete="off">
             <button type="button" class="fa-btn fa-btn-ghost" data-action="clear-filters">ล้างตัวกรอง</button>
         </section>
@@ -59,6 +68,6 @@
     <div id="smToast" class="fa-toast" role="status"></div>
 
     <script src="config.js"></script>
-    <script src="staff-management.js?v=20261106-annual-1"></script>
+    <script src="staff-management.js?v=20261109-link-1"></script>
 </body>
 </html>

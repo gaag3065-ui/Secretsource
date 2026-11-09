@@ -123,6 +123,8 @@
             if (taskMode === 'open' && !tasks.some(t => OPEN.has(t.status))) return false;
             if (taskMode === 'none' && tasks.some(t => t.status !== 'cancelled')) return false;
             if (taskMode === 'done' && !tasks.some(t => t.status === 'done')) return false;
+            const stage = $('smStage')?.value || '';
+            if (stage && !boxGroupsOf(tasks, recs).filter(g => !state.box || g.key === state.box).some(g => g.stage === stage)) return false;
             if (q && ![e.fullname, e.nickname, e.employeeId, e.centralId, e.insuranceCode, e.company, e.building, e.room, ...tasks.map(t => t.title),
                 ...recs.flatMap(r => [r.type_title, r.status_label])]
                 .some(v => String(v || '').toLowerCase().includes(q))) return false;
@@ -193,12 +195,7 @@
         if (!rows.length) { $('smRows').innerHTML = `<tr><td colspan="${span}" class="fa-empty">ไม่พบพนักงานตามตัวกรอง</td></tr>`; return; }
         $('smRows').innerHTML = rows.map((e, index) => {
             const list = tasksOf(e.key).filter(t => t.status !== 'cancelled');
-            const pills = list.slice(0, 6).map(t => {
-                const stages = stagesOf(t);
-                return `<button type="button" class="sm-task-pill ${esc(t.status)}" data-task-open="${t.id}" title="${esc(`${t.title} · ${stages.map(s => s[1]).join(' · ')} — กดเพื่อดู/ลบ`)}"><span class="sm-task-title">${esc(t.title)}</span>${stages.map(([cls, text]) => `<i class="sm-ack ${cls}">${text}</i>`).join('')}</button>`;
-            }).join('')
-                + (list.length > 6 ? `<span class="sm-task-pill more">+${list.length - 6}</span>` : '')
-                + recordsOf(e).slice(0, 4).map(r => `<button type="button" class="sm-task-pill sm-rec${REVIEW.has(r.status) ? ' is-wait' : ''}" data-record="${r.id}" title="เอกสารที่พนักงานส่งเอง — กดเพื่อดู/ตรวจ"><span class="sm-task-title">📥 ${esc(r.type_title)}</span><i class="sm-ack ${REVIEW.has(r.status) ? 'unread' : 'checked'}">${esc(r.status_label)}</i></button>`).join('');
+            const pills = boxGroupsOf(list, recordsOf(e)).map(boxLinkHtml).join('');
             return `<tr>
                 <td class="sm-no">${index + 1}</td>
                 <td>${esc(e.company || '-')}</td>
@@ -699,6 +696,7 @@
                     <select data-field="status">${Object.entries(statuses).map(([k, v]) => `<option value="${k}" ${k === t.status ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>
                     <input data-field="note" value="${esc(t.note)}" placeholder="บันทึกติดตามงาน">
                     <button type="button" class="fa-btn" data-save="${t.id}">บันทึก</button>
+                    ${t.status === 'done' ? (t.report_confirmed_at ? `<button type="button" class="fa-btn" data-report-task="${t.id}" data-confirmed="0">↩ ยกเลิกยืนยันลงรายงาน</button>` : `<button type="button" class="fa-btn fa-btn-primary" data-report-task="${t.id}" data-confirmed="1">✅ ยืนยันลงรายงาน</button>`) : '<span class="sm-meta">ตรวจสอบเป็น "เสร็จสิ้น" ก่อน จึงยืนยันลงรายงานได้</span>'}
                     ${(t.fields || []).length || (t.uploads || []).length ? `<button type="button" class="fa-btn" data-goto-check="${esc(t.employee_key)}" title="ดู/ตรวจข้อมูลและเอกสารที่พนักงานส่ง">ตรวจ</button>` : ''}
                     <button type="button" class="fa-btn fa-btn-ghost" data-delete="${t.id}" title="ลบงานนี้เฉพาะพนักงานคนนี้">ลบ</button>
                 </div>
@@ -1046,6 +1044,59 @@
     });
 
     // ขั้นตอนของงาน: ยังไม่รับทราบ → รับทราบแล้ว → ส่งข้อมูลแล้ว → ตรวจสอบแล้ว
+    // ---------------------------------------------------------------- ขั้นตอนของแต่ละกล่อง (เชื่อมกัน) + ยืนยันลงรายงาน
+    const CHECKED_REC = new Set(['approved', 'refunded', 'done']);
+    const STEP_LABEL = { unread: 'ยังไม่รับทราบ', read: 'รับทราบแล้ว', sent: 'ส่งข้อมูลแล้ว', more: 'ขอเอกสารเพิ่ม', checked: 'ตรวจสอบแล้ว', reported: 'ยืนยันลงรายงานแล้ว' };
+    // รวมงานและเอกสารที่ส่งเองของคนหนึ่งคน ตามกล่อง → ขั้นตอนล่าสุดของกล่องนั้น
+    function boxGroupsOf(tasks, recs) {
+        const map = new Map();
+        const get = key => { if (!map.has(key)) map.set(key, { key, tasks: [], recs: [] }); return map.get(key); };
+        tasks.forEach(t => get(t.box || 'quests').tasks.push(t));
+        recs.forEach(r => get(r.type).recs.push(r));
+        return [...map.values()].map(g => {
+            const ts = g.tasks, rs = g.recs;
+            const received = ts.some(t => t.acknowledged_at || t.submitted_at || t.status === 'done');
+            const sent = ts.some(t => t.submitted_at || t.status === 'done') || rs.length > 0;
+            const checked = ts.some(t => t.status === 'done') || rs.some(r => CHECKED_REC.has(r.status));
+            const reported = ts.some(t => t.report_confirmed_at) || rs.some(r => r.report_confirmed_at);
+            const more = rs.some(r => r.status === 'rejected') && !checked;
+            const stage = reported ? 'reported' : checked ? 'checked' : more ? 'more' : sent ? 'sent' : received ? 'read' : ts.length ? 'unread' : '';
+            return { ...g, received, sent, checked, reported, stage };
+        });
+    }
+    // การ์ดกล่องเดียวกัน: ① รับงาน → ② ส่งข้อมูล → ③ ตรวจสอบ → ④ ยืนยันรายงาน (ขั้นที่ยังไม่ทำ = สีอำพัน)
+    function boxLinkHtml(group) {
+        const box = (state.data.boxes || []).find(b => b.key === group.key);
+        const title = box?.title || group.tasks[0]?.box_title || group.recs[0]?.type_title || group.key;
+        const attr = group.tasks.length ? `data-task-open="${group.tasks[0].id}"` : `data-record="${group.recs[0].id}"`;
+        const steps = [
+            { label: '① รับงาน', done: group.received, show: group.tasks.length > 0 },
+            { label: '② ส่งข้อมูล', done: group.sent, show: true },
+            { label: '③ ตรวจสอบ', done: group.checked, show: true },
+            { label: '④ ยืนยันรายงาน', done: group.reported, show: true }
+        ].filter(s => s.show);
+        const cur = steps.findIndex(s => !s.done);
+        return `<span class="sm-link" title="${esc(title)}"><span class="sm-link-head">${esc(box?.icon || '📌')} ${esc(title)}</span><span class="sm-link-steps">${steps.map((s, i) => `${i ? '<i class="sm-link-arrow">›</i>' : ''}<button type="button" class="sm-step ${s.done ? 'is-done' : i === cur ? 'is-current' : 'is-todo'}" ${attr}>${s.done ? '✓ ' : ''}${esc(s.label)}</button>`).join('')}</span></span>`;
+    }
+    async function setReport(button) {
+        const confirmed = button.dataset.confirmed === '1';
+        const taskId = button.dataset.reportTask, recId = button.dataset.reportRecord;
+        if (confirmed && !confirm('ยืนยันว่าตรวจสอบผ่านแล้ว และให้นำข้อมูลนี้ลงชีตรายงาน?')) return;
+        button.disabled = true;
+        try {
+            if (taskId) {
+                await request(`/tasks/${taskId}/report`, { method: 'PUT', body: JSON.stringify({ confirmed }) });
+            } else {
+                const response = await window.authFetch(docsApi(`/records/${recId}/report`), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirmed }) });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || data.success === false) throw new Error(data.message || 'บันทึกไม่สำเร็จ');
+            }
+            toast(confirmed ? 'ยืนยันลงรายงานแล้ว' : 'ยกเลิกการยืนยันแล้ว');
+            await load();
+            if (taskId) { if ($('smTaskList')) renderTasks(); } else openRecord(recId);
+        } catch (error) { toast(error.message, true); button.disabled = false; }
+    }
+
     function stagesOf(t) {
         if (!t.acknowledged_at && !t.submitted_at) return [['unread', 'ยังไม่รับทราบ']];
         const out = [['read', '✓ รับทราบแล้ว']];
@@ -1187,7 +1238,8 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
                             <input type="file" name="slip" accept="image/*,application/pdf" multiple></div>
                         <p class="sm-wide sm-rec-hint" data-reject-hint hidden>📎 เลือก "ขอเอกสารเพิ่ม" แล้ว พนักงานจะเห็นหมายเหตุนี้ และปุ่ม <b>"＋ ส่งเอกสารเพิ่ม"</b> ที่รายการนี้ในหน้าระบบจัดการองค์กร → เลือกหัวข้อ (เช่น ใบเสร็จ) แล้วแนบไฟล์ ไฟล์ใหม่จะมาต่อท้ายหัวข้อเดิมในหน้านี้ จากนั้นพนักงานกด "ส่งกลับให้ GA ตรวจ" รายการจะกลับมาเป็น "รอตรวจ"</p>
                         <label class="sm-wide">หมายเหตุถึงพนักงาน (เช่น ขอใบเสร็จตัวจริงเพิ่ม)<textarea name="note" maxlength="1000">${esc(r.admin_note || '')}</textarea></label>
-                        <div class="sm-form-foot"><span class="sm-meta">${r.handled_by ? `ตรวจล่าสุดโดย ${esc(r.handled_by)} ${esc(when(r.handled_at))}` : 'ยังไม่ได้ตรวจ'}</span><button type="submit" class="fa-btn fa-btn-primary">บันทึกผลการตรวจ</button></div>
+                        <div class="sm-form-foot"><span class="sm-meta">${r.handled_by ? `ตรวจล่าสุดโดย ${esc(r.handled_by)} ${esc(when(r.handled_at))}` : 'ยังไม่ได้ตรวจ'}</span><button type="button" class="fa-btn ${r.report_confirmed_at ? '' : 'fa-btn-primary'}" data-report-record="${r.id}" data-confirmed="${r.report_confirmed_at ? '0' : '1'}" ${CHECKED_REC.has(r.status) ? '' : 'disabled title="ต้องตรวจสอบผ่านก่อน"'}>${r.report_confirmed_at ? '↩ ยกเลิกยืนยันลงรายงาน' : '✅ ยืนยันลงรายงาน'}</button>
+                            <button type="submit" class="fa-btn fa-btn-primary">บันทึกผลการตรวจ</button></div>
                     </form></section>
                 ${can('deleteDocs') ? `<div class="sm-rec-danger"><button type="button" class="fa-btn sm-btn-danger" data-del-record="${r.id}">🗑️ ลบรายการนี้</button><small>ลบออกจากทุกหน้า (พนักงานจะไม่เห็นแล้ว) และย้ายไฟล์แนบไปถังขยะ Drive</small></div>` : ''}
             </div>`;
@@ -1570,6 +1622,8 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         if (restoreBtn) return restoreBox(restoreBtn.dataset.restoreBox);
         const reviewBox = event.target.closest('[data-review-box]');
         if (reviewBox) { event.stopPropagation(); return openReviewList(reviewBox.dataset.reviewBox); }
+        const reportBtn = event.target.closest('[data-report-record], [data-report-task]');
+        if (reportBtn && !reportBtn.disabled) { event.stopPropagation(); return setReport(reportBtn); }
         const recordBtn = event.target.closest('[data-record]');
         if (recordBtn) return openRecord(recordBtn.dataset.record);
         const copyPattern = event.target.closest('[data-copy-pattern]');
