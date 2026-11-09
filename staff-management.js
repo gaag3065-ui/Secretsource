@@ -1068,15 +1068,18 @@
     function boxLinkHtml(group) {
         const box = (state.data.boxes || []).find(b => b.key === group.key);
         const title = box?.title || group.tasks[0]?.box_title || group.recs[0]?.type_title || group.key;
-        const attr = group.tasks.length ? `data-task-open="${group.tasks[0].id}"` : `data-record="${group.recs[0].id}"`;
+        // ① รับงาน → เปิดงานที่มอบหมาย · ②③④ → เปิดหน้าตรวจเอกสารที่พนักงานส่ง (ตั้งสถานะ + ยืนยันลงรายงานได้ที่เดียว)
+        const latestRec = [...group.recs].sort((a, b) => b.id - a.id)[0];
+        const taskAttr = group.tasks.length ? `data-task-open="${group.tasks[0].id}"` : '';
+        const recAttr = latestRec ? `data-record="${latestRec.id}"` : '';
         const steps = [
-            { label: '① รับงาน', done: group.received, show: group.tasks.length > 0 },
-            { label: '② ส่งข้อมูล', done: group.sent, show: true },
-            { label: '③ ตรวจสอบ', done: group.checked, show: true },
-            { label: '④ ยืนยันรายงาน', done: group.reported, show: true }
+            { label: '① รับงาน', done: group.received, show: group.tasks.length > 0, attr: taskAttr, tip: 'เปิดงานที่มอบหมาย' },
+            { label: '② ส่งข้อมูล', done: group.sent, show: true, attr: recAttr || taskAttr, tip: recAttr ? 'เปิดเอกสารที่พนักงานส่ง' : 'เปิดงานที่มอบหมาย' },
+            { label: '③ ตรวจสอบ', done: group.checked, show: true, attr: recAttr || taskAttr, tip: recAttr ? 'ตรวจเอกสาร / ตั้งสถานะ' : 'ตั้งสถานะงานเป็นเสร็จสิ้น' },
+            { label: '④ ยืนยันรายงาน', done: group.reported, show: true, attr: recAttr || taskAttr, tip: 'กดยืนยันลงรายงาน (ต้องตรวจสอบผ่านก่อน)' }
         ].filter(s => s.show);
         const cur = steps.findIndex(s => !s.done);
-        return `<span class="sm-link" title="${esc(title)}"><span class="sm-link-head">${esc(box?.icon || '📌')} ${esc(title)}</span><span class="sm-link-steps">${steps.map((s, i) => `${i ? '<i class="sm-link-arrow">›</i>' : ''}<button type="button" class="sm-step ${s.done ? 'is-done' : i === cur ? 'is-current' : 'is-todo'}" ${attr}>${s.done ? '✓ ' : ''}${esc(s.label)}</button>`).join('')}</span></span>`;
+        return `<span class="sm-link" title="${esc(title)}"><span class="sm-link-head">${esc(box?.icon || '📌')} ${esc(title)}</span><span class="sm-link-steps">${steps.map((s, i) => `${i ? '<i class="sm-link-arrow">›</i>' : ''}<button type="button" class="sm-step ${s.done ? 'is-done' : i === cur ? 'is-current' : 'is-todo'}" ${s.attr} title="${esc(s.tip)}">${s.done ? '✓ ' : ''}${esc(s.label)}</button>`).join('')}</span></span>`;
     }
     async function setReport(button) {
         const confirmed = button.dataset.confirmed === '1';
