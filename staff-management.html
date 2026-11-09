@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>จัดการพนักงาน | GA Operations</title>
     <link rel="stylesheet" href="fitness-admin.css?v=20261102-2">
-    <link rel="stylesheet" href="staff-management.css?v=20261109-pick-1">
+    <link rel="stylesheet" href="staff-management.css?v=20261109-claim-1">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
@@ -19,6 +19,8 @@
             <div class="fa-actions">
                 <a class="fa-btn fa-btn-primary" href="https://gaag3065-ui.github.io/Secretsource/ga-docs.html" target="_blank" rel="noopener">กิจการภายใน ↗</a>
                 <button type="button" class="fa-btn fa-btn-ghost" data-action="line-match" title="จับคู่ห้องแชท LINE ทุกห้องกับพนักงาน แล้วใส่แท็กรหัสพนักงาน (ส่วนกลาง) ในหน้า Monitoring">🔗 จับคู่ห้อง LINE</button>
+                <button type="button" class="fa-btn fa-btn-ghost" data-action="import-claimed" title="นำเข้าไฟล์รายชื่อพนักงานที่ส่งเบิกไปแล้ว (.json) เพื่อแสดงยอดที่เบิกแล้วและกันยืนยันลงรายงานซ้ำ">📥 นำเข้ารายชื่อส่งเบิกแล้ว</button>
+                <input type="file" id="smClaimFile" accept=".json,application/json" hidden>
                 <button type="button" class="fa-btn fa-btn-ghost" data-action="refresh">รีเฟรชข้อมูล</button>
             </div>
         </header>
@@ -47,6 +49,11 @@
                 <option value="checked">④ ตรวจสอบแล้ว รอยืนยันลงรายงาน</option>
                 <option value="reported">⑤ ยืนยันลงรายงานแล้ว</option>
             </select>
+            <select id="smClaim" title="กรองตามการส่งเบิก (ตามรายชื่อที่นำเข้า)">
+                <option value="">การเบิก : ทั้งหมด</option>
+                <option value="yes">💸 ส่งเบิกแล้ว</option>
+                <option value="no">ยังไม่เคยส่งเบิก</option>
+            </select>
             <input id="smSearch" type="search" placeholder="ค้นหาชื่อ ชื่อเล่น รหัสพนักงาน รหัสประกัน…" autocomplete="off">
             <button type="button" class="fa-btn fa-btn-ghost" data-action="clear-filters">ล้างตัวกรอง</button>
         </section>
@@ -68,6 +75,6 @@
     <div id="smToast" class="fa-toast" role="status"></div>
 
     <script src="config.js"></script>
-    <script src="staff-management.js?v=20261109-pick-1"></script>
+    <script src="staff-management.js?v=20261109-claim-1"></script>
 </body>
 </html>

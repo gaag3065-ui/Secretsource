@@ -56,7 +56,7 @@
     async function load(refresh = false) {
         $('smRows').innerHTML = '<tr><td colspan="7" class="fa-empty">กำลังโหลด…</td></tr>';
         try {
-            const [data, records] = await Promise.all([request(`/employees${refresh ? '?refresh=1' : ''}`), loadRecords()]);
+            const [data, records] = await Promise.all([request(`/employees${refresh ? '?refresh=1' : ''}`), loadRecords(), loadClaimed()]);
             state.data = { ...data, boxes: workBoxes(data.boxes) };
             state.records = records.filter(r => !INSURANCE_BOXES.has(r.type));
             state.byKey = new Map(state.data.employees.map(e => [e.key, e]));
@@ -85,6 +85,49 @@
             return data.records || [];
         } catch { return []; }
     }
+    // ---------------------------------------------------------------- พนักงานที่ "ส่งเบิกไปแล้ว" (นำเข้าจากไฟล์เดิมนอกระบบ) — แสดงป้ายยอด + เตือนก่อนยืนยันลงรายงานซ้ำ
+    const HEALTH_BOXES = new Set(['disease4', 'annual']);
+    const CLAIM_FILE = { 1: 'ไฟล์ 1 (30/10)', 2: 'ไฟล์ 2 (31/10)', 3: 'ไฟล์ 3 (31/10 ชุด 2)' };
+    const claimNameKey = v => String(v || '').normalize('NFC').replace(/[​-‍﻿ ]/g, ' ').replace(/\s+/g, '').toLowerCase();
+    const claimCodeKey = v => { const t = String(v || '').replace(/\s+/g, '').toUpperCase(); const m = /^(IC|NSN|OP|NS)0*(\d+)$/.exec(t); return m ? m[1] + Number(m[2]) : t; };
+    const baht = n => Number(n || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
+    async function loadClaimed() {
+        try {
+            const response = await window.authFetch(docsApi('/claimed'));
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) return;
+            state.claimedByName = new Map();
+            state.claimedByCode = new Map();
+            (data.people || []).forEach(p => { state.claimedByName.set(claimNameKey(p.name), p); if (p.code) state.claimedByCode.set(claimCodeKey(p.code), p); });
+        } catch { /* ยังไม่มีรายชื่อ — ไม่แสดงป้าย */ }
+    }
+    // จับคู่ตามชื่อ (หลัก) หรือรหัสประกัน — บางคนรหัสในไฟล์เดิมไม่ตรงทะเบียน
+    const claimedOf = e => e ? (state.claimedByName?.get(claimNameKey(e.fullname)) || (e.insuranceCode ? state.claimedByCode?.get(claimCodeKey(e.insuranceCode)) : null) || null) : null;
+    const claimText = c => c.entries.map(x => `${CLAIM_FILE[x.file] || 'ไฟล์ ' + x.file}: ${baht(x.amount)} บาท${x.ref ? ' (อ้างอิงซ้ำ ไม่นับ)' : ''}${x.note && !x.ref ? ` — ${x.note}` : ''}`).join('\n');
+    const claimChip = e => { const c = claimedOf(e); return c ? `<span class="sm-claimed" title="${esc(claimText(c))}">💸 ส่งเบิกแล้ว ${esc(baht(c.total))} บาท</span>` : ''; };
+    const recEmployee = r => { const ids = [r.employee_id, r.insurance_code].filter(Boolean).map(x => String(x).toUpperCase()); return (state.data?.employees || []).find(e => recIds(e).some(id => ids.includes(id))); };
+    const claimBanner = e => { const c = claimedOf(e); return c ? `<div class="sm-claim-banner"><b>💸 คนนี้ส่งเบิกไปแล้ว ${esc(baht(c.total))} บาท</b><small>${esc(claimText(c)).replace(/\n/g, '<br>')}</small><span>ไม่ต้องกด "ยืนยันลงรายงาน" ซ้ำ เว้นแต่เป็นการเบิกคนละครั้ง</span></div>` : ''; };
+    async function importClaimed(event) {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+        try {
+            const json = JSON.parse(await file.text());
+            const people = Array.isArray(json.people) ? json.people : [];
+            if (!people.length) throw new Error('ไฟล์นี้ไม่มีรายชื่อ');
+            const total = people.reduce((sum, p) => sum + Number(p.total || 0), 0);
+            if (!confirm(`นำเข้ารายชื่อที่ส่งเบิกแล้ว ${people.length} คน ยอดรวม ${baht(total)} บาท\n(แทนที่รายชื่อเดิมทั้งหมด) ตกลงไหม?`)) return;
+            await ensureCsrf();
+            const response = await window.authFetch(docsApi('/claimed'), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ people, source: json.source || file.name }) });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) throw new Error(data.message || (response.status === 403 ? 'บัญชีนี้ไม่มีสิทธิ์ (ReviewGaDocs)' : 'นำเข้าไม่สำเร็จ'));
+            toast(`นำเข้าแล้ว ${data.count} คน · ยอดรวม ${baht(data.total)} บาท`);
+            await loadClaimed();
+            render();
+        } catch (error) { toast(error.message, true); }
+    }
+    $('smClaimFile').addEventListener('change', importClaimed);
+
     const REVIEW = new Set(['pending']);
     const recIds = e => [e.employeeId, e.centralId, e.insuranceCode, e.key].filter(Boolean).map(x => String(x).toUpperCase());
     const recordsOf = e => { const ids = recIds(e); return (state.records || []).filter(r => ids.includes(String(r.employee_id || '').toUpperCase()) || ids.includes(String(r.insurance_code || '').toUpperCase())); };
@@ -125,6 +168,9 @@
             if (taskMode === 'done' && !tasks.some(t => t.status === 'done')) return false;
             const stage = $('smStage')?.value || '';
             if (stage && !boxGroupsOf(tasks, recs).filter(g => !state.box || g.key === state.box).some(g => g.stage === stage)) return false;
+            const claim = $('smClaim')?.value || '';
+            if (claim === 'yes' && !claimedOf(e)) return false;
+            if (claim === 'no' && claimedOf(e)) return false;
             if (q && ![e.fullname, e.nickname, e.employeeId, e.centralId, e.insuranceCode, e.company, e.building, e.room, ...tasks.map(t => t.title),
                 ...recs.flatMap(r => [r.type_title, r.status_label])]
                 .some(v => String(v || '').toLowerCase().includes(q))) return false;
@@ -201,7 +247,7 @@
                 <td>${esc(e.company || '-')}</td>
                 <td><span class="fa-badge ${isOnWork(e) ? 'ok' : 'dim'}">${esc(e.status || '-')}</span></td>
                 <td class="sm-nick">${esc(e.nickname || '-')}</td>
-                <td><b>${esc(e.fullname)}</b><small>${esc([e.employeeId || e.centralId, e.insuranceCode].filter(Boolean).join(' · '))}</small></td>
+                <td><b>${esc(e.fullname)}</b><small>${esc([e.employeeId || e.centralId, e.insuranceCode].filter(Boolean).join(' · '))}</small>${claimChip(e)}</td>
                 ${extra.map(f => `<td>${cell(e, f.key)}</td>`).join('')}
                 <td class="sm-tasks-cell"><div class="sm-tasks">${pills || '<span class="fa-badge dim">ยังไม่มีงาน</span>'}</div></td>
                 <td class="sm-actions">${(() => {
@@ -1086,7 +1132,16 @@
     async function setReport(button) {
         const confirmed = button.dataset.confirmed === '1';
         const taskId = button.dataset.reportTask, recId = button.dataset.reportRecord;
-        if (confirmed && !confirm('ยืนยันว่าตรวจสอบผ่านแล้ว และให้นำข้อมูลนี้ลงชีตรายงาน?')) return;
+        let claimedWarn = '';
+        if (confirmed) {
+            const rec = recId ? (state.records || []).find(r => String(r.id) === String(recId)) : null;
+            const task = taskId ? (state.data.tasks || []).find(t => String(t.id) === String(taskId)) : null;
+            const emp = rec ? recEmployee(rec) : task ? state.byKey.get(task.employee_key) : null;
+            const health = rec ? HEALTH_BOXES.has(rec.type) : task ? HEALTH_BOXES.has(task.box) : false;
+            const c = health ? claimedOf(emp) : null;
+            if (c) claimedWarn = `⚠️ ${emp.fullname} ส่งเบิกไปแล้ว ${baht(c.total)} บาท\n${claimText(c)}\n\nถ้ายืนยันลงรายงานอีก อาจเบิกซ้ำ\n\n`;
+        }
+        if (confirmed && !confirm(claimedWarn + 'ยืนยันว่าตรวจสอบผ่านแล้ว และให้นำข้อมูลนี้ลงชีตรายงาน?')) return;
         button.disabled = true;
         try {
             if (taskId) {
@@ -1260,7 +1315,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
                 <div class="sm-rec-groups">${[...groups.entries()].map(([label, files]) => `<section class="sm-rec-group${label === 'สลิปโอนเงินคืน' ? ' is-slip' : ''}"><h3>${esc(label)} <small>(${files.length})</small></h3><div class="sm-rec-files">
                     ${files.map(f => `<button type="button" class="sm-rec-file" data-rec-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}" title="กดเพื่อดูขยาย">${/^image\//.test(f.mime) ? `<img alt="" data-rec-img="${r.id}/${f.n}">` : '<span>📄 PDF</span>'}<small>ไฟล์ ${f.index}</small></button>`).join('')}</div></section>`).join('')}</div>
                 <section class="sm-section"${r.type === 'treatment' ? ' hidden' : ''}><h3>ผลการตรวจ</h3>
-                    <form class="sm-form" id="smRecForm" data-id="${r.id}">
+                    ${claimBanner(recEmployee(r))}<form class="sm-form" id="smRecForm" data-id="${r.id}">
                         <label>สถานะ<select name="status">${Object.entries(state.docStatuses || {}).filter(([k]) => k !== 'draft').map(([k, v]) => `<option value="${k}" ${k === r.status ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>
                         <div class="sm-wide sm-rec-slip" data-slip hidden><b>🧾 แนบสลิปการโอนคืน</b><small>พนักงานจะเห็นปุ่ม "ดูสลิปโอนเงินคืน" ในหน้าระบบจัดการองค์กร (รายการที่ฉันส่ง)</small>
                             <input type="file" name="slip" accept="image/*,application/pdf" multiple></div>
@@ -1672,6 +1727,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         }
         const boxTile = event.target.closest('[data-box]');
         if (boxTile) { state.box = state.box === boxTile.dataset.box ? '' : boxTile.dataset.box; return render(); }
+        if (action === 'import-claimed') { $('smClaimFile').click(); return; }
         if (action === 'clear-filters') {
             state.box = '';
             document.querySelectorAll('.sm-toolbar select').forEach(s => { s.value = ''; });
