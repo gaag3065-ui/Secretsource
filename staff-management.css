@@ -317,3 +317,7 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 .sm-claim-banner b { font-size: 14px; }
 .sm-claim-banner small { font-size: 12.5px; line-height: 1.5; color: #8a5a10; }
 .sm-claim-banner span { font-size: 12.5px; font-weight: 700; }
+/* การ์ด "ส่งเบิกแล้ว" ในช่องงานของพนักงาน */
+.sm-link-claimed { border-color: #f2cf93; background: #fffaf0; }
+.sm-link-claimed .sm-link-head { color: #9a5b00; }
+.sm-claim-total { font-size: 13px; font-weight: 800; color: #7a4a00; padding: 0 4px; }

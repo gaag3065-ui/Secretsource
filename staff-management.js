@@ -104,7 +104,13 @@
     // จับคู่ตามชื่อ (หลัก) หรือรหัสประกัน — บางคนรหัสในไฟล์เดิมไม่ตรงทะเบียน
     const claimedOf = e => e ? (state.claimedByName?.get(claimNameKey(e.fullname)) || (e.insuranceCode ? state.claimedByCode?.get(claimCodeKey(e.insuranceCode)) : null) || null) : null;
     const claimText = c => c.entries.map(x => `${CLAIM_FILE[x.file] || 'ไฟล์ ' + x.file}: ${baht(x.amount)} บาท${x.ref ? ' (อ้างอิงซ้ำ ไม่นับ)' : ''}${x.note && !x.ref ? ` — ${x.note}` : ''}`).join('\n');
-    const claimChip = e => { const c = claimedOf(e); return c ? `<span class="sm-claimed" title="${esc(claimText(c))}">💸 ส่งเบิกแล้ว ${esc(baht(c.total))} บาท</span>` : ''; };
+    // การ์ด "ส่งเบิกแล้ว" ในช่องงานของพนักงานคนนั้น (หน้าตาเดียวกับการ์ดกล่องงาน) — บอกยอดรวม และยอดแต่ละไฟล์
+    const claimCard = e => {
+        const c = claimedOf(e);
+        if (!c) return '';
+        const parts = c.entries.filter(x => !x.ref).map(x => `<span class="sm-step is-done" title="${esc(x.note || '')}">${esc(CLAIM_FILE[x.file] || 'ไฟล์ ' + x.file)} · ${esc(baht(x.amount))}</span>`).join('');
+        return `<span class="sm-link sm-link-claimed" title="${esc(claimText(c))}"><span class="sm-link-head">💸 ส่งเบิกค่าตรวจสุขภาพแล้ว</span><span class="sm-link-steps"><b class="sm-claim-total">${esc(baht(c.total))} บาท</b>${parts}</span></span>`;
+    };
     const recEmployee = r => { const ids = [r.employee_id, r.insurance_code].filter(Boolean).map(x => String(x).toUpperCase()); return (state.data?.employees || []).find(e => recIds(e).some(id => ids.includes(id))); };
     const claimBanner = e => { const c = claimedOf(e); return c ? `<div class="sm-claim-banner"><b>💸 คนนี้ส่งเบิกไปแล้ว ${esc(baht(c.total))} บาท</b><small>${esc(claimText(c)).replace(/\n/g, '<br>')}</small><span>ไม่ต้องกด "ยืนยันลงรายงาน" ซ้ำ เว้นแต่เป็นการเบิกคนละครั้ง</span></div>` : ''; };
     async function importClaimed(event) {
@@ -241,13 +247,13 @@
         if (!rows.length) { $('smRows').innerHTML = `<tr><td colspan="${span}" class="fa-empty">ไม่พบพนักงานตามตัวกรอง</td></tr>`; return; }
         $('smRows').innerHTML = rows.map((e, index) => {
             const list = tasksOf(e.key).filter(t => t.status !== 'cancelled');
-            const pills = boxGroupsOf(list, recordsOf(e)).map(boxLinkHtml).join('');
+            const pills = claimCard(e) + boxGroupsOf(list, recordsOf(e)).map(boxLinkHtml).join('');
             return `<tr>
                 <td class="sm-no">${index + 1}</td>
                 <td>${esc(e.company || '-')}</td>
                 <td><span class="fa-badge ${isOnWork(e) ? 'ok' : 'dim'}">${esc(e.status || '-')}</span></td>
                 <td class="sm-nick">${esc(e.nickname || '-')}</td>
-                <td><b>${esc(e.fullname)}</b><small>${esc([e.employeeId || e.centralId, e.insuranceCode].filter(Boolean).join(' · '))}</small>${claimChip(e)}</td>
+                <td><b>${esc(e.fullname)}</b><small>${esc([e.employeeId || e.centralId, e.insuranceCode].filter(Boolean).join(' · '))}</small></td>
                 ${extra.map(f => `<td>${cell(e, f.key)}</td>`).join('')}
                 <td class="sm-tasks-cell"><div class="sm-tasks">${pills || '<span class="fa-badge dim">ยังไม่มีงาน</span>'}</div></td>
                 <td class="sm-actions">${(() => {
