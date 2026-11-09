@@ -209,6 +209,8 @@
                     const recs = recordsOf(e).sort((x, y) => (REVIEW.has(y.status) - REVIEW.has(x.status)) || y.id - x.id);
                     const hasTask = list.some(t => (t.fields || []).length || (t.uploads || []).length || t.submitted_at);
                     const dot = list.some(t => t.status === 'submitted') || recs.some(r => REVIEW.has(r.status)) ? ' <i class="sm-dot"></i>' : '';
+                    // มีให้ตรวจมากกว่า 1 อย่าง (เช่น ตรวจ 4 โรค + ตรวจสุขภาพประจำปี) → ให้เลือกก่อนว่าจะตรวจอะไร
+                    if (recs.length + (hasTask ? 1 : 0) > 1) return `<button type="button" class="fa-btn sm-check" data-check-pick="${esc(e.key)}" title="เลือกว่าจะตรวจกล่องไหน">ตรวจ ▾${dot}</button>`;
                     if (hasTask) return `<button type="button" class="fa-btn sm-check" data-check="${esc(e.key)}">ตรวจ${dot}</button>`;
                     if (recs.length) return `<button type="button" class="fa-btn sm-check" data-record="${recs[0].id}">ตรวจ${dot}</button>`;
                     return '<button type="button" class="fa-btn sm-check" disabled title="ยังไม่มีงานที่ต้องส่งข้อมูล">ตรวจ</button>';
@@ -1214,6 +1216,29 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
                 <li class="${r.status === 'billed' ? 'is-done' : ''}"><b>3. รอพนักงานรักษาเสร็จ</b> — พนักงานกด "บันทึกค่ารักษา" ที่เคสนี้ บิลจะเข้ากล่อง "ส่งบิลค่ารักษาพยาบาล" ให้ตรวจ${r.status === 'billed' ? ' · ✓ ส่งบิลแล้ว' : ''}</li>
             </ol></section>`;
     }
+    // ปุ่ม "ตรวจ ▾" — เลือกว่าจะตรวจเอกสารกล่องไหน (หรือข้อมูลในงานที่มอบหมาย)
+    function openCheckPick(key) {
+        const e = state.byKey.get(key);
+        if (!e) return;
+        const list = tasksOf(key).filter(t => t.status !== 'cancelled');
+        const recs = recordsOf(e).sort((x, y) => (REVIEW.has(y.status) - REVIEW.has(x.status)) || y.id - x.id);
+        const hasTask = list.some(t => (t.fields || []).length || (t.uploads || []).length || t.submitted_at);
+        const boxOf = k => (state.data.boxes || []).find(b => b.key === k);
+        state.mode = 'pick';
+        $('smDetail').innerHTML = `
+            <header class="fa-detail-head">
+                <div><h2>เลือกสิ่งที่จะตรวจ · ${esc(e.fullname)}${e.nickname ? ` (${esc(e.nickname)})` : ''}</h2><p>${esc([e.employeeId || e.centralId, e.insuranceCode, e.company].filter(Boolean).join(' · '))}</p></div>
+                <button type="button" class="fa-close" data-close aria-label="ปิด">×</button>
+            </header>
+            <div class="sm-pick-list">
+                ${recs.map(r => `<button type="button" class="sm-pick-item${REVIEW.has(r.status) ? ' is-wait' : ''}" data-record="${r.id}">
+                    <span class="sm-pick-icon">${esc(boxOf(r.type)?.icon || '📥')}</span>
+                    <span><b>${esc(r.type_title)}</b><small>#${r.id} · ${esc(r.status_label || r.status)}${r.report_confirmed_at ? ' · ✓ ยืนยันลงรายงานแล้ว' : ''}</small></span></button>`).join('')}
+                ${hasTask ? `<button type="button" class="sm-pick-item" data-check="${esc(key)}"><span class="sm-pick-icon">📝</span><span><b>ข้อมูลที่ส่งในงานที่มอบหมาย</b><small>${list.length} งาน</small></span></button>` : ''}
+            </div>`;
+        if (!$('smDialog').open) $('smDialog').showModal();
+    }
+
     function openRecord(id) {
         const r = (state.records || []).find(x => x.id === Number(id));
         if (!r) return;
@@ -1625,6 +1650,8 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         if (restoreBtn) return restoreBox(restoreBtn.dataset.restoreBox);
         const reviewBox = event.target.closest('[data-review-box]');
         if (reviewBox) { event.stopPropagation(); return openReviewList(reviewBox.dataset.reviewBox); }
+        const pickBtn = event.target.closest('[data-check-pick]');
+        if (pickBtn) return openCheckPick(pickBtn.dataset.checkPick);
         const reportBtn = event.target.closest('[data-report-record], [data-report-task]');
         if (reportBtn && !reportBtn.disabled) { event.stopPropagation(); return setReport(reportBtn); }
         const recordBtn = event.target.closest('[data-record]');
