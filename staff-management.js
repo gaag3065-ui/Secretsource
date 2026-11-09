@@ -1220,7 +1220,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         const box = (state.data.boxes || []).find(b => b.key === r.type);
         const labelOf = name => box?.form?.find(f => f.name === name)?.label || name;
         const money = v => Number(v).toLocaleString('th-TH', { minimumFractionDigits: 2 });
-        const rows = Object.entries(r.fields || {}).filter(([, v]) => v).map(([k, v]) => `<div><small>${esc(labelOf(k))}</small><b>${esc(/amount/.test(k) ? `${money(v)} บาท` : v)}</b></div>`).join('');
+        const rows = Object.entries(r.fields || {}).filter(([k, v]) => v && !k.startsWith('__')).map(([k, v]) => `<div><small>${esc(labelOf(k))}</small><b>${esc(/amount/.test(k) ? `${money(v)} บาท` : v)}</b></div>`).join('');
         const groups = new Map();
         r.files.forEach(f => { if (!groups.has(f.field_label)) groups.set(f.field_label, []); groups.get(f.field_label).push(f); });
         state.mode = 'record';
