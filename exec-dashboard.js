@@ -386,16 +386,15 @@
     });
     (async () => {
         if (token) { open(); return; }
-        let loggedIn = false;
-        try { loggedIn = Boolean(sessionStorage.getItem('loggedInAdminName')); } catch { loggedIn = false; }
-        if (loggedIn) {
-            try {
-                const response = await window.authFetch(window.APP_CONFIG.API_BASE_URL + '/api/session', { cache: 'no-store' });
-                const data = await response.json().catch(() => ({}));
-                const isAdmin = String(data.user?.role || '').toUpperCase() === 'ADMIN';
-                if (response.ok && data.user && (isAdmin || data.permissions?.ViewExecutive === true)) { if (isAdmin) $('exSetCode').hidden = false; open(); return; }
-            } catch { /* ไปหน้ากรอกรหัส */ }
-        }
+        // ตรวจว่าล็อกอินระบบ GA อยู่ไหม (ไม่ใช้ authFetch เพื่อไม่ให้เด้งไปหน้าล็อกอินถ้ายังไม่ได้ล็อกอิน)
+        try {
+            const accessToken = sessionStorage.getItem('accessToken');
+            const response = await fetch(window.APP_CONFIG.API_BASE_URL + '/api/session', { headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {}, credentials: 'include', cache: 'no-store' });
+            const data = await response.json().catch(() => ({}));
+            const isAdmin = String(data.user?.role || '').toUpperCase() === 'ADMIN';
+            if (data.csrfToken) { try { sessionStorage.setItem('csrfToken', data.csrfToken); } catch { /* ignore */ } }
+            if (response.ok && data.user && (isAdmin || data.permissions?.ViewExecutive === true)) { if (isAdmin) $('exSetCode').hidden = false; open(); return; }
+        } catch { /* ไปหน้ากรอกรหัส */ }
         lock('');
     })();
 })();
