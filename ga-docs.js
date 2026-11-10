@@ -346,7 +346,10 @@
         const id = String(c.caseId || '');
         if (!id || /^ปิดเคส/.test(String(c.status || '').trim())) return '';
         const linked = (state.mine || []).some(r => String(r.case_id) === id && (r.type === 'medical' ? !['draft', 'deleted', 'cancelled'].includes(r.status) : r.type === 'treatment' && !['deleted', 'cancelled'].includes(r.status)));
-        return linked ? '' : `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-bill-insurance="${esc(id)}">📤 บันทึกค่ารักษา (เคส #${esc(id)})</button>`;
+        // เคส "ผู้ป่วยสำรองจ่าย รอนำส่งเอกสารเคลม" ต้องมีปุ่มอัปโหลดเอกสารปิดเคสเสมอ แม้เคยมีบิลผูกอยู่แล้ว
+        const waiting = /ผู้ป่วยสำรองจ่าย|รอนำส่งเอกสาร/.test(String(c.status || ''));
+        if (linked && !waiting) return '';
+        return `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-bill-insurance="${esc(id)}">📤 ${waiting ? 'อัปโหลดเอกสารปิดเคส' : 'บันทึกค่ารักษา'} (เคส #${esc(id)})</button>`;
     }
     function caseHistoryHtml(cases) {
         state.careCases = cases;
