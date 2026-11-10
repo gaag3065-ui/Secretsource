@@ -300,6 +300,8 @@
         const bedsOf = t => Number((/(\d+)\s*ห้องนอน/.exec(String(t || '')) || [])[1]) || 0;
         const bathsOf = t => Number((/(\d+)\s*ห้องน้ำ/.exec(String(t || '')) || [])[1]) || 0;
         const sumBeds = rs => rs.reduce((n, r) => n + bedsOf(r.type), 0), sumBaths = rs => rs.reduce((n, r) => n + bathsOf(r.type), 0);
+        const PER_BED = 2;   // 1 ห้องนอน อยู่ได้ 2 คน
+        const capOf = rs => sumBeds(rs) * PER_BED;
         const kinds = new Map();
         for (const r of d.rooms) {
             const b = bedsOf(r.type), t = bathsOf(r.type), key = b || t ? b + '|' + t : 'x';
@@ -313,18 +315,20 @@
             ${kpi('ยูนิตที่ทำสัญญาแล้ว', num(d.counts.contracted), `ค่าเช่า ${baht(d.rent.contracted)}/เดือน`, '#0d9488')}
             ${kpi('ยูนิตที่กำลังอยู่ในกระบวนการ', num(d.counts.process), steps, '#d97706')}
             ${kpi('รวมยูนิตทั้งหมด', num(d.counts.total), `ยูนิต · ห้องนอนรวม ${num(sumBeds(d.rooms))} · ห้องน้ำรวม ${num(sumBaths(d.rooms))}`, '#2563eb')}
+            ${kpi('รองรับผู้พักอาศัยได้', num(capOf(d.rooms)), `คน · คิด ${PER_BED} คนต่อ 1 ห้องนอน · ยูนิตที่ทำสัญญาแล้ว ${num(capOf(d.rooms.filter(r => r.contracted)))} คน`, '#db2777')}
             ${kpi('ค่าเช่ารวมทั้งหมดต่อเดือน', num(d.rent.all), `บาท · เฉพาะที่ทำสัญญาแล้ว ${baht(d.rent.contracted)}`, '#4f46e5')}</div>
         <div class="ex-card"><h2>สรุปตามประเภทยูนิต <small>แต่ละยูนิตมีกี่ห้องนอน กี่ห้องน้ำ</small></h2>
-            ${table(['ประเภทยูนิต', 'จำนวนยูนิต', 'ทำสัญญาแล้ว', 'ห้องนอนรวม', 'ห้องน้ำรวม', 'ค่าเช่ารวม/เดือน'], kindRows.map(k => [k.beds || k.baths ? `<b>${k.beds} ห้องนอน ${k.baths} ห้องน้ำ</b>` : 'ไม่ระบุประเภท', num(k.units), num(k.contracted), num(k.beds * k.units), num(k.baths * k.units), num(k.rent)]), [1, 2, 3, 4, 5])}</div>
+            ${table(['ประเภทยูนิต', 'จำนวนยูนิต', 'ทำสัญญาแล้ว', 'ห้องนอนรวม', 'ห้องน้ำรวม', 'อยู่ได้ต่อยูนิต (คน)', 'รองรับรวม (คน)', 'ค่าเช่ารวม/เดือน'], kindRows.map(k => [k.beds || k.baths ? `<b>${k.beds} ห้องนอน ${k.baths} ห้องน้ำ</b>` : 'ไม่ระบุประเภท', num(k.units), num(k.contracted), num(k.beds * k.units), num(k.baths * k.units), num(k.beds * PER_BED), num(k.beds * PER_BED * k.units), num(k.rent)]), [1, 2, 3, 4, 5, 6, 7])}
+            <p class="ex-help" style="margin-top:8px">รองรับผู้พักอาศัย = จำนวนห้องนอน × ${PER_BED} คน (1 ห้องนอนอยู่ได้ ${PER_BED} คน) รวมทุกยูนิตได้ <b>${num(capOf(d.rooms))} คน</b></p></div>
         <div class="ex-card"><h2>ภาพรวมยูนิตที่พักทั้งหมด <small>จากทะเบียนห้องพัก · อัปเดต ${when(d.at)}</small></h2>
             <div class="ex-filters"><div class="ex-seg">${seg('all', 'ทั้งหมด', d.counts.total)}${seg('contracted', 'ทำสัญญาแล้ว', d.counts.contracted)}${seg('process', 'กำลังดำเนินการ', d.counts.process)}</div>
                 <input id="rmQ" type="search" placeholder="ค้นหาที่พัก ยูนิต สถานะ…" value="${esc(f.q)}"><button type="button" class="ex-btn" id="rmRefresh">รีเฟรช</button></div>
             <p class="ex-help">ระยะทางเป็นกิโลเมตร ตามทะเบียนห้องพัก (MT = Mireka Tower · OR = Orion City)</p>
-            ${list.length ? `<div class="ex-scroll ex-table-wrap"><table class="ex-table"><thead><tr><th>#</th><th>ที่พัก / ยูนิต</th><th>สถานะ</th><th class="num">ห้องนอน</th><th class="num">ห้องน้ำ</th><th class="num">ค่าเช่า/เดือน</th><th class="num">ห่าง Mireka Tower</th><th class="num">ห่าง Orion City</th><th>สัญญา</th></tr></thead><tbody>${list.map(r => `<tr>
-                <td>${esc(r.no)}</td><td><b>${esc(r.project)}</b><br><small class="ex-help">${esc(r.unit)}</small></td><td>${pill(r.status || '–', r.contracted ? '#0d9488' : '#d97706')}</td><td class="num">${bedsOf(r.type) || '–'}</td><td class="num">${bathsOf(r.type) || '–'}</td>
+            ${list.length ? `<div class="ex-scroll ex-table-wrap"><table class="ex-table"><thead><tr><th>#</th><th>ที่พัก / ยูนิต</th><th>สถานะ</th><th class="num">ห้องนอน</th><th class="num">ห้องน้ำ</th><th class="num">อยู่ได้ (คน)</th><th class="num">ค่าเช่า/เดือน</th><th class="num">ห่าง Mireka Tower</th><th class="num">ห่าง Orion City</th><th>สัญญา</th></tr></thead><tbody>${list.map(r => `<tr>
+                <td>${esc(r.no)}</td><td><b>${esc(r.project)}</b><br><small class="ex-help">${esc(r.unit)}</small></td><td>${pill(r.status || '–', r.contracted ? '#0d9488' : '#d97706')}</td><td class="num">${bedsOf(r.type) || '–'}</td><td class="num">${bathsOf(r.type) || '–'}</td><td class="num">${bedsOf(r.type) ? bedsOf(r.type) * PER_BED : '–'}</td>
                 <td class="num">${r.rent ? num(r.rent) : '–'}</td><td class="num">${km(r.mt)}</td><td class="num">${km(r.or)}</td>
                 <td>${r.start || r.end ? `${esc(r.start || '?')} – ${esc(r.end || '?')}` : '–'}${r.remaining ? `<br><small class="ex-help">${esc(r.remaining)}</small>` : ''}</td></tr>`).join('')}</tbody>
-                <tfoot><tr><td colspan="3"><b>รวม ${num(list.length)} ยูนิต</b></td><td class="num"><b>${num(sumBeds(list))}</b></td><td class="num"><b>${num(sumBaths(list))}</b></td><td class="num"><b>${num(rent)}</b></td><td colspan="3"><small class="ex-help">ค่าเช่ารวมต่อเดือน (${esc(baht(rent))})</small></td></tr></tfoot></table></div>` : '<p class="ex-empty">ไม่พบห้อง</p>'}</div>`;
+                <tfoot><tr><td colspan="3"><b>รวม ${num(list.length)} ยูนิต</b></td><td class="num"><b>${num(sumBeds(list))}</b></td><td class="num"><b>${num(sumBaths(list))}</b></td><td class="num"><b>${num(capOf(list))}</b></td><td class="num"><b>${num(rent)}</b></td><td colspan="3"><small class="ex-help">ค่าเช่ารวมต่อเดือน (${esc(baht(rent))})</small></td></tr></tfoot></table></div>` : '<p class="ex-empty">ไม่พบห้อง</p>'}</div>`;
     }
 
     function openPerson(username) {
