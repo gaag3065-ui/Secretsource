@@ -51,6 +51,12 @@ const services = [
                 title: 'งาน GA',
                 icon: 'users',
                 page: 'ga-work.html?v=20261104-3'
+            },
+            {
+                route: 'exec-dashboard',
+                title: 'แดชบอร์ดผู้บริหาร',
+                icon: 'users',
+                page: 'exec-dashboard.html?v=20261110-1'
             }
         ]
     },
@@ -369,6 +375,10 @@ if (basePage === 'staff-management.html') {
 
 if (basePage === 'internal-support.html') {
     return permissions.ViewMonitoring === true || permissions.ManageStaff === true;
+}
+
+if (basePage === 'exec-dashboard.html') {
+    return permissions.ViewExecutive === true;
 }
 
 if (basePage === 'ga-work.html') {
