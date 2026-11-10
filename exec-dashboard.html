@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="referrer" content="no-referrer">
     <title>แดชบอร์ดผู้บริหาร | GA Executive</title>
-    <link rel="stylesheet" href="exec-dashboard.css?v=20261110-4">
+    <link rel="stylesheet" href="exec-dashboard.css?v=20261110-5">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
@@ -24,16 +24,12 @@
             <span id="exCustom" hidden><input type="date" id="exFrom" aria-label="ตั้งแต่"> – <input type="date" id="exTo" aria-label="ถึง"></span>
             <button type="button" id="exRefresh" class="ex-btn">รีเฟรช</button>
         </div>
-        <div class="ex-user"><span id="exUser"></span><button type="button" id="exLogout" class="ex-btn">ออกจากระบบ</button></div>
     </div>
     <nav class="ex-nav" id="exNav" aria-label="เมนูแดชบอร์ด">
         <button type="button" data-view="overview" class="is-on">📊 ภาพรวม</button>
         <button type="button" data-view="insurance">🏥 ประกัน</button>
         <button type="button" data-view="assets">📦 ทรัพย์สิน</button>
         <button type="button" data-view="welfare">🎁 สวัสดิการ</button>
-        <button type="button" data-view="rooms">🏠 ห้องพัก</button>
-        <button type="button" data-view="people">👥 ทีม GA</button>
-        <button type="button" data-view="report">📑 รายงาน</button>
     </nav>
 </header>
 
@@ -43,15 +39,12 @@
     <section id="v-insurance" class="ex-pane" hidden></section>
     <section id="v-assets" class="ex-pane" hidden></section>
     <section id="v-welfare" class="ex-pane" hidden></section>
-    <section id="v-rooms" class="ex-pane" hidden></section>
-    <section id="v-people" class="ex-pane" hidden></section>
-    <section id="v-report" class="ex-pane" hidden></section>
     <footer id="exFoot" class="ex-foot"></footer>
 </main>
 
 <dialog id="exDialog" class="ex-dialog"><div id="exDetail"></div></dialog>
 
 <script src="config.js"></script>
-<script src="exec-dashboard.js?v=20261110-3"></script>
+<script src="exec-dashboard.js?v=20261110-5"></script>
 </body>
 </html>

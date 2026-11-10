@@ -6,7 +6,7 @@
     const API = `${window.APP_CONFIG.API_BASE_URL}/api/exec`;
     const PAL = ['#4f46e5', '#0d9488', '#d97706', '#db2777', '#2563eb', '#7c3aed', '#16a34a', '#dc2626', '#0891b2', '#64748b'];
     const state = { summary: null, view: 'overview', ins: null, assets: null, welfare: null, rooms: null, loading: {}, errors: {},
-        report: { area: '', person: '', status: '', q: '', sort: 'at', dir: -1 }, insF: { person: '', status: '', q: '' }, asF: { area: '', q: '' }, rmF: { filter: 'all', q: '' } };
+        wTab: 'main', insF: { person: '', status: '', q: '' }, asF: { area: '', q: '' }, rmF: { filter: 'all', q: '' } };
     const num = n => Number(n || 0).toLocaleString('th-TH', { maximumFractionDigits: 0 });
     const baht = n => `${num(n)} บาท`;
     const pct = r => r === null || r === undefined ? '–' : `${Math.round(r * 100)}%`;
@@ -47,8 +47,8 @@
         rooms: refresh => call(`/rooms${refresh ? '?refresh=1' : ''}`)
     };
     const KEY = { summary: 'summary', insurance: 'ins', assets: 'assets', welfare: 'welfare', rooms: 'rooms' };
-    const NEEDS = { overview: ['summary'], insurance: ['insurance', 'summary'], assets: ['assets', 'summary'], welfare: ['welfare', 'summary', 'rooms'], rooms: ['rooms'], people: ['summary'], report: ['summary'] };
-    const REQUIRED = { overview: ['summary'], insurance: ['insurance'], assets: ['assets'], welfare: ['welfare'], rooms: ['rooms'], people: ['summary'], report: ['summary'] };
+    const NEEDS = { overview: ['summary'], insurance: ['insurance', 'summary'], assets: ['assets', 'summary'], welfare: ['welfare', 'summary', 'rooms'] };
+    const REQUIRED = { overview: ['summary'], insurance: ['insurance'], assets: ['assets'], welfare: ['welfare'] };
     async function ensure(name, refresh) {
         const k = KEY[name];
         if (state[k] && !refresh) return;
@@ -61,7 +61,6 @@
         state.view = view;
         document.querySelectorAll('#exNav button').forEach(b => b.classList.toggle('is-on', b.dataset.view === view));
         document.querySelectorAll('.ex-pane').forEach(p => { p.hidden = p.id !== `v-${view}`; });
-        $('exRangeBox').hidden = view === 'rooms';
         const needs = NEEDS[view];
         if (needs.some(n => !state[KEY[n]]) || refresh) {
             $(`v-${view}`).innerHTML = '<p class="ex-empty">กำลังโหลดข้อมูล…</p>';
@@ -83,7 +82,7 @@
         const pane = $(`v-${view}`);
         const missing = REQUIRED[view].find(n => !state[KEY[n]]);
         if (missing) { pane.innerHTML = `<p class="ex-status is-error">${esc(state.errors[missing] || 'ไม่มีข้อมูล')}</p>`; return; }
-        ({ overview: vOverview, insurance: vInsurance, assets: vAssets, welfare: vWelfare, rooms: vRooms, people: vPeople, report: vReport })[view]();
+        ({ overview: vOverview, insurance: vInsurance, assets: vAssets, welfare: vWelfare })[view]();
     }
 
     // ---------------------------------------------------------------- ส่วนประกอบ
@@ -172,7 +171,18 @@
         </div>
         <div class="ex-card"><h2>ปริมาณงานของแต่ละคน <small>กดชื่อเพื่อดูว่าทำอะไรบ้าง</small></h2>
             <div class="ex-legend-inline">${d.areas.map(a => `<span><i style="background:${a.color}"></i>${esc(a.title)}</span>`).join('')}</div>
-            ${hbars(d.people.map(p => ({ key: p.username, name: p.name, value: p.total, parts: d.areas.filter(a => p.areas[a.key]).map(a => ({ v: p.areas[a.key].total, c: a.color, t: `${a.title}: ${p.areas[a.key].total}` })) })), { attr: 'data-person', limit: 15 })}</div>`;
+            ${hbars(d.people.map(p => ({ key: p.username, name: p.name, value: p.total, parts: d.areas.filter(a => p.areas[a.key]).map(a => ({ v: p.areas[a.key].total, c: a.color, t: `${a.title}: ${p.areas[a.key].total}` })) })), { attr: 'data-person', limit: 15 })}</div>
+        ${teamCard()}`;
+    }
+    // ตารางเจ้าหน้าที่ GA ทุกคน (ย้ายมาจากเมนู ทีม GA)
+    function teamCard() {
+        const d = state.summary;
+        return `<div class="ex-card"><h2>เจ้าหน้าที่ GA ทุกคน <small>กดแถวเพื่อดูว่าแต่ละคนรับผิดชอบ/ทำอะไรบ้าง</small></h2>
+        <p class="ex-help">ผู้ทำ = ผู้ที่ดำเนินการในระบบ (ตรวจเอกสาร มอบหมายงาน กดเสร็จขั้นตอน บันทึกเคส ดำเนินการทรัพย์สิน/ซ่อมห้อง) · "ยังไม่ระบุผู้ทำ" = งานที่ยังไม่มีใครรับ</p>
+        ${table(['เจ้าหน้าที่', 'งานทั้งหมด', 'เสร็จ', 'ค้าง', 'ค้างนาน', 'เสร็จ %', 'เวลาเฉลี่ย', ...d.areas.map(a => a.title)],
+            d.people.map(p => [`<b>${esc(p.name)}</b><br><small class="ex-help">${esc(p.position || p.username)}</small>`, num(p.total), num(p.done), num(p.open), p.overdue ? `<span class="ex-bad">${num(p.overdue)}</span>` : '0',
+                `<span class="${rateClass(p.doneRate)}">${pct(p.doneRate)}</span>`, hours(p.avgHours), ...d.areas.map(a => p.areas[a.key] ? num(p.areas[a.key].total) : '–')]),
+            [1, 2, 3, 4, 5, 6, ...d.areas.map((_, i) => 7 + i)], d.people.map(p => p.username))}</div>`;
     }
 
     // ---------------------------------------------------------------- ประกัน
@@ -239,6 +249,11 @@
 
     // ---------------------------------------------------------------- สวัสดิการ
     function vWelfare() {
+        const sub = `<div class="ex-seg" id="wSub"><button type="button" data-wtab="main" class="${state.wTab === 'main' ? 'is-on' : ''}">🎁 ภาพรวมสวัสดิการ</button><button type="button" data-wtab="rooms" class="${state.wTab === 'rooms' ? 'is-on' : ''}">🏠 ห้องพัก</button></div>`;
+        if (state.wTab === 'rooms') {
+            if (!state.rooms) { $('v-welfare').innerHTML = sub + `<p class="ex-status is-error">${esc(state.errors.rooms || 'ไม่มีข้อมูลห้องพัก')}</p>`; return; }
+            $('v-welfare').innerHTML = sub + roomsHtml(); return;
+        }
         const w = state.welfare;
         const r = state.rooms;
         const rooms = w.rooms || (r ? { total: r.counts.total, contracted: r.counts.contracted, rentContracted: r.rent.contracted, rentAll: r.rent.all } : null);
@@ -246,7 +261,7 @@
         const expense = [...w.categories.filter(c => c.value > 0).map(c => ({ name: c.name, value: c.value })), ...(rent ? [{ name: 'ค่าเช่าห้องพัก (ต่อเดือน)', value: rent }] : []), ...(w.repairs?.cost ? [{ name: 'ค่าซ่อมห้องพัก', value: w.repairs.cost }] : [])];
         const expenseTotal = expense.reduce((n, e) => n + e.value, 0);
         const items = [...w.categories.map(c => ({ name: c.name, value: c.count })), ...(rooms ? [{ name: 'ห้องพักพนักงาน (จำนวนห้อง)', value: rooms.total }] : []), ...(w.repairs?.count ? [{ name: 'แจ้งซ่อมห้องพัก', value: w.repairs.count }] : [])];
-        $('v-welfare').innerHTML = `
+        $('v-welfare').innerHTML = `${sub}
         <div class="ex-kpis">
             ${kpi('ค่าสวัสดิการรวม', num(expenseTotal), 'บาท · ยอดเบิก + ค่าเช่าห้อง/เดือน' + (w.repairs?.cost ? ' + ซ่อม' : ''), '#db2777')}
             ${kpi('รายการเบิกในช่วงนี้', num(w.claimsCount), `ยอดเบิก ${baht(w.claimsTotal)}`, '#4f46e5')}
@@ -266,7 +281,7 @@
     }
 
     // ---------------------------------------------------------------- ห้องพัก
-    function vRooms() {
+    function roomsHtml() {
         const d = state.rooms, f = state.rmF;
         const q = f.q.trim().toLowerCase();
         const list = d.rooms.filter(r => (f.filter === 'all' || (f.filter === 'contracted') === r.contracted) && (!q || `${r.project} ${r.unit} ${r.status} ${r.type}`.toLowerCase().includes(q)));
@@ -274,7 +289,7 @@
         const seg = (k, l, n) => `<button type="button" data-room-filter="${k}" class="${f.filter === k ? 'is-on' : ''}">${l} ${n}</button>`;
         const km = v => { const t = String(v ?? '').trim(); return t && t !== '-' ? `${esc(t)} กม.` : '–'; };
         const steps = Object.entries(d.counts.processByStatus || {}).map(([s, n]) => `${esc(s)} ${n}`).join(' · ') || 'รอทำสัญญา/วางจอง';
-        $('v-rooms').innerHTML = `
+        return `
         <div class="ex-kpis">
             ${kpi('ห้องที่ทำสัญญาแล้ว', num(d.counts.contracted), `ค่าเช่า ${baht(d.rent.contracted)}/เดือน`, '#0d9488')}
             ${kpi('ห้องที่กำลังอยู่ในกระบวนการ', num(d.counts.process), steps, '#d97706')}
@@ -291,16 +306,6 @@
                 <tfoot><tr><td colspan="4"><b>รวม ${num(list.length)} ห้อง</b></td><td class="num"><b>${num(rent)}</b></td><td colspan="3"><small class="ex-help">ค่าเช่ารวมต่อเดือน (${esc(baht(rent))})</small></td></tr></tfoot></table></div>` : '<p class="ex-empty">ไม่พบห้อง</p>'}</div>`;
     }
 
-    // ---------------------------------------------------------------- ทีม GA
-    function vPeople() {
-        const d = state.summary;
-        $('v-people').innerHTML = `<div class="ex-card"><h2>เจ้าหน้าที่ GA ทุกคน <small>กดแถวเพื่อดูว่าแต่ละคนรับผิดชอบ/ทำอะไรบ้าง</small></h2>
-        <p class="ex-help">ผู้ทำ = ผู้ที่ดำเนินการในระบบ (ตรวจเอกสาร มอบหมายงาน กดเสร็จขั้นตอน บันทึกเคส ดำเนินการทรัพย์สิน/ซ่อมห้อง) · "ยังไม่ระบุผู้ทำ" = งานที่ยังไม่มีใครรับ</p>
-        ${table(['เจ้าหน้าที่', 'งานทั้งหมด', 'เสร็จ', 'ค้าง', 'ค้างนาน', 'เสร็จ %', 'เวลาเฉลี่ย', ...d.areas.map(a => a.title)],
-            d.people.map(p => [`<b>${esc(p.name)}</b><br><small class="ex-help">${esc(p.position || p.username)}</small>`, num(p.total), num(p.done), num(p.open), p.overdue ? `<span class="ex-bad">${num(p.overdue)}</span>` : '0',
-                `<span class="${rateClass(p.doneRate)}">${pct(p.doneRate)}</span>`, hours(p.avgHours), ...d.areas.map(a => p.areas[a.key] ? num(p.areas[a.key].total) : '–')]),
-            [1, 2, 3, 4, 5, 6, ...d.areas.map((_, i) => 7 + i)], d.people.map(p => p.username))}</div>`;
-    }
     function openPerson(username) {
         const d = state.summary, p = d.people.find(x => x.username === username);
         if (!p) return;
@@ -314,39 +319,6 @@
         $('exDialog').showModal();
     }
 
-    // ---------------------------------------------------------------- รายงาน
-    function filtered() {
-        const f = state.report, q = f.q.trim().toLowerCase();
-        const list = state.summary.items.filter(i => (!f.area || i.a === f.area) && (!f.person || i.by === f.person) &&
-            (!f.status || (f.status === 'done' ? i.d : f.status === 'open' ? !i.d : i.o)) && (!q || `${i.t} ${i.c} ${i.s} ${i.bn} ${i.r} ${i.st}`.toLowerCase().includes(q)));
-        return list.sort((x, y) => ((x[f.sort] ?? '') > (y[f.sort] ?? '') ? 1 : -1) * f.dir);
-    }
-    function vReport() {
-        const d = state.summary, f = state.report, list = filtered();
-        const done = list.filter(i => i.d).length;
-        $('v-report').innerHTML = `<div class="ex-card">
-        <div class="ex-filters">
-            <select id="rfArea"><option value="">ทุกส่วนงาน</option>${d.areas.map(a => `<option value="${a.key}"${f.area === a.key ? ' selected' : ''}>${esc(a.title)}</option>`).join('')}</select>
-            <select id="rfPerson"><option value="">ทุกคน</option>${d.people.map(p => `<option value="${esc(p.username)}"${f.person === p.username ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
-            <select id="rfStatus"><option value="">ทุกสถานะ</option><option value="done"${f.status === 'done' ? ' selected' : ''}>เสร็จแล้ว</option><option value="open"${f.status === 'open' ? ' selected' : ''}>ยังค้าง</option><option value="late"${f.status === 'late' ? ' selected' : ''}>ค้างนาน</option></select>
-            <input id="rfQ" type="search" placeholder="ค้นหา ชื่อ/รายการ/เลขเคส" value="${esc(f.q)}">
-            <button type="button" class="ex-btn" id="rfCsv">ดาวน์โหลด CSV</button><button type="button" class="ex-btn ex-btn-primary" id="rfPrint">พิมพ์ / PDF</button>
-        </div>
-        <p class="ex-help">${num(list.length)} รายการ · เสร็จ ${num(done)} · ค้าง ${num(list.length - done)}${d.truncated ? ' · แสดงเฉพาะ 3,000 รายการล่าสุด' : ''}</p>
-        ${list.length ? `<div class="ex-scroll ex-table-wrap"><table class="ex-table"><thead><tr>${[['at', 'รับเรื่อง'], ['a', 'ส่วนงาน'], ['c', 'ประเภท'], ['t', 'รายการ'], ['bn', 'ผู้ทำ'], ['st', 'สถานะ'], ['dn', 'เสร็จเมื่อ'], ['h', 'ใช้เวลา']].map(([k, l]) =>
-            `<th data-sort="${k}">${l}${f.sort === k ? (f.dir < 0 ? ' ▼' : ' ▲') : ''}</th>`).join('')}</tr></thead><tbody>${list.slice(0, 500).map(i => `<tr><td>${when(i.at)}</td><td>${pill(areaTitle(i.a), color(i.a))}</td><td>${esc(i.c)}</td>
-            <td>${esc(i.t)}${i.s ? `<br><small class="ex-help">${esc(i.s)}</small>` : ''}</td><td>${esc(i.bn || '–')}</td><td><span class="${i.d ? 'ex-good' : (i.o ? 'ex-bad' : 'ex-warn')}">${esc(i.st)}</span></td><td>${i.dn ? when(i.dn) : '–'}</td><td class="num">${hours(i.h)}</td></tr>`).join('')}</tbody></table></div>
-        ${list.length > 500 ? '<p class="ex-help">แสดง 500 รายการแรก — ดาวน์โหลด CSV เพื่อดูทั้งหมด</p>' : ''}` : '<p class="ex-empty">ไม่พบรายการตามตัวกรอง</p>'}</div>`;
-    }
-    function csv() {
-        const rows = [['รับเรื่อง', 'ส่วนงาน', 'ประเภท', 'รายการ', 'ผู้ขอ/ผู้เกี่ยวข้อง', 'ผู้ทำ', 'สถานะ', 'เสร็จเมื่อ', 'ใช้เวลา(ชม.)', 'อ้างอิง'],
-            ...filtered().map(i => [i.at, areaTitle(i.a), i.c, i.t, i.s, i.bn, i.st, i.dn, i.h ?? '', i.r])];
-        const text = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
-        const url = URL.createObjectURL(new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' }));
-        const a = document.createElement('a'); a.href = url; a.download = `รายงานงาน-GA-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
-    }
-
     // ---------------------------------------------------------------- ควบคุม
     const redraw = () => render(state.view);
     function keepFocus(id, fn) { const el = $(id), pos = el.selectionStart; fn(); const b = $(id); if (!b) return; b.focus(); try { b.setSelectionRange(pos, pos); } catch { /* ignore */ } }
@@ -358,21 +330,19 @@
         const insP = t.closest('[data-ins-person]'); if (insP) { state.insF.person = state.insF.person === insP.dataset.insPerson ? '' : insP.dataset.insPerson; return redraw(); }
         const asA = t.closest('[data-asset-area]'); if (asA) { state.asF.area = state.asF.area === asA.dataset.assetArea ? '' : asA.dataset.assetArea; return redraw(); }
         const person = t.closest('[data-person]'); if (person && state.summary) return openPerson(person.dataset.person);
-        const go = t.closest('[data-go]'); if (go) return show(['insurance', 'assets', 'welfare'].includes(go.dataset.go) ? go.dataset.go : 'report');
+        const go = t.closest('[data-go]'); if (go) return show(['insurance', 'assets', 'welfare'].includes(go.dataset.go) ? go.dataset.go : 'overview');
+        const wt = t.closest('[data-wtab]'); if (wt) { state.wTab = wt.dataset.wtab; if (state.wTab === 'rooms' && !state.rooms) return show('welfare'); return redraw(); }
         const rf = t.closest('[data-room-filter]'); if (rf) { state.rmF.filter = rf.dataset.roomFilter; return redraw(); }
-        const th = t.closest('th[data-sort]'); if (th) { const f = state.report; f.dir = f.sort === th.dataset.sort ? -f.dir : -1; f.sort = th.dataset.sort; return redraw(); }
-        if (t.id === 'rmRefresh') { state.rooms = null; return show('rooms', true); }
-        if (t.id === 'rfCsv') return csv();
-        if (t.id === 'rfPrint') return window.print();
+        if (t.id === 'rmRefresh') { state.rooms = null; return show('welfare', true); }
     });
     document.addEventListener('change', event => {
         const id = event.target.id, v = event.target.value;
-        const map = { rfArea: () => { state.report.area = v; }, rfPerson: () => { state.report.person = v; }, rfStatus: () => { state.report.status = v; }, insStatus: () => { state.insF.status = v; }, asArea: () => { state.asF.area = v; } };
+        const map = { insStatus: () => { state.insF.status = v; }, asArea: () => { state.asF.area = v; } };
         if (!map[id]) return; map[id](); redraw();
     });
     document.addEventListener('input', event => {
         const id = event.target.id, v = event.target.value;
-        const map = { rfQ: () => { state.report.q = v; }, insQ: () => { state.insF.q = v; }, asQ: () => { state.asF.q = v; }, rmQ: () => { state.rmF.q = v; } };
+        const map = { insQ: () => { state.insF.q = v; }, asQ: () => { state.asF.q = v; }, rmQ: () => { state.rmF.q = v; } };
         if (map[id]) keepFocus(id, () => { map[id](); redraw(); });
     });
     const reloadRange = () => { state.summary = null; state.welfare = null; show(state.view); };
@@ -380,12 +350,6 @@
     $('exFrom').addEventListener('change', reloadRange); $('exTo').addEventListener('change', reloadRange);
     $('exRefresh').addEventListener('click', () => { state.summary = state.ins = state.assets = state.welfare = state.rooms = null; show(state.view, true); });
     $('exDialog').addEventListener('click', event => { if (event.target === $('exDialog')) $('exDialog').close(); });
-    $('exLogout').addEventListener('click', async () => {
-        if (!confirm('ยืนยันการออกจากระบบหรือไม่')) return;
-        if (typeof window.performSecureLogout === 'function') { await window.performSecureLogout(); return; }
-        sessionStorage.clear(); window.location.replace('index.html');
-    });
-
     // ตรวจสิทธิ์ก่อนแสดงผล: ไม่ได้ล็อกอิน → หน้าเข้าสู่ระบบ · ไม่มีสิทธิ์ผู้บริหาร → ออกจากหน้านี้
     (async () => {
         try {
@@ -394,7 +358,6 @@
             if (!response.ok || !data.user) throw new Error('SESSION');
             const isAdmin = String(data.user.role || '').toUpperCase() === 'ADMIN';
             if (!isAdmin && data.permissions?.ViewExecutive !== true) { alert('บัญชีนี้ไม่มีสิทธิ์ดูแดชบอร์ดผู้บริหาร'); sessionStorage.clear(); window.location.replace('index.html'); return; }
-            $('exUser').textContent = data.user.name || data.user.username || '';
         } catch (error) { sessionStorage.clear(); window.location.replace('index.html'); return; }
         show('overview');
     })();
