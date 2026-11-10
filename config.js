@@ -143,6 +143,13 @@ window.authFetch = async function (url, options = {}) {
     return response;
 };
 
+// บัญชีผู้บริหาร = ไม่ใช่ ADMIN และมีสิทธิ์ "ดูแดชบอร์ดผู้บริหาร" อย่างเดียว → เข้าได้เฉพาะ exec-dashboard.html
+window.isExecutiveOnly = function (permissions, role) {
+    if (String(role || '').trim().toUpperCase() === 'ADMIN') return false;
+    const granted = Object.entries(permissions || {}).filter(([, value]) => value === true).map(([key]) => key);
+    return granted.length > 0 && granted.every(key => key === 'ViewExecutive');
+};
+
 window.requirePagePermission = async function (
     permissionKey
 ) {
@@ -176,6 +183,10 @@ window.requirePagePermission = async function (
             data.permissions?.[permissionKey] !== true
         )
     ) {
+        if (response.ok && window.isExecutiveOnly(data.permissions, data.user?.role)) {
+            window.location.replace('exec-dashboard.html');
+            throw new Error('PERMISSION_DENIED');
+        }
         alert('บัญชีนี้ไม่มีสิทธิ์เข้าถึงหน้านี้');
         window.location.replace('portal.html');
         throw new Error('PERMISSION_DENIED');

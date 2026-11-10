@@ -56,7 +56,7 @@ const services = [
                 route: 'exec-dashboard',
                 title: 'แดชบอร์ดผู้บริหาร',
                 icon: 'users',
-                page: 'exec-dashboard.html?v=20261110-2'
+                page: 'exec-dashboard.html?v=20261110-3'
             }
         ]
     },
@@ -1022,6 +1022,12 @@ function renderTaskContent(
 
         sessionUser = data.user || {};
         permissions = data.permissions || {};
+
+        // บัญชีผู้บริหาร: ไม่ให้เห็นหน้าหลักระบบ GA — ส่งไปแดชบอร์ดผู้บริหารทันที
+        if (typeof window.isExecutiveOnly === 'function' && window.isExecutiveOnly(permissions, sessionUser.role)) {
+            window.location.replace('exec-dashboard.html');
+            throw new Error('EXECUTIVE_REDIRECT');
+        }
     }
 
     function updateAccountInformation() {
@@ -1238,6 +1244,7 @@ window.addEventListener('message', event => {
     try {
         await loadSession();
     } catch (error) {
+        if (error?.message === 'EXECUTIVE_REDIRECT') return;
         sessionStorage.clear();
         window.location.replace('index.html');
         return;
