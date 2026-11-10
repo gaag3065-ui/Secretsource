@@ -368,10 +368,14 @@ function buildLimitSummary(employee) {
         `- ผู้ป่วยใน IPD วงเงิน ${limitMoney(a.ipdLimit)}  คงเหลือ ${limitMoney(employee.colBB)} บาท`,
         `- ผู้ป่วยนอก OPD วงเงิน ${limitMoney(a.opdLimit)}  คงเหลือ ${limitMoney(employee.colBA)} บาท`,
         ...(a.hasOther ? [`- วงเงินอื่นๆ (แยกต่างหาก) วงเงิน ${limitMoney(a.otherLimit)}  คงเหลือ ${limitMoney(employee.colBM)} บาท`] : []),
-        ...a.visits.map(v => {
+        // เรียงจากวันที่เก่าสุด → ปัจจุบัน (ไม่ระบุวันที่ไว้ท้ายสุด)
+        ...[...a.visits].sort((x, y) => {
+            const fx = Number.isFinite(x.date.time) && x.date.time > 0, fy = Number.isFinite(y.date.time) && y.date.time > 0;
+            return fx && fy ? x.date.time - y.date.time : fx ? -1 : fy ? 1 : 0;
+        }).map(v => {
             const parts = treatmentAmountFields.filter(([field]) => !field.startsWith('Exchange') && limitNumber(v.item[field]))
                 .map(([field, label]) => `${label} ${limitMoney(v.item[field])}`);
-            return `${v.date.text || 'ไม่ระบุวันที่'} · เคส #${v.caseId}${v.status ? ` · ${v.status}` : ''} — ${parts.join(' · ')}${v === a.sharedCase ? ' — ใช้วงเงิน IPD ร่วม' : ''}`;
+            return `${v.date.text || 'ไม่ระบุวันที่'} — ${parts.join(' · ')}${v === a.sharedCase ? ' — ใช้วงเงิน IPD ร่วม' : ''}`;
         })
     ];
     const text = lines.join('\n');
