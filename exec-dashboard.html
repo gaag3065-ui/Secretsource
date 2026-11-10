@@ -6,10 +6,23 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="referrer" content="no-referrer">
     <title>แดชบอร์ดผู้บริหาร | GA Executive</title>
-    <link rel="stylesheet" href="exec-dashboard.css?v=20261110-5">
+    <link rel="stylesheet" href="exec-dashboard.css?v=20261110-6">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
-<body>
+<body class="is-locked">
+<section id="exLock" class="ex-lock" hidden>
+    <div class="ex-lock-card">
+        <div class="ex-logo"><span>GA</span><small>OFFICE</small></div>
+        <h1>แดชบอร์ดผู้บริหาร</h1>
+        <form id="exLockForm" autocomplete="off">
+            <label for="exCode">รหัสเข้าชม</label>
+            <input id="exCode" type="password" placeholder="กรอกรหัสเข้าชม" autocomplete="off" autocapitalize="characters" spellcheck="false">
+            <button type="submit" class="ex-lock-btn" id="exLockBtn">เข้าสู่ระบบ →</button>
+        </form>
+        <p id="exLockMsg" class="ex-lock-msg" role="status"></p>
+        <p class="ex-lock-foot">General Affairs · แดชบอร์ดผู้บริหาร</p>
+    </div>
+</section>
 <header class="ex-top">
     <div class="ex-bar">
         <div class="ex-title"><b>แดชบอร์ดผู้บริหาร</b><small>สรุปงาน GA · อ่านอย่างเดียว</small></div>
@@ -23,6 +36,7 @@
             </select>
             <span id="exCustom" hidden><input type="date" id="exFrom" aria-label="ตั้งแต่"> – <input type="date" id="exTo" aria-label="ถึง"></span>
             <button type="button" id="exRefresh" class="ex-btn">รีเฟรช</button>
+            <button type="button" id="exSetCode" class="ex-btn" hidden>🔑 ตั้งรหัสเข้าชม</button>
         </div>
     </div>
     <nav class="ex-nav" id="exNav" aria-label="เมนูแดชบอร์ด">
@@ -45,6 +59,6 @@
 <dialog id="exDialog" class="ex-dialog"><div id="exDetail"></div></dialog>
 
 <script src="config.js"></script>
-<script src="exec-dashboard.js?v=20261110-5"></script>
+<script src="exec-dashboard.js?v=20261110-6"></script>
 </body>
 </html>

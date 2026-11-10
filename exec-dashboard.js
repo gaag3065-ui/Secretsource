@@ -20,9 +20,18 @@
     const rateClass = r => r === null || r === undefined ? '' : (r >= 0.8 ? 'ex-good' : (r >= 0.5 ? 'ex-warn' : 'ex-bad'));
 
     // ---------------------------------------------------------------- เรียก API
+    let token = '';
+    try { token = sessionStorage.getItem('execToken') || ''; } catch { token = ''; }
+    const lock = message => {
+        token = ''; try { sessionStorage.removeItem('execToken'); } catch { /* ignore */ }
+        document.body.classList.add('is-locked'); $('exLock').hidden = false; $('exLockMsg').textContent = message || '';
+        setTimeout(() => $('exCode').focus(), 50);
+    };
     async function call(path) {
-        const response = await window.authFetch(`${API}${path}`, { cache: 'no-store' });
+        const url = API + path + (token ? (path.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(token) : '');
+        const response = token ? await fetch(url, { cache: 'no-store', credentials: 'omit' }) : await window.authFetch(url, { cache: 'no-store' });
         const data = await response.json().catch(() => ({}));
+        if (token && response.status === 401) { lock(data.message); throw new Error(data.message || 'บัตรผ่านหมดอายุ'); }
         if (response.status === 403) throw new Error('บัญชีนี้ไม่มีสิทธิ์ดูแดชบอร์ดผู้บริหาร — ให้ ADMIN เพิ่มสิทธิ์ "ดูแดชบอร์ดผู้บริหาร"');
         if (response.status === 404) throw new Error('เครื่องหลังบ้านยังไม่ได้อัปเดต — รอ 1–2 นาทีแล้วรีเฟรช');
         if (!response.ok || data.success === false) throw new Error(data.message || `โหลดไม่สำเร็จ (${response.status})`);
@@ -350,15 +359,43 @@
     $('exFrom').addEventListener('change', reloadRange); $('exTo').addEventListener('change', reloadRange);
     $('exRefresh').addEventListener('click', () => { state.summary = state.ins = state.assets = state.welfare = state.rooms = null; show(state.view, true); });
     $('exDialog').addEventListener('click', event => { if (event.target === $('exDialog')) $('exDialog').close(); });
-    // ตรวจสิทธิ์ก่อนแสดงผล: ไม่ได้ล็อกอิน → หน้าเข้าสู่ระบบ · ไม่มีสิทธิ์ผู้บริหาร → ออกจากหน้านี้
-    (async () => {
+    // เริ่มต้น: มีบัตรผ่าน (ใส่รหัสแล้ว) → เข้าเลย · ล็อกอินบัญชีที่มีสิทธิ์อยู่ → เข้าเลย · ไม่งั้นแสดงหน้ากรอกรหัสเข้าชม
+    const open = () => { document.body.classList.remove('is-locked'); $('exLock').hidden = true; show('overview'); };
+    $('exLockForm').addEventListener('submit', async event => {
+        event.preventDefault();
+        const code = $('exCode').value.trim();
+        if (!code) { $('exLockMsg').textContent = 'กรุณากรอกรหัสเข้าชม'; return; }
+        $('exLockBtn').disabled = true; $('exLockMsg').textContent = '';
         try {
-            const response = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/session`, { cache: 'no-store' });
+            const response = await fetch(API + '/unlock', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }), credentials: 'omit' });
             const data = await response.json().catch(() => ({}));
-            if (!response.ok || !data.user) throw new Error('SESSION');
-            const isAdmin = String(data.user.role || '').toUpperCase() === 'ADMIN';
-            if (!isAdmin && data.permissions?.ViewExecutive !== true) { alert('บัญชีนี้ไม่มีสิทธิ์ดูแดชบอร์ดผู้บริหาร'); sessionStorage.clear(); window.location.replace('index.html'); return; }
-        } catch (error) { sessionStorage.clear(); window.location.replace('index.html'); return; }
-        show('overview');
+            if (!response.ok || !data.token) { $('exLockMsg').textContent = data.message || 'เข้าสู่ระบบไม่สำเร็จ'; $('exCode').select(); return; }
+            token = data.token; try { sessionStorage.setItem('execToken', token); } catch { /* ignore */ }
+            $('exCode').value = ''; open();
+        } catch { $('exLockMsg').textContent = 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — ลองใหม่อีกครั้ง'; } finally { $('exLockBtn').disabled = false; }
+    });
+    // ADMIN ที่ล็อกอินระบบ GA อยู่: ตั้ง/เปลี่ยนรหัสเข้าชมได้ (รหัสไม่ผ่านที่อื่น และเก็บเป็นแฮชบนเครื่องหลังบ้าน)
+    $('exSetCode').addEventListener('click', async () => {
+        const code = prompt('ตั้งรหัสเข้าชมใหม่ (6–64 ตัวอักษร) — ผู้ที่ใช้รหัสเดิมอยู่จะต้องกรอกรหัสใหม่');
+        if (code === null) return;
+        try {
+            const response = await window.authFetch(API + '/access-code', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+            const data = await response.json().catch(() => ({}));
+            alert(response.ok && data.success ? 'ตั้งรหัสเข้าชมเรียบร้อย' : (data.message || 'ตั้งรหัสไม่สำเร็จ'));
+        } catch (error) { alert('ตั้งรหัสไม่สำเร็จ'); }
+    });
+    (async () => {
+        if (token) { open(); return; }
+        let loggedIn = false;
+        try { loggedIn = Boolean(sessionStorage.getItem('loggedInAdminName')); } catch { loggedIn = false; }
+        if (loggedIn) {
+            try {
+                const response = await window.authFetch(window.APP_CONFIG.API_BASE_URL + '/api/session', { cache: 'no-store' });
+                const data = await response.json().catch(() => ({}));
+                const isAdmin = String(data.user?.role || '').toUpperCase() === 'ADMIN';
+                if (response.ok && data.user && (isAdmin || data.permissions?.ViewExecutive === true)) { if (isAdmin) $('exSetCode').hidden = false; open(); return; }
+            } catch { /* ไปหน้ากรอกรหัส */ }
+        }
+        lock('');
     })();
 })();
