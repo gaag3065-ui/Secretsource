@@ -185,8 +185,50 @@
         $('exFoot').innerHTML = `<b>แหล่งข้อมูล</b>${state.data.sources.map(s => `<span>${s.error ? '⚠️' : '✓'} ${esc(s.name)}${s.error ? ` — โหลดไม่ได้ (${esc(s.error)})` : ` · ${num(s.count)} รายการ`}</span>`).join('')}
         <span>เกณฑ์: "ค้างนาน" = ยังไม่เสร็จเกิน ${state.data.sla_hours / 24} วัน · "เสร็จทันกำหนด" = เสร็จภายใน ${state.data.sla_hours / 24} วันนับจากรับเรื่อง · งานเอกสารนับผู้ดำเนินการล่าสุดของรายการ</span>`;
     }
+    // ---------------------------------------------------------------- ห้องพัก (ภาพรวมห้องพักทั้งหมด — ไม่มีข้อมูลพนักงาน)
+    const roomState = { data: null, filter: 'all', q: '', loading: false };
+    const km = v => { const t = String(v ?? '').trim(); return t && t !== '-' ? esc(t) + ' กม.' : '–'; };
+    const baht = n => num(n) + ' บาท';
+    async function loadRooms(refresh) {
+        roomState.loading = true; $('tab-rooms').innerHTML = '<p class="ex-empty">กำลังโหลดข้อมูลห้องพัก…</p>';
+        try {
+            const response = await window.authFetch(API + '/rooms' + (refresh ? '?refresh=1' : ''), { cache: 'no-store' });
+            const data = await response.json().catch(() => ({}));
+            if (response.status === 403) throw new Error('บัญชีนี้ไม่มีสิทธิ์ดูแดชบอร์ดผู้บริหาร');
+            if (!response.ok || !data.success) throw new Error(data.message || 'โหลดไม่สำเร็จ (' + response.status + ')');
+            roomState.data = data; renderRooms();
+        } catch (error) { $('tab-rooms').innerHTML = '<p class="ex-status is-error">' + esc(error.message) + '</p>'; }
+        roomState.loading = false;
+    }
+    function renderRooms() {
+        const d = roomState.data; if (!d) return;
+        const q = roomState.q.trim().toLowerCase();
+        const list = d.rooms.filter(r => (roomState.filter === 'all' || (roomState.filter === 'contracted') === r.contracted) && (!q || (r.project + ' ' + r.unit + ' ' + r.status + ' ' + r.type).toLowerCase().includes(q)));
+        const rent = list.reduce((n, r) => n + r.rent, 0);
+        const seg = (k, l, n) => '<button type="button" data-room-filter="' + k + '" class="' + (roomState.filter === k ? 'is-on' : '') + '">' + l + ' ' + n + '</button>';
+        const steps = Object.entries(d.counts.processByStatus || {}).map(([s, n]) => esc(s) + ' ' + n).join(' · ') || 'รอทำสัญญา/วางจอง';
+        const rows = list.map(r => '<tr><td>' + esc(r.no) + '</td><td><b>' + esc(r.project) + '</b><br><small class="ex-help">' + esc(r.unit) + '</small></td>' +
+            '<td><span class="ex-pill" style="--c:' + (r.contracted ? '#0d9488' : '#d97706') + '">' + esc(r.status || '–') + '</span></td><td>' + esc(r.type || '–') + '</td>' +
+            '<td class="num">' + (r.rent ? num(r.rent) : '–') + '</td><td class="num">' + km(r.mt) + '</td><td class="num">' + km(r.or) + '</td>' +
+            '<td>' + (r.start || r.end ? esc(r.start || '?') + ' – ' + esc(r.end || '?') : '–') + (r.remaining ? '<br><small class="ex-help">' + esc(r.remaining) + '</small>' : '') + '</td></tr>').join('');
+        $('tab-rooms').innerHTML =
+            '<div class="ex-kpis">' +
+            '<div class="ex-kpi" style="--c:#0d9488"><span>ห้องที่ทำสัญญาแล้ว</span><b>' + num(d.counts.contracted) + '</b><small>ค่าเช่า ' + baht(d.rent.contracted) + '/เดือน</small></div>' +
+            '<div class="ex-kpi" style="--c:#d97706"><span>ห้องที่กำลังอยู่ในกระบวนการ</span><b>' + num(d.counts.process) + '</b><small>' + steps + '</small></div>' +
+            '<div class="ex-kpi" style="--c:#2563eb"><span>รวมห้องทั้งหมด</span><b>' + num(d.counts.total) + '</b><small>ห้อง</small></div>' +
+            '<div class="ex-kpi" style="--c:#4f46e5"><span>ค่าเช่ารวมทั้งหมดต่อเดือน</span><b>' + num(d.rent.all) + '</b><small>บาท · เฉพาะที่ทำสัญญาแล้ว ' + baht(d.rent.contracted) + '</small></div></div>' +
+            '<div class="ex-card"><h2>ภาพรวมห้องพักทั้งหมด <small>จากทะเบียนห้องพัก · อัปเดต ' + when(d.at) + '</small></h2>' +
+            '<div class="ex-filters"><div class="ex-seg">' + seg('all', 'ทั้งหมด', d.counts.total) + seg('contracted', 'ทำสัญญาแล้ว', d.counts.contracted) + seg('process', 'กำลังดำเนินการ', d.counts.process) + '</div>' +
+            '<input id="rmQ" type="search" placeholder="ค้นหาที่พัก ยูนิต สถานะ…" value="' + esc(roomState.q) + '"><button type="button" class="ex-btn" id="rmRefresh" style="margin-left:auto">รีเฟรช</button></div>' +
+            '<p class="ex-help">ระยะทางเป็นกิโลเมตร ตามทะเบียนห้องพัก (MT = Mireka Tower · OR = Orion City)</p>' +
+            (list.length ? '<div class="ex-table-wrap"><table class="ex-table"><thead><tr><th>#</th><th>ที่พัก / ยูนิต</th><th>สถานะ</th><th>ประเภทห้อง</th><th class="num">ค่าเช่า/เดือน</th><th class="num">ห่าง Mireka Tower</th><th class="num">ห่าง Orion City</th><th>สัญญา</th></tr></thead><tbody>' + rows +
+                '</tbody><tfoot><tr><td colspan="4"><b>รวม ' + num(list.length) + ' ห้อง</b></td><td class="num"><b>' + num(rent) + '</b></td><td colspan="3"><small class="ex-help">ค่าเช่ารวมต่อเดือน (' + esc(baht(rent)) + ')</small></td></tr></tfoot></table></div>' : '<p class="ex-empty">ไม่พบห้อง</p>') + '</div>';
+    }
+
     function showTab(name) {
         state.tab = name;
+        $('exRoomsBtn').classList.toggle('is-on', name === 'rooms');
+        if (name === 'rooms' && !roomState.data && !roomState.loading) loadRooms();
         document.querySelectorAll('#exTabs button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === name));
         document.querySelectorAll('.ex-pane').forEach(p => { p.hidden = p.id !== `tab-${name}`; });
     }
@@ -194,6 +236,9 @@
     document.addEventListener('click', event => {
         const t = event.target;
         const tab = t.closest('#exTabs button'); if (tab) return showTab(tab.dataset.tab);
+        if (t.closest('#exRoomsBtn')) return showTab('rooms');
+        const rf = t.closest('[data-room-filter]'); if (rf) { roomState.filter = rf.dataset.roomFilter; return renderRooms(); }
+        if (t.id === 'rmRefresh') return loadRooms(true);
         if (t.closest('[data-close]')) return $('exDialog').close();
         const person = t.closest('[data-person]'); if (person && state.data) return openPerson(person.dataset.person);
         const area = t.closest('[data-area]'); if (area && state.data) { state.area = area.dataset.area; renderAreas(); return showTab('areas'); }
@@ -207,6 +252,7 @@
         renderReport();
     });
     document.addEventListener('input', event => {
+        if (event.target.id === 'rmQ') { roomState.q = event.target.value; const p = event.target.selectionStart; renderRooms(); const b = $('rmQ'); b.focus(); b.setSelectionRange(p, p); return; }
         if (event.target.id !== 'rfQ') return;
         state.report.q = event.target.value; const pos = event.target.selectionStart; renderReport();
         const box = $('rfQ'); box.focus(); box.setSelectionRange(pos, pos);

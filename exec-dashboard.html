@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="robots" content="noindex">
     <title>แดชบอร์ดผู้บริหาร | GA Executive</title>
-    <link rel="stylesheet" href="exec-dashboard.css?v=20261110-1">
+    <link rel="stylesheet" href="exec-dashboard.css?v=20261110-2">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
 <header class="ex-top">
     <a class="ex-back" href="portal.html">← กลับหน้าหลัก</a>
     <div class="ex-title"><b>แดชบอร์ดผู้บริหาร</b><small>สรุปงาน GA · อ่านอย่างเดียว</small></div>
+    <button type="button" id="exRoomsBtn" class="ex-btn ex-rooms-btn">🏠 ห้องพัก</button>
     <div class="ex-range">
         <select id="exPreset" aria-label="ช่วงเวลา">
             <option value="7">7 วันล่าสุด</option>
@@ -38,12 +39,13 @@
     <section id="tab-areas" class="ex-pane" hidden></section>
     <section id="tab-people" class="ex-pane" hidden></section>
     <section id="tab-report" class="ex-pane" hidden></section>
+    <section id="tab-rooms" class="ex-pane" hidden></section>
     <footer id="exFoot" class="ex-foot"></footer>
 </main>
 
 <dialog id="exDialog" class="ex-dialog"><div id="exDetail"></div></dialog>
 
 <script src="config.js"></script>
-<script src="exec-dashboard.js?v=20261110-1"></script>
+<script src="exec-dashboard.js?v=20261110-2"></script>
 </body>
 </html>

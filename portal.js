@@ -56,7 +56,7 @@ const services = [
                 route: 'exec-dashboard',
                 title: 'แดชบอร์ดผู้บริหาร',
                 icon: 'users',
-                page: 'exec-dashboard.html?v=20261110-1'
+                page: 'exec-dashboard.html?v=20261110-2'
             }
         ]
     },
