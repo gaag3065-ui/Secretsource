@@ -332,42 +332,25 @@ function limitBadges(employee) {
     ].join('');
 }
 
-// ใบยินยอม (พิมพ์ข้อมูลพนักงาน/เคสให้แล้ว) — เปิดหน้าต่างใหม่เพื่อพิมพ์หรือบันทึกเป็น PDF
-function openIpdShareConsentForm(employee, visit) {
-    const win = window.open('', '_blank');
-    if (!win) { alert('เบราว์เซอร์บล็อกหน้าต่างใหม่ — อนุญาตป๊อปอัปแล้วลองอีกครั้ง'); return; }
-    const opdPart = visit ? Math.min(visit.opd + visit.dental, Math.max(visit.opdBefore, 0)) : 0;
-    const ipdPart = visit ? visit.opd + visit.dental + visit.ipd - opdPart : 0;
-    const field = value => escapeSearchHtml(value || '..............................');
-    win.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>ใบยินยอมให้ใช้วงเงิน IPD ร่วม OPD</title>
-        <style>body{font-family:'Sarabun','TH Sarabun New',Tahoma,sans-serif;max-width:720px;margin:40px auto;font-size:17px;line-height:1.9;color:#111}
-        h1{text-align:center;font-size:22px;margin-bottom:24px}table{width:100%;border-collapse:collapse;margin:14px 0}td{border:1px solid #999;padding:6px 10px}
-        .sign{display:flex;justify-content:space-between;margin-top:70px;text-align:center}.sign div{width:45%}@media print{button{display:none}}</style></head><body>
-        <button onclick="print()" style="float:right">🖨️ พิมพ์ / บันทึก PDF</button>
-        <h1>ใบยินยอมให้ใช้วงเงินผู้ป่วยใน (IPD) ร่วมกับวงเงินผู้ป่วยนอก (OPD)</h1>
-        <p>ข้าพเจ้า ${field(employee.colG)} รหัสพนักงาน ${field(employee.colE)} Insurance ID ${field(employee.colC)} บริษัท ${field(employee.colB)} Size ${field(employee.colD)}</p>
-        <p>ขอยินยอมให้ใช้วงเงินผู้ป่วยใน (IPD) ร่วมชำระค่ารักษาพยาบาลผู้ป่วยนอก (OPD) เนื่องจากวงเงิน OPD คงเหลือไม่เพียงพอ ตามรายละเอียดดังนี้</p>
-        <table>
-            <tr><td>เลขเคส</td><td>${field(visit?.caseId)}</td></tr>
-            <tr><td>วันที่เข้ารักษา</td><td>${field(visit?.date.text)}</td></tr>
-            <tr><td>ค่ารักษาที่ใช้วงเงิน OPD/IPD</td><td>${visit ? `${limitMoney(visit.opd + visit.dental + visit.ipd)} บาท` : field('')}</td></tr>
-            <tr><td>หักวงเงิน OPD (ยอดคงเหลือทั้งหมด)</td><td>${visit ? `${limitMoney(opdPart)} บาท` : field('')}</td></tr>
-            <tr><td>หักวงเงิน IPD</td><td>${visit ? `${limitMoney(ipdPart)} บาท` : field('')}</td></tr>
-        </table>
-        <p>ข้าพเจ้ารับทราบว่าการใช้วงเงิน IPD ร่วมกับ OPD ใช้ได้เพียงครั้งเดียว เมื่อวงเงิน OPD หมด และไม่สามารถใช้วงเงินร่วมได้อีก</p>
-        <div class="sign"><div>ลงชื่อ ...................................... พนักงาน<br>(${field(employee.colG)})<br>วันที่ ........./........./.........</div>
-        <div>ลงชื่อ ...................................... ผู้รับเรื่อง<br>(......................................)<br>วันที่ ........./........./.........</div></div>
-        </body></html>`);
-    win.document.close();
+// ใบยินยอมให้ใช้วงเงิน IPD ร่วม OPD — ดาวน์โหลดไฟล์ PDF แบบฟอร์มกลาง (ไม่มีข้อมูลส่วนบุคคล) ให้พนักงานกรอกและเซ็น
+function openIpdShareConsentForm() {
+    const link = document.createElement('a');
+    link.href = 'ipd-opd-consent-form.pdf?v=20261110';
+    link.download = 'หนังสือยินยอมใช้วงเงิน OPD-IPD ร่วมกัน.pdf';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 }
 
 function buildLimitSummary(employee) {
     const a = analyzeLimits(employee);
     const lines = [
         `📌วงเงินค่ารักษาพยาบาล Size ${employee.colD || '-'}  รวม ${limitMoney(a.opdLimit + a.ipdLimit)} บาท`,
+        '',
         `- ผู้ป่วยใน IPD วงเงิน ${limitMoney(a.ipdLimit)}  คงเหลือ ${limitMoney(employee.colBB)} บาท`,
         `- ผู้ป่วยนอก OPD วงเงิน ${limitMoney(a.opdLimit)}  คงเหลือ ${limitMoney(employee.colBA)} บาท`,
         ...(a.hasOther ? [`- วงเงินอื่นๆ (แยกต่างหาก) วงเงิน ${limitMoney(a.otherLimit)}  คงเหลือ ${limitMoney(employee.colBM)} บาท`] : []),
+        ...(a.visits.length ? ['', 'รายละเอียดประวัติการเข้ารับการรักษา', ''] : []),
         // เรียงจากวันที่เก่าสุด → ปัจจุบัน (ไม่ระบุวันที่ไว้ท้ายสุด)
         ...[...a.visits].sort((x, y) => {
             const fx = Number.isFinite(x.date.time) && x.date.time > 0, fy = Number.isFinite(y.date.time) && y.date.time > 0;
@@ -461,7 +444,7 @@ function createEmployeeResultItem(employee, options = {}) {
     item.addEventListener('click', (event) => {
         if (event.target.closest('[data-consent-form]')) {
             event.stopPropagation();
-            openIpdShareConsentForm(employee, analyzeLimits(employee).needConsent);
+            openIpdShareConsentForm();
             return;
         }
 
