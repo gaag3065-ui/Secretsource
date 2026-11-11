@@ -113,7 +113,7 @@
                     '<p class="ro-rv-now">ชีตพนักงานระบุว่า: ที่พัก <b>' + esc(x.building || '-') + '</b> · ชั้น <b>' + esc(x.floor || '-') + '</b> · ห้อง <b>' + esc(x.room || '-') + '</b></p>' +
                     '<p class="ro-rv-why">' + esc(x.message) + '</p>' +
                     '<div class="ro-rv-form"><label>ชื่อที่พัก<input data-rv="building" value="' + esc(x.proposal.building) + '"></label><label>ชั้น<input data-rv="floor" value="' + esc(x.proposal.floor) + '"></label><label>ห้อง/ยูนิต<input data-rv="room" value="' + esc(x.proposal.room) + '"></label></div>' +
-                    '<div class="ro-rv-actions"><button type="button" class="ro-btn ro-btn-primary" data-rv-yes>✔ ใช่ อยู่บ้านหลังนี้ — บันทึกลงชีต</button><button type="button" class="ro-btn" data-rv-no>ไม่ใช่ / ข้ามไปก่อน</button></div></article>').join('') + '</section>' : '') +
+                    '<div class="ro-rv-actions"><button type="button" class="ro-btn ro-btn-primary" data-rv-yes>✔ ใช่ อยู่บ้านหลังนี้ — ยืนยัน</button><button type="button" class="ro-btn" data-rv-no>ไม่ใช่ / ข้ามไปก่อน</button></div></article>').join('') + '</section>' : '') +
             '<section><h4>รายละเอียดห้อง</h4><dl class="ro-dl">' +
                 FIELDS.map(([k, label]) => '<dt>' + esc(label.replace(/ \(.*\)$/, '')) + '</dt><dd>' + esc((k === 'rent' ? (r.rent ? num(r.rent) : '') : r[k]) || '-') + '</dd>').join('') +
                 '<dt>เหลือเวลาสัญญา</dt><dd>' + esc(r.remaining || '-') + '</dd>' +
@@ -145,12 +145,12 @@
             const card = yes.closest('.ro-rv');
             const value = k => card.querySelector('[data-rv="' + k + '"]').value.trim();
             if (!value('building')) { note('ต้องระบุชื่อที่พัก', true); return; }
-            if (!confirm('บันทึกลงชีตพนักงาน?\n\nที่พัก: ' + value('building') + '\nชั้น: ' + (value('floor') || '-') + '\nห้อง: ' + (value('room') || '-'))) return;
+            if (!confirm('บันทึกที่พักที่ GA ยืนยัน? (เก็บในแท็บ "ที่พักที่ GA ยืนยัน" ไม่แก้ไฟล์ HR)\n\nที่พัก: ' + value('building') + '\nชั้น: ' + (value('floor') || '-') + '\nห้อง: ' + (value('room') || '-'))) return;
             yes.disabled = true; yes.textContent = 'กำลังบันทึก…';
             try {
                 await send('POST', '/employee-fix', { row: Number(card.dataset.rvRow), employeeId: card.dataset.rvId, building: value('building'), floor: value('floor'), room: value('room') });
                 const keep = dialog.dataset.no; await reopen(keep); note('บันทึกที่พักของพนักงานในชีตเรียบร้อยแล้ว', false);
-            } catch (error) { yes.disabled = false; yes.textContent = '✔ ใช่ อยู่บ้านหลังนี้ — บันทึกลงชีต'; note(error.message, true); }
+            } catch (error) { yes.disabled = false; yes.textContent = '✔ ใช่ อยู่บ้านหลังนี้ — ยืนยัน'; note(error.message, true); }
         }
     });
     root.addEventListener('submit', async event => {
