@@ -46,3 +46,47 @@
 }
 
 .ro-diag { flex-basis: 100%; color: #b42318; font-size: 12.5px; }
+
+/* ปุ่มจัดการ / หน้าต่างรายละเอียด-แก้ไข */
+.ro-actions-cell { white-space: nowrap; }
+.ro-btn { border: 1px solid var(--as-line, #e1e7ea); border-radius: 9px; padding: 7px 12px; background: #fff; color: var(--as-ink, #18212f); font: inherit; font-size: 13px; cursor: pointer; }
+.ro-btn:hover { border-color: var(--as-brand, #087f74); }
+.ro-btn:disabled { opacity: .6; cursor: wait; }
+.ro-btn-sm { padding: 4px 10px; font-size: 12px; }
+.ro-btn-primary { background: var(--as-brand, #087f74); border-color: var(--as-brand, #087f74); color: #fff; }
+.ro-btn.is-warn { border-color: #f0b429; background: #fff8e6; }
+.ro-badge { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: #f79009; color: #fff; font-size: 11px; font-weight: 700; }
+.ro-dialog { width: min(760px, 96vw); max-height: 92vh; border: 0; border-radius: 16px; padding: 0; box-shadow: 0 20px 60px rgba(0, 0, 0, .35); }
+.ro-dialog::backdrop { background: rgba(15, 23, 42, .5); }
+.ro-dlg { display: grid; gap: 14px; padding: 18px 20px 20px; max-height: 90vh; overflow: auto; }
+.ro-dlg-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.ro-dlg-head h3 { margin: 0 0 4px; font-size: 18px; }
+.ro-dlg-head h3 small { color: var(--as-muted, #6b7785); font-weight: 400; margin-left: 6px; }
+.ro-x { border: 0; background: #f2f4f7; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 15px; }
+.ro-dlg section { display: grid; gap: 8px; }
+.ro-dlg h4 { margin: 0; font-size: 15px; }
+.ro-dlg h4 small { color: var(--as-muted, #6b7785); font-weight: 400; font-size: 12px; }
+.ro-hint { margin: 0; color: var(--as-muted, #6b7785); font-size: 12.5px; }
+.ro-note { margin: 0; min-height: 0; font-size: 13px; font-weight: 600; }
+.ro-note:empty { display: none; }
+.ro-note.is-ok { color: #067647; background: #ecfdf3; padding: 8px 12px; border-radius: 10px; }
+.ro-note.is-bad { color: #b42318; background: #fef3f2; padding: 8px 12px; border-radius: 10px; }
+.ro-review { padding: 12px; border: 1px solid #f0b429; border-radius: 12px; background: #fffbeb; }
+.ro-rv { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid #fde4a1; border-radius: 10px; background: #fff; }
+.ro-rv-who small { display: block; color: var(--as-muted, #6b7785); font-size: 12px; }
+.ro-rv-now, .ro-rv-why { margin: 0; font-size: 13px; }
+.ro-rv-why { color: #b54708; }
+.ro-rv-form { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
+.ro-rv-form label, .ro-form-grid label { display: grid; gap: 3px; font-size: 12px; color: #475467; }
+.ro-rv-form input, .ro-form-grid input { border: 1px solid var(--as-line, #e1e7ea); border-radius: 8px; padding: 7px 9px; font: inherit; font-size: 14px; min-width: 0; }
+.ro-rv-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.ro-dl { display: grid; grid-template-columns: minmax(120px, 190px) 1fr; gap: 6px 14px; margin: 0; font-size: 13px; }
+.ro-dl dt { color: var(--as-muted, #6b7785); }
+.ro-dl dd { margin: 0; font-weight: 600; word-break: break-word; }
+.ro-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.ro-dlg-foot { display: flex; justify-content: flex-end; gap: 8px; }
+@media (max-width: 640px) {
+    .ro-rv-form, .ro-form-grid { grid-template-columns: 1fr; }
+    .ro-dl { grid-template-columns: 1fr; gap: 0 14px; }
+    .ro-dl dd { margin-bottom: 6px; }
+}
