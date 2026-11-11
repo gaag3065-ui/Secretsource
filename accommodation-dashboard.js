@@ -88,6 +88,10 @@
             if (s.noticeDue) items.push(['bad', `ถึงกำหนดแจ้งยกเลิกเช่า ${num(s.noticeDue)} ยูนิต`, 'exp']);
             if (s.noticeSoon) items.push(['warn', `ใกล้กำหนดแจ้งยกเลิกเช่า ${num(s.noticeSoon)} ยูนิต`, 'exp']);
         }
+        const netDown = contracted.filter(r => (r.internet || []).some(x => x.kind === 'down') && !(r.internet || []).some(x => x.kind === 'ok')).length;
+        const netNone = contracted.filter(r => (r.internet || []).length && (r.internet || []).every(x => x.kind === 'none')).length;
+        if (netDown) items.push(['bad', `อินเตอร์เน็ตใช้งานไม่ได้ ${num(netDown)} ยูนิต`, 'units']);
+        if (netNone) items.push(['warn', `ยังไม่ติดตั้งอินเตอร์เน็ต ${num(netNone)} ยูนิต`, 'units']);
         if (reviews) items.push(['warn', `ต้องยืนยันที่พักพนักงาน ${num(reviews)} ยูนิต`, 'units']);
         if (c.issues) items.push(['warn', `ทะเบียนมีจุดต้องตรวจ ${num(c.issues)} จุด`, 'units']);
         badge('exp', s ? (s.unpaid + s.rentOver + s.airOver + s.noticeDue) : 0);

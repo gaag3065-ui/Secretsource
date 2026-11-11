@@ -12,6 +12,9 @@
     const bedsOf = r => Number((/(\d+)\s*ห้องนอน/.exec(r.type || '') || [])[1] || 0);
     const bathsOf = r => Number((/(\d+)\s*ห้องน้ำ/.exec(r.type || '') || [])[1] || 0);
     const buildingKey = name => String(name || '').normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim();
+    const NET_LABEL = { ok: 'ใช้งานได้', down: 'ใช้งานไม่ได้', none: 'ยังไม่ติดตั้ง' };
+    const netState = r => { const n = r.internet || []; return n.some(x => x.kind === 'ok') ? 'ok' : n.some(x => x.kind === 'down') ? 'down' : n.some(x => x.kind === 'none') ? 'none' : n.length ? 'unknown' : 'nodata'; };
+    const netCell = r => (r.internet || []).map(x => `<span class="ro-net is-${x.kind}">${esc(NET_LABEL[x.kind] || x.statusText || 'ไม่ระบุ')}</span><small>${esc([x.provider, x.type, x.package].filter(Boolean).join(' · ') || '')}${x.installedBy ? ' · ' + esc(x.installedBy) : ''}</small>`).join('') || '<span class="ro-net is-nodata">ไม่มีข้อมูล</span>';
     const DATE_KEYS = ['dH', 'dI', 'dJ', 'dK', 'dL', 'dM', 'dN', 'dO', 'dP', 'dQ'];
 
     async function load(refresh = false) {
@@ -48,7 +51,7 @@
                     const buildings = new Set(rooms.map(r => buildingKey(r.project)).filter(Boolean));
                     const contracted = new Set(rooms.filter(r => r.status === STATUS_LIST[0]).map(r => buildingKey(r.project)));
                     const rentAll = rooms.reduce((n, r) => n + (r.rent || 0), 0), rentContract = rooms.filter(r => r.status === STATUS_LIST[0]).reduce((n, r) => n + (r.rent || 0), 0);
-                    const stat = s => rooms.filter(r => r.status === s).length;
+                    const stat = s => rooms.filter(r => r.status === s).length; const contractedRooms = rooms.filter(r => r.status === STATUS_LIST[0]);
                     const other = rooms.filter(r => !STATUS_LIST.includes(r.status));
                     return `
                 <article class="ro-card ro-existing">
@@ -66,6 +69,11 @@
                 <article class="ro-card ro-rent">
                     <small>ค่าเช่าทั้งหมด (รวมต่อเดือน)</small><strong>${num(rentAll)}</strong>
                     <div class="ro-split"><span>ทำสัญญาแล้ว <b>${num(rentContract)}</b></span><span>ยังไม่ทำสัญญา <b>${num(rentAll - rentContract)}</b></span></div>
+                </article>
+                <article class="ro-card ro-net-card">
+                    <small>อินเตอร์เน็ตบ้านพัก (ยูนิตที่ทำสัญญาแล้ว)</small><strong>${num(contractedRooms.filter(r => netState(r) === 'ok').length)}<em> / ${num(contractedRooms.length)}</em></strong>
+                    <div class="ro-split"><span>ใช้งานได้</span><span>ใช้งานไม่ได้ <b>${num(contractedRooms.filter(r => netState(r) === 'down').length)}</b></span><span>ยังไม่ติดตั้ง <b>${num(contractedRooms.filter(r => netState(r) === 'none').length)}</b></span><span>ไม่มีข้อมูล <b>${num(contractedRooms.filter(r => ['nodata', 'unknown'].includes(netState(r))).length)}</b></span></div>
+                    ${c.internet?.diag ? `<small class="ro-diag">${esc(c.internet.diag)}</small>` : ''}
                 </article>`;
                 })()}
             </div>
@@ -75,9 +83,10 @@
                 ${!c.employeesOnWork ? `<span class="ro-diag">อ่านรายชื่อพนักงาน on work ไม่ได้ — ${esc(c.employeeDiag || 'เครื่องหลังบ้านยังไม่ได้อัปเดต')}</span>` : ''}
                 ${rooms.some(r => pendingReviews(r).length) ? `<span><b>⚠ ต้องยืนยันที่พักของพนักงาน ${num(rooms.filter(r => pendingReviews(r).length).length)} ห้อง</b> — กดปุ่ม "รายละเอียด" ที่ห้องนั้น</span>` : ''}
                 <span>จุดที่ต้องตรวจในทะเบียน ${num(c.issues)} · พนักงานที่จับคู่ห้องไม่ได้ ${num(c.employeesUnmatched)} · ยังไม่มีที่พัก ${num(c.employeesWithoutRoom)}</span>
-                ${issues.length || unmatched.length ? '<button type="button" data-ro-toggle-check>ดูรายละเอียด</button>' : ''}
+                ${issues.length || unmatched.length || (state.data.internetUnmatched || []).length ? '<button type="button" data-ro-toggle-check>ดูรายละเอียด</button>' : ''}
                 <div class="ro-check-list" hidden>
                     ${issues.length ? `<h4>ทะเบียนห้องพัก</h4><ul>${issues.map(i => `<li><b>${esc(i.type)}</b> — ลำดับ ${esc(i.no)} ${esc(i.project)} ${esc(i.unit)} ${esc(i.detail)}</li>`).join('')}</ul>` : ''}
+                    ${(state.data.internetUnmatched || []).length ? `<h4>ไฟล์อินเตอร์เน็ตบ้านพัก — แถวที่จับคู่กับทะเบียนไม่ได้</h4><ul>${state.data.internetUnmatched.map(i => `<li>ลำดับ ${esc(i.no)} · ${esc(i.project)} ${esc(i.unit)} — ${esc(i.reason)}</li>`).join('')}</ul>` : ''}
                     ${unmatched.length ? `<h4>พนักงานที่จับคู่ห้องในทะเบียนไม่ได้ (แท็บข้อมูลเบื้องต้น)</h4><ul>${unmatched.map(e => `<li>แถว ${esc(e.row)} · ${esc(e.company)} · ${esc(e.building)} ${esc(e.floor)} ${esc(e.room)} — ${esc(e.reason)}</li>`).join('')}</ul>` : ''}
                 </div>
             </div>
@@ -86,7 +95,7 @@
                 <input type="search" data-ro-search placeholder="ค้นหาที่พัก ยูนิต สถานะ…" value="${esc(state.query)}">
             </div>
             <div class="ro-table-wrap"><table class="ro-table">
-                <thead><tr><th>#</th><th>ที่พัก / ยูนิต</th><th>สถานะ</th><th>พนักงาน</th><th>ประเภทห้อง</th><th>ค่าเช่า/เดือน</th><th>สัญญา</th><th>ผู้จัดหา</th><th>จัดการ</th></tr></thead>
+                <thead><tr><th>#</th><th>ที่พัก / ยูนิต</th><th>สถานะ</th><th>พนักงาน</th><th>ประเภทห้อง</th><th>ค่าเช่า/เดือน</th><th>สัญญา</th><th>อินเตอร์เน็ต</th><th>ผู้จัดหา</th><th>จัดการ</th></tr></thead>
                 <tbody>${list.map(r => `<tr>
                     <td>${esc(r.no)}</td>
                     <td><b>${esc(r.project)}</b><small>${esc(r.unit)}</small></td>
@@ -95,8 +104,9 @@
                     <td>${esc(r.type || '-')}</td>
                     <td>${r.rent ? num(r.rent) : '-'}</td>
                     <td>${r.start || r.end ? `${esc(r.start)} – ${esc(r.end)}<small>${esc(r.remaining)}</small>` : '-'}</td>
+                    <td class="ro-net-cell">${netCell(r)}</td>
                     <td>${esc(r.agent || '-')}</td>
-                    <td class="ro-actions-cell"><button type="button" class="ro-btn ro-btn-sm ${pendingReviews(r).length ? 'is-warn' : ''}" data-ro-detail="${esc(r.no)}">รายละเอียด${pendingReviews(r).length ? ` <span class="ro-badge" title="ต้องตรวจสอบที่พักพนักงาน">⚠ ${pendingReviews(r).length}</span>` : ''}</button> <button type="button" class="ro-btn ro-btn-sm" data-ro-edit="${esc(r.no)}">✏️ แก้ไข</button></td></tr>`).join('') || '<tr><td colspan="9" class="ro-empty">ไม่พบห้องตามเงื่อนไข</td></tr>'}</tbody>
+                    <td class="ro-actions-cell"><button type="button" class="ro-btn ro-btn-sm ${pendingReviews(r).length ? 'is-warn' : ''}" data-ro-detail="${esc(r.no)}">รายละเอียด${pendingReviews(r).length ? ` <span class="ro-badge" title="ต้องตรวจสอบที่พักพนักงาน">⚠ ${pendingReviews(r).length}</span>` : ''}</button> <button type="button" class="ro-btn ro-btn-sm" data-ro-edit="${esc(r.no)}">✏️ แก้ไข</button></td></tr>`).join('') || '<tr><td colspan="10" class="ro-empty">ไม่พบห้องตามเงื่อนไข</td></tr>'}</tbody>
             </table></div>`;
     }
 
@@ -144,6 +154,8 @@
                 fieldsOf().filter(([k]) => !DATE_KEYS.includes(k) || r[k]).map(([k, label]) => '<dt>' + esc(label.replace(/ \(.*\)$/, '')) + '</dt><dd>' + esc((k === 'rent' ? (r.rent ? num(r.rent) : '') : r[k]) || '-') + '</dd>').join('') +
                 '<dt>เหลือเวลาสัญญา</dt><dd>' + esc(r.remaining || '-') + '</dd>' +
                 '<dt>พนักงานที่พักอยู่</dt><dd>' + (employees.length ? employees.map(e => esc(e.name) + ' <small>(' + esc(e.company) + ')</small>').join('<br>') : '-') + '</dd></dl></section>' +
+            '<section><h4>🌐 อินเตอร์เน็ต / ราวเตอร์ <small>จากไฟล์ "อินเตอร์เน็ตบ้านพัก GROUP EAST" (อ่านอย่างเดียว)</small></h4>' + ((r.internet || []).length ? r.internet.map(x => '<dl class="ro-dl ro-net-dl"><dt>สถานะ</dt><dd><span class="ro-net is-' + x.kind + '">' + esc(NET_LABEL[x.kind] || x.statusText || 'ไม่ระบุ') + '</span> ' + esc(x.installedBy) + '</dd>' +
+                [['ผู้ให้บริการ', [x.provider, x.type].filter(Boolean).join(' · ')], ['แพ็คเกจ', x.package], ['หมายเลขบัญชี', x.account], ['หมายเลขสัญญา', x.contract], ['หมายเลขเครื่อง (Serial)', x.serial], ['ชื่อผู้ลงทะเบียน', x.holder], ['ที่อยู่ติดตั้ง', x.address], ['วันที่ติดตั้ง', x.installDate], ['หมายเหตุ', x.remark]].map(([k, v]) => '<dt>' + k + '</dt><dd>' + (esc(v) || '-') + '</dd>').join('') + '</dl>').join('') : '<p class="ro-hint">ไม่พบห้องนี้ในไฟล์อินเตอร์เน็ต</p>') + '</section>' +
             '<section class="ro-edit" ' + (edit ? '' : 'hidden') + '><h4>✏️ แก้ไขข้อมูลห้อง <small>บันทึกลงไฟล์ทะเบียนห้องพักใน Google Sheet</small></h4><form data-ro-form="' + esc(r.no) + '">' +
                 '<div class="ro-form-grid">' + fieldsOf().map(([k, label]) => {
                     const val = k === 'rent' ? (r.rent || '') : (r[k] || '');

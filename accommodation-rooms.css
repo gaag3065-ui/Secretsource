@@ -15,6 +15,16 @@
 .ro-status-grid button:hover:not(:disabled) { border-color: #d97706; }
 .ro-status-grid button.is-on { border-color: #d97706; background: #fff4e0; }
 .ro-status-grid button b { color: var(--as-ink, #18212f); font-size: 13px; }
+.ro-net { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+.ro-net.is-ok { background: #e5f7f4; color: #087f74; }
+.ro-net.is-down { background: #fee4e2; color: #b42318; }
+.ro-net.is-none { background: #fff4d6; color: #9a5b00; }
+.ro-net.is-unknown, .ro-net.is-nodata { background: #f2f4f7; color: #667085; }
+.ro-net-cell small { margin-top: 2px; }
+.ro-net-card { border-top-color: #0ea5e9; }
+.ro-net-card strong em { font-style: normal; font-size: 16px; color: var(--as-muted, #6b7785); }
+.ro-diag { color: #b42318; font-size: 11.5px; }
+.ro-net-dl + .ro-net-dl { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #d0d5dd; }
 .ro-emp-line { margin: 8px 2px 0; color: #667085; font-size: 12.5px; }
 .ro-emp-line b { color: var(--as-ink, #18212f); }
 .ro-form-sub { grid-column: 1 / -1; margin: 8px 0 0; padding-top: 8px; border-top: 1px dashed #d0d5dd; font-size: 13px; }
