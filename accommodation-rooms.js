@@ -145,7 +145,7 @@
             const card = yes.closest('.ro-rv');
             const value = k => card.querySelector('[data-rv="' + k + '"]').value.trim();
             if (!value('building')) { note('ต้องระบุชื่อที่พัก', true); return; }
-            if (!confirm('บันทึกที่พักที่ GA ยืนยัน? (เก็บในแท็บ "ที่พักที่ GA ยืนยัน" ไม่แก้ไฟล์ HR)\n\nที่พัก: ' + value('building') + '\nชั้น: ' + (value('floor') || '-') + '\nห้อง: ' + (value('room') || '-'))) return;
+            if (!confirm('แก้ที่พักในไฟล์ HR ของพนักงานคนนี้โดยตรง และบันทึกประวัติ (ข้อมูลเดิม เทียบข้อมูลที่แก้) ?\n\nที่พัก: ' + value('building') + '\nชั้น: ' + (value('floor') || '-') + '\nห้อง: ' + (value('room') || '-'))) return;
             yes.disabled = true; yes.textContent = 'กำลังบันทึก…';
             try {
                 await send('POST', '/employee-fix', { row: Number(card.dataset.rvRow), employeeId: card.dataset.rvId, building: value('building'), floor: value('floor'), room: value('room') });
