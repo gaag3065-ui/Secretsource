@@ -22,6 +22,8 @@
             if (response.status === 404 && !data.message) throw new Error('เครื่องหลังบ้านยังไม่ได้อัปเดต (git pull แล้วรีสตาร์ท)');
             if (!response.ok || !data.success) throw new Error(data.message || 'โหลดไม่สำเร็จ');
             state.data = data;
+            window.__roData = data;
+            window.dispatchEvent(new CustomEvent('ro-data', { detail: data }));
             render();
         } catch (error) {
             root.querySelector('.ro-body').innerHTML = `<p class="ro-empty ro-error">${esc(error.message)}</p>`;

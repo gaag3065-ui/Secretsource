@@ -148,7 +148,15 @@
                 <tbody>${shown.map(r => `<tr class="${r.flagged ? 'is-flag' : ''}"><td><b>${esc(r.u.project)}</b><small>${esc(r.u.unit)} · ลำดับ ${esc(r.u.no)}</small></td><td>${r.u.rent ? num(r.u.rent) : '-'}</td>
                     ${MONTH_CATS.map(c => `<td>${chipHtml(r.cells[c])}</td>`).join('')}<td>${chipHtml(r.cells.rent_adv)}</td><td>${chipHtml(r.cells.aircon)}</td><td>${chipHtml(r.cells.notice)}</td></tr>`).join('') || `<tr><td colspan="10" class="rx-empty">${rows.length ? 'ไม่มีรายการที่ต้องดำเนินการ 🎉' : 'ยังไม่มียูนิตที่ทำสัญญาแล้ว'}</td></tr>`}</tbody>
             </table></div>`;
-        window.dispatchEvent(new CustomEvent('ro-expense-alerts', { detail: { count: alerts.length, alerts: alerts.map(a => a[1]) } }));
+        // สรุปให้หน้าภาพรวม (accommodation-dashboard.js)
+        const tally = cat => { const cells = rows.map(r => r.cells[cat]).filter(c => c.tone === 'ok' || c.tone === 'bad'); return [d.cats[cat].label, cells.filter(c => c.tone === 'ok').length, cells.length]; };
+        const cats = ['water', 'electric', 'gas', 'other'].map(tally);
+        const stats = { monthLabel: monthLabel(state.month), cats, paid: cats.reduce((n, c) => n + c[1], 0), total: cats.reduce((n, c) => n + c[2], 0),
+            unpaid: ['water', 'electric', 'gas', 'other'].reduce((n, c) => n + unpaid(c), 0), gasPending: unpaid('gas_recv'),
+            rentOver: rows.filter(r => r.cells.rent_adv.alert === 'rent_adv:over').length, rentSoon: rows.filter(r => r.cells.rent_adv.alert === 'rent_adv:soon').length,
+            airOver: rows.filter(r => r.cells.aircon.alert === 'aircon:over').length, airSoon: rows.filter(r => r.cells.aircon.alert === 'aircon:soon').length, noticeDue: nDue, noticeSoon: nSoon };
+        window.__rxStats = stats;
+        window.dispatchEvent(new CustomEvent('ro-expense-alerts', { detail: { count: alerts.length, alerts: alerts.map(a => a[1]), stats } }));
     }
 
     // ---------------------------------------------------------------- กล่องบันทึก
