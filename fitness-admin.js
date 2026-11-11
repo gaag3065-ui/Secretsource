@@ -41,6 +41,9 @@
         try {
             state.data = await request(`/forms${month ? `?month=${encodeURIComponent(month)}` : ''}`);
             $('faMonth').innerHTML = state.data.months.map(m => `<option value="${m}" ${m === state.data.month ? 'selected' : ''}>${m}</option>`).join('');
+            const archive = (state.data.archives || {})[state.data.month];
+            $('faArchive').hidden = !archive;
+            if (archive) $('faArchive').href = archive;
             renderLock();
             $('faUpdated').textContent = `· อัปเดต ${new Date().toLocaleTimeString('th-TH')}`;
             render();
