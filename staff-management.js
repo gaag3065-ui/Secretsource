@@ -1100,7 +1100,8 @@
     // ขั้นตอนของงาน: ยังไม่รับทราบ → รับทราบแล้ว → ส่งข้อมูลแล้ว → ตรวจสอบแล้ว
     // ---------------------------------------------------------------- ขั้นตอนของแต่ละกล่อง (เชื่อมกัน) + ยืนยันลงรายงาน
     const CHECKED_REC = new Set(['approved', 'insurance', 'refunded', 'done']);
-    const STEP_LABEL = { unread: 'ยังไม่รับทราบ', read: 'รับทราบแล้ว', sent: 'ส่งข้อมูลแล้ว', more: 'ขอเอกสารเพิ่ม', checked: 'ตรวจสอบแล้ว', reported: 'ยืนยันลงรายงานแล้ว' };
+    const STEP_LABEL = { unread: 'ยังไม่รับทราบ', read: 'รับทราบแล้ว', sent: 'ส่งข้อมูลแล้ว', more: 'ขอเอกสารเพิ่ม', checked: 'ตรวจสอบแล้ว', reported: 'ยืนยันลงรายงานแล้ว', closed: 'เสร็จสิ้น (ปิดกล่อง)' };
+    const hasSlip = r => (r.files || []).some(f => f.field === 'refund_slip');
     // รวมงานและเอกสารที่ส่งเองของคนหนึ่งคน ตามกล่อง → ขั้นตอนล่าสุดของกล่องนั้น
     function boxGroupsOf(tasks, recs) {
         const map = new Map();
@@ -1114,8 +1115,9 @@
             const checked = ts.some(t => t.status === 'done') || rs.some(r => CHECKED_REC.has(r.status));
             const reported = ts.some(t => t.report_confirmed_at) || rs.some(r => r.report_confirmed_at);
             const more = rs.some(r => r.status === 'rejected') && !checked;
-            const stage = reported ? 'reported' : checked ? 'checked' : more ? 'more' : sent ? 'sent' : received ? 'read' : ts.length ? 'unread' : '';
-            return { ...g, received, sent, checked, reported, stage };
+            const closed = rs.some(r => r.closed_at);
+            const stage = closed ? 'closed' : reported ? 'reported' : checked ? 'checked' : more ? 'more' : sent ? 'sent' : received ? 'read' : ts.length ? 'unread' : '';
+            return { ...g, received, sent, checked, reported, closed, stage };
         });
     }
     // การ์ดกล่องเดียวกัน: ① รับงาน → ② ส่งข้อมูล → ③ ตรวจสอบ → ④ ยืนยันรายงาน (ขั้นที่ยังไม่ทำ = สีอำพัน)
@@ -1126,12 +1128,17 @@
         const latestRec = [...group.recs].sort((a, b) => b.id - a.id)[0];
         const taskAttr = group.tasks.length ? `data-task-open="${group.tasks[0].id}"` : '';
         const recAttr = latestRec ? `data-record="${latestRec.id}"` : '';
-        const steps = [
+        let steps = [
             { label: '① รับงาน', done: group.received, show: group.tasks.length > 0, attr: taskAttr, tip: 'เปิดงานที่มอบหมาย' },
             { label: '② ส่งข้อมูล', done: group.sent, show: true, attr: recAttr || taskAttr, tip: recAttr ? 'เปิดเอกสารที่พนักงานส่ง' : 'เปิดงานที่มอบหมาย' },
             { label: '③ ตรวจสอบ', done: group.checked, show: true, attr: recAttr || taskAttr, tip: recAttr ? 'ตรวจเอกสาร / ตั้งสถานะ' : 'ตั้งสถานะงานเป็นเสร็จสิ้น' },
             { label: '④ ยืนยันรายงาน', done: group.reported, show: true, attr: recAttr || taskAttr, tip: 'กดยืนยันลงรายงาน (ต้องตรวจสอบผ่านก่อน)' }
-        ].filter(s => s.show);
+        ];
+        // ⑤ เสร็จสิ้น: ขึ้นเมื่อแนบสลิปโอนเงินคืนแล้ว → กดเพื่อปิดกล่องงานนี้สมบูรณ์ (กดซ้ำที่ขั้นที่เสร็จแล้ว = เปิดดู/ยกเลิกในหน้าตรวจ)
+        const slipRec = [...group.recs].sort((a, b) => b.id - a.id).find(hasSlip);
+        if (slipRec || group.closed) steps.push({ label: '⑤ เสร็จสิ้น', done: group.closed, show: true,
+            attr: group.closed ? recAttr : `data-close-record="${slipRec.id}" data-closed="1"`, tip: group.closed ? 'ปิดงานแล้ว — เปิดดู / ยกเลิกได้ในหน้าตรวจ' : 'แนบสลิปโอนคืนแล้ว — กดเพื่อปิดกล่องนี้ให้เสร็จสมบูรณ์' });
+        steps = steps.filter(s => s.show);
         const cur = steps.findIndex(s => !s.done);
         return `<span class="sm-link" title="${esc(title)}"><span class="sm-link-head">${esc(box?.icon || '📌')} ${esc(title)}</span><span class="sm-link-steps">${steps.map((s, i) => `${i ? '<i class="sm-link-arrow">›</i>' : ''}<button type="button" class="sm-step ${s.done ? 'is-done' : i === cur ? 'is-current' : 'is-todo'}" ${s.attr} title="${esc(s.tip)}">${s.done ? '✓ ' : ''}${esc(s.label)}</button>`).join('')}</span></span>`;
     }
@@ -1160,6 +1167,23 @@
             toast(confirmed ? 'ยืนยันลงรายงานแล้ว' : 'ยกเลิกการยืนยันแล้ว');
             await load();
             if (taskId) { if ($('smTaskList')) renderTasks(); } else openRecord(recId);
+        } catch (error) { toast(error.message, true); button.disabled = false; }
+    }
+
+    async function setClosed(button) {
+        const closed = button.dataset.closed === '1', id = button.dataset.closeRecord;
+        if (closed && !confirm('ยืนยันปิดงานนี้เป็น "เสร็จสิ้น"?\n(แนบสลิปโอนเงินคืนแล้ว — กล่องนี้จะถือว่าเสร็จสมบูรณ์)')) return;
+        button.disabled = true;
+        try {
+            await ensureCsrf();
+            const response = await window.authFetch(docsApi(`/records/${id}/close`), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ closed }) });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) throw new Error(data.message || 'บันทึกไม่สำเร็จ');
+            const i = state.records.findIndex(x => x.id === data.record.id);
+            if (i >= 0) state.records[i] = data.record;
+            toast(closed ? 'ปิดงานเป็นเสร็จสิ้นแล้ว' : 'ยกเลิกเสร็จสิ้นแล้ว');
+            render();
+            if ($('smDialog').open) openRecord(id);
         } catch (error) { toast(error.message, true); button.disabled = false; }
     }
 
@@ -1328,6 +1352,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
                         <p class="sm-wide sm-rec-hint" data-reject-hint hidden>📎 เลือก "ขอเอกสารเพิ่ม" แล้ว พนักงานจะเห็นหมายเหตุนี้ และปุ่ม <b>"＋ ส่งเอกสารเพิ่ม"</b> ที่รายการนี้ในหน้าระบบจัดการองค์กร → เลือกหัวข้อ (เช่น ใบเสร็จ) แล้วแนบไฟล์ ไฟล์ใหม่จะมาต่อท้ายหัวข้อเดิมในหน้านี้ จากนั้นพนักงานกด "ส่งกลับให้ GA ตรวจ" รายการจะกลับมาเป็น "รอตรวจ"</p>
                         <label class="sm-wide">หมายเหตุถึงพนักงาน (เช่น ขอใบเสร็จตัวจริงเพิ่ม)<textarea name="note" maxlength="1000">${esc(r.admin_note || '')}</textarea></label>
                         <div class="sm-form-foot"><span class="sm-meta">${r.handled_by ? `ตรวจล่าสุดโดย ${esc(r.handled_by)} ${esc(when(r.handled_at))}` : 'ยังไม่ได้ตรวจ'}</span><button type="button" class="fa-btn ${r.report_confirmed_at ? '' : 'fa-btn-primary'}" data-report-record="${r.id}" data-confirmed="${r.report_confirmed_at ? '0' : '1'}" ${CHECKED_REC.has(r.status) ? '' : 'disabled title="ต้องตรวจสอบผ่านก่อน"'}>${r.report_confirmed_at ? '↩ ยกเลิกยืนยันลงรายงาน' : '✅ ยืนยันลงรายงาน'}</button>
+                            ${r.closed_at ? `<button type="button" class="fa-btn" data-close-record="${r.id}" data-closed="0">↩ ยกเลิกเสร็จสิ้น</button>` : hasSlip(r) ? `<button type="button" class="fa-btn fa-btn-primary" data-close-record="${r.id}" data-closed="1" title="แนบสลิปโอนคืนแล้ว — ปิดกล่องนี้ให้เสร็จสมบูรณ์">🏁 เสร็จสิ้น</button>` : ''}
                             <button type="submit" class="fa-btn fa-btn-primary">บันทึกผลการตรวจ</button></div>
                     </form></section>
                 ${can('deleteDocs') ? `<div class="sm-rec-danger"><button type="button" class="fa-btn sm-btn-danger" data-del-record="${r.id}">🗑️ ลบรายการนี้</button><small>ลบออกจากทุกหน้า (พนักงานจะไม่เห็นแล้ว) และย้ายไฟล์แนบไปถังขยะ Drive</small></div>` : ''}
@@ -1713,6 +1738,8 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         if (reviewBox) { event.stopPropagation(); return openReviewList(reviewBox.dataset.reviewBox); }
         const pickBtn = event.target.closest('[data-check-pick]');
         if (pickBtn) return openCheckPick(pickBtn.dataset.checkPick);
+        const closeBtn = event.target.closest('[data-close-record]');
+        if (closeBtn && !closeBtn.disabled) { event.stopPropagation(); return setClosed(closeBtn); }
         const reportBtn = event.target.closest('[data-report-record], [data-report-task]');
         if (reportBtn && !reportBtn.disabled) { event.stopPropagation(); return setReport(reportBtn); }
         const recordBtn = event.target.closest('[data-record]');
