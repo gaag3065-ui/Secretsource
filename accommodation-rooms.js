@@ -7,6 +7,12 @@
     const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
     const num = v => Number(v || 0).toLocaleString('th-TH');
     const state = { data: null, filter: 'all', query: '' };
+    // สถานะของยูนิตในทะเบียน (ตัวเลือกเดียวกับช่อง "สถานะ" ในไฟล์ทะเบียนที่พักและแดชบอร์ดค่าไฟ)
+    const STATUS_LIST = ['ทำสัญญาแล้ว', 'รอทำสัญญา', 'วางจองแล้ว', 'ตั้งเบิกแล้ว รอรับเงินวางจอง', 'ไม่มีการวางจอง', 'ได้รับเงินแล้ว รอวางจอง', 'จัดทำรายการ รอตั้งเบิกค่ามัดจำ', 'รอเข้าตรวจสอบก่อนวางมัดจำ', 'รอเข้าตรวจสอบก่อนเซ็นสัญญา'];
+    const bedsOf = r => Number((/(\d+)\s*ห้องนอน/.exec(r.type || '') || [])[1] || 0);
+    const bathsOf = r => Number((/(\d+)\s*ห้องน้ำ/.exec(r.type || '') || [])[1] || 0);
+    const buildingKey = name => String(name || '').normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim();
+    const DATE_KEYS = ['dH', 'dI', 'dJ', 'dK', 'dL', 'dM', 'dN', 'dO', 'dP', 'dQ'];
 
     async function load(refresh = false) {
         root.querySelector('.ro-body').innerHTML = '<p class="ro-empty">กำลังโหลดทะเบียนห้องพัก…</p>';
@@ -26,7 +32,8 @@
         const { counts: c, rooms, issues, unmatched, at, masterUrl } = state.data;
         const statuses = Object.entries(c.processByStatus || {}).map(([s, n]) => `<span>${esc(s)} <b>${num(n)}</b></span>`).join('');
         const q = state.query.toLowerCase();
-        const list = rooms.filter(r => (state.filter === 'all' || (state.filter === 'process' ? r.group === 'กำลังดำเนินการ' : r.group === state.filter))
+        const byFilter = r => state.filter === 'all' || (state.filter.startsWith('st:') ? r.status === state.filter.slice(3) : state.filter === 'process' ? r.group === 'กำลังดำเนินการ' : r.group === state.filter);
+        const list = rooms.filter(r => byFilter(r)
             && (!q || `${r.project} ${r.unit} ${r.status} ${r.agent} ${r.companies.join(' ')}`.toLowerCase().includes(q)));
         const chip = (key, label, n) => `<button type="button" data-ro-filter="${key}" class="${state.filter === key ? 'is-on' : ''}">${label} <b>${num(n)}</b></button>`;
         root.querySelector('.ro-updated').textContent = `อัปเดต ${new Date(at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}`;
@@ -34,19 +41,33 @@
         if (masterUrl) root.querySelector('.ro-master').href = masterUrl;
         root.querySelector('.ro-body').innerHTML = `
             <div class="ro-cards">
+                ${(() => {
+                    const beds = rooms.reduce((n, r) => n + bedsOf(r), 0), baths = rooms.reduce((n, r) => n + bathsOf(r), 0), unknown = rooms.filter(r => !bedsOf(r)).length;
+                    const buildings = new Set(rooms.map(r => buildingKey(r.project)).filter(Boolean));
+                    const contracted = new Set(rooms.filter(r => r.status === STATUS_LIST[0]).map(r => buildingKey(r.project)));
+                    const rentAll = rooms.reduce((n, r) => n + (r.rent || 0), 0), rentContract = rooms.filter(r => r.status === STATUS_LIST[0]).reduce((n, r) => n + (r.rent || 0), 0);
+                    const stat = s => rooms.filter(r => r.status === s).length;
+                    const other = rooms.filter(r => !STATUS_LIST.includes(r.status));
+                    return `
                 <article class="ro-card ro-existing">
-                    <small>ห้องที่มีอยู่แล้ว (ทำสัญญาแล้ว)</small><strong>${num(c.existing)}</strong>
-                    <div class="ro-split"><span>มีพนักงาน <b>${num(c.existingOccupied)}</b></span><span>ไม่มีพนักงาน <b>${num(c.existingEmpty)}</b></span></div>
+                    <small>ห้อง (ห้องนอนรวมทุกยูนิต)</small><strong>${num(beds)}</strong>
+                    <div class="ro-split"><span>ห้องน้ำรวม <b>${num(baths)}</b></span>${unknown ? `<span>ยูนิตที่ไม่ระบุประเภทห้อง <b>${num(unknown)}</b></span>` : ''}</div>
                 </article>
-                <article class="ro-card ro-process">
-                    <small>ห้องที่กำลังอยู่ในกระบวนการ</small><strong>${num(c.process)}</strong>
-                    <div class="ro-split">${statuses || '<span>-</span>'}</div>
+                <article class="ro-card ro-process ro-card-units">
+                    <small>ยูนิต (แยกตามสถานะ — กดเพื่อกรองตารางด้านล่าง)</small><strong>${num(rooms.length)}</strong>
+                    <div class="ro-status-grid">${STATUS_LIST.map(s => `<button type="button" data-ro-filter="st:${esc(s)}" class="${state.filter === 'st:' + s ? 'is-on' : ''}"><span>${esc(s)}</span><b>${num(stat(s))}</b></button>`).join('')}${other.length ? `<button type="button" class="ro-status-other" disabled><span>สถานะอื่นๆ</span><b>${num(other.length)}</b></button>` : ''}</div>
                 </article>
                 <article class="ro-card ro-total">
-                    <small>รวมห้องทั้งหมด</small><strong>${num(c.total)}</strong>
-                    <div class="ro-split"><span>พนักงาน on work <b>${num(c.employeesOnWork)}</b></span><span>จับคู่ห้องได้ <b>${num(c.employeesMatched)}</b></span></div>
+                    <small>ตึก</small><strong>${num(buildings.size)}</strong>
+                    <div class="ro-split"><span>ทำสัญญาแล้ว <b>${num(contracted.size)}</b> ตึก</span></div>
                 </article>
+                <article class="ro-card ro-rent">
+                    <small>ค่าเช่าทั้งหมด (รวมต่อเดือน)</small><strong>${num(rentAll)}</strong>
+                    <div class="ro-split"><span>ทำสัญญาแล้ว <b>${num(rentContract)}</b></span><span>ยังไม่ทำสัญญา <b>${num(rentAll - rentContract)}</b></span></div>
+                </article>`;
+                })()}
             </div>
+            <p class="ro-emp-line">พนักงาน on work <b>${num(c.employeesOnWork)}</b> · จับคู่ห้องได้ <b>${num(c.employeesMatched)}</b></p>
             <div class="ro-check ${(c.issues || c.employeesUnmatched || rooms.some(r => pendingReviews(r).length)) ? 'has-issue' : ''}">
                 <b>${(c.issues || c.employeesUnmatched || rooms.some(r => pendingReviews(r).length)) ? '⚠️ ตรวจสอบความถูกต้องของข้อมูล' : '✅ ตรวจสอบความถูกต้องของข้อมูล: ไม่พบจุดผิดปกติ'}</b>
                 ${!c.employeesOnWork ? `<span class="ro-diag">อ่านรายชื่อพนักงาน on work ไม่ได้ — ${esc(c.employeeDiag || 'เครื่องหลังบ้านยังไม่ได้อัปเดต')}</span>` : ''}
@@ -79,8 +100,11 @@
 
 
     // ---------------------------------------------------------------- รายละเอียด / แก้ไขห้อง / ยืนยันที่พักของพนักงาน
-    const FIELDS = [['project', 'ชื่อที่พัก / โครงการ'], ['unit', 'ยูนิต'], ['agent', 'ผู้จัดหา (Agent)'], ['type', 'ประเภทห้อง (เช่น 3 ห้องนอน 2 ห้องน้ำ)'], ['rent', 'ค่าเช่า/เดือน (บาท)'],
-        ['status', 'สถานะ'], ['start', 'วันเริ่มสัญญา (วัน/เดือน/ปี)'], ['end', 'วันสิ้นสุดสัญญา (วัน/เดือน/ปี)'], ['mt', 'ระยะทางถึง Mireka Tower (กม.)'], ['or', 'ระยะทางถึง Orion City (กม.)']];
+    const DATE_FALLBACK = ['วันตรวจสอบ', 'วันที่ตั้งเบิกค่ามัดจำ', 'วันที่จ่ายค่ามัดจำ', 'วันที่ได้รับสัญญา', 'วันที่ส่งสัญญาไปตรวจสอบ', 'วันที่ตรวจสอบเสร็จ', 'วันที่ตั้งเบิกค่าเช่าล่วงหน้า', 'วันที่ได้รับเงินตั้งเบิก', 'วันที่ตรวจสอบก่อนเซ็นสัญญา', 'วันที่เซ็นสัญญา'];
+    const fieldsOf = () => [['project', 'ชื่อที่พัก / โครงการ'], ['unit', 'ยูนิต'], ['agent', 'ผู้จัดหา (Agent)'], ['type', 'ประเภทห้อง (เช่น 3 ห้องนอน 2 ห้องน้ำ)'], ['rent', 'ค่าเช่า/เดือน (บาท)'],
+        ['status', 'สถานะ'],
+        ...DATE_KEYS.map((k, i) => [k, (state.data?.dateHeaders?.[k] || DATE_FALLBACK[i]) + ' (วัน/เดือน/ปี)']),
+        ['start', 'วันเริ่มสัญญา (วัน/เดือน/ปี)'], ['end', 'วันสิ้นสุดสัญญา (วัน/เดือน/ปี)'], ['mt', 'ระยะทางถึง Mireka Tower (กม.)'], ['or', 'ระยะทางถึง Orion City (กม.)']];
     const dialog = document.createElement('dialog');
     dialog.className = 'ro-dialog';
     root.appendChild(dialog);
@@ -115,11 +139,16 @@
                     '<div class="ro-rv-form"><label>ชื่อที่พัก<input data-rv="building" value="' + esc(x.proposal.building) + '"></label><label>ชั้น<input data-rv="floor" value="' + esc(x.proposal.floor) + '"></label><label>ห้อง/ยูนิต<input data-rv="room" value="' + esc(x.proposal.room) + '"></label></div>' +
                     '<div class="ro-rv-actions"><button type="button" class="ro-btn ro-btn-primary" data-rv-yes>✔ ใช่ อยู่บ้านหลังนี้ — ยืนยัน</button><button type="button" class="ro-btn" data-rv-no>ไม่ใช่ / ข้ามไปก่อน</button></div></article>').join('') + '</section>' : '') +
             '<section><h4>รายละเอียดห้อง</h4><dl class="ro-dl">' +
-                FIELDS.map(([k, label]) => '<dt>' + esc(label.replace(/ \(.*\)$/, '')) + '</dt><dd>' + esc((k === 'rent' ? (r.rent ? num(r.rent) : '') : r[k]) || '-') + '</dd>').join('') +
+                fieldsOf().filter(([k]) => !DATE_KEYS.includes(k) || r[k]).map(([k, label]) => '<dt>' + esc(label.replace(/ \(.*\)$/, '')) + '</dt><dd>' + esc((k === 'rent' ? (r.rent ? num(r.rent) : '') : r[k]) || '-') + '</dd>').join('') +
                 '<dt>เหลือเวลาสัญญา</dt><dd>' + esc(r.remaining || '-') + '</dd>' +
                 '<dt>พนักงานที่พักอยู่</dt><dd>' + (employees.length ? employees.map(e => esc(e.name) + ' <small>(' + esc(e.company) + ')</small>').join('<br>') : '-') + '</dd></dl></section>' +
             '<section class="ro-edit" ' + (edit ? '' : 'hidden') + '><h4>✏️ แก้ไขข้อมูลห้อง <small>บันทึกลงไฟล์ทะเบียนห้องพักใน Google Sheet</small></h4><form data-ro-form="' + esc(r.no) + '">' +
-                '<div class="ro-form-grid">' + FIELDS.map(([k, label]) => '<label>' + esc(label) + '<input name="' + k + '" value="' + esc(k === 'rent' ? (r.rent || '') : (r[k] || '')) + '" ' + (k === 'project' ? 'required' : '') + '></label>').join('') + '</div>' +
+                '<div class="ro-form-grid">' + fieldsOf().map(([k, label]) => {
+                    const val = k === 'rent' ? (r.rent || '') : (r[k] || '');
+                    const head = k === DATE_KEYS[0] ? '<h5 class="ro-form-sub">วันที่ของแต่ละขั้นตอน</h5>' : '';
+                    if (k === 'status') return '<label>' + esc(label) + '<select name="status">' + (STATUS_LIST.includes(val) || !val ? '' : '<option selected>' + esc(val) + '</option>') + STATUS_LIST.map(s => '<option' + (s === val ? ' selected' : '') + '>' + esc(s) + '</option>').join('') + '</select></label>';
+                    return head + '<label>' + esc(label) + '<input name="' + k + '" value="' + esc(val) + '" ' + (k === 'project' ? 'required' : '') + '></label>';
+                }).join('') + '</div>' +
                 '<p class="ro-hint">เหลือเวลาสัญญาคำนวณอัตโนมัติจากชีต — แก้ไม่ได้ · เว้นว่างได้ยกเว้นชื่อที่พัก</p>' +
                 '<div class="ro-rv-actions"><button type="submit" class="ro-btn ro-btn-primary">บันทึกลงทะเบียน</button><button type="button" class="ro-btn" data-ro-close>ยกเลิก</button></div></form></section>' +
             '<div class="ro-dlg-foot">' + (edit ? '' : '<button type="button" class="ro-btn" data-ro-show-edit>✏️ แก้ไขข้อมูลห้อง</button>') + '<button type="button" class="ro-btn" data-ro-close>ปิด</button></div></div>';

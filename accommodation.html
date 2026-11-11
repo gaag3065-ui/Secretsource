@@ -8,11 +8,11 @@
 
     <link rel="stylesheet" href="accommodation.css?v=20260902-accommodation-audit-01">
     <link rel="stylesheet" href="responsive.css?v=20260902-mobile-layout-02">
-    <link rel="stylesheet" href="accommodation-header.css?v=20261025-1">
+    <link rel="stylesheet" href="accommodation-header.css?v=20261111-1">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
     <link rel="stylesheet" href="accommodation-ledger.css?v=20261026-4">
-    <link rel="stylesheet" href="accommodation-rooms.css?v=20261111-1">
+    <link rel="stylesheet" href="accommodation-rooms.css?v=20261111-2">
         <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -41,15 +41,14 @@
                 </div>
             </header>
             <div class="as-stats" id="asStats" aria-label="สรุป"></div>
+            <div class="as-filters" aria-label="เลือกพื้นที่และสถานะที่พัก">
+                <div class="as-fcards" id="asAreaCards"></div>
+                <div class="as-fcards as-fcards-status" id="asStatusCards"></div>
+            </div>
             <div class="as-toolbar">
-                <div class="as-chips" id="asAreaChips"></div>
-                <div class="as-chips" id="asStatusChips">
-                    <button type="button" data-status="all" class="is-on">ทั้งหมด</button>
-                    <button type="button" data-status="has">มีพนักงาน</button>
-                    <button type="button" data-status="empty">ยังไม่มีพนักงาน</button>
-                </div>
                 <input id="asSearch" type="search" placeholder="ค้นหาชื่อที่พัก หรือชื่อพนักงาน..." autocomplete="off">
             </div>
+            <div class="as-results" id="asResults" hidden></div>
         </section>
 
         <!-- ภาพรวมห้องพักทั้งหมดจากทะเบียนห้องพัก (accommodation-rooms.js) -->
@@ -204,9 +203,9 @@
 
     <script src="config.js"></script>
     <script src="accommodation.js?v=20261025-1"></script>
-    <script src="accommodation-header.js?v=20261026-5"></script>
+    <script src="accommodation-header.js?v=20261111-1"></script>
     <script src="accommodation-ledger.js?v=20261026-4"></script>
-    <script src="accommodation-rooms.js?v=20261111-3"></script>
+    <script src="accommodation-rooms.js?v=20261111-4"></script>
     <script src="accommodation-cash.js?v=20261102-1"></script>
     <script src="pwa.js"></script>
 </body>
