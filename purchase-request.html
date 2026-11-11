@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>สร้างเอกสารขออนุมัติสั่งซื้อ | GA Operations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="purchase-request.css?v=20261111-1">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+</head>
+<body>
+    <header class="pr-bar">
+        <div>
+            <p class="pr-eyebrow">ASSET · PURCHASE REQUEST</p>
+            <h1>สร้างเอกสารขออนุมัติสั่งซื้อ</h1>
+        </div>
+        <div class="pr-bar-actions">
+            <a class="pr-btn" href="assets.html">← กลับทะเบียนทรัพย์สิน</a>
+            <button type="button" class="pr-btn" id="prReset">เริ่มเอกสารใหม่</button>
+            <button type="button" class="pr-btn pr-primary" id="prPrint">🖨 พิมพ์ / บันทึกเป็น PDF</button>
+        </div>
+    </header>
+
+    <main class="pr-layout">
+        <aside class="pr-editor" id="prEditor" aria-label="แก้ไขเนื้อหาเอกสาร"></aside>
+        <section class="pr-stage" aria-label="ตัวอย่างเอกสาร">
+            <div class="pr-hint">ตัวอย่างเอกสาร A4 — แก้ไขทางซ้าย เนื้อหาเปลี่ยนทันที · กด "พิมพ์ / บันทึกเป็น PDF" แล้วเลือกปลายทาง "บันทึกเป็น PDF"</div>
+            <div class="pr-scale" id="prScale"><article class="paper" id="prPaper"></article></div>
+        </section>
+    </main>
+    <div id="prToast" class="pr-toast" role="status"></div>
+
+    <script src="config.js"></script>
+    <script src="purchase-request.js?v=20261111-1"></script>
+</body>
+</html>
