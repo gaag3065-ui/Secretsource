@@ -17,8 +17,8 @@
     const netCell = r => (r.internet || []).map(x => `<span class="ro-net is-${x.kind}">${esc(NET_LABEL[x.kind] || x.statusText || 'ไม่ระบุ')}</span><small>${esc([x.provider, x.type, x.package].filter(Boolean).join(' · ') || '')}${x.installedBy ? ' · ' + esc(x.installedBy) : ''}</small>`).join('') || '<span class="ro-net is-nodata">ไม่มีข้อมูล</span>';
     const DATE_KEYS = ['dH', 'dI', 'dJ', 'dK', 'dL', 'dM', 'dN', 'dO', 'dP', 'dQ'];
 
-    async function load(refresh = false) {
-        root.querySelector('.ro-body').innerHTML = '<p class="ro-empty">กำลังโหลดทะเบียนห้องพัก…</p>';
+    async function load(refresh = false, silent = false) {
+        if (!silent) root.querySelector('.ro-body').innerHTML = '<p class="ro-empty">กำลังโหลดทะเบียนห้องพัก…</p>';
         try {
             const response = await window.authFetch(`${API}/overview${refresh ? '?refresh=1' : ''}`, { cache: 'no-store' });
             const data = await response.json().catch(() => ({}));
@@ -29,6 +29,7 @@
             window.dispatchEvent(new CustomEvent('ro-data', { detail: data }));
             render();
         } catch (error) {
+            if (silent) return;
             root.querySelector('.ro-body').innerHTML = `<p class="ro-empty ro-error">${esc(error.message)}</p>`;
         }
     }
@@ -154,8 +155,7 @@
                 fieldsOf().filter(([k]) => !DATE_KEYS.includes(k) || r[k]).map(([k, label]) => '<dt>' + esc(label.replace(/ \(.*\)$/, '')) + '</dt><dd>' + esc((k === 'rent' ? (r.rent ? num(r.rent) : '') : r[k]) || '-') + '</dd>').join('') +
                 '<dt>เหลือเวลาสัญญา</dt><dd>' + esc(r.remaining || '-') + '</dd>' +
                 '<dt>พนักงานที่พักอยู่</dt><dd>' + (employees.length ? employees.map(e => esc(e.name) + ' <small>(' + esc(e.company) + ')</small>').join('<br>') : '-') + '</dd></dl></section>' +
-            '<section><h4>🌐 อินเตอร์เน็ต / ราวเตอร์ <small>จากไฟล์ "อินเตอร์เน็ตบ้านพัก GROUP EAST" (อ่านอย่างเดียว)</small></h4>' + ((r.internet || []).length ? r.internet.map(x => '<dl class="ro-dl ro-net-dl"><dt>สถานะ</dt><dd><span class="ro-net is-' + x.kind + '">' + esc(NET_LABEL[x.kind] || x.statusText || 'ไม่ระบุ') + '</span> ' + esc(x.installedBy) + '</dd>' +
-                [['ผู้ให้บริการ', [x.provider, x.type].filter(Boolean).join(' · ')], ['แพ็คเกจ', x.package], ['หมายเลขบัญชี', x.account], ['หมายเลขสัญญา', x.contract], ['หมายเลขเครื่อง (Serial)', x.serial], ['ชื่อผู้ลงทะเบียน', x.holder], ['ที่อยู่ติดตั้ง', x.address], ['วันที่ติดตั้ง', x.installDate], ['หมายเหตุ', x.remark]].map(([k, v]) => '<dt>' + k + '</dt><dd>' + (esc(v) || '-') + '</dd>').join('') + '</dl>').join('') : '<p class="ro-hint">ไม่พบห้องนี้ในไฟล์อินเตอร์เน็ต</p>') + '</section>' +
+            netSection(r) +
             '<section class="ro-edit" ' + (edit ? '' : 'hidden') + '><h4>✏️ แก้ไขข้อมูลห้อง <small>บันทึกลงไฟล์ทะเบียนห้องพักใน Google Sheet</small></h4><form data-ro-form="' + esc(r.no) + '">' +
                 '<div class="ro-form-grid">' + fieldsOf().map(([k, label]) => {
                     const val = k === 'rent' ? (r.rent || '') : (r[k] || '');
@@ -169,8 +169,73 @@
         if (!dialog.open) dialog.showModal();
         dialog.dataset.no = r.no;
     }
+    // ---------------------------------------------------------------- อินเตอร์เน็ต: แก้ไข/เพิ่ม (ลงไฟล์ของส่วนกลางโดยตรง) · ไฟล์เปลี่ยน → หน้านี้อัปเดตเอง
+    const NET_STATES = ['ใช้งานได้', 'ใช้งานไม่ได้', 'ยังไม่ติดตั้ง'], NET_BY = ['บริษัทติดตั้ง', 'เจ้าของติดตั้ง'];
+    const NET_FIELDS = [['provider', 'ผู้ให้บริการ (SLT / Dialog)'], ['type', 'ประเภท (Fiber / Broadband)'], ['package', 'แพ็คเกจ'], ['account', 'หมายเลขบัญชี'], ['contract', 'หมายเลขสัญญา'], ['serial', 'หมายเลขเครื่อง (Serial)'], ['holder', 'ชื่อผู้ลงทะเบียน'], ['installDate', 'วันที่ติดตั้ง'], ['address', 'ที่อยู่ติดตั้ง'], ['remark', 'หมายเหตุ']];
+    function netForm(r, x, index) {
+        const cur = x ? (NET_LABEL[x.kind] || '') : 'ยังไม่ติดตั้ง';
+        return '<form class="ro-net-form" data-ro-net-form="' + esc(r.no) + '" data-index="' + index + '" ' + (x ? 'hidden' : '') + '><div class="ro-form-grid">' +
+            '<label>สถานะ<select name="state">' + NET_STATES.map(s => '<option' + (s === cur ? ' selected' : '') + '>' + s + '</option>').join('') + '</select></label>' +
+            '<label>ผู้ติดตั้ง<select name="installedBy"><option value=""></option>' + NET_BY.map(s => '<option' + (x && x.installedBy === s ? ' selected' : '') + '>' + s + '</option>').join('') + '</select></label>' +
+            NET_FIELDS.map(([k, label]) => '<label>' + esc(label) + '<input name="' + k + '" value="' + esc(x ? x[k] || '' : '') + '"></label>').join('') + '</div>' +
+            '<p class="ro-hint">บันทึกแล้วเขียนลงไฟล์ "อินเตอร์เน็ตบ้านพัก GROUP EAST" ของส่วนกลางทันที (ไม่แตะเลขบัตรประชาชน/เบอร์โทร/อีเมล) และมีประวัติการแก้ไข</p>' +
+            '<div class="ro-rv-actions"><button type="submit" class="ro-btn ro-btn-primary">บันทึกลงไฟล์ส่วนกลาง</button>' + (x ? '<button type="button" class="ro-btn" data-ro-net-cancel>ยกเลิก</button>' : '') + '</div></form>';
+    }
+    function netSection(r) {
+        const list = r.internet || [];
+        const head = '<h4>🌐 อินเตอร์เน็ต / ราวเตอร์ <small>ซิงก์สองทางกับไฟล์ "อินเตอร์เน็ตบ้านพัก GROUP EAST" ของส่วนกลาง — แก้ที่นี่หรือที่ไฟล์ก็ตรงกัน</small></h4>';
+        if (!list.length) return '<section>' + head + '<p class="ro-hint">ไม่พบห้องนี้ในไฟล์อินเตอร์เน็ต — กรอกด้านล่างเพื่อเพิ่มเป็นแถวใหม่ในไฟล์</p>' + netForm(r, null, 'new') + '</section>' +
+            '';
+        return '<section>' + head + list.map((x, i) => '<div class="ro-net-item"><dl class="ro-dl ro-net-dl"><dt>สถานะ</dt><dd><span class="ro-net is-' + x.kind + '">' + esc(NET_LABEL[x.kind] || x.statusText || 'ไม่ระบุ') + '</span> ' + esc(x.installedBy) + '</dd>' +
+            [['ผู้ให้บริการ', [x.provider, x.type].filter(Boolean).join(' · ')], ['แพ็คเกจ', x.package], ['หมายเลขบัญชี', x.account], ['หมายเลขสัญญา', x.contract], ['หมายเลขเครื่อง (Serial)', x.serial], ['ชื่อผู้ลงทะเบียน', x.holder], ['ที่อยู่ติดตั้ง', x.address], ['วันที่ติดตั้ง', x.installDate], ['หมายเหตุ', x.remark]].map(([k, v]) => '<dt>' + k + '</dt><dd>' + (esc(v) || '-') + '</dd>').join('') + '</dl>' +
+            '<button type="button" class="ro-btn ro-btn-sm" data-ro-net-edit="' + i + '">✏️ แก้ไขอินเตอร์เน็ต</button>' + netForm(r, x, i) + '</div>').join('') + '</section>';
+    }
+    // ประกาศข้อมูลใหม่ให้ทั้งหน้า (สรุป/ตาราง/แท็บตรวจสอบ/แจ้งเตือน) อัปเดตพร้อมกัน ไม่ต้องรีเฟรช
+    function publish() { window.__roData = state.data; window.dispatchEvent(new CustomEvent('ro-data', { detail: state.data })); render(); }
+    let netSig = '';
+    const busy = () => dialog.open || document.activeElement?.matches?.('input, select, textarea');
+    async function pollInternet() {
+        if (document.hidden || !state.data || busy()) return;
+        try {
+            const response = await window.authFetch(`${API}/internet-live`, { cache: 'no-store' });
+            const r = await response.json().catch(() => ({}));
+            if (!response.ok || !r.success || r.diag) return;
+            const sig = JSON.stringify([r.internet, r.check?.issues?.length, r.check?.matched?.length]);
+            if (sig === netSig) return;
+            netSig = sig;
+            state.data.rooms.forEach(room => { room.internet = r.internet[room.no] || []; });
+            state.data.checks = { ...(state.data.checks || {}), internet: r.check }; state.data.internetUnmatched = r.unmatched; state.data.counts.internet = r.summary;
+            publish();
+        } catch { /* รอบหน้าลองใหม่ */ }
+    }
+    setInterval(pollInternet, 10 * 1000);
+    // ข้อมูลทะเบียน/พนักงาน (แก้ที่ไฟล์ HR หรือไฟล์ทะเบียน) อัปเดตเองทุก 30 วินาที แบบเงียบ
+    setInterval(() => { if (!document.hidden && !busy()) load(false, true); }, 30 * 1000);
     const reopen = async no => { await load(true); if (dialog.open) openRoom(no, false); };
 
+    root.addEventListener('click', event => {
+        const t = event.target;
+        const ne = t.closest('[data-ro-net-edit]');
+        if (ne) { const item = ne.closest('.ro-net-item'); item.querySelector('.ro-net-form').hidden = false; item.querySelector('.ro-net-dl').hidden = true; ne.hidden = true; return; }
+        if (t.closest('[data-ro-net-cancel]')) { const item = t.closest('.ro-net-item'); item.querySelector('.ro-net-form').hidden = true; item.querySelector('.ro-net-dl').hidden = false; item.querySelector('[data-ro-net-edit]').hidden = false; }
+    });
+    root.addEventListener('submit', async event => {
+        const nf = event.target.closest('[data-ro-net-form]'); if (!nf) return;
+        event.preventDefault();
+        const body = Object.fromEntries([...new FormData(nf).entries()].map(([k, v]) => [k, String(v).trim()]));
+        body.index = nf.dataset.index === 'new' ? 'new' : Number(nf.dataset.index);
+        const button = nf.querySelector('[type=submit]'); button.disabled = true; button.textContent = 'กำลังบันทึกลงไฟล์ส่วนกลาง…';
+        try {
+            const result = await send('PUT', '/internet/' + encodeURIComponent(nf.dataset.roNetForm), body);
+            const room = roomByNo(nf.dataset.roNetForm);
+            if (room) room.internet = result.internet || [];
+            if (result.check) state.data.checks = { ...(state.data.checks || {}), internet: result.check };
+            state.data.internetUnmatched = result.unmatched || []; if (result.summary) state.data.counts.internet = result.summary;
+            netSig = '';
+            publish(); openRoom(nf.dataset.roNetForm, false);
+            note(result.unchanged ? 'ไม่มีข้อมูลที่เปลี่ยนแปลง' : 'บันทึกลงไฟล์อินเตอร์เน็ตของส่วนกลางแล้ว — แสดงผลทันที', false);
+        } catch (error) { button.disabled = false; button.textContent = 'บันทึกลงไฟล์ส่วนกลาง'; note(error.message, true); }
+    });
     root.addEventListener('click', async event => {
         const t = event.target;
         const detail = t.closest('[data-ro-detail]'); if (detail) return openRoom(detail.dataset.roDetail, false);

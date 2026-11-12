@@ -20,7 +20,7 @@
                 : `<p class="ck-state is-warn">⚠ ตรงกับทะเบียน ${num(c.matched.length)} / ${num(c.total)} รายการในไฟล์ · <b>ไม่ตรง ${num(bad)}</b> · ควรตรวจ ${num(warn)}${info ? ` · ข้อมูลประกอบ ${num(info)}` : ''}</p>`;
         const chip = (val, label, n) => `<button type="button" data-ck-filter="${key}:${val}" class="${f === val ? 'is-on' : ''}">${label} <b>${num(n)}</b></button>`;
         return `<article class="ck-card">
-            <div class="ck-head"><div><h3>${esc(c.name)}</h3><small>ไฟล์ของส่วนกลาง — ระบบอ่านอย่างเดียว ไม่แก้ไข</small></div><a class="ck-link" href="${esc(c.url)}" target="_blank" rel="noopener">เปิดไฟล์ ↗</a></div>
+            <div class="ck-head"><div><h3>${esc(c.name)}</h3><small>${key === 'internet' ? 'ไฟล์ของส่วนกลาง — แก้ได้จากหน้ารายละเอียดห้อง · ไฟล์เปลี่ยนก็อัปเดตที่นี่ทันที' : 'ไฟล์ของส่วนกลาง — ระบบอ่านอย่างเดียว ไม่แก้ไข'}</small></div><a class="ck-link" href="${esc(c.url)}" target="_blank" rel="noopener">เปิดไฟล์ ↗</a></div>
             ${head}
             ${issues.length ? `<div class="ck-chips">${chip('problem', 'ไม่ตรง + ควรตรวจ', bad + warn)}${chip('bad', 'ไม่ตรง', bad)}${chip('warn', 'ควรตรวจ', warn)}${chip('info', 'ข้อมูลประกอบ', info)}${chip('all', 'ทั้งหมด', issues.length)}</div>
             <div class="ck-wrap"><table class="ck-table"><thead><tr><th>ระดับ</th><th>ประเภท</th><th>ที่พัก / ยูนิต</th><th>ไม่ตรงอย่างไร</th></tr></thead>
