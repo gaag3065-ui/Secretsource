@@ -179,7 +179,7 @@ function renderCaseTreatmentAmounts(events) {
         appendAmounts(`ยอดรวม ${rounds.length} รอบรักษา`, totals, fields);
     }
     rounds.forEach((round, index) => appendAmounts(
-        `รอบที่ ${index + 1} · ${round.date.text || 'ไม่ระบุวันที่'}${round.status ? ` · ${round.status}` : ''}`,
+        `รอบที่ ${index + 1} · ${round.date.text || 'ไม่ระบุวันที่'}${round.parts > 1 ? ` (บิล ${round.part}/${round.parts} ของเวลาเดียวกัน)` : ''}${round.status ? ` · ${round.status}` : ''}`,
         round.expense, treatmentAmountFields));
     return box;
 }
