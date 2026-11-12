@@ -172,6 +172,20 @@ function buildTreatmentAmountsBlock(heading, values, fields) {
 const treatmentRoundHeading = (round, index) =>
     `รอบที่ ${index + 1} · ${round.date.text || 'ไม่ระบุวันที่'}${round.parts > 1 ? ` (บิล ${round.part}/${round.parts} ของเวลาเดียวกัน)` : ''}${round.status ? ` · ${round.status}` : ''}`;
 
+// รายละเอียดขั้นตอนและยอดของรอบเดียวกันอยู่ในกรอบเดียว ปุ่มแก้ไขยังเป็นเซลล์ท้ายแถว
+function attachTreatmentStepAmounts(row, rounds = []) {
+    row.classList.add('treatment-step-pair');
+    if (!rounds.length) return;
+    const cell = document.createElement('td');
+    cell.className = 'treatment-step-amounts';
+    cell.colSpan = 23;
+    const wrap = document.createElement('section');
+    wrap.className = 'case-treatment-rounds';
+    rounds.forEach(({ round, index }) => wrap.append(...buildTreatmentAmountsBlock(treatmentRoundHeading(round, index), round.expense, treatmentAmountFields)));
+    cell.append(wrap);
+    row.insertBefore(cell, row.lastElementChild);
+}
+
 // options.splitRounds: เคสที่มีหลายรอบ → ด้านบนแสดงเฉพาะยอดรวม ส่วนยอดแต่ละรอบไปอยู่คู่กับแถวประวัติของรอบนั้น
 function renderCaseTreatmentAmounts(events, options = {}) {
     const box = document.createElement('section');
@@ -309,7 +323,6 @@ function renderHistoryTable(historyData) {
             <td class="text-center" data-label="แอดมินที่บันทึกข้อมูล">${latestEvent.adminName || '-'}</td>
             <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- คลิกเพื่อดูไทม์ไลน์ -</td>
         `;
-        parentTr.children[0].append(renderCaseTreatmentAmounts(timelines, { splitRounds: true }));
         const combinedCaseEvidence =
             combineCaseEvidenceDocuments(timelines);
 
@@ -338,22 +351,11 @@ function renderHistoryTable(historyData) {
         const childRowsArray = [];
         
         // 🎯 กางประวัติไทม์ไลน์ย่อยออกมาตามปกติ (หากเป็นเคสเดี่ยว ก็จะวนลูปรันสร้างออกมาแค่ 1 แถวอย่างถูกต้อง)
-        const caseRoundCount = collectTreatmentRounds(timelines).length;
-        const orderedEvents = buildCaseTimelineGroups(timelines).filter(item => caseRoundCount > 1 || !item.roundBoxes);
+        const orderedEvents = buildCaseTimelineGroups(timelines);
+        let pendingRoundBoxes = [];
         orderedEvents.forEach((event) => {
             if (event.roundBoxes) {
-                const roundTr = document.createElement('tr');
-                roundTr.className = `child-row-of-${caseId} round-amount-row`;
-                roundTr.style.display = 'none';
-                const roundTd = document.createElement('td');
-                roundTd.colSpan = 23;
-                const wrap = document.createElement('section');
-                wrap.className = 'case-treatment-rounds';
-                event.roundBoxes.forEach(({ round, index }) => wrap.append(...buildTreatmentAmountsBlock(treatmentRoundHeading(round, index), round.expense, treatmentAmountFields)));
-                roundTd.append(wrap);
-                roundTr.append(roundTd);
-                tableBody.appendChild(roundTr);
-                childRowsArray.push(roundTr);
+                pendingRoundBoxes.push(...event.roundBoxes);
                 return;
             }
             const childTr = document.createElement('tr');
@@ -407,6 +409,8 @@ function renderHistoryTable(historyData) {
             childTr.children[18].replaceWith(
                 childEvidenceCell
             );
+            attachTreatmentStepAmounts(childTr, pendingRoundBoxes);
+            pendingRoundBoxes = [];
             tableBody.appendChild(childTr);
             childRowsArray.push(childTr);
         });
@@ -848,7 +852,6 @@ window.injectNewRowToTableRealtime = function (payloadData) {
         <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- ไทม์ไลน์เรียลไทม์ -</td>
     `;
 
-    parentTr.children[0].append(renderCaseTreatmentAmounts([mockEventItem]));
     parentTr.children[18].replaceWith(
         createEvidenceDocumentsCell(
             mockEventItem.DocumentsAttached,
@@ -900,6 +903,8 @@ window.injectNewRowToTableRealtime = function (payloadData) {
         )
     );
 
+    attachTreatmentStepAmounts(childTr, collectTreatmentRounds([mockEventItem]).map((round, index) => ({ round, index })));
+
             if (payloadData.isTimelineUpdate === true) {
             const existingParent = Array.from(
                 tableBody.querySelectorAll('.parent-row')
@@ -912,7 +917,6 @@ window.injectNewRowToTableRealtime = function (payloadData) {
 
             if (existingParent) {
                 existingParent.querySelector('.case-treatment-rounds')?.remove();
-                existingParent.children[0].append(renderCaseTreatmentAmounts(window.currentIndividualHistory.filter(item => String(item.CaseIdNew) === String(caseId))));
                 const existingEvidenceCell =
                     existingParent.children[18];
 

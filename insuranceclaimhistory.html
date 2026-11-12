@@ -786,7 +786,45 @@
     white-space: nowrap !important;
 }
 
-/* ยอดเงินของแต่ละรอบรักษา อยู่คู่กับแถวประวัติของรอบนั้น */
+/* การ์ดขยายแสดงเฉพาะเอกสาร ด้านล่างแยกรายละเอียดและยอดตามขั้นตอน */
+#table-box-placeholder tr.parent-row.is-open > td:nth-child(n+2):nth-child(-n+18) {
+    display: none !important;
+}
+#table-box-placeholder tr.parent-row > td:first-child > .case-treatment-rounds {
+    display: none !important;
+}
+#table-box-placeholder tr.parent-row > td[data-label="เวลาและวันที่เข้ารักษา"],
+#table-box-placeholder tr.treatment-step-pair > td[data-label="เวลาและวันที่เข้ารักษา"] {
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    line-height: 1.5 !important;
+    font-variant-numeric: tabular-nums;
+}
+#table-box-placeholder tr.treatment-step-pair[class*="child-row-of-"]:not([class$="-spacer"]) {
+    border: 2px solid #64748b !important;
+    border-left: 5px solid #334155 !important;
+    padding: 14px 16px !important;
+    background: #fff !important;
+}
+#table-box-placeholder tr.treatment-step-pair > td.treatment-step-amounts {
+    display: block !important;
+    flex: 1 0 100% !important;
+    order: 2;
+    width: 100% !important;
+    border: 0 !important;
+    border-top: 1px solid #cbd5e1 !important;
+    margin-top: 12px;
+    padding-top: 10px !important;
+}
+#table-box-placeholder tr.treatment-step-pair .case-treatment-rounds h4 {
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    margin-top: 0;
+}
+
+/* กล่องยอดเงินแบบเดิม เผื่อข้อมูลจากหน้าประวัติรุ่นก่อน */
 #table-box-placeholder tr.round-amount-row[class*="child-row-of-"]:not([class$="-spacer"]) {
     display: block;
     padding: 4px 12px 8px !important;
