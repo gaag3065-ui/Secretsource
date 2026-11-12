@@ -1,7 +1,7 @@
 // แจ้งเข้ารักษาจากพนักงาน (หน้าระบบจัดการองค์กร → หัวข้อ "แจ้งเข้ารักษาพยาบาล") → กล่องรับเรื่องในหน้าเปิดเคส
 //   GA กด "รับเคสนี้" → ค้นหาพนักงาน + กรอกฟอร์มเปิดเคสให้ (วันเวลา สถานพยาบาล อาการ เบอร์ติดต่อ)
 //   หลักฐานที่พนักงานแนบมาแล้วผูกเข้าเคสอัตโนมัติ (ไม่ต้องอัปโหลดรูปเปิดเคสซ้ำ) → บันทึกแล้วรายการเปลี่ยนเป็น "รับเรื่องแล้ว · เคส #"
-//   เคสค่าใช้จ่ายสูง (เกิน 5,000 บาท ให้ประกันจ่ายตรง) → เด้งเตือนด่วน + เสียง
+//   เคสค่าใช้จ่ายสูง (เกิน 3,000 บาท ให้ประกันจ่ายตรง) → เด้งเตือนด่วน + เสียง
 //   ปุ่มส่งข้อความแจ้งประกันผ่าน LINE / Telegram (เปิดหน้าต่างเลือกห้องพร้อมข้อความ แล้วกดส่งเอง)
 (() => {
     const API = () => `${window.APP_CONFIG.API_BASE_URL}/api/ga-docs/intake`;
@@ -554,7 +554,7 @@
                 const date = annual ? thDate(val(r, 'check_date')) : `${thDate(val(r, 'treat_date'))} ${val(r, 'treat_time')}`.trim();
                 const place = annual ? val(r, 'hospital') : [val(r, 'hospital'), val(r, 'symptom')].filter(Boolean).join(' · ');
                 return `<tr class="${r.urgent ? 'is-urgent' : ''}${on ? ' is-on' : ''}">
-                    <td><span class="intake-tag${annual ? ' is-annual' : r.urgent ? ' is-hot' : ''}">${annual ? 'ตรวจสุขภาพ' : r.urgent ? 'ด่วน >5,000' : 'เข้ารักษา'}</span></td>
+                    <td><span class="intake-tag${annual ? ' is-annual' : r.urgent ? ' is-hot' : ''}">${annual ? 'ตรวจสุขภาพ' : r.urgent ? 'ด่วน >3,000' : 'เข้ารักษา'}</span></td>
                     <td><b>${esc(r.fullname)}</b><small>${esc(r.company || '')} · ${esc(r.insurance_code || r.employee_id || '')}</small></td>
                     <td class="nowrap">${esc(date || '-')}</td>
                     <td class="clip" title="${esc(place)}${val(r, 'note') ? ` — หมายเหตุ: ${esc(val(r, 'note'))}` : ''}">${esc(place || '-')}${val(r, 'note') ? ' <i class="intake-note" aria-label="มีหมายเหตุ">💬</i>' : ''}</td>
@@ -589,7 +589,7 @@
         box.classList.toggle('is-open', state.open);
     }
 
-    // เคสด่วน (เกิน 5,000) ที่ยังไม่เคยเตือนในเครื่องนี้ → หน้าต่างเด้ง + เสียง
+    // เคสด่วน (เกิน 3,000) ที่ยังไม่เคยเตือนในเครื่องนี้ → หน้าต่างเด้ง + เสียง
     function alertUrgent() {
         const fresh = pending().filter(r => r.urgent && !state.alerted.has(r.id));
         if (!fresh.length) return;
@@ -603,7 +603,7 @@
         pop.className = 'intake-alert';
         pop.innerHTML = `<div><h3>🚨 แจ้งเข้ารักษา ค่าใช้จ่ายสูง (ด่วน)</h3>
             ${fresh.map(r => `<p><b>${esc(r.fullname)}</b> · ${esc(val(r, 'treat_type'))} · ${esc(val(r, 'hospital'))}<br><small>${esc(thDate(val(r, 'treat_date')))} ${esc(val(r, 'treat_time'))} · อาการ: ${esc(val(r, 'symptom'))}</small></p>`).join('')}
-            <p class="intake-meta">พนักงานแจ้งว่าค่าใช้จ่ายอาจเกิน 5,000 บาท — ประสานประกันให้จ่ายตรงก่อนพนักงานเข้ารักษา</p>
+            <p class="intake-meta">พนักงานแจ้งว่าค่าใช้จ่ายอาจเกิน 3,000 บาท — ประสานประกันให้จ่ายตรงก่อนพนักงานเข้ารักษา</p>
             <button type="button" data-intake-alert-ok>รับทราบ ไปที่รายการ</button></div>`;
         pop.addEventListener('click', event => { if (event.target.closest('[data-intake-alert-ok]') || event.target === pop) { pop.remove(); toggle(true); } });
         document.body.append(pop);

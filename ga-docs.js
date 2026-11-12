@@ -544,7 +544,7 @@
                 <div class="gd-limits">${limitCard('ผู้ป่วยนอก (OPD)', 'รวมทันตกรรม / ทำฟัน', summary.opd.limit, summary.opd.balance, '#2563eb')}
                 ${limitCard('ผู้ป่วยใน (IPD)', 'นอนโรงพยาบาล', summary.ipd.limit, summary.ipd.balance, '#7c3aed')}
                 ${summary.other ? limitCard('วงเงินอื่นๆ', 'แยกจาก OPD / IPD', summary.other.limit, summary.other.balance, '#0d9488') : ''}</div>
-                <p class="gd-limit-foot">ทันตกรรม / ทำฟัน หักจากวงเงิน OPD เท่านั้น · ค่ารักษาไม่เกิน 5,000 บาท สำรองจ่ายเองแล้วเบิกคืน</p></section>
+                <p class="gd-limit-foot">ทันตกรรม / ทำฟัน หักจากวงเงิน OPD เท่านั้น · ค่ารักษาไม่เกิน 3,000 บาท สำรองจ่ายเองแล้วเบิกคืน</p></section>
             ${casesHtml}
             <section class="gd-care-section"><h3>📋 ประวัติการรักษา (${summary.cases.length} ครั้ง)</h3>${history}</section>
             <h3 class="gd-care-open">＋ แจ้งเปิดเคสก่อนไปรักษา</h3>`;

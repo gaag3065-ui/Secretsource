@@ -133,7 +133,7 @@
       <header><b>ครั้งที่ ${day}</b><small>${status}</small></header>
       <div class="dx-shots">${shot(a, '📸 รูปออกกำลังกาย')}${shot(b, '🤳 รูปเซลฟี่')}</div>
       <label class="dx-field">วันที่ออกกำลังกาย<span class="dx-req" title="ต้องกรอก">*</span><input type="date" data-date="${day}" value="${esc(date)}"></label>
-      ${general ? `<label class="dx-field">ระบุการออกกำลังกาย / ระยะเวลา<span class="dx-req" title="ต้องกรอก">*</span><input type="text" maxlength="500" data-desc="${day}" value="${esc(desc)}" placeholder="เช่น เดินเร็ว 30 นาที"></label>` : ''}
+      ${general ? `<label class="dx-field">ระบุการออกกำลังกาย / ระยะเวลา<span class="dx-req" title="ต้องกรอก">*</span><input type="text" maxlength="500" data-desc="${day}" value="${esc(desc)}" placeholder="เช่น เดินเร็ว 30 นาที ที่สวนสาธารณะ / ในยิม"></label>` : ''}
     </article>`;
   }
 

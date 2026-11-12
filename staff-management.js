@@ -1286,7 +1286,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
 อาการป่วย : ${f.symptom || '-'}
 คลินิกหรือสถานพยาบาล : ${f.hospital || '-'}
 เบอร์โทรติดต่อพนักงานหรือ ID Line : ${[f.line_id, f.phone && `เบอร์ ${f.phone}`].filter(Boolean).join(' ') || f.contact || '-'}
-หมายเหตุ : ${[f.cost_level && /เกิน/.test(f.cost_level) ? 'ค่าใช้จ่ายอาจเกิน 5,000 บาท ขอให้ประกันจ่ายตรง' : '', f.note].filter(Boolean).join(' · ') || '-'}`;
+หมายเหตุ : ${[f.cost_level && /^คาดว่าเกิน/.test(f.cost_level) ? 'ค่าใช้จ่ายอาจเกิน 3,000 บาท ขอให้ประกันจ่ายตรง' : '', f.note].filter(Boolean).join(' · ') || '-'}`;
     }    function treatmentSteps(r) {
         const text = claimPattern(r);
         const opened = r.case_id || ['received', 'billed'].includes(r.status);
