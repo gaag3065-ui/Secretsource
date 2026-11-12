@@ -786,6 +786,23 @@
     white-space: nowrap !important;
 }
 
+/* ยอดเงินของแต่ละรอบรักษา อยู่คู่กับแถวประวัติของรอบนั้น */
+#table-box-placeholder tr.round-amount-row[class*="child-row-of-"]:not([class$="-spacer"]) {
+    display: block;
+    padding: 4px 12px 8px !important;
+    background: #f0fdf4 !important;
+    border: 1px solid #dce9df !important;
+    border-left: 3px solid #16a34a !important;
+}
+#table-box-placeholder tr.round-amount-row[class*="child-row-of-"]:not([class$="-spacer"]) > td {
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+    border: 0 !important;
+    white-space: normal !important;
+    background: transparent !important;
+}
+
 /* แถบปุ่ม "อัปเดตผลการรักษา" ท้ายไทม์ไลน์ของเคส */
 #table-box-placeholder tr[class$="-spacer"] {
     display: flex;

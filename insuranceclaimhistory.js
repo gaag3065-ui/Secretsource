@@ -148,40 +148,92 @@ function compareCaseIdDescending(a, b) {
     return String(b).localeCompare(String(a), 'th', { numeric: true });
 }
 
-function renderCaseTreatmentAmounts(events) {
+function buildTreatmentAmountsBlock(heading, values, fields) {
+    const title = document.createElement('h4');
+    title.textContent = heading;
+    const grid = document.createElement('div');
+    grid.className = 'case-treatment-amounts';
+    for (const [key, label] of fields) {
+        const item = document.createElement('div');
+        const caption = document.createElement('span');
+        caption.textContent = label;
+        const value = document.createElement('strong');
+        const raw = String(values[key] ?? '').trim();
+        const number = Number(raw.replace(/,/g, ''));
+        const rate = key.startsWith('Exchange');
+        value.textContent = raw && raw !== '-' && Number.isFinite(number)
+            ? number.toLocaleString('th-TH', { minimumFractionDigits: rate ? 0 : 2, maximumFractionDigits: rate ? 6 : 2 }) : '-';
+        item.append(caption, value);
+        grid.append(item);
+    }
+    return [title, grid];
+}
+
+const treatmentRoundHeading = (round, index) =>
+    `รอบที่ ${index + 1} · ${round.date.text || 'ไม่ระบุวันที่'}${round.parts > 1 ? ` (บิล ${round.part}/${round.parts} ของเวลาเดียวกัน)` : ''}${round.status ? ` · ${round.status}` : ''}`;
+
+// options.splitRounds: เคสที่มีหลายรอบ → ด้านบนแสดงเฉพาะยอดรวม ส่วนยอดแต่ละรอบไปอยู่คู่กับแถวประวัติของรอบนั้น
+function renderCaseTreatmentAmounts(events, options = {}) {
     const box = document.createElement('section');
     box.className = 'case-treatment-rounds';
     const rounds = collectTreatmentRounds(events);
     if (!rounds.length) return box;
-    const appendAmounts = (heading, values, fields) => {
-        const title = document.createElement('h4');
-        title.textContent = heading;
-        const grid = document.createElement('div');
-        grid.className = 'case-treatment-amounts';
-        for (const [key, label] of fields) {
-            const item = document.createElement('div');
-            const caption = document.createElement('span');
-            caption.textContent = label;
-            const value = document.createElement('strong');
-            const raw = String(values[key] ?? '').trim();
-            const number = Number(raw.replace(/,/g, ''));
-            const rate = key.startsWith('Exchange');
-            value.textContent = raw && raw !== '-' && Number.isFinite(number)
-                ? number.toLocaleString('th-TH', { minimumFractionDigits: rate ? 0 : 2, maximumFractionDigits: rate ? 6 : 2 }) : '-';
-            item.append(caption, value);
-            grid.append(item);
-        }
-        box.append(title, grid);
-    };
+    const fields = treatmentAmountFields.filter(([key]) => !key.startsWith('Exchange'));
     if (rounds.length > 1) {
-        const fields = treatmentAmountFields.filter(([key]) => !key.startsWith('Exchange'));
         const totals = Object.fromEntries(fields.map(([key]) => [key, rounds.reduce((sum, round) => sum + (Number(String(round.expense[key] ?? '').replace(/,/g, '')) || 0), 0)]));
-        appendAmounts(`ยอดรวม ${rounds.length} รอบรักษา`, totals, fields);
+        box.append(...buildTreatmentAmountsBlock(`ยอดรวม ${rounds.length} รอบรักษา`, totals, fields));
+        if (options.splitRounds) return box;
     }
-    rounds.forEach((round, index) => appendAmounts(
-        `รอบที่ ${index + 1} · ${round.date.text || 'ไม่ระบุวันที่'}${round.parts > 1 ? ` (บิล ${round.part}/${round.parts} ของเวลาเดียวกัน)` : ''}${round.status ? ` · ${round.status}` : ''}`,
-        round.expense, treatmentAmountFields));
+    rounds.forEach((round, index) => box.append(...buildTreatmentAmountsBlock(treatmentRoundHeading(round, index), round.expense, treatmentAmountFields)));
     return box;
+}
+
+// เรียงประวัติของเคส: แถว "เปิดเคส" อยู่บนสุดเสมอ (ไม่ว่าแก้ไข/อัปเดตทีหลัง) ตามด้วยแต่ละรอบรักษาเรียงตามเวลา
+// พร้อมยอดเงินของรอบนั้นคู่กับแถวของรอบ → [{ rounds:[{round,index}], events:[...] }]
+function buildCaseTimelineGroups(timelines) {
+    const isOpenCase = event => /เปิดเคส/.test(String(event.statusText || ''));
+    const opens = timelines.filter(isOpenCase);
+    const rest = timelines.filter(event => !isOpenCase(event));
+    const rounds = collectTreatmentRounds(timelines);
+    const roundsByKey = new Map();
+    rounds.forEach((round, index) => {
+        if (!round.date.key) return;
+        if (!roundsByKey.has(round.date.key)) roundsByKey.set(round.date.key, []);
+        roundsByKey.get(round.date.key).push({ round, index });
+    });
+    const groups = new Map();
+    rest.forEach((event, i) => {
+        const date = treatmentRoundDate(event.treatmentDateTime);
+        const key = date.key || `row-${i}`;
+        if (!groups.has(key)) groups.set(key, { time: date.time, rounds: roundsByKey.get(date.key) || [], events: [] });
+        groups.get(key).events.push(event);
+    });
+    for (const [key, list] of roundsByKey) {
+        if (!groups.has(key)) groups.set(key, { time: list[0].round.date.time, rounds: list, events: [] });
+    }
+    const ordered = [...groups.values()].sort((a, b) => (a.time - b.time) || 0);
+    // แปลงเป็นรายการเรียงสำเร็จ: กล่องยอดเงินของรอบ ตามด้วยแถวของรอบนั้น
+    // (เวลาเดียวกันแต่หลายบิล → กล่องของแต่ละบิลวางคู่กับแถวที่มียอดตรงกัน)
+    const items = [...opens];
+    for (const group of ordered) {
+        if (group.rounds.length <= 1) {
+            if (group.rounds.length) items.push({ roundBoxes: group.rounds });
+            items.push(...group.events);
+            continue;
+        }
+        const pending = [...group.rounds];
+        const lead = [];
+        const body = [];
+        for (const event of group.events) {
+            const sig = roundAmountSignature(event);
+            const at = pending.findIndex(item => roundAmountSignature(item.round.expense) === sig);
+            if (at >= 0) body.push({ roundBoxes: pending.splice(at, 1) });
+            body.push(event);
+        }
+        if (pending.length) lead.push({ roundBoxes: pending });
+        items.push(...lead, ...body);
+    }
+    return items;
 }
 function renderHistoryTable(historyData) {
 
@@ -257,7 +309,7 @@ function renderHistoryTable(historyData) {
             <td class="text-center" data-label="แอดมินที่บันทึกข้อมูล">${latestEvent.adminName || '-'}</td>
             <td class="text-center" style="background:#f8f9fa; font-size:11px; color:#6c757d;">- คลิกเพื่อดูไทม์ไลน์ -</td>
         `;
-        parentTr.children[0].append(renderCaseTreatmentAmounts(timelines));
+        parentTr.children[0].append(renderCaseTreatmentAmounts(timelines, { splitRounds: true }));
         const combinedCaseEvidence =
             combineCaseEvidenceDocuments(timelines);
 
@@ -286,7 +338,24 @@ function renderHistoryTable(historyData) {
         const childRowsArray = [];
         
         // 🎯 กางประวัติไทม์ไลน์ย่อยออกมาตามปกติ (หากเป็นเคสเดี่ยว ก็จะวนลูปรันสร้างออกมาแค่ 1 แถวอย่างถูกต้อง)
-        timelines.forEach((event) => {
+        const caseRoundCount = collectTreatmentRounds(timelines).length;
+        const orderedEvents = buildCaseTimelineGroups(timelines).filter(item => caseRoundCount > 1 || !item.roundBoxes);
+        orderedEvents.forEach((event) => {
+            if (event.roundBoxes) {
+                const roundTr = document.createElement('tr');
+                roundTr.className = `child-row-of-${caseId} round-amount-row`;
+                roundTr.style.display = 'none';
+                const roundTd = document.createElement('td');
+                roundTd.colSpan = 23;
+                const wrap = document.createElement('section');
+                wrap.className = 'case-treatment-rounds';
+                event.roundBoxes.forEach(({ round, index }) => wrap.append(...buildTreatmentAmountsBlock(treatmentRoundHeading(round, index), round.expense, treatmentAmountFields)));
+                roundTd.append(wrap);
+                roundTr.append(roundTd);
+                tableBody.appendChild(roundTr);
+                childRowsArray.push(roundTr);
+                return;
+            }
             const childTr = document.createElement('tr');
             childTr.className = `child-row-of-${caseId}`;
             childTr.style.display = 'none'; 
