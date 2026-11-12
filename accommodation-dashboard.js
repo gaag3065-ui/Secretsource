@@ -27,6 +27,7 @@
     const TABS = [
         { key: 'units', label: '🏠 ยูนิตและสถานะ', nodes: () => [$('roomOverview')] },
         { key: 'exp', label: '💳 ค่าใช้จ่ายและรอบกำหนด', nodes: () => [$('roomExpenses')] },
+        { key: 'checks', label: '🔍 ตรวจสอบกับส่วนกลาง', nodes: () => [$('roomChecks')] },
         { key: 'people', label: '👥 พนักงานและที่พัก', nodes: () => [$('asStats'), head.querySelector('.as-filters'), head.querySelector('.as-toolbar'), $('asResults')] },
         { key: 'ledger', label: '📊 ค่าน้ำไฟ · สัญญา · ผังห้อง', nodes: () => [$('accommodationLedger')] }
     ];
@@ -92,6 +93,13 @@
         const netNone = contracted.filter(r => (r.internet || []).length && (r.internet || []).every(x => x.kind === 'none')).length;
         if (netDown) items.push(['bad', `อินเตอร์เน็ตใช้งานไม่ได้ ${num(netDown)} ยูนิต`, 'units']);
         if (netNone) items.push(['warn', `ยังไม่ติดตั้งอินเตอร์เน็ต ${num(netNone)} ยูนิต`, 'units']);
+        const ck = d.checks || {};
+        const ckBad = ['center', 'internet'].reduce((n, k) => n + ((ck[k]?.issues || []).filter(i => i.severity === 'bad').length), 0);
+        const ckWarn = ['center', 'internet'].reduce((n, k) => n + ((ck[k]?.issues || []).filter(i => i.severity === 'warn').length), 0);
+        const ckDiag = ['center', 'internet'].some(k => ck[k]?.diag);
+        if (ckBad || ckWarn) items.push([ckBad ? 'bad' : 'warn', `ไม่ตรงกับไฟล์ส่วนกลาง ${num(ckBad)} · ควรตรวจ ${num(ckWarn)} รายการ`, 'checks']);
+        if (ckDiag) items.push(['warn', 'อ่านไฟล์ส่วนกลางไม่ได้ (ต้องแชร์ไฟล์ให้บัญชีระบบ)', 'checks']);
+        badge('checks', ckBad + ckWarn);
         if (reviews) items.push(['warn', `ต้องยืนยันที่พักพนักงาน ${num(reviews)} ยูนิต`, 'units']);
         if (c.issues) items.push(['warn', `ทะเบียนมีจุดต้องตรวจ ${num(c.issues)} จุด`, 'units']);
         badge('exp', s ? (s.unpaid + s.rentOver + s.airOver + s.noticeDue) : 0);

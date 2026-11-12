@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="accommodation-rooms.css?v=20261111-3">
     <link rel="stylesheet" href="accommodation-expenses.css?v=20261111-2">
     <link rel="stylesheet" href="accommodation-dashboard.css?v=20261111-1">
+    <link rel="stylesheet" href="accommodation-checks.css?v=20261112-1">
         <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -70,6 +71,7 @@
         </section>
 
         <!-- ค่าใช้จ่ายรายเดือน / รอบจ่ายค่าเช่าล่วงหน้า / รอบล้างแอร์ / แจ้งยกเลิกเช่า (accommodation-expenses.js) -->
+        <section id="roomChecks" class="ck" aria-label="ตรวจสอบกับส่วนกลาง"></section>
         <section id="roomExpenses" class="rx" aria-label="ค่าใช้จ่ายและรอบกำหนด"></section>
 
         <!-- ส่วนหัวเดิม ซ่อนไว้ (ยังอยู่ใน DOM ให้ accommodation.js ทำงานได้ตามเดิม) -->
@@ -212,8 +214,9 @@
     <script src="accommodation-ledger.js?v=20261026-4"></script>
     <script src="accommodation-rooms.js?v=20261111-6"></script>
     <script src="accommodation-expenses.js?v=20261111-2"></script>
+    <script src="accommodation-checks.js?v=20261112-1"></script>
     <script src="accommodation-cash.js?v=20261102-1"></script>
-    <script src="accommodation-dashboard.js?v=20261111-2"></script>
+    <script src="accommodation-dashboard.js?v=20261112-1"></script>
     <script src="pwa.js"></script>
 </body>
 </html>
