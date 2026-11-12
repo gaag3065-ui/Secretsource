@@ -108,6 +108,23 @@ button.sm-task-pill:hover { filter: brightness(.96); box-shadow: 0 0 0 2px #c7cb
 .sm-task-actions input { flex: 1; min-width: 180px; }
 /* ช่องที่ซ่อนอยู่ (hidden) ต้องซ่อนจริงแม้กฎอื่นตั้ง display ไว้ */
 .sm-dialog [hidden] { display: none !important; }
+.sm-batch-dialog { width: min(640px, calc(100vw - 24px)); border: 0; border-radius: 16px; padding: 0; box-shadow: 0 20px 60px rgba(16, 24, 40, .3); }
+.sm-batch-dialog::backdrop { background: rgba(16, 24, 40, .4); }
+.sm-batch { display: grid; gap: 10px; padding: 16px 18px; }
+.sm-batch-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sm-batch-head h3 { margin: 0; font-size: 16px; }
+.sm-batch-warn { margin: 0; padding: 8px 10px; border-radius: 10px; background: #fff4e0; border: 1px solid #f5c26b; color: #7a4a00; font-size: 12.5px; }
+.sm-batch-list { display: grid; gap: 6px; max-height: 300px; overflow: auto; }
+.sm-batch-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #e1e7ea; border-radius: 12px; background: #fff; cursor: pointer; }
+.sm-batch-row.is-sent { background: #f6f8fa; opacity: .8; cursor: default; }
+.sm-batch-main { flex: 1; display: grid; }
+.sm-batch-main small { color: #667085; font-size: 11.5px; }
+.sm-batch-actions { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.sm-batch-new { display: grid; gap: 6px; padding: 10px; border: 1px dashed #b6c2d3; border-radius: 12px; background: #fafcff; }
+.sm-batch-new div { display: flex; gap: 6px; }
+.sm-batch-new input { flex: 1; border: 1px solid #d0d5dd; border-radius: 9px; padding: 7px 10px; font: inherit; }
+.sm-batch-msg { margin: 0; min-height: 1em; font-size: 12.5px; color: #067647; }
+.sm-batch-msg.is-bad { color: #b42318; }
 .sm-templates { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 10px; }
 .sm-templates span { font-size: 12.5px; font-weight: 700; color: var(--fa-muted); }
 .sm-template { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 5px 12px; border: 1px solid #c7cbf5; border-radius: 999px; background: #fff; color: var(--fa-brand); font-weight: 600; font-size: 12.5px; cursor: pointer; }

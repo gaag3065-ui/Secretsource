@@ -204,7 +204,7 @@
                 ${b.key !== 'quests' && can('deleteWork') ? `<span class="sm-box-del" data-del-box="${esc(b.key)}" role="button" title="ลบกล่องงานนี้ (ลบงาน เอกสาร และไฟล์ที่เกี่ยวข้องทั้งหมด)">🗑</span>` : ''}
                 <span class="sm-box-icon">${esc(b.icon || '📌')}</span>
                 <b>${esc(b.title)}</b>
-                ${state.docDestinations?.[b.key] ? `<span class="sm-box-review" role="link" tabindex="0" data-doc-destination="${esc(b.key)}" data-doc-destination-kind="sheet">📊 เปิดรายงานข้อมูล</span><span class="sm-box-review" role="link" tabindex="0" data-doc-destination="${esc(b.key)}" data-doc-destination-kind="folder">📁 โฟลเดอร์รูปและข้อมูล</span>` : ''}
+                ${state.docDestinations?.[b.key] ? `<span class="sm-box-review" role="link" tabindex="0" data-doc-destination="${esc(b.key)}" data-doc-destination-kind="sheet">📊 รายงานทั้งหมด</span><span class="sm-box-review" role="link" tabindex="0" data-doc-destination="${esc(b.key)}" data-doc-destination-kind="folder">📁 โฟลเดอร์รูปและข้อมูล</span>` : ''}
                 <i class="sm-box-scope is-${b.scope === 'personal' ? 'personal' : 'main'}">${b.scope === 'personal' ? '👤 เฉพาะบุคคล' : '🌐 งานหลัก'}</i>
                 <small>${titles.length ? `${titles.length} งาน · ค้าง ${open} คน` : recs.length ? '' : 'ยังไม่มีงาน'}</small>
                 ${recs.length ? `<span class="sm-box-review${waiting ? ' is-wait' : ''}" data-review-box="${esc(b.key)}" title="เอกสารที่พนักงานส่งมาในกล่องนี้ — กดเพื่อดู/ตรวจ">📥 ส่งมา ${recs.length}${waiting ? ` · รอตรวจ ${waiting}` : ''}</span>` : ''}
@@ -1142,10 +1142,69 @@
         const cur = steps.findIndex(s => !s.done);
         return `<span class="sm-link" title="${esc(title)}"><span class="sm-link-head">${esc(box?.icon || '📌')} ${esc(title)}</span><span class="sm-link-steps">${steps.map((s, i) => `${i ? '<i class="sm-link-arrow">›</i>' : ''}<button type="button" class="sm-step ${s.done ? 'is-done' : i === cur ? 'is-current' : 'is-todo'}" ${s.attr} title="${esc(s.tip)}">${s.done ? '✓ ' : ''}${esc(s.label)}</button>`).join('')}</span></span>`;
     }
+    // ---------------------------------------------------------------- ฉบับรายงาน: เลือกว่าจะนำรายการไปลงรายงานฉบับไหน / สร้างฉบับใหม่ / ทำเครื่องหมายส่งแล้ว
+    // รายงานที่ "ส่งแล้ว" ไม่รับรายการใหม่ — ต้องสร้างฉบับใหม่ (ชีตแยกไฟล์ ชื่อไม่ซ้ำ)
+    const hasBatches = type => Boolean(state.docDestinations?.[type]);
+    const batchesOf = type => state.docDestinations?.[type]?.batches || [];
+    const batchName = (type, id) => (batchesOf(type).find(b => b.id === id) || {}).name || '';
+    const batchApi = (path, options = {}) => window.authFetch(docsApi('/report-batches' + path), { ...options, headers: { 'Content-Type': 'application/json' } })
+        .then(async response => { const data = await response.json().catch(() => ({})); if (!response.ok || data.success === false) throw new Error(data.message || (response.status === 403 ? 'บัญชีนี้ไม่มีสิทธิ์ตรวจเอกสาร (ReviewGaDocs)' : 'ทำรายการไม่สำเร็จ')); return data; });
+    function openBatchDialog({ type, title, mode, warn = '', preselect = '' }) {
+        return new Promise(resolve => {
+            const dlg = document.createElement('dialog');
+            dlg.className = 'fa-dialog sm-batch-dialog';
+            let chosen = preselect;
+            const draw = () => {
+                const list = batchesOf(type);
+                if (!list.some(b => b.id === chosen && !b.sent_at)) chosen = (list.filter(b => !b.sent_at).slice(-1)[0] || {}).id || '';
+                dlg.innerHTML = `<div class="sm-batch"><div class="sm-batch-head"><h3>${mode === 'pick' ? 'เลือกรายงานที่จะนำข้อมูลไปลง' : 'รายงานทั้งหมดของ ' + esc(title)}</h3><button type="button" class="fa-btn" data-b-close aria-label="ปิด">✕</button></div>` +
+                    (warn ? `<p class="sm-batch-warn">${esc(warn).replace(/\n/g, '<br>')}</p>` : '') +
+                    `<p class="sm-meta">${mode === 'pick' ? 'หัวข้อ ' + esc(title) + ' — รายงานที่ส่งบัญชีแล้วจะไม่รับข้อมูลใหม่ ถ้าต้องการส่งเพิ่มให้สร้างรายงานฉบับใหม่' : 'รายงานแต่ละฉบับเป็นไฟล์แยกกัน ส่งฉบับไหนแล้วให้กด "ทำเครื่องหมายส่งแล้ว" ฉบับนั้นจะไม่รับรายการใหม่'}</p>` +
+                    `<div class="sm-batch-list">${list.map(b => `<label class="sm-batch-row ${b.sent_at ? 'is-sent' : ''}">${mode === 'pick' ? `<input type="radio" name="batch" value="${esc(b.id)}" ${b.id === chosen ? 'checked' : ''} ${b.sent_at ? 'disabled' : ''}>` : ''}` +
+                        `<span class="sm-batch-main"><b>${esc(b.name)}</b><small>${b.count} รายการ${b.sent_at ? ' · ✓ ส่งแล้ว ' + esc(new Date(b.sent_at).toLocaleDateString('th-TH')) : ' · ยังไม่ส่ง'}${b.created_at ? ' · สร้าง ' + esc(new Date(b.created_at).toLocaleDateString('th-TH')) : ''}</small></span>` +
+                        `<span class="sm-batch-actions">${b.sheet ? `<a class="fa-btn" href="${esc(b.sheet)}" target="_blank" rel="noopener">📊 เปิด</a>` : ''}` +
+                        `${mode === 'manage' ? `<button type="button" class="fa-btn" data-b-rename="${esc(b.id)}">✏️ ชื่อ</button><button type="button" class="fa-btn" data-b-sent="${esc(b.id)}" data-sent="${b.sent_at ? '0' : '1'}">${b.sent_at ? '↩ ยกเลิกส่งแล้ว' : '📤 ทำเครื่องหมายส่งแล้ว'}</button>` : ''}</span></label>`).join('')}</div>` +
+                    `<div class="sm-batch-new"><b>＋ สร้างรายงานฉบับใหม่</b><div><input type="text" data-b-name maxlength="80" placeholder="ชื่อรายงาน เช่น รอบส่งบัญชี 15/11/2026"><button type="button" class="fa-btn" data-b-create>สร้าง</button></div></div>` +
+                    `<p class="sm-batch-msg" role="status"></p>` +
+                    `<div class="sm-form-foot">${mode === 'pick' ? '<button type="button" class="fa-btn fa-btn-primary" data-b-ok>✅ ยืนยันลงรายงานนี้</button>' : ''}<button type="button" class="fa-btn" data-b-close>ปิด</button></div></div>`;
+            };
+            const msg = (text, bad) => { const el = dlg.querySelector('.sm-batch-msg'); if (el) { el.textContent = text; el.className = 'sm-batch-msg' + (bad ? ' is-bad' : ''); } };
+            const finish = value => { dlg.close(); dlg.remove(); resolve(value); };
+            const refresh = async () => { await loadRecords(); draw(); };
+            dlg.addEventListener('click', async event => {
+                const t = event.target;
+                if (t === dlg || t.closest('[data-b-close]')) return finish(null);
+                const radio = t.closest('input[name=batch]'); if (radio) { chosen = radio.value; return; }
+                if (t.closest('[data-b-ok]')) { const sel = dlg.querySelector('input[name=batch]:checked'); if (!sel) return msg('เลือกรายงานก่อน หรือสร้างรายงานฉบับใหม่', true); return finish(sel.value); }
+                try {
+                    if (t.closest('[data-b-create]')) {
+                        const name = dlg.querySelector('[data-b-name]').value.trim();
+                        t.closest('button').disabled = true;
+                        const data = await batchApi('', { method: 'POST', body: JSON.stringify({ type, name }) });
+                        state.docDestinations[type] = { ...(state.docDestinations[type] || {}), batches: data.batches }; chosen = data.batch.id; draw(); msg('สร้างรายงานฉบับใหม่แล้ว', false);
+                    } else if (t.closest('[data-b-sent]')) {
+                        const b = t.closest('[data-b-sent]');
+                        if (b.dataset.sent === '1' && !confirm('ทำเครื่องหมาย "ส่งแล้ว"? รายงานฉบับนี้จะไม่รับรายการใหม่อีก')) return;
+                        const data = await batchApi('/' + encodeURIComponent(b.dataset.bSent), { method: 'PUT', body: JSON.stringify({ sent: b.dataset.sent === '1' }) });
+                        state.docDestinations[type] = { ...(state.docDestinations[type] || {}), batches: data.batches }; draw();
+                    } else if (t.closest('[data-b-rename]')) {
+                        const id = t.closest('[data-b-rename]').dataset.bRename;
+                        const name = prompt('ชื่อรายงานใหม่', batchName(type, id)); if (!name) return;
+                        const data = await batchApi('/' + encodeURIComponent(id), { method: 'PUT', body: JSON.stringify({ name }) });
+                        state.docDestinations[type] = { ...(state.docDestinations[type] || {}), batches: data.batches }; draw();
+                    }
+                } catch (error) { msg(error.message, true); dlg.querySelectorAll('button:disabled').forEach(x => { x.disabled = false; }); }
+            });
+            dlg.addEventListener('cancel', () => finish(null));
+            document.body.appendChild(dlg); refresh().then(() => dlg.showModal());
+        });
+    }
+
     async function setReport(button) {
         const confirmed = button.dataset.confirmed === '1';
         const taskId = button.dataset.reportTask, recId = button.dataset.reportRecord;
         let claimedWarn = '';
+        let batch = '';
         if (confirmed) {
             const rec = recId ? (state.records || []).find(r => String(r.id) === String(recId)) : null;
             const task = taskId ? (state.data.tasks || []).find(t => String(t.id) === String(taskId)) : null;
@@ -1154,17 +1213,23 @@
             const c = health ? claimedOf(emp) : null;
             if (c) claimedWarn = `⚠️ ${emp.fullname} ส่งเบิกไปแล้ว ${baht(c.total)} บาท\n${claimText(c)}\n\nถ้ายืนยันลงรายงานอีก อาจเบิกซ้ำ\n\n`;
         }
-        if (confirmed && !confirm(claimedWarn + 'ยืนยันว่าตรวจสอบผ่านแล้ว และให้นำข้อมูลนี้ลงชีตรายงาน?')) return;
+        const recForBatch = recId ? (state.records || []).find(r => String(r.id) === String(recId)) : null;
+        if (confirmed && recForBatch && hasBatches(recForBatch.type)) {
+            // เลือกรายงานที่จะนำข้อมูลไปลง (หรือสร้างฉบับใหม่) แทนกล่องยืนยันเดิม
+            const picked = await openBatchDialog({ type: recForBatch.type, title: recForBatch.type_title, mode: 'pick', warn: claimedWarn.trim() });
+            if (!picked) return;
+            batch = picked;
+        } else if (confirmed && !confirm(claimedWarn + 'ยืนยันว่าตรวจสอบผ่านแล้ว และให้นำข้อมูลนี้ลงชีตรายงาน?')) return;
         button.disabled = true;
         try {
             if (taskId) {
                 await request(`/tasks/${taskId}/report`, { method: 'PUT', body: JSON.stringify({ confirmed }) });
             } else {
-                const response = await window.authFetch(docsApi(`/records/${recId}/report`), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirmed }) });
+                const response = await window.authFetch(docsApi(`/records/${recId}/report`), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirmed, batch }) });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok || data.success === false) throw new Error(data.message || 'บันทึกไม่สำเร็จ');
             }
-            toast(confirmed ? 'ยืนยันลงรายงานแล้ว' : 'ยกเลิกการยืนยันแล้ว');
+            toast(confirmed ? (batch ? 'ยืนยันลงรายงาน "' + batchName(recForBatch?.type, batch) + '" แล้ว' : 'ยืนยันลงรายงานแล้ว') : 'ยกเลิกการยืนยันแล้ว');
             await load();
             if (taskId) { if ($('smTaskList')) renderTasks(); } else openRecord(recId);
         } catch (error) { toast(error.message, true); button.disabled = false; }
@@ -1318,7 +1383,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
             <div class="sm-pick-list">
                 ${recs.map(r => `<button type="button" class="sm-pick-item${REVIEW.has(r.status) ? ' is-wait' : ''}" data-record="${r.id}">
                     <span class="sm-pick-icon">${esc(boxOf(r.type)?.icon || '📥')}</span>
-                    <span><b>${esc(r.type_title)}</b><small>#${r.id} · ${esc(r.status_label || r.status)}${r.report_confirmed_at ? ' · ✓ ยืนยันลงรายงานแล้ว' : ''}</small></span></button>`).join('')}
+                    <span><b>${esc(r.type_title)}</b><small>#${r.id} · ${esc(r.status_label || r.status)}${r.report_confirmed_at ? ' · ✓ ยืนยันลงรายงานแล้ว' + (batchName(r.type, r.report_batch) ? ' (' + esc(batchName(r.type, r.report_batch)) + ')' : '') : ''}</small></span></button>`).join('')}
                 ${hasTask ? `<button type="button" class="sm-pick-item" data-check="${esc(key)}"><span class="sm-pick-icon">📝</span><span><b>ข้อมูลที่ส่งในงานที่มอบหมาย</b><small>${list.length} งาน</small></span></button>` : ''}
             </div>`;
         if (!$('smDialog').open) $('smDialog').showModal();
@@ -1702,7 +1767,13 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         const destination = event.target.closest('[data-doc-destination]');
         if (destination) {
             event.stopPropagation();
-            const url = state.docDestinations?.[destination.dataset.docDestination]?.[destination.dataset.docDestinationKind];
+            const type = destination.dataset.docDestination;
+            if (destination.dataset.docDestinationKind === 'sheet' && hasBatches(type)) {
+                const box = (state.data.boxes || []).find(b => b.key === type);
+                openBatchDialog({ type, title: box?.title || type, mode: 'manage' }).then(() => load());
+                return;
+            }
+            const url = state.docDestinations?.[type]?.[destination.dataset.docDestinationKind];
             if (url) window.open(url, '_blank', 'noopener');
             return;
         }
