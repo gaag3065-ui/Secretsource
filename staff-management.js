@@ -1132,11 +1132,11 @@
             { label: '① รับงาน', done: group.received, show: group.tasks.length > 0, attr: taskAttr, tip: 'เปิดงานที่มอบหมาย' },
             { label: '② ส่งข้อมูล', done: group.sent, show: true, attr: recAttr || taskAttr, tip: recAttr ? 'เปิดเอกสารที่พนักงานส่ง' : 'เปิดงานที่มอบหมาย' },
             { label: '③ ตรวจสอบ', done: group.checked, show: true, attr: recAttr || taskAttr, tip: recAttr ? 'ตรวจเอกสาร / ตั้งสถานะ' : 'ตั้งสถานะงานเป็นเสร็จสิ้น' },
-            { label: '④ ยืนยันรายงาน', done: group.reported, show: true, attr: recAttr || taskAttr, tip: 'กดยืนยันลงรายงาน (ต้องตรวจสอบผ่านก่อน)' }
+            { label: group.reported ? 'ยืนยันทำรายงานเรียบร้อย' : '④ รอยืนยันทำรายงาน', done: group.reported, show: true, attr: recAttr || taskAttr, tip: 'กดยืนยันลงรายงาน (ต้องตรวจสอบผ่านก่อน)' }
         ];
         // ⑤ เสร็จสิ้น: ขึ้นเมื่อแนบสลิปโอนเงินคืนแล้ว → กดเพื่อปิดกล่องงานนี้สมบูรณ์ (กดซ้ำที่ขั้นที่เสร็จแล้ว = เปิดดู/ยกเลิกในหน้าตรวจ)
         const slipRec = [...group.recs].sort((a, b) => b.id - a.id).find(hasSlip);
-        if (slipRec || group.closed) steps.push({ label: '⑤ เสร็จสิ้น', done: group.closed, show: true,
+        if (slipRec || group.closed) steps.push({ label: group.closed ? 'ประกันโอนคืนแล้วเสร็จสิ้น' : '⑤ เสร็จสิ้น', done: group.closed, show: true,
             attr: group.closed ? recAttr : `data-close-record="${slipRec.id}" data-closed="1"`, tip: group.closed ? 'ปิดงานแล้ว — เปิดดู / ยกเลิกได้ในหน้าตรวจ' : 'แนบสลิปโอนคืนแล้ว — กดเพื่อปิดกล่องนี้ให้เสร็จสมบูรณ์' });
         steps = steps.filter(s => s.show);
         const cur = steps.findIndex(s => !s.done);
