@@ -47,6 +47,12 @@
     .dx-zoom{border:1px solid rgba(120,200,255,.45);border-radius:6px;background:transparent;color:#d7eafd;font:inherit;font-size:11px;padding:1px 6px;cursor:zoom-in}
     .dx-card input[type=date],.dx-card input[type=text]{width:100%;padding:8px 9px;border:1px solid rgba(72,186,255,.56);border-radius:9px;background:#071b31;color:#fff;font:14px inherit;min-width:0}
     .dx-card label.dx-field{display:grid;gap:3px;color:var(--gold2);font-size:11.5px;font-weight:bold}
+    .dx-card input[type=date]{color-scheme:dark;min-height:42px}
+    .dx-card input[type=date]::-webkit-calendar-picker-indicator{opacity:1;cursor:pointer;width:22px;height:22px;padding:5px;margin-left:6px;border-radius:8px;background-color:#0a3b6a;border:1px solid #001f75;filter:invert(1)}
+    .dx-card input[type=date]::-webkit-calendar-picker-indicator:hover{background-color:#0a2a60}
+    .dx-req{color:#ff8a8a;margin-left:2px}
+    .dx-card input.dx-invalid{border-color:#ff8a8a;box-shadow:0 0 0 2px rgba(255,138,138,.28);background:#2a1020}
+    .dx-card .dx-miss{margin:0;color:#ffb4b4;font-size:11.5px;font-weight:bold}
     .dx-help{margin:0 0 12px;color:var(--muted);font-size:13px}
     .dx-bill{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr);gap:14px;align-items:start;margin-top:8px}
     .dx-bill .dx-pick{aspect-ratio:3/4}
@@ -126,8 +132,8 @@
     return `<article class="dx-card${done && !pending ? ' done' : ''}${pending ? ' dirty' : ''}" data-day="${day}">
       <header><b>ครั้งที่ ${day}</b><small>${status}</small></header>
       <div class="dx-shots">${shot(a, '📸 รูปออกกำลังกาย')}${shot(b, '🤳 รูปเซลฟี่')}</div>
-      <label class="dx-field">วันที่ออกกำลังกาย<input type="date" data-date="${day}" value="${esc(date)}"></label>
-      ${general ? `<label class="dx-field">ระบุการออกกำลังกาย / ระยะเวลา<input type="text" maxlength="500" data-desc="${day}" value="${esc(desc)}" placeholder="เช่น เดินเร็ว 30 นาที"></label>` : ''}
+      <label class="dx-field">วันที่ออกกำลังกาย<span class="dx-req" title="ต้องกรอก">*</span><input type="date" data-date="${day}" value="${esc(date)}"></label>
+      ${general ? `<label class="dx-field">ระบุการออกกำลังกาย / ระยะเวลา<span class="dx-req" title="ต้องกรอก">*</span><input type="text" maxlength="500" data-desc="${day}" value="${esc(desc)}" placeholder="เช่น เดินเร็ว 30 นาที"></label>` : ''}
     </article>`;
   }
 
@@ -213,6 +219,7 @@
     }
     const day = Number(t.dataset?.date || t.dataset?.desc);
     if (!day) return;
+    t.classList.remove('dx-invalid');
     (t.dataset.date ? state.dates : state.descs).set(day, t.value);
     state.dirty.add(day);
     const card = t.closest('.dx-card');
@@ -257,6 +264,29 @@
     const slots = [...state.files.keys()].sort((x, y) => x - y);
     const days = [...state.dirty].sort((x, y) => x - y);
     const hasSignature = signatureHasInk;
+    // ตรวจช่องบังคับของทุกครั้งที่กำลังจะบันทึก — ไม่ครบ = บันทึกไม่ได้
+    const touched = [...new Set([...days, ...slots.filter(x => x <= state.count * 2).map(x => Math.ceil(x / 2))])].sort((x, y) => x - y);
+    const problems = [];
+    for (const day of touched) {
+      const date = String(state.dates.has(day) ? state.dates.get(day) : toIso((state.data?.dates || [])[day - 1]) || '').trim();
+      const desc = String(state.descs.has(day) ? state.descs.get(day) : (state.data?.details || [])[day - 1] || '').trim();
+      const miss = [];
+      if (!date) miss.push('วันที่ออกกำลังกาย');
+      if (!fitness && !desc) miss.push('ระบุการออกกำลังกาย / ระยะเวลา');
+      if (miss.length) problems.push({ day, noDate: !date, noDesc: !fitness && !desc, text: 'ครั้งที่ ' + day + ': ' + miss.join(' และ ') });
+    }
+    document.querySelectorAll('.dx-card input.dx-invalid').forEach(el => el.classList.remove('dx-invalid'));
+    if (problems.length) {
+      problems.forEach(p => {
+        const card = document.querySelector('.dx-card[data-day="' + p.day + '"]');
+        if (p.noDate) card?.querySelector('[data-date]')?.classList.add('dx-invalid');
+        if (p.noDesc) card?.querySelector('[data-desc]')?.classList.add('dx-invalid');
+      });
+      show('✕ ยังกรอกไม่ครบ — ' + problems.map(p => p.text).join(' · ') + ' (ช่องที่มี * ต้องกรอกทุกครั้ง)', 'error');
+      const first = document.querySelector('.dx-card input.dx-invalid');
+      if (first) { first.scrollIntoView({ block: 'center', behavior: 'smooth' }); first.focus({ preventScroll: true }); }
+      return;
+    }
     if (!slots.length && !days.length && !billFile && !amountChanged && !hasSignature) { show('ยังไม่มีข้อมูลใหม่ให้บันทึก — กดกรอบรูปในการ์ด กรอกวันที่ หรือวาดลายเซ็นก่อน'); return; }
     showLoading('กำลังบันทึก ' + activeFormLabel() + '…', 'โปรดอย่าปิดหน้าจอ');
     const label = button ? button.textContent : '';
