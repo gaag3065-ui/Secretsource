@@ -5,7 +5,7 @@
     const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const API = `${window.APP_CONFIG.API_BASE_URL}/api/exec`;
     const PAL = ['#4f46e5', '#0d9488', '#d97706', '#db2777', '#2563eb', '#7c3aed', '#16a34a', '#dc2626', '#0891b2', '#64748b'];
-    const state = { summary: null, view: 'overview', ins: null, assets: null, welfare: null, rooms: null, loading: {}, errors: {},
+    const state = { summary: null, view: 'overview', ins: null, assets: null, welfare: null, rooms: null, workflows: null, loading: {}, errors: {},
         wTab: 'main', insF: { person: '', status: '', q: '' }, asF: { area: '', q: '' }, rmF: { filter: 'all', q: '' } };
     const num = n => Number(n || 0).toLocaleString('th-TH', { maximumFractionDigits: 0 });
     const baht = n => `${num(n)} บาท`;
@@ -24,6 +24,7 @@
     try { token = sessionStorage.getItem('execToken') || ''; } catch { token = ''; }
     const lock = message => {
         token = ''; try { sessionStorage.removeItem('execToken'); } catch { /* ignore */ }
+        state.workflows = null; window.ExecWorkflow.render(null); $('exDialog').close();
         document.body.classList.add('is-locked'); $('exLock').hidden = false; $('exLockMsg').textContent = message || '';
         setTimeout(() => $('exCode').focus(), 50);
     };
@@ -53,9 +54,10 @@
         insurance: () => call('/insurance'),
         assets: () => call('/assets'),
         welfare: () => call(`/welfare?${rangeQuery()}`),
-        rooms: refresh => call(`/rooms${refresh ? '?refresh=1' : ''}`)
+        rooms: refresh => call(`/rooms${refresh ? '?refresh=1' : ''}`),
+        workflows: () => call('/workflows')
     };
-    const KEY = { summary: 'summary', insurance: 'ins', assets: 'assets', welfare: 'welfare', rooms: 'rooms' };
+    const KEY = { summary: 'summary', insurance: 'ins', assets: 'assets', welfare: 'welfare', rooms: 'rooms', workflows: 'workflows' };
     const NEEDS = { overview: ['summary'], insurance: ['insurance', 'summary'], assets: ['assets', 'summary'], welfare: ['welfare', 'summary', 'rooms'] };
     const REQUIRED = { overview: ['summary'], insurance: ['insurance'], assets: ['assets'], welfare: ['welfare'] };
     async function ensure(name, refresh) {
@@ -70,7 +72,7 @@
         state.view = view;
         document.querySelectorAll('#exNav button').forEach(b => b.classList.toggle('is-on', b.dataset.view === view));
         document.querySelectorAll('.ex-pane').forEach(p => { p.hidden = p.id !== `v-${view}`; });
-        const needs = NEEDS[view];
+        const needs = [...NEEDS[view], 'workflows'];
         if (needs.some(n => !state[KEY[n]]) || refresh) {
             $(`v-${view}`).innerHTML = '<p class="ex-empty">กำลังโหลดข้อมูล…</p>';
             await Promise.all(needs.map(n => ensure(n, refresh)));
@@ -88,6 +90,7 @@
     }
     function render(view) {
         status();
+        window.ExecWorkflow.render(state.workflows, state.errors.workflows);
         const pane = $(`v-${view}`);
         const missing = REQUIRED[view].find(n => !state[KEY[n]]);
         if (missing) { pane.innerHTML = `<p class="ex-status is-error">${esc(state.errors[missing] || 'ไม่มีข้อมูล')}</p>`; return; }
@@ -390,16 +393,6 @@
             $('exCode').value = ''; open();
         } catch { $('exLockMsg').textContent = 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — ลองใหม่อีกครั้ง'; } finally { $('exLockBtn').disabled = false; }
     });
-    // ADMIN ที่ล็อกอินระบบ GA อยู่: ตั้ง/เปลี่ยนรหัสเข้าชมได้ (รหัสไม่ผ่านที่อื่น และเก็บเป็นแฮชบนเครื่องหลังบ้าน)
-    $('exSetCode').addEventListener('click', async () => {
-        const code = prompt('ตั้งรหัสเข้าชมใหม่ (6–64 ตัวอักษร) — ผู้ที่ใช้รหัสเดิมอยู่จะต้องกรอกรหัสใหม่');
-        if (code === null) return;
-        try {
-            const response = await window.authFetch(API + '/access-code', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
-            const data = await response.json().catch(() => ({}));
-            alert(response.ok && data.success ? 'ตั้งรหัสเข้าชมเรียบร้อย' : (data.message || 'ตั้งรหัสไม่สำเร็จ'));
-        } catch (error) { alert('ตั้งรหัสไม่สำเร็จ'); }
-    });
     (async () => {
         if (token) { open(); return; }
         // ตรวจว่าล็อกอินระบบ GA อยู่ไหม (ไม่ใช้ authFetch เพื่อไม่ให้เด้งไปหน้าล็อกอินถ้ายังไม่ได้ล็อกอิน)
@@ -409,7 +402,7 @@
             const data = await response.json().catch(() => ({}));
             const isAdmin = String(data.user?.role || '').toUpperCase() === 'ADMIN';
             if (data.csrfToken) { try { sessionStorage.setItem('csrfToken', data.csrfToken); } catch { /* ignore */ } }
-            if (response.ok && data.user && (isAdmin || data.permissions?.ViewExecutive === true)) { if (isAdmin) $('exSetCode').hidden = false; open(); return; }
+            if (response.ok && data.user && (isAdmin || data.permissions?.ViewExecutive === true)) { open(); return; }
         } catch { /* ไปหน้ากรอกรหัส */ }
         lock('');
     })();

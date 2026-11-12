@@ -155,6 +155,27 @@ table.ex-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .ex-legend { flex-basis: 100%; }
     .ex-dialog { width: 100vw; max-height: 96vh; border-radius: 18px 18px 0 0; margin: auto 0 0; }
 }
+.ex-wf-project { border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: 12px; margin-top: 14px; overflow: hidden; }
+.ex-wf-project.is-complete { border-left-color: var(--ok); }
+.ex-wf-project summary { cursor: pointer; padding: 14px; }
+.ex-wf-project summary b { margin-right: 14px; }
+.ex-wf-project summary span { color: var(--brand); }
+.ex-wf-project.is-complete summary span { color: var(--ok); }
+.ex-wf-project summary small { display: block; margin-top: 5px; color: var(--muted); }
+.ex-wf-body { padding: 0 12px 12px; }
+.ex-wf-scroll { overflow: auto; width: 100%; border: 1px solid var(--line); border-radius: 10px; }
+.ex-wf-canvas { position: relative; background: radial-gradient(var(--line) 1px, transparent 1px) 0 0 / 12px 12px; }
+.ex-wf-canvas svg { position: absolute; max-width: none; fill: none; stroke-width: 2; }
+.ex-wf-node { position: absolute; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); text-align: left; padding: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 5px; }
+.ex-wf-node small { color: var(--muted); font-size: 12px; }
+.ex-wf-node b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 14px; line-height: 1.4; }
+.ex-wf-node span { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ex-wf-node.is-done { border-color: #16a34a; background: color-mix(in srgb, var(--card) 85%, #86efac); }
+.ex-wf-node.is-doing { border: 2px solid #2563eb; background: color-mix(in srgb, var(--card) 88%, #93c5fd); }
+.ex-wf-node.is-ready { border-color: #2563eb; }
+.ex-wf-node:hover, .ex-wf-node:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+.ex-wf-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ex-wf-detail { padding: 18px; }
 @media print {
     .ex-top, .ex-btn, .ex-filters, .ex-seg { display: none !important; }
     body { background: #fff; color: #000; }

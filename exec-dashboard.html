@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="referrer" content="no-referrer">
     <title>แดชบอร์ดผู้บริหาร | GA Executive</title>
-    <link rel="stylesheet" href="exec-dashboard.css?v=20261110-6">
+    <link rel="stylesheet" href="exec-dashboard.css?v=20261112-workflow">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body class="is-locked">
@@ -25,7 +25,7 @@
 </section>
 <header class="ex-top">
     <div class="ex-bar">
-        <div class="ex-title"><b>แดชบอร์ดผู้บริหาร</b><small>สรุปงาน GA · อ่านอย่างเดียว</small></div>
+        <div class="ex-title"><b>แดชบอร์ดผู้บริหาร</b></div>
         <div class="ex-range" id="exRangeBox">
             <select id="exPreset" aria-label="ช่วงเวลา">
                 <option value="7">7 วันล่าสุด</option>
@@ -36,7 +36,6 @@
             </select>
             <span id="exCustom" hidden><input type="date" id="exFrom" aria-label="ตั้งแต่"> – <input type="date" id="exTo" aria-label="ถึง"></span>
             <button type="button" id="exRefresh" class="ex-btn">รีเฟรช</button>
-            <button type="button" id="exSetCode" class="ex-btn" hidden>🔑 ตั้งรหัสเข้าชม</button>
         </div>
     </div>
     <nav class="ex-nav" id="exNav" aria-label="เมนูแดชบอร์ด">
@@ -54,11 +53,13 @@
     <section id="v-assets" class="ex-pane" hidden></section>
     <section id="v-welfare" class="ex-pane" hidden></section>
     <footer id="exFoot" class="ex-foot"></footer>
+    <section id="exWorkflows" class="ex-card" aria-label="Workflow งาน GA"></section>
 </main>
 
 <dialog id="exDialog" class="ex-dialog"><div id="exDetail"></div></dialog>
 
 <script src="config.js"></script>
-<script src="exec-dashboard.js?v=20261110-9"></script>
+<script src="exec-workflow.js?v=20261112-1"></script>
+<script src="exec-dashboard.js?v=20261112-workflow"></script>
 </body>
 </html>
