@@ -732,9 +732,9 @@ function matchesHeaderFilter(item) {
     const status = accommodationState.headerStatus;
     if (status === 'has' && !people.length) return false;
     if (status === 'empty' && people.length) return false;
-    const query = accommodationState.headerSearch.normalize('NFKC').toLowerCase();
+    const query = window.AccommodationPeople.normalize(accommodationState.headerSearch);
     if (!query) return true;
-    return [building.name, ...people.flatMap(person => [person.employeeName, person.employeeId])]
+    return [building.name, ...people.map(window.AccommodationPeople.personText)]
         .some(text => String(text || '').normalize('NFKC').toLowerCase().includes(query));
 }
 
@@ -747,6 +747,12 @@ window.applyAccommodationHeaderFilter = ({ area, status, search } = {}) => {
     accommodationState.expandedSummaryRecord = null;
     renderAccommodationDataPanel();
 };
+
+window.addEventListener('ro-data', () => {
+    if (!accommodationState.summary) return;
+    renderAccommodationDataPanel();
+    renderRoomSearchResults();
+});
 
 function renderAccommodationBuildingCard(item, expanded) {
     const { building, area, rooms, unmatched = [], areaUnmatchedCount = 0 } = item;
@@ -959,7 +965,7 @@ function renderWorkAreaNavigation(workAreas) {
         const visibleBuildings = Array.from(buildings.values())
             .filter(item => {
                 if (!accommodationState.buildingFilter) return true;
-                const searchable = [area, item.name, ...(item.employees || []).flatMap(employee => [employee.employeeName, employee.employeeId])]
+                const searchable = [area, item.name, ...(item.employees || []).map(window.AccommodationPeople.personText)]
                     .join(' ').toLocaleLowerCase('th');
                 return searchable.includes(accommodationState.buildingFilter);
             })
@@ -1716,14 +1722,14 @@ function renderRoomSearchResults() {
     const input = document.getElementById('roomSearchInput');
     const container = document.getElementById('roomSearchResults');
     if (!input || !container) return;
-    const query = input.value.trim().toLocaleLowerCase('th');
+    const query = window.AccommodationPeople.normalize(input.value);
     if (!query) {
         container.textContent = 'พิมพ์คำค้นเพื่อดูและจัดการห้องทันที';
         return;
     }
     const rooms = allRegisteredRooms().filter(room => {
         const searchable = [room.code, room.name, room.siteCode, room.buildingName, room.floorName,
-            ...(room.occupants || []).flatMap(person => [person.employeeName, person.employeeId])];
+            ...(room.occupants || []).map(window.AccommodationPeople.personText)];
         return searchable.some(value => String(value || '').toLocaleLowerCase('th').includes(query));
     }).slice(0, 30);
     if (!rooms.length) {

@@ -25,6 +25,7 @@
             if (response.status === 404 && !data.message) throw new Error('เครื่องหลังบ้านยังไม่ได้อัปเดต (git pull แล้วรีสตาร์ท)');
             if (!response.ok || !data.success) throw new Error(data.message || 'โหลดไม่สำเร็จ');
             state.data = data;
+            window.AccommodationPeople.setDirectory(data.employeeDirectory || []);
             window.__roData = data;
             window.dispatchEvent(new CustomEvent('ro-data', { detail: data }));
             render();
@@ -37,10 +38,13 @@
     function render() {
         const { counts: c, rooms, issues, unmatched, at, masterUrl } = state.data;
         const statuses = Object.entries(c.processByStatus || {}).map(([s, n]) => `<span>${esc(s)} <b>${num(n)}</b></span>`).join('');
-        const q = state.query.toLowerCase();
+        const q = window.AccommodationPeople.normalize(state.query);
+        const matchingPeople = q ? (state.data.employeeDirectory || []).filter(e => window.AccommodationPeople.personText(e).includes(q)) : [];
         const byFilter = r => state.filter === 'all' || (state.filter.startsWith('st:') ? r.status === state.filter.slice(3) : state.filter === 'process' ? r.group === 'กำลังดำเนินการ' : r.group === state.filter);
         const list = rooms.filter(r => byFilter(r)
-            && (!q || `${r.project} ${r.unit} ${r.status} ${r.agent} ${r.companies.join(' ')}`.toLowerCase().includes(q)));
+            && (!q || window.AccommodationPeople.normalize(`${r.project} ${r.unit} ${r.status} ${r.agent} ${r.companies.join(' ')}`).includes(q)
+                || [...(r.employeeList || []), ...pendingReviews(r)].some(e => window.AccommodationPeople.personText(e).includes(q))
+                || matchingPeople.some(e => e.roomNo === r.no)));
         const chip = (key, label, n) => `<button type="button" data-ro-filter="${key}" class="${state.filter === key ? 'is-on' : ''}">${label} <b>${num(n)}</b></button>`;
         root.querySelector('.ro-updated').textContent = `อัปเดต ${new Date(at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}`;
         root.querySelector('.ro-master').hidden = !masterUrl;
@@ -88,20 +92,24 @@
                 <div class="ro-check-list" hidden>
                     ${issues.length ? `<h4>ทะเบียนห้องพัก</h4><ul>${issues.map(i => `<li><b>${esc(i.type)}</b> — ลำดับ ${esc(i.no)} ${esc(i.project)} ${esc(i.unit)} ${esc(i.detail)}</li>`).join('')}</ul>` : ''}
                     ${(state.data.internetUnmatched || []).length ? `<h4>ไฟล์อินเตอร์เน็ตบ้านพัก — แถวที่จับคู่กับทะเบียนไม่ได้</h4><ul>${state.data.internetUnmatched.map(i => `<li>ลำดับ ${esc(i.no)} · ${esc(i.project)} ${esc(i.unit)} — ${esc(i.reason)}</li>`).join('')}</ul>` : ''}
-                    ${unmatched.length ? `<h4>พนักงานที่จับคู่ห้องในทะเบียนไม่ได้ (แท็บข้อมูลเบื้องต้น)</h4><ul>${unmatched.map(e => `<li>แถว ${esc(e.row)} · ${esc(e.company)} · ${esc(e.building)} ${esc(e.floor)} ${esc(e.room)} — ${esc(e.reason)}</li>`).join('')}</ul>` : ''}
+                    ${unmatched.length ? `<h4>พนักงานที่จับคู่ห้องในทะเบียนไม่ได้ (แท็บข้อมูลเบื้องต้น)</h4><ul>${unmatched.map(e => `<li><b>${esc(e.name || e.nickname || '-')}</b> · ${esc(e.employeeId || e.insuranceCode || '')} · แถว ${esc(e.row)} · ${esc(e.company)} · ${esc(e.building)} ${esc(e.floor)} ${esc(e.room)} — ${esc(e.reason)}</li>`).join('')}</ul>` : ''}
                 </div>
             </div>
             <div class="ro-toolbar">
                 <div class="ro-chips">${chip('all', 'ทั้งหมด', c.total)}${chip('มีพนักงาน', 'มีพนักงาน', c.existingOccupied)}${chip('ไม่มีพนักงาน', 'ไม่มีพนักงาน', c.existingEmpty)}${chip('process', 'กำลังดำเนินการ', c.process)}</div>
-                <input type="search" data-ro-search placeholder="ค้นหาที่พัก ยูนิต สถานะ…" value="${esc(state.query)}">
+                <input type="search" data-ro-search placeholder="ค้นหาชื่อ ชื่อเล่น รหัสพนักงาน รหัสประกัน ที่พัก ยูนิต…" value="${esc(state.query)}">
             </div>
+            ${matchingPeople.length ? `<div class="ro-person-results"><b>พบพนักงาน ${num(matchingPeople.length)} คน</b>${matchingPeople.map(e => {
+                const linked = rooms.find(r => r.no === e.roomNo);
+                return `<article><strong>${esc(e.name || e.nickname || '-')}</strong><small>${esc([e.nickname, e.employeeId, e.centralId, e.insuranceCode, e.company].filter(Boolean).join(' · '))}</small><span>${linked ? `✓ เชื่อมกับทะเบียน: ${esc(linked.project)} · ยูนิต ${esc(linked.unit)}` : `⚠ ยังเชื่อมยูนิตไม่ได้: ${esc(e.reason)}`}</span>${!linked ? `<small>ต้นทางระบุ: ${esc([e.building, e.floor, e.room].filter(Boolean).join(' · ') || 'ยังไม่ระบุที่พัก')}</small>` : ''}${linked ? `<button type="button" class="ro-btn ro-btn-sm" data-ro-detail="${linked.no}">ดูห้องและรายชื่อผู้พัก</button>` : ''}</article>`;
+            }).join('')}</div>` : ''}
             <div class="ro-table-wrap"><table class="ro-table">
                 <thead><tr><th>#</th><th>ที่พัก / ยูนิต</th><th>สถานะ</th><th>พนักงาน</th><th>ประเภทห้อง</th><th>ค่าเช่า/เดือน</th><th>สัญญา</th><th>อินเตอร์เน็ต</th><th>ผู้จัดหา</th><th>จัดการ</th></tr></thead>
                 <tbody>${list.map(r => `<tr>
                     <td>${esc(r.no)}</td>
                     <td><b>${esc(r.project)}</b><small>${esc(r.unit)}</small></td>
                     <td><span class="ro-pill ${r.group === 'มีพนักงาน' ? 'is-ok' : r.group === 'ไม่มีพนักงาน' ? 'is-empty' : 'is-process'}">${esc(r.group === 'กำลังดำเนินการ' ? r.status : r.group)}</span></td>
-                    <td>${r.employees ? `${num(r.employees)} คน<small>${esc(r.companies.join(', '))}</small>` : '-'}</td>
+                    <td>${r.employees ? `${num(r.employees)} คน<small>${esc(r.companies.join(', '))}</small>${q ? `<small>${(r.employeeList || []).map(e => esc(e.name || e.nickname)).join(' · ')}</small>` : ''}` : '-'}</td>
                     <td>${esc(r.type || '-')}</td>
                     <td>${r.rent ? num(r.rent) : '-'}</td>
                     <td>${r.start || r.end ? `${esc(r.start)} – ${esc(r.end)}<small>${esc(r.remaining)}</small>` : '-'}</td>
@@ -154,7 +162,7 @@
             '<section><h4>รายละเอียดห้อง</h4><dl class="ro-dl">' +
                 fieldsOf().filter(([k]) => !DATE_KEYS.includes(k) || r[k]).map(([k, label]) => '<dt>' + esc(label.replace(/ \(.*\)$/, '')) + '</dt><dd>' + esc((k === 'rent' ? (r.rent ? num(r.rent) : '') : r[k]) || '-') + '</dd>').join('') +
                 '<dt>เหลือเวลาสัญญา</dt><dd>' + esc(r.remaining || '-') + '</dd>' +
-                '<dt>พนักงานที่พักอยู่</dt><dd>' + (employees.length ? employees.map(e => esc(e.name) + ' <small>(' + esc(e.company) + ')</small>').join('<br>') : '-') + '</dd></dl></section>' +
+                '<dt>พนักงานที่พักอยู่</dt><dd>' + (employees.length ? employees.map(e => '<b>' + esc(e.name) + '</b> <small>' + esc([e.nickname, e.employeeId, e.centralId, e.insuranceCode, e.company].filter(Boolean).join(' · ')) + '</small>').join('<br>') : '-') + '</dd></dl></section>' +
             netSection(r) +
             '<section class="ro-edit" ' + (edit ? '' : 'hidden') + '><h4>✏️ แก้ไขข้อมูลห้อง <small>บันทึกลงไฟล์ทะเบียนห้องพักใน Google Sheet</small></h4><form data-ro-form="' + esc(r.no) + '">' +
                 '<div class="ro-form-grid">' + fieldsOf().map(([k, label]) => {

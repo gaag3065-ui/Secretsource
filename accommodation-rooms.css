@@ -105,6 +105,11 @@
 .ro-dl { display: grid; grid-template-columns: minmax(120px, 190px) 1fr; gap: 6px 14px; margin: 0; font-size: 13px; }
 .ro-dl dt { color: var(--as-muted, #6b7785); }
 .ro-dl dd { margin: 0; font-weight: 600; word-break: break-word; }
+.ro-person-results { display: grid; gap: 8px; margin: 12px 0; }
+.ro-person-results article { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 12px; border: 1px solid #b8dcd7; border-left: 4px solid #008a80; border-radius: 10px; background: #f3fffc; }
+.ro-person-results article strong { color: #0f172a; }
+.ro-person-results article small { display: block; flex-basis: 100%; color: #475569; overflow-wrap: anywhere; }
+.ro-person-results article span { flex: 1 1 260px; color: #164e45; }
 .ro-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .ro-dlg-foot { display: flex; justify-content: flex-end; gap: 8px; }
 @media (max-width: 640px) {
