@@ -6,7 +6,7 @@
     const API = `${window.APP_CONFIG.API_BASE_URL}/api/accommodation-rooms/expenses`;
     const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
     const num = v => (Number(String(v ?? '').replace(/,/g, '')) || 0).toLocaleString('th-TH');
-    const state = { data: null, month: '', filter: 'all', loading: false, cells: [], step: 'all', open: new Set() };
+    const state = { data: null, month: '', filter: 'all', loading: false, cells: [], step: 'all', open: new Set(), serial: '' };
     let target = null;   // ช่องที่กำลังแก้ในกล่องบันทึก
     const DAY = 86400000;
     const MONTH_CATS = ['water', 'electric', 'gas', 'gas_recv', 'other'];
@@ -57,6 +57,11 @@
     const recsOf = (no, cat, period) => (state.data.records || []).find(x => x.no === no && x.cat === cat && x.period === period);
 
     // ---------------------------------------------------------------- บิลค่าน้ำ/ค่าไฟ: 8 ขั้นตอนต่อเดือน (ตามงานจริงของ GA)
+    // ---- ค่าอื่นๆ (สาธารณูปโภค): ประเภท (อินเทอร์เน็ต / อื่นๆ) + ค้นหายูนิตจาก Serial No. ของราวเตอร์
+    const normSn = t => String(t || '').toLowerCase().replace(/[\s\-_]/g, '');
+    const snMatch = (u, q) => { const k = normSn(q); return !k || (u.nets || []).some(n => normSn(n.serial).includes(k)); };
+    const otherKind = rec => rec?.kind === 'internet' ? '🌐 อินเทอร์เน็ต' : 'อื่นๆ' + (rec?.note ? ': ' + rec.note : '');
+    const netsLine = u => (u.nets || []).length ? (u.nets || []).map(n => [n.provider, n.package, n.serial ? 'SN ' + n.serial : ''].filter(Boolean).join(' · ')).join(' | ') : 'ยังไม่มีข้อมูลราวเตอร์ในไฟล์อินเตอร์เน็ต';
     const FLOW_CATS = ['water', 'electric'];
     const FLOW_SHORT = ['ตามบิล', 'ได้รับบิล', 'ตั้งเบิก', 'รอรับเงิน', 'รับเงิน', 'เตรียมจ่าย', 'จ่ายแล้ว', 'บันทึกบิล'];
     const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
@@ -139,7 +144,7 @@
         }
         if (!rec) return future ? { tone: 'na', text: '–', edit: { u, cat, period: state.month, rec } } : { tone: cat === 'gas_recv' ? 'warn' : 'bad', text: def.states[1], alert: cat, edit: { u, cat, period: state.month, rec } };
         const done = rec.status === def.states[0];
-        return { tone: rec.status === 'ไม่มีรายการ' ? 'na' : done ? 'ok' : (cat === 'gas_recv' ? 'warn' : 'bad'), text: rec.status === 'ไม่มีรายการ' ? '–' : (done ? '✓ ' : '') + rec.status, sub: [money, rec.date].filter(Boolean).join(' · '), alert: done || rec.status === 'ไม่มีรายการ' ? '' : cat, edit: { u, cat, period: state.month, rec } };
+        return { tone: rec.status === 'ไม่มีรายการ' ? 'na' : done ? 'ok' : (cat === 'gas_recv' ? 'warn' : 'bad'), text: rec.status === 'ไม่มีรายการ' ? '–' : (done ? '✓ ' : '') + rec.status, sub: [cat === 'other' ? otherKind(rec) : '', money, rec.date].filter(Boolean).join(' · '), alert: done || rec.status === 'ไม่มีรายการ' ? '' : cat, edit: { u, cat, period: state.month, rec } };
     }
     // รอบ (ค่าเช่าล่วงหน้า / ล้างแอร์): ครบกำหนดทุก N เดือนนับจากวันเริ่ม — ดูรอบล่าสุดที่ถึง (หรือใกล้ถึงภายใน 30 วัน)
     function cycleCell(u, cat, cycle) {
@@ -212,7 +217,7 @@
         if (nDue) alerts.push(['bad', `ถึงกำหนดแจ้งยกเลิกเช่า (ล่วงหน้า 3 เดือน) ${nDue} ยูนิต`, 'notice']);
         if (nSoon) alerts.push(['warn', `ใกล้ถึงกำหนดแจ้งยกเลิกเช่า (ภายใน 30 วัน) ${nSoon} ยูนิต`, 'notice']);
         const stepMatch = r => state.step === 'all' || FLOW_CATS.some(c => state.step === 'none' ? r.cells[c].idx === -1 : r.cells[c].idx === Number(state.step));
-        const shown = rows.filter(r => (state.filter === 'all' || r.flagged) && stepMatch(r));
+        const shown = rows.filter(r => (state.filter === 'all' || r.flagged) && stepMatch(r) && snMatch(r.u, state.serial));
         const stepCount = key => rows.filter(r => FLOW_CATS.some(c => key === 'none' ? r.cells[c].idx === -1 : r.cells[c].idx === key)).length;
         const current = d.today.slice(0, 7);
         const monthStrip = [-2, -1, 0, 1].map(n => {
@@ -246,8 +251,8 @@
             <div class="rx-legend"><span class="is-ok">เขียว จ่าย/ทำแล้ว</span><span class="is-bad">แดง ยังไม่จ่าย / เลยกำหนด</span><span class="is-warn">เหลือง ใกล้ถึงกำหนด / รอรับ</span><span class="is-na">เทา ไม่มี / ยังไม่ถึงเวลา</span></div>
             <div class="rx-wrap"><table class="rx-table">
                 <thead><tr><th>ที่พัก / ยูนิต</th><th>ค่าเช่า/เดือน</th><th colspan="5" class="rx-group">รายเดือน — ${esc(monthLabel(state.month))}</th><th colspan="2" class="rx-group">รอบ (ตามที่ตั้งไว้ในทะเบียน)</th><th class="rx-group">สัญญาเช่า (รายปี)</th></tr>
-                    <tr class="rx-sub"><th></th><th></th>${MONTH_CATS.map(c => `<th>${esc(labelOf(c))}</th>`).join('')}<th>รอบจ่ายค่าเช่าล่วงหน้า</th><th>รอบล้างแอร์</th><th>แจ้งยกเลิกเช่าล่วงหน้า 3 เดือน</th></tr></thead>
-                <tbody>${shown.map(r => { const open = state.open.has(r.u.no); return `<tr class="${r.flagged ? 'is-flag' : ''}${open ? ' is-open' : ''}"><td><button type="button" class="rx-toggle" data-rx-toggle="${r.u.no}" aria-expanded="${open}" title="${open ? 'ย่อ' : 'ขยายดูขั้นตอนและรูปบิล'}">${open ? '▾' : '▸'}</button><span class="rx-unit"><b>${esc(r.u.project)}</b><small>${esc(r.u.unit)} · ลำดับ ${esc(r.u.no)}</small></span></td><td>${r.u.rent ? num(r.u.rent) : '-'}</td>
+                    <tr class="rx-sub"><th></th><th></th>${MONTH_CATS.map(c => c === 'other' ? `<th class="rx-th-sn">${esc(labelOf(c))}<input type="search" class="rx-sn" data-rx-serial placeholder="🔎 ค้นหา Serial No. ราวเตอร์" value="${esc(state.serial)}" autocomplete="off">${state.serial ? `<small>พบ ${shown.length} ยูนิต</small>` : ''}</th>` : `<th>${esc(labelOf(c))}</th>`).join('')}<th>รอบจ่ายค่าเช่าล่วงหน้า</th><th>รอบล้างแอร์</th><th>แจ้งยกเลิกเช่าล่วงหน้า 3 เดือน</th></tr></thead>
+                <tbody>${shown.map(r => { const open = state.open.has(r.u.no); return `<tr class="${r.flagged ? 'is-flag' : ''}${open ? ' is-open' : ''}"><td><button type="button" class="rx-toggle" data-rx-toggle="${r.u.no}" aria-expanded="${open}" title="${open ? 'ย่อ' : 'ขยายดูขั้นตอนและรูปบิล'}">${open ? '▾' : '▸'}</button><span class="rx-unit"><b>${esc(r.u.project)}</b><small>${esc(r.u.unit)} · ลำดับ ${esc(r.u.no)}</small>${state.serial ? `<small class="rx-sn-hit">🌐 ${esc(netsLine(r.u))}</small>` : ''}</span></td><td>${r.u.rent ? num(r.u.rent) : '-'}</td>
                     ${MONTH_CATS.map(c => `<td>${chipHtml(r.cells[c])}</td>`).join('')}<td>${chipHtml(r.cells.rent_adv)}</td><td>${chipHtml(r.cells.aircon)}</td><td>${chipHtml(r.cells.notice)}</td></tr>${open ? flowDetail(r, units) : ''}`; }).join('') || `<tr><td colspan="10" class="rx-empty">${rows.length ? 'ไม่มีรายการที่ต้องดำเนินการ 🎉' : 'ยังไม่มียูนิตที่ทำสัญญาแล้ว'}</td></tr>`}</tbody>
             </table></div>`;
         // สรุปให้หน้าภาพรวม (accommodation-dashboard.js)
@@ -278,14 +283,28 @@
         const today = dmy(parseIso(state.data.today));
         dialog.innerHTML = `<form data-rx-form="${index}"><h3>${esc(title)}</h3>
             <label>สถานะ<select name="status">${def.states.map(s => `<option ${s === (rec?.status || def.states[0]) ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
+            ${c.cat === 'other' ? `<fieldset class="rx-stepopts rx-kind"><legend>ประเภทค่าใช้จ่าย</legend>
+                <label class="rx-stepopt"><input type="radio" name="kind" value="internet" ${(rec?.kind || 'internet') === 'internet' ? 'checked' : ''}><span>🌐 ค่าอินเทอร์เน็ต <small>(ไม่ต้องลงหมายเหตุก็ได้)</small></span></label>
+                <label class="rx-stepopt"><input type="radio" name="kind" value="other" ${rec?.kind === 'other' ? 'checked' : ''}><span>ค่าอื่นๆ <small>(ต้องลงหมายเหตุว่าเป็นค่าอะไร)</small></span></label>
+                <small class="rx-nets">ราวเตอร์ของยูนิตนี้: ${esc(netsLine(c.u))}</small></fieldset>` : ''}
             ${hasAmount ? `<label>จำนวนเงิน (บาท)<input name="amount" inputmode="decimal" value="${esc(rec?.amount || '')}" placeholder="เช่น 1,250"></label>` : ''}
             <label>วันที่ (วัน/เดือน/ปี)<input name="date" value="${esc(rec?.date || today)}"></label>
-            <label>หมายเหตุ<input name="note" maxlength="200" value="${esc(rec?.note || '')}"></label>
+            <label>หมายเหตุ<span data-rx-notehint></span><input name="note" maxlength="200" value="${esc(rec?.note || '')}"></label>
             <p class="rx-hint">${rec ? 'บันทึกล่าสุดโดย ' + esc(rec.by) + ' ' + esc(rec.at) : 'ยังไม่เคยบันทึก'}</p>
             <p class="rx-msg" role="status"></p>
             <div class="rx-actions"><button type="submit" class="rx-btn rx-primary">บันทึก</button><button type="button" class="rx-btn" data-rx-close>ยกเลิก</button></div></form>`;
         if (!dialog.open) dialog.showModal();
+        syncKind();
     }
+    // ค่าอื่นๆ: เลือกประเภท → บอกว่าต้องลงหมายเหตุหรือไม่
+    function syncKind() {
+        const f = dialog.querySelector('.rx-kind'); if (!f) return;
+        const other = dialog.querySelector('input[name=kind]:checked')?.value === 'other';
+        const hint = dialog.querySelector('[data-rx-notehint]'), note = dialog.querySelector('input[name=note]');
+        if (hint) hint.textContent = other ? ' * จำเป็น — ระบุว่าเป็นค่าอะไร' : ' (ไม่บังคับ)';
+        if (note) note.placeholder = other ? 'เช่น ค่าซ่อมท่อ / ค่าส่วนกลาง' : '';
+    }
+    dialog.addEventListener('change', event => { if (event.target.name === 'kind') syncKind(); });
 
     // ---------------------------------------------------------------- กล่องบันทึกบิลค่าน้ำ/ไฟ (เลือกขั้นตอน + แนบรูปบิล)
     const todayDmy = () => dmy(parseIso(state.data.today));
@@ -411,6 +430,13 @@
         } catch (error) { button.disabled = false; button.textContent = 'บันทึก'; const m = form.querySelector('.rx-msg'); m.textContent = error.message; m.className = 'rx-msg is-bad'; }
     });
 
+    root.addEventListener('input', event => {
+        const box = event.target.closest('[data-rx-serial]'); if (!box) return;
+        state.serial = box.value.trim();
+        render();
+        const again = root.querySelector('[data-rx-serial]');
+        if (again) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); }
+    });
     root.addEventListener('click', event => {
         const cell = event.target.closest('[data-rx-cell]'); if (cell) return openCell(Number(cell.dataset.rxCell));
         const month = event.target.closest('[data-rx-month]'); if (month) { state.month = shiftMonth(state.month, Number(month.dataset.rxMonth)); load(); return; }

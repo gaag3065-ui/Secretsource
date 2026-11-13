@@ -145,3 +145,11 @@ button.rx-chip:hover { filter: brightness(.96); outline: 2px solid rgba(8, 127, 
 .rx-loading b { font-size: 14px; color: #18212f; }
 .rx-loading small { color: #667085; font-size: 12px; }
 @keyframes rx-spin { to { transform: rotate(360deg); } }
+
+/* ค่าอื่นๆ: ช่องค้นหา Serial + ประเภทค่าใช้จ่าย */
+.rx-th-sn { min-width: 190px; }
+.rx-sn { display: block; width: 100%; box-sizing: border-box; margin-top: 4px; padding: 5px 8px; border: 1px solid #d0d5dd; border-radius: 8px; font: inherit; font-size: 12px; font-weight: 400; }
+.rx-sn:focus { outline: 2px solid rgba(8, 127, 116, .35); border-color: #087f74; }
+.rx-th-sn small { display: block; margin-top: 2px; color: #087f74; font-weight: 600; }
+.rx-sn-hit { color: #087f74 !important; word-break: break-all; }
+.rx-kind .rx-nets { display: block; margin-top: 4px; color: #667085; font-size: 11.5px; }
