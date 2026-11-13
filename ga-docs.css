@@ -337,3 +337,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .gd-existing-file { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px; border: 1px solid #dbe3ef; border-radius: 8px; }
 .gd-existing-file input[type=checkbox] { width: auto; }
 @media(max-width:600px) { #gdForm.is-travel .gd-main { padding: 16px 12px; } .is-travel .gd-tasks, .is-travel .gd-task-form { grid-template-columns: minmax(0,1fr); } }
+
+.gd-edit-banner { border-color: #bae6fd; border-left-color: #0284c7; background: #f0f9ff; }
+.gd-existing { display: grid; gap: 6px; margin-bottom: 8px; }
+.gd-existing > small { color: var(--gd-muted); font-size: 12.5px; }
+.gd-existing .gd-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; }
+.gd-existing .gd-thumb button[data-ex-open] { background: rgba(2, 132, 199, .85); font-size: 13px; }

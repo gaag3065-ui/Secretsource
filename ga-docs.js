@@ -410,6 +410,7 @@
                     <div><b>${esc(r.type_title)}</b><small>เลขที่ ${r.id} · ส่งเมื่อ ${esc(when(r.submitted_at))} · ไฟล์แนบ ${r.files.length - slips.length}</small>
                         ${r.admin_note ? `<span class="gd-note">GA: ${esc(r.admin_note)}</span>` : ''}
                         ${r.type === 'treatment' && !['billed', 'deleted', 'rejected', 'cancelled'].includes(r.status) ? (r.case_id ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm gd-bill" data-bill-from="${r.id}">📤 รักษาเสร็จ / ส่งบิล (เคส #${esc(r.case_id)})</button>` : '<span class="gd-pill is-pending">รอ GA เปิดเคสก่อน จึงบันทึกค่ารักษาได้</span>') : ''}
+                        ${form?.single && canEditRec(r) ? `<button type="button" class="gd-btn gd-btn-sm" data-open-box="${esc(r.type)}">✏️ แก้ไข / เพิ่มรูป</button>` : ''}
                         ${slips.length ? `<span class="gd-slips">${slips.map(f => `<button type="button" class="gd-btn gd-btn-sm" data-own-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">🧾 ดูสลิปโอนเงินคืน${slips.length > 1 ? ` ${f.index}` : ''}</button>`).join('')}</span>` : ''}
                         ${more}</div>
                     <span class="gd-pill is-${esc(r.status)}${gaStatus(r) ? ' is-ga' : ''}">${esc(gaStatus(r) || r.status_label)}</span>
@@ -598,6 +599,10 @@
         refreshVisibility();
         msg($('gdFormMsg'), '');
         $('gdProgress').hidden = true;
+        state.editing = null;
+        document.querySelector('.gd-submit').textContent = 'ส่งข้อมูล';
+        const own = form.single ? ownSingle(key) : null;
+        if (own && !mustAck) enterEdit(form, own);
         show('gdForm');
         window.scrollTo(0, 0);
     }
@@ -715,7 +720,103 @@
         });
     }
 
+
+    // ---------------------------------------------------------------- กล่องที่ส่งได้รายการเดียว: เปิดรายการเดิมพร้อมข้อมูล → แก้ไข / เพิ่ม-ลบรูป (ไม่สร้างรายการใหม่)
+    const DEAD_STATUS = ['draft', 'deleted', 'cancelled'];
+    const EDITABLE_STATUS = ['pending', 'rejected', 'approved'];
+    const ownSingle = key => (state.mine || []).filter(r => r.type === key && !DEAD_STATUS.includes(r.status)).sort((a, b) => a.id - b.id)[0] || null;
+    const canEditRec = r => EDITABLE_STATUS.includes(r.status) && !r.closed_at;
+    async function ownBlobUrl(ref) {
+        const response = await fetch(`${API}/file/${ref}`, { headers: { Authorization: `Bearer ${state.session?.token || ''}` } });
+        if (!response.ok) throw new Error('เปิดไฟล์ไม่ได้');
+        return URL.createObjectURL(await response.blob());
+    }
+    function renderExisting(form, rec) {
+        const editable = canEditRec(rec);
+        form.fields.filter(f => f.type === 'files').forEach(f => {
+            const holder = $('gdFields').querySelector(`[data-field="${f.name}"]`);
+            if (!holder) return;
+            let box = holder.querySelector('.gd-existing');
+            if (!box) { box = document.createElement('div'); box.className = 'gd-existing'; holder.querySelector('.gd-label').after(box); }
+            const files = rec.files.filter(x => x.field === f.name);
+            box.innerHTML = files.length ? `<small>ไฟล์ที่ส่งไว้แล้ว (${files.length})</small><div class="gd-thumbs">${files.map(x => `<div class="gd-thumb" data-existing-file="${rec.id}/${x.n}" data-mime="${esc(x.mime)}">${/^image\//.test(x.mime) ? '<img alt="" data-ex-img>' : '📄 PDF'}<button type="button" data-ex-open title="ดูขยาย" style="right:34px">🔍</button>${editable ? `<button type="button" data-ex-del="${x.n}" title="เอาไฟล์นี้ออก">×</button>` : ''}</div>`).join('')}</div>` : '<small class="gd-ex-none">ยังไม่มีไฟล์</small>';
+            box.querySelectorAll('[data-existing-file]').forEach(div => {
+                const img = div.querySelector('[data-ex-img]');
+                if (img) ownBlobUrl(div.dataset.existingFile).then(url => { img.src = url; }).catch(() => { div.append('เปิดไม่ได้'); });
+            });
+        });
+    }
+    function enterEdit(form, rec) {
+        state.editing = rec.id;
+        state.editRec = rec;
+        const editable = canEditRec(rec);
+        $('gdInfo').insertAdjacentHTML('afterbegin', `<div class="gd-bill-case gd-edit-banner"><b>✏️ คุณส่งรายการนี้แล้ว (เลขที่ ${esc(rec.id)})</b> — ${editable ? 'แก้ไขข้อมูล หรือเพิ่ม/ลบรูปได้ที่นี่ ระบบจะไม่สร้างรายการใหม่' : 'ส่งต่อให้ประกัน/เสร็จสิ้นแล้ว แก้ไขไม่ได้ — ติดต่อ GA หากต้องการเปลี่ยนแปลง'}<small>สถานะตอนนี้: ${esc(gaStatus(rec) || rec.status_label)}${rec.status !== 'pending' && editable ? ' · เมื่อแก้ไขแล้ว GA จะตรวจอีกครั้ง' : ''}</small></div>`);
+        Object.entries(rec.fields || {}).forEach(([name, value]) => {
+            if (name.startsWith('__') || value === '' || value == null) return;
+            const radio = $('gdFields').querySelector(`input[type=radio][name="${name}"][value="${CSS.escape(String(value))}"]`);
+            if (radio) { radio.checked = true; return; }
+            const input = $('gdFields').querySelector(`[name="${name}"]:not([type=radio])`);
+            if (input) input.value = value;
+        });
+        renderExisting(form, rec);
+        refreshVisibility();
+        const submitBtn = document.querySelector('.gd-submit');
+        submitBtn.textContent = '💾 บันทึกการแก้ไข';
+        submitBtn.disabled = !editable;
+        if (!editable) $('gdFields').querySelectorAll('input, select, textarea, button').forEach(el => { el.disabled = true; });
+    }
+    async function submitEdit(button) {
+        const form = state.form, rec = state.editRec;
+        const v = values();
+        const have = f => rec.files.filter(x => x.field === f.name).length + (state.files[f.name] || []).length;
+        for (const f of form.fields) {
+            if (!f.required || !isVisible(f, v)) continue;
+            if (f.type === 'files' ? !have(f) : !v[f.name]) return msg($('gdFormMsg'), `กรุณา${f.type === 'files' ? 'แนบ' : 'กรอก'} "${f.label}"`, 'bad');
+        }
+        const uploads = form.fields.filter(f => f.type === 'files' && isVisible(f, v)).flatMap(f => (state.files[f.name] || []).map(item => ({ field: f.name, file: item.file })));
+        const adding = {}; uploads.forEach(u => { adding[u.field] = (adding[u.field] || 0) + 1; });
+        button.disabled = true;
+        const bar = $('gdProgress'); bar.hidden = false;
+        const step = pct => { bar.firstElementChild.style.width = `${pct}%`; };
+        try {
+            msg($('gdFormMsg'), 'กำลังบันทึกการแก้ไข…'); step(10);
+            await call('/update', { id: rec.id, fields: v, adding });
+            for (let i = 0; i < uploads.length; i++) {
+                msg($('gdFormMsg'), `กำลังอัปโหลดไฟล์ ${i + 1}/${uploads.length}…`);
+                step(20 + Math.round(i / uploads.length * 75));
+                await call('/upload/more', { id: rec.id, field: uploads[i].field, data: await toDataUrl(uploads[i].file) });
+            }
+            state.editing = null;
+            loadCaseHistory(true);
+            loadMine();
+            $('gdDoneText').textContent = `${form.title} · เลขที่ ${rec.id} — บันทึกการแก้ไขแล้ว GA จะตรวจสอบอีกครั้งในหน้า "รายการที่ฉันส่ง"`;
+            show('gdDone');
+            window.scrollTo(0, 0);
+        } catch (error) {
+            msg($('gdFormMsg'), `บันทึกไม่สำเร็จ: ${error.message}`, 'bad');
+            bar.hidden = true;
+        } finally { button.disabled = false; }
+    }
+    document.addEventListener('click', async event => {
+        const open = event.target.closest('[data-ex-open]');
+        if (open) { const holder = open.closest('[data-existing-file]'); try { await openOwnFile(holder.dataset.existingFile, holder.dataset.mime); } catch (error) { alert(error.message); } return; }
+        const del = event.target.closest('[data-ex-del]');
+        if (del && state.editRec) {
+            if (!confirm('เอาไฟล์นี้ออกจากรายการ?')) return;
+            del.disabled = true;
+            try {
+                const { record } = await call('/upload/remove', { id: state.editRec.id, n: Number(del.dataset.exDel) });
+                state.editRec = record;
+                const at = (state.mine || []).findIndex(r => r.id === record.id);
+                if (at >= 0) state.mine[at] = record;
+                renderExisting(state.form, record);
+                msg($('gdFormMsg'), '✓ เอาไฟล์ออกแล้ว', 'ok');
+            } catch (error) { msg($('gdFormMsg'), error.message, 'bad'); del.disabled = false; }
+        }
+    });
+
     async function submit(button) {
+        if (state.editing) return submitEdit(button);
         const form = state.form;
         const v = values();
         // ตรวจเบื้องต้นที่หน้าเว็บ (หลังบ้านตรวจซ้ำอีกรอบ)
@@ -752,6 +853,7 @@
         } catch (error) {
             msg($('gdFormMsg'), `ส่งไม่สำเร็จ: ${error.message}`, 'bad');
             bar.hidden = true;
+            if (/ส่งซ้ำไม่ได้/.test(error.message) && form.single) { await loadMine(true).catch(() => {}); if (ownSingle(form.key)) openForm(form.key); }
         } finally { button.disabled = false; }
     }
 

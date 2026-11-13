@@ -1125,14 +1125,16 @@
         const box = (state.data.boxes || []).find(b => b.key === group.key);
         const title = box?.title || group.tasks[0]?.box_title || group.recs[0]?.type_title || group.key;
         // ① รับงาน → เปิดงานที่มอบหมาย · ②③④ → เปิดหน้าตรวจเอกสารที่พนักงานส่ง (ตั้งสถานะ + ยืนยันลงรายงานได้ที่เดียว)
-        const latestRec = [...group.recs].sort((a, b) => b.id - a.id)[0];
+        // ตรวจ 4 โรค / ตรวจสุขภาพประจำปี: 1 คนควรมีรายการเดียว → เปิดรายการที่ยืนยันลงรายงานแล้ว (ไม่มี = รายการแรก) · กล่องอื่น = รายการล่าสุด
+        const latestRec = HEALTH_BOXES.has(group.key) ? ([...group.recs].sort((a, b) => a.id - b.id).find(r => r.report_confirmed_at) || [...group.recs].sort((a, b) => a.id - b.id)[0]) : [...group.recs].sort((a, b) => b.id - a.id)[0];
+        const reportNames = [...new Set(group.recs.filter(r => r.report_confirmed_at).map(r => batchName(r.type, r.report_batch) || ''))].filter(Boolean);
         const taskAttr = group.tasks.length ? `data-task-open="${group.tasks[0].id}"` : '';
         const recAttr = latestRec ? `data-record="${latestRec.id}"` : '';
         let steps = [
             { label: '① รับงาน', done: group.received, show: group.tasks.length > 0, attr: taskAttr, tip: 'เปิดงานที่มอบหมาย' },
             { label: '② ส่งข้อมูล', done: group.sent, show: true, attr: recAttr || taskAttr, tip: recAttr ? 'เปิดเอกสารที่พนักงานส่ง' : 'เปิดงานที่มอบหมาย' },
             { label: '③ ตรวจสอบ', done: group.checked, show: true, attr: recAttr || taskAttr, tip: recAttr ? 'ตรวจเอกสาร / ตั้งสถานะ' : 'ตั้งสถานะงานเป็นเสร็จสิ้น' },
-            { label: group.reported ? 'ยืนยันทำรายงานเรียบร้อย' : '④ รอยืนยันทำรายงาน', done: group.reported, show: true, attr: recAttr || taskAttr, tip: 'กดยืนยันลงรายงาน (ต้องตรวจสอบผ่านก่อน)' }
+            { label: group.reported ? 'ยืนยันทำรายงานเรียบร้อย' + (reportNames.length ? ' · ' + reportNames.join(', ') : '') : '④ รอยืนยันทำรายงาน', done: group.reported, show: true, attr: recAttr || taskAttr, tip: group.reported && reportNames.length ? 'ลงรายงาน: ' + reportNames.map(n => reportTitle(group.key, n)).join(' / ') : 'กดยืนยันลงรายงาน (ต้องตรวจสอบผ่านก่อน)' }
         ];
         // ⑤ เสร็จสิ้น: ขึ้นเมื่อแนบสลิปโอนเงินคืนแล้ว → กดเพื่อปิดกล่องงานนี้สมบูรณ์ (กดซ้ำที่ขั้นที่เสร็จแล้ว = เปิดดู/ยกเลิกในหน้าตรวจ)
         const slipRec = [...group.recs].sort((a, b) => b.id - a.id).find(hasSlip);
@@ -1147,6 +1149,8 @@
     const hasBatches = type => Boolean(state.docDestinations?.[type]);
     const batchesOf = type => state.docDestinations?.[type]?.batches || [];
     const batchName = (type, id) => (batchesOf(type).find(b => b.id === id) || {}).name || '';
+    // หัวไฟล์รายงานของฉบับนั้น (ตรงกับชื่อบรรทัดบนสุดของชีต)
+    const reportTitle = (type, name) => (batchesOf(type).find(b => b.name === name) || {}).title || name;
     const batchApi = (path, options = {}) => window.authFetch(docsApi('/report-batches' + path), { ...options, headers: { 'Content-Type': 'application/json' } })
         .then(async response => { const data = await response.json().catch(() => ({})); if (!response.ok || data.success === false) throw new Error(data.message || (response.status === 403 ? 'บัญชีนี้ไม่มีสิทธิ์ตรวจเอกสาร (ReviewGaDocs)' : 'ทำรายการไม่สำเร็จ')); return data; });
     function openBatchDialog({ type, title, mode, warn = '', preselect = '' }) {
@@ -1161,7 +1165,7 @@
                     (warn ? `<p class="sm-batch-warn">${esc(warn).replace(/\n/g, '<br>')}</p>` : '') +
                     `<p class="sm-meta">${mode === 'pick' ? 'หัวข้อ ' + esc(title) + ' — รายงานที่ส่งบัญชีแล้วจะไม่รับข้อมูลใหม่ ถ้าต้องการส่งเพิ่มให้สร้างรายงานฉบับใหม่' : 'รายงานแต่ละฉบับเป็นไฟล์แยกกัน ส่งฉบับไหนแล้วให้กด "ทำเครื่องหมายส่งแล้ว" ฉบับนั้นจะไม่รับรายการใหม่'}</p>` +
                     `<div class="sm-batch-list">${list.map(b => `<label class="sm-batch-row ${b.sent_at ? 'is-sent' : ''}">${mode === 'pick' ? `<input type="radio" name="batch" value="${esc(b.id)}" ${b.id === chosen ? 'checked' : ''} ${b.sent_at ? 'disabled' : ''}>` : ''}` +
-                        `<span class="sm-batch-main"><b>${esc(b.name)}</b><small>${b.count} รายการ${b.sent_at ? ' · ✓ ส่งแล้ว ' + esc(new Date(b.sent_at).toLocaleDateString('th-TH')) : ' · ยังไม่ส่ง'}${b.created_at ? ' · สร้าง ' + esc(new Date(b.created_at).toLocaleDateString('th-TH')) : ''}</small></span>` +
+                        `<span class="sm-batch-main"><b>${esc(b.name)}</b>${b.title ? `<small class="sm-batch-file">หัวไฟล์: ${esc(b.title.replace(/^📋\s*/, ''))}</small>` : ''}<small>${b.count} รายการ${b.sent_at ? ' · ✓ ส่งแล้ว ' + esc(new Date(b.sent_at).toLocaleDateString('th-TH')) : ' · ยังไม่ส่ง'}${b.created_at ? ' · สร้าง ' + esc(new Date(b.created_at).toLocaleDateString('th-TH')) : ''}</small></span>` +
                         `<span class="sm-batch-actions">${b.sheet ? `<a class="fa-btn" href="${esc(b.sheet)}" target="_blank" rel="noopener">📊 เปิด</a>` : ''}` +
                         `${mode === 'manage' ? `<button type="button" class="fa-btn" data-b-rename="${esc(b.id)}">✏️ ชื่อ</button><button type="button" class="fa-btn" data-b-sent="${esc(b.id)}" data-sent="${b.sent_at ? '0' : '1'}">${b.sent_at ? '↩ ยกเลิกส่งแล้ว' : '📤 ทำเครื่องหมายส่งแล้ว'}</button>` : ''}</span></label>`).join('')}</div>` +
                     `<div class="sm-batch-new"><b>＋ สร้างรายงานฉบับใหม่</b><div><input type="text" data-b-name maxlength="80" placeholder="ชื่อรายงาน เช่น รอบส่งบัญชี 15/11/2026"><button type="button" class="fa-btn" data-b-create>สร้าง</button></div></div>` +
@@ -1383,7 +1387,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
             <div class="sm-pick-list">
                 ${recs.map(r => `<button type="button" class="sm-pick-item${REVIEW.has(r.status) ? ' is-wait' : ''}" data-record="${r.id}">
                     <span class="sm-pick-icon">${esc(boxOf(r.type)?.icon || '📥')}</span>
-                    <span><b>${esc(r.type_title)}</b><small>#${r.id} · ${esc(r.status_label || r.status)}${r.report_confirmed_at ? ' · ✓ ยืนยันลงรายงานแล้ว' + (batchName(r.type, r.report_batch) ? ' (' + esc(batchName(r.type, r.report_batch)) + ')' : '') : ''}</small></span></button>`).join('')}
+                    <span><b>${esc(r.type_title)}</b><small>#${r.id} · ${esc(r.status_label || r.status)}${r.report_confirmed_at ? ' · ✓ ยืนยันลงรายงานแล้ว' + (batchName(r.type, r.report_batch) ? ' (' + esc(batchName(r.type, r.report_batch)) + ')' : '') : ''}${HEALTH_BOXES.has(r.type) && recs.filter(x => x.type === r.type).length > 1 ? ' · ⚠️ ซ้ำ — กล่องนี้ควรมีรายการเดียว (เปิดดูแล้วลบอันที่ไม่ใช้ได้)' : ''}</small></span></button>`).join('')}
                 ${hasTask ? `<button type="button" class="sm-pick-item" data-check="${esc(key)}"><span class="sm-pick-icon">📝</span><span><b>ข้อมูลที่ส่งในงานที่มอบหมาย</b><small>${list.length} งาน</small></span></button>` : ''}
             </div>`;
         if (!$('smDialog').open) $('smDialog').showModal();
