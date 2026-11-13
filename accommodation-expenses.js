@@ -57,11 +57,11 @@
     const recsOf = (no, cat, period) => (state.data.records || []).find(x => x.no === no && x.cat === cat && x.period === period);
 
     // ---------------------------------------------------------------- บิลค่าน้ำ/ค่าไฟ: 8 ขั้นตอนต่อเดือน (ตามงานจริงของ GA)
-    // ---- ค่าอื่นๆ (สาธารณูปโภค): ประเภท (อินเทอร์เน็ต / อื่นๆ) + ค้นหายูนิตจาก Serial No. ของราวเตอร์
-    const normSn = t => String(t || '').toLowerCase().replace(/[\s\-_]/g, '');
-    const snMatch = (u, q) => { const k = normSn(q); return !k || (u.nets || []).some(n => normSn(n.serial).includes(k)); };
+    // ---- ค้นหายูนิตจากข้อมูลอินเทอร์เน็ต: คงเลขศูนย์นำหน้าและค้นบางส่วนได้
+    const normSn = t => String(t ?? '').normalize('NFKC').toLocaleLowerCase('th').replace(/[\s\-_\u200b-\u200d\ufeff]/g, '');
+    const snMatch = (u, q) => { const k = normSn(q); return !k || (u.nets || []).some(n => [n.account, n.contract, n.serial, n.holder].some(v => normSn(v).includes(k))); };
     const otherKind = rec => rec?.kind === 'internet' ? '🌐 อินเทอร์เน็ต' : 'อื่นๆ' + (rec?.note ? ': ' + rec.note : '');
-    const netsLine = u => (u.nets || []).length ? (u.nets || []).map(n => [n.provider, n.package, n.serial ? 'SN ' + n.serial : ''].filter(Boolean).join(' · ')).join(' | ') : 'ยังไม่มีข้อมูลราวเตอร์ในไฟล์อินเตอร์เน็ต';
+    const netsLine = u => (u.nets || []).length ? (u.nets || []).map(n => [n.provider, n.package, n.account ? 'Account Number: ' + n.account : '', n.contract ? 'SLT / Contract Number: ' + n.contract : '', n.serial ? 'Serial Number: ' + n.serial : '', n.holder ? 'Name: ' + n.holder : ''].filter(Boolean).join(' · ')).join(' | ') : 'ยังไม่มีข้อมูลอินเทอร์เน็ตในไฟล์อินเตอร์เน็ต';
     const FLOW_CATS = ['water', 'electric'];
     const FLOW_SHORT = ['ตามบิล', 'ได้รับบิล', 'ตั้งเบิก', 'รอรับเงิน', 'รับเงิน', 'เตรียมจ่าย', 'จ่ายแล้ว', 'บันทึกบิล'];
     const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
@@ -251,7 +251,7 @@
             <div class="rx-legend"><span class="is-ok">เขียว จ่าย/ทำแล้ว</span><span class="is-bad">แดง ยังไม่จ่าย / เลยกำหนด</span><span class="is-warn">เหลือง ใกล้ถึงกำหนด / รอรับ</span><span class="is-na">เทา ไม่มี / ยังไม่ถึงเวลา</span></div>
             <div class="rx-wrap"><table class="rx-table">
                 <thead><tr><th>ที่พัก / ยูนิต</th><th>ค่าเช่า/เดือน</th><th colspan="5" class="rx-group">รายเดือน — ${esc(monthLabel(state.month))}</th><th colspan="2" class="rx-group">รอบ (ตามที่ตั้งไว้ในทะเบียน)</th><th class="rx-group">สัญญาเช่า (รายปี)</th></tr>
-                    <tr class="rx-sub"><th></th><th></th>${MONTH_CATS.map(c => c === 'other' ? `<th class="rx-th-sn">${esc(labelOf(c))}<input type="search" class="rx-sn" data-rx-serial placeholder="🔎 ค้นหา Serial No. ราวเตอร์" value="${esc(state.serial)}" autocomplete="off">${state.serial ? `<small>พบ ${shown.length} ยูนิต</small>` : ''}</th>` : `<th>${esc(labelOf(c))}</th>`).join('')}<th>รอบจ่ายค่าเช่าล่วงหน้า</th><th>รอบล้างแอร์</th><th>แจ้งยกเลิกเช่าล่วงหน้า 3 เดือน</th></tr></thead>
+                    <tr class="rx-sub"><th></th><th></th>${MONTH_CATS.map(c => c === 'other' ? `<th class="rx-th-sn">${esc(labelOf(c))}<label><small>ค้นหา Account Number / SLT Number / Contract Number / Serial Number / Name</small><input type="search" class="rx-sn" data-rx-serial aria-label="ค้นหา Account Number หรือ SLT Number หรือ Contract Number หรือ Serial Number หรือ Name" placeholder="🔎 พิมพ์หมายเลขหรือชื่อ" value="${esc(state.serial)}" autocomplete="off"></label>${state.serial ? `<small>พบ ${shown.length} ยูนิต</small>` : ''}</th>` : `<th>${esc(labelOf(c))}</th>`).join('')}<th>รอบจ่ายค่าเช่าล่วงหน้า</th><th>รอบล้างแอร์</th><th>แจ้งยกเลิกเช่าล่วงหน้า 3 เดือน</th></tr></thead>
                 <tbody>${shown.map(r => { const open = state.open.has(r.u.no); return `<tr class="${r.flagged ? 'is-flag' : ''}${open ? ' is-open' : ''}"><td><button type="button" class="rx-toggle" data-rx-toggle="${r.u.no}" aria-expanded="${open}" title="${open ? 'ย่อ' : 'ขยายดูขั้นตอนและรูปบิล'}">${open ? '▾' : '▸'}</button><span class="rx-unit"><b>${esc(r.u.project)}</b><small>${esc(r.u.unit)} · ลำดับ ${esc(r.u.no)}</small>${state.serial ? `<small class="rx-sn-hit">🌐 ${esc(netsLine(r.u))}</small>` : ''}</span></td><td>${r.u.rent ? num(r.u.rent) : '-'}</td>
                     ${MONTH_CATS.map(c => `<td>${chipHtml(r.cells[c])}</td>`).join('')}<td>${chipHtml(r.cells.rent_adv)}</td><td>${chipHtml(r.cells.aircon)}</td><td>${chipHtml(r.cells.notice)}</td></tr>${open ? flowDetail(r, units) : ''}`; }).join('') || `<tr><td colspan="10" class="rx-empty">${rows.length ? 'ไม่มีรายการที่ต้องดำเนินการ 🎉' : 'ยังไม่มียูนิตที่ทำสัญญาแล้ว'}</td></tr>`}</tbody>
             </table></div>`;
@@ -286,7 +286,7 @@
             ${c.cat === 'other' ? `<fieldset class="rx-stepopts rx-kind"><legend>ประเภทค่าใช้จ่าย</legend>
                 <label class="rx-stepopt"><input type="radio" name="kind" value="internet" ${(rec?.kind || 'internet') === 'internet' ? 'checked' : ''}><span>🌐 ค่าอินเทอร์เน็ต <small>(ไม่ต้องลงหมายเหตุก็ได้)</small></span></label>
                 <label class="rx-stepopt"><input type="radio" name="kind" value="other" ${rec?.kind === 'other' ? 'checked' : ''}><span>ค่าอื่นๆ <small>(ต้องลงหมายเหตุว่าเป็นค่าอะไร)</small></span></label>
-                <small class="rx-nets">ราวเตอร์ของยูนิตนี้: ${esc(netsLine(c.u))}</small></fieldset>` : ''}
+                <small class="rx-nets">ข้อมูลอินเทอร์เน็ตของยูนิตนี้: ${esc(netsLine(c.u))}</small></fieldset>` : ''}
             ${hasAmount ? `<label>จำนวนเงิน (บาท)<input name="amount" inputmode="decimal" value="${esc(rec?.amount || '')}" placeholder="เช่น 1,250"></label>` : ''}
             <label>วันที่ (วัน/เดือน/ปี)<input name="date" value="${esc(rec?.date || today)}"></label>
             <label>หมายเหตุ<span data-rx-notehint></span><input name="note" maxlength="200" value="${esc(rec?.note || '')}"></label>
