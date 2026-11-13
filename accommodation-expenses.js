@@ -33,12 +33,23 @@
         if (state.loading) return;
         state.loading = true;
         if (!state.data) root.innerHTML = '<div class="rx-head"><h2>ค่าใช้จ่ายและรอบกำหนด</h2></div><p class="rx-empty">กำลังโหลด…</p>';
+        // โหลดเดือนอื่น (มีข้อมูลเดิมอยู่): ครอบหน้าด้วยข้อความ "กำลังโหลด" + หมุน ให้รู้ว่าระบบกำลังทำงาน
+        let overlay = null;
+        if (state.data) {
+            root.classList.add('is-loading');
+            overlay = document.createElement('div');
+            overlay.className = 'rx-loading';
+            overlay.setAttribute('role', 'status');
+            overlay.innerHTML = `<div><i></i><b>กำลังโหลดข้อมูล ${esc(monthLabel(state.month))}…</b><small>กรุณารอสักครู่</small></div>`;
+            root.append(overlay);
+            root.querySelectorAll('[data-rx-goto]').forEach(btn => btn.classList.toggle('is-selected', btn.dataset.rxGoto === state.month));
+        }
         try {
             state.data = await request(`${API}?month=${encodeURIComponent(state.month)}`);
             state.month = state.data.month;
             render();
         } catch (error) { root.innerHTML = `<div class="rx-head"><h2>ค่าใช้จ่ายและรอบกำหนด</h2></div><p class="rx-empty rx-error">${esc(error.message)}</p>`; }
-        finally { state.loading = false; }
+        finally { state.loading = false; root.classList.remove('is-loading'); overlay?.remove(); }
     }
 
     // ---------------------------------------------------------------- สถานะของแต่ละช่อง → { tone, text, sub, alert, edit:{cat,period,rec} }

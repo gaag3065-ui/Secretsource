@@ -136,3 +136,12 @@ button.rx-chip:hover { filter: brightness(.96); outline: 2px solid rgba(8, 127, 
     .rx-steps li b { font-size: 9.5px; }
     .rx-two { grid-template-columns: 1fr; }
 }
+
+/* โหลดเดือนอื่น: ครอบด้วยข้อความรอ */
+.rx.is-loading, #roomExpenses.is-loading { position: relative; }
+.rx-loading { position: absolute; inset: 0; z-index: 20; display: flex; justify-content: center; align-items: flex-start; padding-top: 140px; background: rgba(255, 255, 255, .72); backdrop-filter: blur(1px); border-radius: 12px; }
+.rx-loading > div { display: grid; justify-items: center; gap: 6px; padding: 16px 28px; background: #fff; border: 1px solid #cfe8e4; border-radius: 14px; box-shadow: 0 8px 24px rgba(16, 24, 40, .15); position: sticky; top: 120px; height: fit-content; }
+.rx-loading i { width: 28px; height: 28px; border-radius: 50%; border: 3px solid #cfe8e4; border-top-color: #087f74; animation: rx-spin .8s linear infinite; }
+.rx-loading b { font-size: 14px; color: #18212f; }
+.rx-loading small { color: #667085; font-size: 12px; }
+@keyframes rx-spin { to { transform: rotate(360deg); } }
