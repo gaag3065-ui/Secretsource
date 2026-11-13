@@ -72,7 +72,7 @@
 .cl-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .cl-actions button { border: 1px solid #d0d5dd; background: #fff; border-radius: 10px; padding: 8px 14px; cursor: pointer; font: inherit; }
 .cl-actions .is-primary { background: #4f46e5; border-color: #4f46e5; color: #fff; }
-.cl-paper { background: #fff; border: 1px solid #d0d5dd; border-radius: 10px; padding: 28px 34px; font-family: 'TH Sarabun New', 'Sarabun', Tahoma, sans-serif; font-size: 16.5px; line-height: 1.6; box-shadow: 0 2px 10px rgba(16,24,40,.08); }
+.cl-paper { background: #fff; border: 1px solid #d0d5dd; border-radius: 10px; padding: 28px 34px; font-family: 'TH Sarabun New', 'THSarabunNew', 'TH SarabunPSK', 'Sarabun', Tahoma, sans-serif; font-size: 21px; line-height: 1.35; box-shadow: 0 2px 10px rgba(16,24,40,.08); }
 .cl-paper p { margin: 0 0 4px; }
 .cl-paper .cl-p { margin: 0 0 12px; text-indent: 2.2em; }
 .cl-paper .cl-kv { margin-bottom: 14px; }
@@ -97,14 +97,16 @@
     function printable() {
         const w = window.open('', '_blank');
         if (!w) return alert('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ — กรุณาอนุญาต pop-up แล้วลองใหม่');
-        w.document.write(`<!doctype html><meta charset="utf-8"><title>หนังสือชี้แจง</title><style>@page{size:A4;margin:22mm 20mm}body{font-family:'TH Sarabun New','Sarabun',Tahoma,sans-serif;font-size:16pt;line-height:1.55;color:#000}p{margin:0 0 4px}.cl-p{margin:0 0 12px;text-indent:2.2em}.cl-kv{margin-bottom:14px}ol{margin:0 0 12px;padding-left:3.2em}li{margin-bottom:4px}.cl-sign{margin-top:22px;margin-left:40%}.cl-ph{color:#999}</style>${html(build(state.v))}`);
+        w.document.write(`<!doctype html><meta charset="utf-8"><title>หนังสือชี้แจง</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap"><style>@page{size:A4;margin:22mm 20mm}body{font-family:'TH Sarabun New','THSarabunNew','TH SarabunPSK','Sarabun',Tahoma,sans-serif;font-size:16pt;line-height:1.3;color:#000}p{margin:0 0 4px}.cl-p{margin:0 0 12px;text-indent:2.2em}.cl-kv{margin-bottom:14px}ol{margin:0 0 12px;padding-left:3.2em}li{margin-bottom:4px}.cl-sign{margin-top:22px;margin-left:40%}.cl-ph{color:#999}</style>${html(build(state.v))}`);
         w.document.close();
         w.focus();
-        setTimeout(() => w.print(), 400);
+        const go = () => w.print();
+        (w.document.fonts?.ready || Promise.resolve()).then(() => setTimeout(go, 300)).catch(go);
     }
     function open() {
         if (!dlg) {
             document.head.append(Object.assign(document.createElement('style'), { textContent: CSS }));
+            document.head.append(Object.assign(document.createElement('link'), { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap' }));
             dlg = document.createElement('dialog');
             dlg.className = 'cl-dialog';
             const field = ([k, label, type, ph]) => `<label class="${WIDE.has(k) ? 'is-wide' : ''}">${esc(label)}${
