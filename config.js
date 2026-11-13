@@ -18,7 +18,7 @@ const LOCAL_API_URL = `http://127.0.0.1:${localApiPort}`;
 
 
 
-const PRODUCTION_API_URL = 'https://classics-awesome-wifi-potato.trycloudflare.com';
+const PRODUCTION_API_URL = 'https://guardian-presence-bug-acquire.trycloudflare.com';
 
 
 
@@ -239,6 +239,7 @@ window.performSecureLogout =
         }
     };
 //#endregion
+
 
 
 
