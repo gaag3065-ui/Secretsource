@@ -16,6 +16,8 @@
     const parseDmy = text => { const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(text || '').trim()); if (!m) return null; const y = +m[3] > 2400 ? +m[3] - 543 : +m[3]; return new Date(Date.UTC(y, +m[2] - 1, +m[1])); };
     const parseIso = text => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text || ''); return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])) : null; };
     const iso = d => d.toISOString().slice(0, 10);
+    // ช่องวันที่ (วัน/เดือน/ปี) + ปุ่มปฏิทิน 📅 เลือกวันที่ได้ — พิมพ์เองก็ได้
+    const dateInput = value => `<span class="rx-date"><input name="date" value="${esc(value)}" placeholder="วัน/เดือน/ปี" inputmode="numeric"><button type="button" class="rx-cal" data-rx-cal title="เลือกจากปฏิทิน" aria-label="เลือกวันที่จากปฏิทิน">📅</button><input type="date" class="rx-cal-native" tabindex="-1" aria-hidden="true" data-rx-calnative></span>`;
     const dmy = d => `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`;
     const addMonths = (d, n) => { const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1)); const last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate(); t.setUTCDate(Math.min(d.getUTCDate(), last)); return t; };
     const daysBetween = (a, b) => Math.round((b - a) / DAY);
@@ -66,6 +68,9 @@
     const FLOW_SHORT = ['ตามบิล', 'ได้รับบิล', 'ตั้งเบิก', 'รอรับเงิน', 'รับเงิน', 'เตรียมจ่าย', 'จ่ายแล้ว', 'บันทึกบิล'];
     const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
     const flowSteps = () => state.data.flowSteps || [];
+    // รูปหลักฐานบิล: ทุกหมวดที่มีการจ่าย/รับเงิน (ยกเว้นแจ้งยกเลิกเช่า)
+    const BILL_CATS = ['water', 'electric', 'gas', 'gas_recv', 'other', 'rent_adv', 'aircon'];
+    const anyRec = (no, cat, period) => state.data.cats[cat]?.flow ? flowRec(no, cat, period) : recsOf(no, cat, period);
     const flowRec = (no, cat, period) => (state.data.flow || []).find(x => x.no === no && x.cat === cat && x.period === period);
     const stepOf = rec => !rec ? -1 : rec.status === 'ไม่มีรายการ' ? -2 : flowSteps().indexOf(rec.status);
     const periodHasData = period => (state.data.flow || []).some(x => x.period === period);
@@ -231,7 +236,7 @@
         const chipHtml = (c, key) => {
             if (!c.edit) return `<span class="rx-chip is-${c.tone}">${esc(c.text)}</span>`;
             state.cells.push(c.edit);
-            return `<button type="button" class="rx-chip is-${c.tone}" data-rx-cell="${state.cells.length - 1}" title="กดเพื่อบันทึก/แก้ไข"><b>${esc(c.text)}</b>${c.sub ? `<small>${esc(c.sub)}</small>` : ''}</button>`;
+            return `<button type="button" class="rx-chip is-${c.tone}" data-rx-cell="${state.cells.length - 1}" title="กดเพื่อบันทึก/แก้ไข"><b>${esc(c.text)}</b>${c.sub ? `<small>${esc(c.sub)}</small>` : ''}${c.edit.rec?.files?.length ? `<small class="rx-clip">📎 ${c.edit.rec.files.length}</small>` : ''}</button>`;
         };
         root.innerHTML = `
             <div class="rx-head">
@@ -288,13 +293,17 @@
                 <label class="rx-stepopt"><input type="radio" name="kind" value="other" ${rec?.kind === 'other' ? 'checked' : ''}><span>ค่าอื่นๆ <small>(ต้องลงหมายเหตุว่าเป็นค่าอะไร)</small></span></label>
                 <small class="rx-nets">ข้อมูลอินเทอร์เน็ตของยูนิตนี้: ${esc(netsLine(c.u))}</small></fieldset>` : ''}
             ${hasAmount ? `<label>จำนวนเงิน (บาท)<input name="amount" inputmode="decimal" value="${esc(rec?.amount || '')}" placeholder="เช่น 1,250"></label>` : ''}
-            <label>วันที่ (วัน/เดือน/ปี)<input name="date" value="${esc(rec?.date || today)}"></label>
+            <label>วันที่ (วัน/เดือน/ปี)${dateInput(rec?.date || today)}</label>
             <label>หมายเหตุ<span data-rx-notehint></span><input name="note" maxlength="200" value="${esc(rec?.note || '')}"></label>
+            ${BILL_CATS.includes(c.cat) ? `<details class="rx-files rx-files-fold" open><summary><b>📎 รูปหลักฐานบิลที่จ่าย<span data-rx-filecount>${(rec?.files || []).length ? ' (' + rec.files.length + ')' : ''}</span></b><span class="rx-fold-hint">กดย่อ/ขยาย</span></summary>
+                <div class="rx-files-head"><small>กดรูปเพื่อดูขยาย · เลื่อนดูรูปอื่นได้</small><label class="rx-btn rx-upload">＋ แนบรูป / PDF<input type="file" accept="image/*,application/pdf" multiple hidden data-rx-upload></label></div>
+                <div class="rx-thumbs" data-rx-dialog-thumbs>${thumbHtml(rec, c.cat, true) || '<span class="rx-nophoto">ยังไม่มีรูปหลักฐาน — ถ้ายังไม่เคยบันทึก ระบบจะบันทึกรายการให้ก่อนแนบรูป</span>'}</div></details>` : ''}
             <p class="rx-hint">${rec ? 'บันทึกล่าสุดโดย ' + esc(rec.by) + ' ' + esc(rec.at) : 'ยังไม่เคยบันทึก'}</p>
             <p class="rx-msg" role="status"></p>
             <div class="rx-actions"><button type="submit" class="rx-btn rx-primary">บันทึก</button><button type="button" class="rx-btn" data-rx-close>ยกเลิก</button></div></form>`;
         if (!dialog.open) dialog.showModal();
         syncKind();
+        hydrateThumbs(dialog);
     }
     // ค่าอื่นๆ: เลือกประเภท → บอกว่าต้องลงหมายเหตุหรือไม่
     function syncKind() {
@@ -305,6 +314,18 @@
         if (note) note.placeholder = other ? 'เช่น ค่าซ่อมท่อ / ค่าส่วนกลาง' : '';
     }
     dialog.addEventListener('change', event => { if (event.target.name === 'kind') syncKind(); });
+    dialog.addEventListener('click', event => {
+        const btn = event.target.closest('[data-rx-cal]'); if (!btn) return;
+        const wrap = btn.closest('.rx-date'), text = wrap.querySelector('input[name=date]'), nat = wrap.querySelector('[data-rx-calnative]');
+        const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text.value.trim());
+        nat.value = m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : '';
+        try { nat.showPicker(); } catch { nat.focus(); nat.click(); }
+    });
+    dialog.addEventListener('change', event => {
+        const nat = event.target.closest('[data-rx-calnative]'); if (!nat || !nat.value) return;
+        const [y, mo, d] = nat.value.split('-');
+        nat.closest('.rx-date').querySelector('input[name=date]').value = `${d}/${mo}/${y}`;
+    });
 
     // ---------------------------------------------------------------- กล่องบันทึกบิลค่าน้ำ/ไฟ (เลือกขั้นตอน + แนบรูปบิล)
     const todayDmy = () => dmy(parseIso(state.data.today));
@@ -316,7 +337,7 @@
             <fieldset class="rx-stepopts"><legend>ขั้นตอนตอนนี้</legend>${flowSteps().map((name, i) => `<label class="rx-stepopt"><input type="radio" name="status" value="${esc(name)}" ${name === (current || (rec ? '' : flowSteps()[0])) ? 'checked' : ''}><span><i>${CIRCLED[i]}</i> ${esc(name)}${i === 0 ? ' <small>(วันที่ 1–5)</small>' : i === 2 ? ' <small>(ไม่เกินวันที่ 5)</small>' : ''}</span></label>`).join('')}
                 <label class="rx-stepopt is-none"><input type="radio" name="status" value="ไม่มีรายการ" ${rec?.status === 'ไม่มีรายการ' ? 'checked' : ''}><span>เดือนนี้ไม่มีบิล${esc(label)}</span></label></fieldset>
             <div class="rx-two"><label>จำนวนเงินตามบิล (บาท)<input name="amount" inputmode="decimal" value="${esc(rec?.amount || '')}" placeholder="เช่น 1,250"></label>
-            <label>วันที่ของขั้นตอนนี้ (วัน/เดือน/ปี)<input name="date" value="${esc(todayDmy())}"></label></div>
+            <label>วันที่ของขั้นตอนนี้ (วัน/เดือน/ปี)${dateInput(todayDmy())}</label></div>
             <label>หมายเหตุ<input name="note" maxlength="200" value="${esc(rec?.note || '')}"></label>
             <div class="rx-files"><div class="rx-files-head"><b>รูปบิล</b><label class="rx-btn rx-upload">＋ แนบรูป / PDF<input type="file" accept="image/*,application/pdf" multiple hidden data-rx-upload></label></div>
                 <div class="rx-thumbs" data-rx-dialog-thumbs>${thumbHtml(rec, c.cat, true) || '<span class="rx-nophoto">ยังไม่มีรูปบิล — แนบรูปแล้วระบบจะตั้งเป็น “ได้รับบิลแล้ว” ให้</span>'}</div></div>
@@ -343,12 +364,13 @@
     }
     async function refreshDialogFiles() {
         await load();
-        const form = dialog.querySelector('[data-rx-form="flow"]');
+        const form = dialog.querySelector('[data-rx-form]');
         if (!form || !target) return;
-        const rec = flowRec(target.u.no, target.cat, target.period);
+        const rec = anyRec(target.u.no, target.cat, target.period);
         form.querySelector('[data-rx-dialog-thumbs]').innerHTML = thumbHtml(rec, target.cat, true) || '<span class="rx-nophoto">ยังไม่มีรูปบิล</span>';
+        const cnt = form.querySelector('[data-rx-filecount]'); if (cnt) cnt.textContent = (rec?.files || []).length ? ' (' + rec.files.length + ')' : '';
         hydrateThumbs(dialog);
-        if (rec && !current_status_chosen(form)) { const r = form.querySelector(`input[name=status][value="${flowSteps()[1]}"]`); if (r) r.checked = true; }
+        if (form.dataset.rxForm === 'flow' && rec && !current_status_chosen(form)) { const r = form.querySelector(`input[name=status][value="${flowSteps()[1]}"]`); if (r) r.checked = true; }
     }
     const current_status_chosen = form => { const v = form.querySelector('input[name=status]:checked')?.value; return v && v !== flowSteps()[0]; };
     dialog.addEventListener('change', async event => {
@@ -356,6 +378,15 @@
         const form = input.closest('form'), msg = form.querySelector('.rx-msg');
         const files = [...input.files]; input.value = '';
         let ok = 0;
+        if (form.dataset.rxForm !== 'flow' && !anyRec(target.u.no, target.cat, target.period)) {
+            // ยังไม่เคยบันทึกรายการ → บันทึกข้อมูลในกล่องก่อน (ระบบต้องมีรายการให้ผูกรูป)
+            msg.className = 'rx-msg'; msg.textContent = 'กำลังบันทึกรายการก่อนแนบรูป…';
+            try {
+                const body = Object.fromEntries([...new FormData(form).entries()].map(([k, v]) => [k, String(v).trim()]));
+                await request(API, { method: 'PUT', body: JSON.stringify({ no: target.u.no, cat: target.cat, period: target.period, ...body }) });
+                await load();
+            } catch (error) { msg.className = 'rx-msg is-bad'; msg.textContent = 'บันทึกรายการไม่สำเร็จ: ' + error.message; return; }
+        }
         for (const file of files) {
             msg.className = 'rx-msg'; msg.textContent = `กำลังอัปโหลด ${file.name}… (${ok + 1}/${files.length})`;
             try {
@@ -381,7 +412,7 @@
     root.after(lightbox);
     let view = null;
     async function showFile(delta) {
-        const rec = flowRec(view.no, view.cat, view.period);
+        const rec = anyRec(view.no, view.cat, view.period);
         const files = rec?.files || [];
         if (!files.length) return lightbox.close();
         view.i = (view.i + delta + files.length) % files.length;
