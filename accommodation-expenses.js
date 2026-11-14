@@ -155,6 +155,7 @@
     function cycleCell(u, cat, cycle) {
         const today = parseIso(state.data.today);
         const start = parseDmy(cycle.start);
+        if (cat === 'rent_adv' && !parseDmy(u.end)) return { tone: 'na', text: 'ยังไม่มีข้อมูลสัญญา', sub: 'ระบุวันสัญญาในทะเบียนก่อน', edit: null };
         if (!start || !cycle.months) return { tone: 'na', text: 'ยังไม่ตั้งรอบ', edit: null };
         let k = 0;
         while (addMonths(start, (k + 1) * cycle.months) <= new Date(today.getTime() + 30 * DAY)) k++;
@@ -174,7 +175,7 @@
     function noticeCell(u) {
         const today = parseIso(state.data.today);
         const end = parseDmy(u.end);
-        if (!end) return { tone: 'na', text: 'ไม่มีวันสิ้นสุดสัญญา', edit: null };
+        if (!end) return { tone: 'na', text: 'ยังไม่ระบุวันที่สัญญา', sub: 'ยังไม่มีวันเริ่ม/สิ้นสุดสัญญาในทะเบียน', edit: null };
         const deadline = addMonths(end, -3);
         const rec = recsOf(u.no, 'notice', iso(end));
         const edit = { u, cat: 'notice', period: iso(end), rec, due: deadline };
@@ -257,7 +258,7 @@
             <div class="rx-wrap"><table class="rx-table">
                 <thead><tr><th>ที่พัก / ยูนิต</th><th>ค่าเช่า/เดือน</th><th colspan="5" class="rx-group">รายเดือน — ${esc(monthLabel(state.month))}</th><th colspan="2" class="rx-group">รอบ (ตามที่ตั้งไว้ในทะเบียน)</th><th class="rx-group">สัญญาเช่า (รายปี)</th></tr>
                     <tr class="rx-sub"><th></th><th></th>${MONTH_CATS.map(c => c === 'other' ? `<th class="rx-th-sn">${esc(labelOf(c))}<label><small>ค้นหา Account Number / SLT Number / Contract Number / Serial Number / Name</small><input type="search" class="rx-sn" data-rx-serial aria-label="ค้นหา Account Number หรือ SLT Number หรือ Contract Number หรือ Serial Number หรือ Name" placeholder="🔎 พิมพ์หมายเลขหรือชื่อ" value="${esc(state.serial)}" autocomplete="off"></label>${state.serial ? `<small>พบ ${shown.length} ยูนิต</small>` : ''}</th>` : `<th>${esc(labelOf(c))}</th>`).join('')}<th>รอบจ่ายค่าเช่าล่วงหน้า</th><th>รอบล้างแอร์</th><th>แจ้งยกเลิกเช่าล่วงหน้า 3 เดือน</th></tr></thead>
-                <tbody>${shown.map(r => { const open = state.open.has(r.u.no); return `<tr class="${r.flagged ? 'is-flag' : ''}${open ? ' is-open' : ''}"><td><button type="button" class="rx-toggle" data-rx-toggle="${r.u.no}" aria-expanded="${open}" title="${open ? 'ย่อ' : 'ขยายดูขั้นตอนและรูปบิล'}">${open ? '▾' : '▸'}</button><span class="rx-unit"><b>${esc(r.u.project)}</b><small>${esc(r.u.unit)} · ลำดับ ${esc(r.u.no)}</small>${state.serial ? `<small class="rx-sn-hit">🌐 ${esc(netsLine(r.u))}</small>` : ''}</span></td><td>${r.u.rent ? num(r.u.rent) : '-'}</td>
+                <tbody>${shown.map(r => { const open = state.open.has(r.u.no); return `<tr class="${r.flagged ? 'is-flag' : ''}${open ? ' is-open' : ''}"><td><button type="button" class="rx-toggle" data-rx-toggle="${r.u.no}" aria-expanded="${open}" title="${open ? 'ย่อ' : 'ขยายดูขั้นตอนและรูปบิล'}">${open ? '▾' : '▸'}</button><span class="rx-unit"><b>${esc(r.u.project)}</b>${(r.u.contracts || []).map(c => `<a class="rx-contract" href="${esc(c.url)}" target="_blank" rel="noopener" title="เปิดไฟล์สัญญาเช่า: ${esc(c.name)}">📄 สัญญา${r.u.contracts.length > 1 ? ' ' + (r.u.contracts.indexOf(c) + 1) : ''}</a>`).join('')}<small>${esc(r.u.unit)} · ลำดับ ${esc(r.u.no)}</small>${state.serial ? `<small class="rx-sn-hit">🌐 ${esc(netsLine(r.u))}</small>` : ''}</span></td><td>${r.u.rent ? num(r.u.rent) : '-'}</td>
                     ${MONTH_CATS.map(c => `<td>${chipHtml(r.cells[c])}</td>`).join('')}<td>${chipHtml(r.cells.rent_adv)}</td><td>${chipHtml(r.cells.aircon)}</td><td>${chipHtml(r.cells.notice)}</td></tr>${open ? flowDetail(r, units) : ''}`; }).join('') || `<tr><td colspan="10" class="rx-empty">${rows.length ? 'ไม่มีรายการที่ต้องดำเนินการ 🎉' : 'ยังไม่มียูนิตที่ทำสัญญาแล้ว'}</td></tr>`}</tbody>
             </table></div>`;
         // สรุปให้หน้าภาพรวม (accommodation-dashboard.js)

@@ -168,3 +168,6 @@ button.rx-chip:hover { filter: brightness(.96); outline: 2px solid rgba(8, 127, 
 .rx-cal { border: 1px solid #d0d5dd; background: #fff; border-radius: 8px; width: 40px; height: 38px; cursor: pointer; font-size: 17px; }
 .rx-cal:hover { border-color: #087f74; background: #f4fbfa; }
 .rx-cal-native { position: absolute; right: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+.rx-contract { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: #e0f2fe; color: #0369a1; font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap; vertical-align: middle; }
+.rx-contract:hover { background: #bae6fd; }
