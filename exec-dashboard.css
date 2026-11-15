@@ -183,3 +183,4 @@ table.ex-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .ex-card, .ex-kpi, .ex-area { break-inside: avoid; box-shadow: none; border-color: #bbb; }
     .ex-scroll { max-height: none; overflow: visible; }
 }
+.ex-snote { display: inline-block; margin: 3px 0 0; color: #7a4b00; background: #fff8e6; border-radius: 6px; padding: 2px 6px; white-space: normal; max-width: 200px; }

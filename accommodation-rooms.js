@@ -104,12 +104,12 @@
                 return `<article><strong>${esc(e.name || e.nickname || '-')}</strong><small>${esc([e.nickname, e.employeeId, e.centralId, e.insuranceCode, e.company].filter(Boolean).join(' · '))}</small><span>${linked ? `✓ เชื่อมกับทะเบียน: ${esc(linked.project)} · ยูนิต ${esc(linked.unit)}` : `⚠ ยังเชื่อมยูนิตไม่ได้: ${esc(e.reason)}`}</span>${!linked ? `<small>ต้นทางระบุ: ${esc([e.building, e.floor, e.room].filter(Boolean).join(' · ') || 'ยังไม่ระบุที่พัก')}</small>` : ''}${linked ? `<button type="button" class="ro-btn ro-btn-sm" data-ro-detail="${linked.no}">ดูห้องและรายชื่อผู้พัก</button>` : ''}</article>`;
             }).join('')}</div>` : ''}
             <div class="ro-table-wrap"><table class="ro-table">
-                <thead><tr><th>#</th><th>ที่พัก / ยูนิต</th><th>สถานะ</th><th>พนักงาน</th><th>ประเภทห้อง</th><th>ค่าเช่า/เดือน</th><th>สัญญา</th><th>อินเตอร์เน็ต</th><th>ผู้จัดหา</th><th>จัดการ</th></tr></thead>
+                <thead><tr><th>#</th><th>ที่พัก / ยูนิต</th><th>สถานะสัญญา</th><th>พนักงาน</th><th>ประเภทห้อง</th><th>ค่าเช่า/เดือน</th><th>สัญญา</th><th>อินเตอร์เน็ต</th><th>ผู้จัดหา</th><th>จัดการ</th></tr></thead>
                 <tbody>${list.map(r => `<tr>
                     <td>${esc(r.no)}</td>
                     <td><b>${esc(r.project)}</b><small>${esc(r.unit)}</small></td>
-                    <td><span class="ro-pill ${r.group === 'มีพนักงาน' ? 'is-ok' : r.group === 'ไม่มีพนักงาน' ? 'is-empty' : 'is-process'}">${esc(r.group === 'กำลังดำเนินการ' ? r.status : r.group)}</span></td>
-                    <td>${r.employees ? `${num(r.employees)} คน<small>${esc(r.companies.join(', '))}</small>${q ? `<small>${(r.employeeList || []).map(e => esc(e.name || e.nickname)).join(' · ')}</small>` : ''}` : '-'}</td>
+                    <td><span class="ro-pill ${r.status === STATUS_LIST[0] ? 'is-ok' : 'is-process'}">${esc(r.status)}</span>${r.statusNote ? `<small class="ro-snote" title="หมายเหตุสถานะ${r.statusNoteBy ? ' · ' + esc(r.statusNoteBy) : ''}">📝 ${esc(r.statusNote)}</small>` : ''}</td>
+                    <td>${r.employees ? `${num(r.employees)} คน<small>${esc(r.companies.join(', '))}</small>${q ? `<small>${(r.employeeList || []).map(e => esc(e.name || e.nickname)).join(' · ')}</small>` : ''}` : (r.group === 'กำลังดำเนินการ' ? '-' : '<span class="ro-pill is-empty">ไม่มีพนักงาน</span>')}</td>
                     <td>${esc(r.type || '-')}</td>
                     <td>${r.rent ? num(r.rent) : '-'}</td>
                     <td>${r.start || r.end ? `${esc(r.start)} – ${esc(r.end)}<small>${esc(r.remaining)}</small>` : '-'}</td>
@@ -150,6 +150,7 @@
         const employees = r.employeeList || [];
         dialog.innerHTML = '<div class="ro-dlg">' +
             '<div class="ro-dlg-head"><div><h3>ลำดับ ' + esc(r.no) + ' · ' + esc(r.project) + ' <small>' + esc(r.unit) + '</small></h3><span class="ro-pill ' + (r.group === 'มีพนักงาน' ? 'is-ok' : r.group === 'ไม่มีพนักงาน' ? 'is-empty' : 'is-process') + '">' + esc(r.status) + '</span></div><button type="button" class="ro-x" data-ro-close aria-label="ปิด">✕</button></div>' +
+            '<form class="ro-snote-form" data-ro-snote="' + esc(r.no) + '"><label>📝 หมายเหตุสถานะ <small>พิมพ์เองได้ เช่น “รอทนายส่วนกลางตรวจสอบ” — แสดงใต้ป้ายสถานะในตาราง</small><textarea name="note" rows="2" maxlength="300" placeholder="เช่น รอทนายส่วนกลางตรวจสอบสัญญา / รอเจ้าของแก้สัญญา / รอเงินจากส่วนกลาง">' + esc(r.statusNote || '') + '</textarea></label><div class="ro-rv-actions"><button type="submit" class="ro-btn ro-btn-primary">บันทึกหมายเหตุ</button>' + (r.statusNoteBy ? '<small>แก้ล่าสุดโดย ' + esc(r.statusNoteBy) + ' ' + esc(r.statusNoteAt || '') + '</small>' : '') + '</div></form>' +
             '<p class="ro-note" role="status"></p>' +
             (reviews.length ? '<section class="ro-review"><h4>⚠️ ตรวจสอบพนักงานที่อาจอยู่บ้านหลังนี้ (' + reviews.length + ' คน)</h4>' +
                 '<p class="ro-hint">ข้อมูลในชีตพนักงานไม่ตรงกับทะเบียนห้อง — ตรวจสอบว่าพนักงานคนนี้อยู่บ้านหลังนี้จริงหรือไม่ ถ้าใช่ กดบันทึกเพื่อแก้ชีตให้ตรงกับชื่อบ้านในทะเบียน (แก้ข้อความในช่องก่อนบันทึกได้)</p>' +
@@ -270,6 +271,16 @@
         }
     });
     root.addEventListener('submit', async event => {
+        const sn = event.target.closest('[data-ro-snote]');
+        if (sn) {
+            event.preventDefault();
+            const button = sn.querySelector('button[type=submit]'); button.disabled = true; button.textContent = 'กำลังบันทึก…';
+            try {
+                await send('PUT', '/rooms/' + encodeURIComponent(sn.dataset.roSnote) + '/status-note', { note: sn.querySelector('textarea').value.trim() });
+                const keep = dialog.dataset.no; await reopen(keep); note('บันทึกหมายเหตุสถานะเรียบร้อย', false);
+            } catch (error) { button.disabled = false; button.textContent = 'บันทึกหมายเหตุ'; note(error.message, true); }
+            return;
+        }
         const form = event.target.closest('[data-ro-form]'); if (!form) return;
         event.preventDefault();
         const body = Object.fromEntries([...new FormData(form).entries()].map(([k, v]) => [k, String(v).trim()]));
