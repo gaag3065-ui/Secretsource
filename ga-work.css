@@ -189,3 +189,55 @@
 .wf-field { display: grid; gap: 4px; }
 .wf-field-label { font-weight: 600; font-size: 13px; }
 .wf-field-label small { font-weight: 400; color: #8a8f9c; }
+
+/* ตารางวันหยุดแผนก GA */
+.gh-dialog { border: 0; border-radius: 16px; padding: 0; width: min(1280px, 97vw); max-height: 94vh; box-shadow: 0 20px 60px rgba(0, 0, 0, .3); }
+.gh-dialog::backdrop { background: rgba(20, 24, 36, .45); }
+.gh-box { padding: 16px 18px 14px; display: grid; gap: 12px; font-size: 13px; }
+.gh-head { display: flex; justify-content: space-between; gap: 10px; }
+.gh-head h2 { margin: 0; font-size: 20px; }
+.gh-head p { margin: 3px 0 0; color: #6c7280; font-size: 12px; }
+.gh-x { border: 0; background: none; font-size: 26px; cursor: pointer; color: #6c7280; line-height: 1; }
+.gh-bar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; }
+.gh-month { display: flex; align-items: center; gap: 8px; }
+.gh-month b { min-width: 150px; text-align: center; font-size: 16px; }
+.gh-month button { border: 1px solid #d9d5ca; background: #fff; border-radius: 8px; padding: 4px 10px; cursor: pointer; font: inherit; }
+.gh-brush { display: flex; flex-wrap: wrap; gap: 6px; }
+.gh-brush button { display: inline-flex; align-items: center; gap: 6px; border: 2px solid #e3e0d6; background: #fff; border-radius: 999px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 12.5px; }
+.gh-brush button i { width: 12px; height: 12px; border-radius: 50%; background: var(--c, #888); }
+.gh-brush button.is-on { border-color: var(--c, #1c2433); background: color-mix(in srgb, var(--c, #1c2433) 12%, #fff); font-weight: 700; }
+.gh-brush .gh-erase.is-on { border-color: #1c2433; background: #eee; }
+.gh-scroll { overflow: auto; max-height: 62vh; border: 1px solid #e3e0d6; border-radius: 10px; }
+.gh-table { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; user-select: none; }
+.gh-table th, .gh-table td { border-right: 1px solid #efece4; border-bottom: 1px solid #efece4; text-align: center; padding: 0; }
+.gh-table thead th { position: sticky; top: 0; background: #faf9f6; z-index: 2; font-size: 11px; height: 24px; }
+.gh-table thead tr:nth-child(2) th { top: 24px; font-weight: 500; color: #8a8f9c; }
+.gh-name { position: sticky; left: 0; z-index: 3; background: #fff; text-align: left !important; padding: 5px 10px !important; min-width: 170px; max-width: 200px; }
+.gh-table thead .gh-name { z-index: 4; background: #faf9f6; }
+.gh-name b { display: block; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gh-name small { display: block; font-size: 10.5px; color: #8a8f9c; font-weight: 400; }
+.gh-day.is-wk, .gh-wd.is-wk { color: #dc2626; }
+.is-today { box-shadow: inset 0 -2px 0 #4f46e5; }
+.gh-cell { width: 34px; min-width: 34px; height: 36px; font-size: 10.5px; font-weight: 700; cursor: pointer; color: #fff; }
+.gh-cell.is-wk { background: #faf5f0; }
+.gh-cell:hover { outline: 2px solid #4f46e5; outline-offset: -2px; }
+.gh-cell.has-type { background: var(--c); }
+.gh-cell.is-inherit { opacity: .45; }
+.gh-cell.is-painting { outline: 2px solid #1c2433; outline-offset: -2px; }
+.gh-all .gh-name { background: #fdf2f8; }
+.gh-sum { min-width: 40px; font-weight: 700; background: #faf9f6; }
+.gh-fill { min-width: 90px; background: #faf9f6; }
+.gh-fill select { border: 1px solid #d9d5ca; border-radius: 6px; font: inherit; font-size: 11px; padding: 2px; width: 86px; }
+.gh-table tfoot th, .gh-table tfoot td { position: sticky; bottom: 0; background: #f4f2ec; font-size: 12px; height: 28px; }
+.gh-table tfoot .gh-name { z-index: 3; }
+.gh-work { font-weight: 700; color: #0e7c86; }
+.gh-work.is-low { color: #fff; background: #ef4444 !important; }
+.gh-work.is-closed { background: #fbcfe8 !important; color: #9d174d; }
+.gh-foot { display: grid; gap: 6px; }
+.gh-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.gh-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.gh-legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+.gh-holidays { color: #9d174d; }
+.gh-hl { display: inline-block; background: #fce7f3; border-radius: 999px; padding: 1px 9px; margin: 2px 4px 2px 0; font-size: 12px; }
+.gh-foot small { color: #8a8f9c; }
+.gh-err { color: #b91c1c; padding: 14px; }
