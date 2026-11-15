@@ -19,7 +19,9 @@
     const WEEK_FULL = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
     const MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
     const now = new Date();
-    const state = { y: now.getFullYear(), m: now.getMonth(), staff: [], leaves: new Map(), brush: 'off', drag: null, loaded: false };
+    const state = { y: now.getFullYear(), m: now.getMonth(), staff: [], leaves: new Map(), brush: 'off', drag: null, loaded: false, hidden: new Set(), showHidden: false };
+    try { state.hidden = new Set(JSON.parse(localStorage.getItem('ghHidden') || '[]')); } catch { /* ไม่มีค่าเดิม */ }
+    const saveHidden = () => { try { localStorage.setItem('ghHidden', JSON.stringify([...state.hidden])); } catch { /* ไม่เป็นไร */ } };
     const pad = n => String(n).padStart(2, '0');
     const iso = (d) => `${state.y}-${pad(state.m + 1)}-${pad(d)}`;
     const daysIn = () => new Date(state.y, state.m + 1, 0).getDate();
@@ -51,7 +53,8 @@
     }
     async function loadStaff() {
         const data = await request('');
-        state.staff = (data.staff || []).map(s => ({ username: s.username, name: s.name, position: s.position || '' }));
+        // ผู้สังเกตการณ์ของหัวข้อ "จัดการพนักงาน / GA" (ตั้งในหน้าจัดการสิทธิ์) ไม่นับเป็นเจ้าหน้าที่ GA
+        state.staff = (data.staff || []).filter(s => !(s.observer || []).includes('staff')).map(s => ({ username: s.username, name: s.name, position: s.position || '' }));
     }
     async function open() {
         dialog.innerHTML = '<div class="gh-box"><p class="fa-empty">กำลังโหลดตารางวันหยุด…</p></div>';
@@ -63,7 +66,7 @@
     const dayOff = (u, date) => typeAt(u, date) || typeAt('*', date);   // ทั้งแผนกหยุด = ทุกคนหยุด
 
     function render() {
-        const n = daysIn(), people = state.staff;
+        const n = daysIn(), everyone = state.staff, people = state.showHidden ? everyone : everyone.filter(p => !state.hidden.has(p.username));
         const dayHeads = Array.from({ length: n }, (_, i) => { const d = i + 1, w = new Date(state.y, state.m, d).getDay(); return { d, w, date: iso(d) }; });
         const isToday = date => date === `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
         const cell = (u, h) => {
@@ -75,7 +78,7 @@
         const head1 = dayHeads.map(h => `<th class="gh-day${h.w === 0 || h.w === 6 ? ' is-wk' : ''}${isToday(h.date) ? ' is-today' : ''}">${h.d}</th>`).join('');
         const head2 = dayHeads.map(h => `<th class="gh-wd${h.w === 0 || h.w === 6 ? ' is-wk' : ''}">${WEEK[h.w]}</th>`).join('');
         const count = u => dayHeads.filter(h => dayOff(u, h.date)).length;
-        const rows = people.map(p => `<tr><th class="gh-name" scope="row"><b>${esc(p.name)}</b><small>${esc(p.position || p.username)}</small></th>${dayHeads.map(h => cell(p.username, h)).join('')}<td class="gh-sum">${count(p.username)}</td>
+        const rows = people.map(p => `<tr><th class="gh-name" scope="row"><button type="button" class="gh-hide" data-gh-hide="${esc(p.username)}" title="${state.hidden.has(p.username) ? 'แสดงแถวนี้อีกครั้ง' : 'ซ่อนแถวนี้ (ไม่ต้องลงวันหยุด เช่น ผู้สังเกตการณ์)'}">${state.hidden.has(p.username) ? '👁' : '✕'}</button><b>${esc(p.name)}</b><small>${esc(p.position || p.username)}</small></th>${dayHeads.map(h => cell(p.username, h)).join('')}<td class="gh-sum">${count(p.username)}</td>
             <td class="gh-fill"><select data-fill="${esc(p.username)}" aria-label="เติมวันหยุดประจำสัปดาห์"><option value="">เติมวัน…</option>${WEEK_FULL.map((w, i) => `<option value="${i}">ทุกวัน${w}</option>`).join('')}</select></td></tr>`).join('');
         const working = dayHeads.map(h => { const free = typeAt('*', h.date) ? 0 : people.filter(p => !dayOff(p.username, h.date)).length; const low = free <= Math.ceil(people.length / 3); return `<td class="gh-work${low ? ' is-low' : ''}${typeAt('*', h.date) ? ' is-closed' : ''}" title="${free} คนทำงาน">${free}</td>`; }).join('');
         const holidays = dayHeads.filter(h => typeAt('*', h.date)).map(h => `<span class="gh-hl">${h.d} ${esc(MONTHS[state.m].slice(0, 3))}.${state.leaves.get(key('*', h.date))?.note ? ' — ' + esc(state.leaves.get(key('*', h.date)).note) : ''}</span>`).join('');
@@ -87,7 +90,7 @@
             <div class="gh-scroll"><table class="gh-table"><thead><tr><th class="gh-name" rowspan="2">เจ้าหน้าที่</th>${head1}<th rowspan="2" class="gh-sum">รวม<br>วัน</th><th rowspan="2" class="gh-fill"></th></tr><tr>${head2}</tr></thead>
                 <tbody><tr class="gh-all"><th class="gh-name" scope="row"><b>วันหยุดทั้งแผนก</b><small>นักขัตฤกษ์ / ปิดทำการ</small></th>${dayHeads.map(h => cell('*', h)).join('')}<td class="gh-sum">${dayHeads.filter(h => typeAt('*', h.date)).length}</td><td></td></tr>${rows || `<tr><td colspan="${n + 3}" class="gh-err">ไม่พบรายชื่อเจ้าหน้าที่</td></tr>`}</tbody>
                 <tfoot><tr><th class="gh-name">คนที่ทำงาน</th>${working}<td colspan="2"></td></tr></tfoot></table></div>
-            <footer class="gh-foot"><div class="gh-legend">${totals || '<span>เดือนนี้ยังไม่มีวันหยุดที่ลงไว้</span>'}</div>${holidays ? `<div class="gh-holidays"><b>วันหยุดทั้งแผนก:</b> ${holidays}</div>` : ''}<small>แถว “คนที่ทำงาน” สีแดง = เหลือคนทำงานน้อย (ไม่เกิน 1 ใน 3 ของทีม) · ช่องที่หยุดทั้งแผนกจะเป็นสีจางในแถวของทุกคน</small></footer></div>`;
+            <footer class="gh-foot"><div class="gh-legend">${totals || '<span>เดือนนี้ยังไม่มีวันหยุดที่ลงไว้</span>'}</div>${holidays ? `<div class="gh-holidays"><b>วันหยุดทั้งแผนก:</b> ${holidays}</div>` : ''}${state.hidden.size ? `<button type="button" class="gh-showhid" data-gh-showhidden>${state.showHidden ? 'ซ่อนแถวที่ซ่อนไว้' : `แสดงแถวที่ซ่อนไว้ (${[...state.hidden].filter(u => everyone.some(p => p.username === u)).length})`}</button>` : ''}<small>แถว “คนที่ทำงาน” สีแดง = เหลือคนทำงานน้อย (ไม่เกิน 1 ใน 3 ของทีม) · ช่องที่หยุดทั้งแผนกจะเป็นสีจางในแถวของทุกคน</small></footer></div>`;
     }
 
     // ---------------------------------------------------------------- ลง / ลบวันหยุด (คลิก หรือ ลากข้ามหลายช่อง)
@@ -116,6 +119,9 @@
     dialog.addEventListener('click', async e => {
         if (e.target === dialog || e.target.closest('[data-gh-close]')) return dialog.close();
         const brush = e.target.closest('[data-brush]'); if (brush) { state.brush = brush.dataset.brush; return render(); }
+        const hide = e.target.closest('[data-gh-hide]');
+        if (hide) { const u = hide.dataset.ghHide; if (state.hidden.has(u)) state.hidden.delete(u); else state.hidden.add(u); saveHidden(); return render(); }
+        if (e.target.closest('[data-gh-showhidden]')) { state.showHidden = !state.showHidden; return render(); }
         const nav = e.target.closest('[data-gh-nav]');
         if (nav) {
             const step = Number(nav.dataset.ghNav);

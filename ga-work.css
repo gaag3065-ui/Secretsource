@@ -241,3 +241,6 @@
 .gh-hl { display: inline-block; background: #fce7f3; border-radius: 999px; padding: 1px 9px; margin: 2px 4px 2px 0; font-size: 12px; }
 .gh-foot small { color: #8a8f9c; }
 .gh-err { color: #b91c1c; padding: 14px; }
+.gh-hide { float: right; border: 0; background: none; color: #b0b4be; cursor: pointer; font-size: 12px; padding: 0 0 0 6px; }
+.gh-hide:hover { color: #b91c1c; }
+.gh-showhid { justify-self: start; border: 1px dashed #b0b4be; background: #fff; border-radius: 999px; padding: 3px 12px; font: inherit; font-size: 12px; cursor: pointer; color: #475467; }

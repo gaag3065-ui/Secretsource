@@ -64,7 +64,7 @@
         try {
             const [data, work] = await Promise.all([request('/projects'), request('/ga-work').catch(() => ({ staff: [] }))]);
             state.data = data;
-            state.staff = work.staff || [];
+            state.staff = (work.staff || []).filter(s => !(s.observer || []).includes('staff'));   // ผู้สังเกตการณ์ไม่ขึ้นในรายชื่อผู้รับผิดชอบ
             renderBoard();
             if (state.open) { const p = project(state.open); if (p) renderProject(p); }
         } catch (error) { $('wfCards').innerHTML = `<p class="fa-empty">${esc(error.message)}</p>`; }
