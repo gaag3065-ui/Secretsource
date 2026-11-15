@@ -29,7 +29,7 @@
         { key: 'exp', label: '💳 ค่าใช้จ่ายและรอบกำหนด', nodes: () => [$('roomExpenses')] },
         { key: 'checks', label: '🔍 ตรวจสอบกับส่วนกลาง', nodes: () => [$('roomChecks')] },
         { key: 'people', label: '👥 พนักงานและที่พัก', nodes: () => [$('asStats'), head.querySelector('.as-filters'), head.querySelector('.as-toolbar'), $('asResults')] },
-        { key: 'ledger', label: '📊 ค่าน้ำไฟ · สัญญา · ผังห้อง', nodes: () => [$('accommodationLedger')] }
+        { key: 'ledger', label: '🧭 ติดตามขั้นตอนการดำเนินงานที่พักใหม่', nodes: () => [$('accommodationFlow'), $('accommodationLedger')] }
     ];
     const tabBar = wrap.querySelector('.dx-tabs'), panes = wrap.querySelector('.dx-panes');
     for (const t of TABS) {

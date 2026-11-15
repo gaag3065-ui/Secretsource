@@ -63,11 +63,13 @@
     const code = name => `<span class="lg-code" style="--c:${state.data.color[name] || '#6c7280'}">${esc(state.data.codes[name] || '---')}</span>`;
     const focusAttr = name => `data-b="${esc(name)}"`; // คลาส is-focus ใส่ทีหลังใน render()
     const viewButton = name => `<button type="button" class="lg-view" data-view="${esc(name)}">ดูห้องพัก →</button>`;
-    const section = (no, title, intro, body, legend = '') => `<section class="lg-sec">
-            <div class="lg-rule"><b>${String(no).padStart(2, '0')}</b><i></i></div>
-            <div class="lg-head"><div><h2>${title}</h2>${intro ? `<p>${intro}</p>` : ''}</div>${legend}</div>
+    // ทุกส่วนเป็นกล่องพับได้ (พับไว้ก่อน กดหัวกล่องเพื่อเปิด) — จำสถานะเปิด/ปิดไว้ตอนวาดใหม่
+    const openSecs = new Set();
+    const section = (no, title, intro, body, legend = '') => `<details class="lg-sec lg-fold" data-sec="${no}"${openSecs.has(String(no)) ? ' open' : ''}>
+            <summary class="lg-rule"><b>${String(no).padStart(2, '0')}</b><span class="lg-fold-title">${title}</span><i></i><em class="lg-fold-hint">กดเพื่อเปิด/พับ</em></summary>
+            <div class="lg-head"><div>${intro ? `<p>${intro}</p>` : ''}</div>${legend}</div>
             ${body}
-        </section>`;
+        </details>`;
     const legend = items => `<div class="lg-legend">${items.map(([label, c]) => `<span style="--c:${c}">${esc(label)}</span>`).join('')}</div>`;
 
     function kpis() {
@@ -184,8 +186,9 @@
     }
 
     function render() {
+        host.querySelectorAll('details[data-sec]').forEach(d => { if (d.open) openSecs.add(d.dataset.sec); else openSecs.delete(d.dataset.sec); });
         host.classList.toggle('has-focus', Boolean(state.focus));
-        host.innerHTML = kpis() + chips() + occupancy() + utilities() + detailTable() + contracts();
+        host.innerHTML = `<details class="lg-fold lg-fold-top" data-sec="0"${openSecs.has('0') ? ' open' : ''}><summary class="lg-rule"><b>00</b><span class="lg-fold-title">สรุปตัวเลขทะเบียนที่พัก</span><i></i><em class="lg-fold-hint">กดเพื่อเปิด/พับ</em></summary>${kpis()}</details>` + chips() + occupancy() + utilities() + detailTable() + contracts();
         host.querySelectorAll('[data-b]').forEach(node => node.classList.toggle('is-focus', node.dataset.b === state.focus));
     }
 
