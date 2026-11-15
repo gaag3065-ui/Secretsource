@@ -65,7 +65,8 @@
     const otherKind = rec => rec?.kind === 'internet' ? '🌐 อินเทอร์เน็ต' : 'อื่นๆ' + (rec?.note ? ': ' + rec.note : '');
     const netsLine = u => (u.nets || []).length ? (u.nets || []).map(n => [n.provider, n.package, n.account ? 'Account Number: ' + n.account : '', n.contract ? 'SLT / Contract Number: ' + n.contract : '', n.serial ? 'Serial Number: ' + n.serial : '', n.holder ? 'Name: ' + n.holder : ''].filter(Boolean).join(' · ')).join(' | ') : 'ยังไม่มีข้อมูลอินเทอร์เน็ตในไฟล์อินเตอร์เน็ต';
     const FLOW_CATS = ['water', 'electric', 'other'];
-    const FLOW_SHORT = ['ตามบิล', 'ได้รับบิล', 'ตั้งเบิก', 'รอรับเงิน', 'รับเงิน', 'เตรียมจ่าย', 'จ่ายแล้ว', 'บันทึกบิล'];
+    const FLOW_SHORT = ['ตามบิล', 'ได้รับบิล+ลงเว็บ', 'ตั้งเบิก', 'ได้รับเงิน', 'จ่าย+ส่งหลักฐาน'];
+    const LAST = 4;
     const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
     const flowSteps = () => state.data.flowSteps || [];
     // รูปหลักฐานบิล: ทุกหมวดที่มีการจ่าย/รับเงิน (ยกเว้นแจ้งยกเลิกเช่า)
@@ -89,17 +90,17 @@
                 : { ...base, tone: 'bad', text: 'ยังไม่เริ่ม', sub: 'ตามบิลกับเจ้าของบ้าน (1–5)', alert: cat };
             return periodHasData(period) ? { ...base, tone: 'bad', text: 'ไม่มีข้อมูล', sub: 'เดือนนี้ผ่านไปแล้ว', alert: cat, late: true } : { ...base, tone: 'na', text: 'ยังไม่ได้บันทึก' };
         }
-        const done = idx >= 6;
+        const done = idx >= LAST;
         // สี: ยังไม่เริ่ม/ตามบิล = แดง · ได้รับบิล→เตรียมนำไปจ่าย (②–⑥) = ส้ม · จ่ายเรียบร้อย/บันทึกบิลแล้ว = เขียว
         let tone = done ? 'ok' : idx === 0 ? 'bad' : 'warn', late = false;
         if (!done && ((period === current && idx < 2 && day > 5) || period < current)) late = true;
-        const sub = [cat === 'other' ? otherKind(rec) : '', rec.amount ? `฿${num(rec.amount)}` : '', rec.date, idx === 6 ? 'รอบันทึกบิล' : '', rec.files?.length ? `📷 ${rec.files.length}` : ''].filter(Boolean).join(' · ');
-        return { ...base, tone, late, text: `${idx + 1}/8 ${flowSteps()[idx]}`, sub, alert: done ? '' : cat };
+        const sub = [cat === 'other' ? otherKind(rec) : '', rec.amount ? `฿${num(rec.amount)}` : '', rec.date, rec.files?.length ? `📷 ${rec.files.length}` : ''].filter(Boolean).join(' · ');
+        return { ...base, tone, late, text: `${idx + 1}/${LAST + 1} ${flowSteps()[idx]}`, sub, alert: done ? '' : cat };
     }
     function monthSummary(period, units) {
         const total = units.length * FLOW_CATS.length;
         let done = 0, billed = 0;
-        for (const u of units) for (const cat of FLOW_CATS) { const i = stepOf(flowRec(u.no, cat, period)); if (i >= 6) done++; if (i >= 1) billed++; }
+        for (const u of units) for (const cat of FLOW_CATS) { const i = stepOf(flowRec(u.no, cat, period)); if (i >= LAST) done++; if (i >= 1) billed++; }
         return { total, done, billed };
     }
     const fileUrls = new Map();
@@ -118,11 +119,11 @@
             fileUrl(id).then(url => { img.src = url; }).catch(() => { img.replaceWith(Object.assign(document.createElement('span'), { className: 'rx-thumb-err', textContent: '⚠' })); });
         });
     }
-    const thumbHtml = (rec, cat, removable) => (rec?.files || []).map((f, i) => `<span class="rx-thumb-wrap"><button type="button" class="rx-thumb" data-rx-view="${esc([cat, rec.no, rec.period, i].join('|'))}" title="${esc(f.name || 'รูปบิล')} · ${esc(f.at || '')}">${f.mime === 'application/pdf' ? '<span class="rx-pdf">📄 PDF</span>' : `<img alt="" data-rx-src="${esc(f.id)}">`}</button>${removable ? `<button type="button" class="rx-thumb-del" data-rx-delfile="${esc(f.id)}" title="เอารูปนี้ออก">✕</button>` : ''}</span>`).join('');
+    const thumbHtml = (rec, cat, removable, step = null) => (rec?.files || []).map((f, i) => step !== null && Number(f.step) !== step ? '' : `<span class="rx-thumb-wrap"><button type="button" class="rx-thumb" data-rx-view="${esc([cat, rec.no, rec.period, i].join('|'))}" title="${esc(f.name || 'รูปบิล')} · ${esc(f.at || '')}">${f.mime === 'application/pdf' ? '<span class="rx-pdf">📄 PDF</span>' : `<img alt="" data-rx-src="${esc(f.id)}">`}</button>${removable ? `<button type="button" class="rx-thumb-del" data-rx-delfile="${esc(f.id)}" title="เอารูปนี้ออก">✕</button>` : ''}</span>`).join('');
     const histDate = (rec, step) => { const h = (rec?.hist || []).filter(x => x.s === step).pop(); return h ? dayPart(h.at) : ''; };
     function stepperHtml(c, cat) {
         const rec = c.rec, idx = c.idx;
-        return `<ol class="rx-steps">${flowSteps().map((name, i) => `<li class="${i < idx ? 'is-done' : i === idx ? 'is-current' : ''}"><i>${i < idx || (i === idx && idx >= 6) ? '✓' : i + 1}</i><b>${esc(FLOW_SHORT[i])}</b><small>${esc(histDate(rec, name))}</small></li>`).join('')}</ol>`;
+        return `<ol class="rx-steps">${flowSteps().map((name, i) => `<li class="${i < idx ? 'is-done' : i === idx ? 'is-current' : ''}"><i>${i < idx || (i === idx && idx >= LAST) ? '✓' : i + 1}</i><b>${esc(FLOW_SHORT[i])}</b><small>${esc(histDate(rec, name))}</small></li>`).join('')}</ol>`;
     }
     function flowDetail(r, units) {
         const months = [-2, -1, 0, 1].map(n => shiftMonth(state.month, n));
@@ -133,7 +134,7 @@
                 ${c.idx >= -1 ? stepperHtml(c, cat) : ''}
                 <p class="rx-meta">${rec ? `${rec.amount ? `จำนวนเงิน ฿${num(rec.amount)} · ` : ''}${rec.date ? `วันที่ ${esc(rec.date)} · ` : ''}บันทึกล่าสุดโดย ${esc(rec.by || '-')} ${esc(rec.at || '')}${rec.note ? ` · หมายเหตุ: ${esc(rec.note)}` : ''}` : 'ยังไม่มีการบันทึกในเดือนนี้'}</p>
                 <div class="rx-thumbs">${thumbHtml(rec, cat, false) || '<span class="rx-nophoto">ยังไม่มีรูปบิล</span>'}</div>
-                <div class="rx-flow-actions"><button type="button" class="rx-btn" data-rx-cell="${(state.cells.push(c.edit), state.cells.length - 1)}">✎ อัปเดตขั้นตอน / แนบรูป</button>${next && c.idx >= -1 && c.idx < 7 ? `<button type="button" class="rx-btn rx-primary" data-rx-next="${state.cells.length - 1}">▶ ไปขั้น ${CIRCLED[c.idx + 1]} ${esc(next)}</button>` : ''}</div>
+                <div class="rx-flow-actions"><button type="button" class="rx-btn" data-rx-cell="${(state.cells.push(c.edit), state.cells.length - 1)}">✎ ทำขั้นตอน / แนบรูป</button>${next && c.idx >= -1 && c.idx < LAST ? `<button type="button" class="rx-btn rx-primary" data-rx-next="${state.cells.length - 1}">▶ ทำขั้น ${CIRCLED[c.idx + 1]} ${esc(next)}</button>` : ''}</div>
                 <div class="rx-hist"><span>ย้อนหลัง / เดือนถัดไป:</span>${hist}</div></section>`;
         }).join('')}</div></td></tr>`;
     }
@@ -211,7 +212,7 @@
         const flowLate = FLOW_CATS.map(c => [c, rows.filter(r => r.cells[c].late).length]).filter(([, n]) => n);
         const flowOpen = FLOW_CATS.map(c => [c, rows.filter(r => r.cells[c].alert === c && !r.cells[c].late).length]).filter(([, n]) => n);
         if (flowLate.length) alerts.push(['bad', `บิลค่าน้ำ/ไฟ/อื่นๆ ${monthLabel(state.month)} เลยกำหนดหรือค้างขั้นตอน ${flowLate.reduce((n, [, v]) => n + v, 0)} รายการ — ${flowLate.map(([c, n]) => `${labelOf(c)} ${n}`).join(' · ')}`, 'flow']);
-        if (flowOpen.length) alerts.push(['warn', `บิลค่าน้ำ/ไฟ/อื่นๆ ${monthLabel(state.month)} ที่ยังไม่ครบ 8 ขั้นตอน ${flowOpen.reduce((n, [, v]) => n + v, 0)} รายการ — ${flowOpen.map(([c, n]) => `${labelOf(c)} ${n}`).join(' · ')}`, 'flow']);
+        if (flowOpen.length) alerts.push(['warn', `บิลค่าน้ำ/ไฟ/อื่นๆ ${monthLabel(state.month)} ที่ยังไม่ครบ 5 ขั้นตอน ${flowOpen.reduce((n, [, v]) => n + v, 0)} รายการ — ${flowOpen.map(([c, n]) => `${labelOf(c)} ${n}`).join(' · ')}`, 'flow']);
         const unpaidList = MONTH_CATS.filter(c => c !== 'gas_recv' && !FLOW_CATS.includes(c)).map(c => [c, unpaid(c)]).filter(([, n]) => n);
         if (unpaidList.length) alerts.push(['bad', `ค่าใช้จ่ายเดือน ${monthLabel(state.month)} ที่ยังไม่จ่าย ${unpaidList.reduce((n, [, v]) => n + v, 0)} รายการ — ${unpaidList.map(([c, n]) => `${labelOf(c)} ${n}`).join(' · ')}`, 'unpaid']);
         if (unpaid('gas_recv')) alerts.push(['warn', `ยังไม่ได้รับค่าแก๊สจากพนักงาน ${unpaid('gas_recv')} ยูนิต`, 'unpaid']);
@@ -331,28 +332,61 @@
 
     // ---------------------------------------------------------------- กล่องบันทึกบิลค่าน้ำ/ไฟ (เลือกขั้นตอน + แนบรูปบิล)
     const todayDmy = () => dmy(parseIso(state.data.today));
+    // กล่องทำขั้นตอน: แสดงเฉพาะ "ขั้นถัดไป" พร้อมเงื่อนไขที่ต้องครบ (วันที่ + รูปหลักฐาน + ติ๊กยืนยัน) — ครบแล้วปุ่มจึงกดได้ (เหมือนลดขาตั้งก่อนสตาร์ท)
+    function flowGate(form) {
+        const req = state.data.flowReq?.[Number(form.dataset.step)];
+        const btn = form.querySelector('[data-rx-confirm]'), need = form.querySelector('[data-rx-need]');
+        if (!req || !btn || form.dataset.finished === '1') return;
+        const miss = [];
+        if (req.date && !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test((form.querySelector('input[name=date]')?.value || '').trim())) miss.push(req.dateLabel);
+        if (req.photo && !form.querySelector('[data-rx-dialog-thumbs] .rx-thumb')) miss.push(req.photoLabel);
+        for (const ck of req.checks || []) if (!form.querySelector(`input[name=checks][value="${ck.key}"]`)?.checked) miss.push(ck.label);
+        btn.disabled = miss.length > 0;
+        if (need) need.innerHTML = miss.length ? `<b>ยังไปต่อไม่ได้ — ต้องทำก่อน:</b><ul>${miss.map(m => `<li>${esc(m)}</li>`).join('')}</ul>` : '<b class="rx-ready">✓ เงื่อนไขครบแล้ว กดยืนยันเพื่อไปขั้นถัดไป</b>';
+    }
+    dialog.addEventListener('input', event => { const f = event.target.closest('form[data-rx-form=flow]'); if (f) flowGate(f); });
+    dialog.addEventListener('change', event => { const f = event.target.closest('form[data-rx-form=flow]'); if (f) flowGate(f); });
     function openFlow(c) {
         const rec = flowRec(c.u.no, c.cat, c.period);
         const label = state.data.cats[c.cat].label;
-        const current = rec?.status && rec.status !== 'ไม่มีรายการ' ? rec.status : '';
-        dialog.innerHTML = `<form data-rx-form="flow" class="rx-flowform"><h3>${esc(label)} — ${esc(c.u.project)} ${esc(c.u.unit)} · ${esc(monthLabel(c.period))}</h3>
-            <fieldset class="rx-stepopts"><legend>ขั้นตอนตอนนี้</legend>${flowSteps().map((name, i) => `<label class="rx-stepopt"><input type="radio" name="status" value="${esc(name)}" ${name === (current || (rec ? '' : flowSteps()[0])) ? 'checked' : ''}><span><i>${CIRCLED[i]}</i> ${esc(name)}${i === 0 ? ' <small>(วันที่ 1–5)</small>' : i === 2 ? ' <small>(ไม่เกินวันที่ 5)</small>' : ''}</span></label>`).join('')}
-                <label class="rx-stepopt is-none"><input type="radio" name="status" value="ไม่มีรายการ" ${rec?.status === 'ไม่มีรายการ' ? 'checked' : ''}><span>เดือนนี้ไม่มีบิล${esc(label)}</span></label></fieldset>
-            ${c.cat === 'other' ? `<fieldset class="rx-stepopts rx-kind"><legend>ประเภทค่าใช้จ่าย</legend>
-                <label class="rx-stepopt"><input type="radio" name="kind" value="internet" ${(rec?.kind || 'internet') === 'internet' ? 'checked' : ''}><span>🌐 ค่าอินเทอร์เน็ต <small>(ไม่ต้องลงหมายเหตุก็ได้)</small></span></label>
-                <label class="rx-stepopt"><input type="radio" name="kind" value="other" ${rec?.kind === 'other' ? 'checked' : ''}><span>ค่าอื่นๆ <small>(ต้องลงหมายเหตุว่าเป็นค่าอะไร)</small></span></label>
-                <small class="rx-nets">ข้อมูลอินเทอร์เน็ตของยูนิตนี้: ${esc(netsLine(c.u))}</small></fieldset>` : ''}
-            <div class="rx-two"><label>จำนวนเงินตามบิล (บาท)<input name="amount" inputmode="decimal" value="${esc(rec?.amount || '')}" placeholder="เช่น 1,250"></label>
-            <label>วันที่ของขั้นตอนนี้ (วัน/เดือน/ปี)${dateInput(todayDmy())}</label></div>
-            <label>หมายเหตุ<span data-rx-notehint></span><input name="note" maxlength="200" value="${esc(rec?.note || '')}"></label>
-            <div class="rx-files"><div class="rx-files-head"><b>รูปบิล</b><label class="rx-btn rx-upload">＋ แนบรูป / PDF<input type="file" accept="image/*,application/pdf" multiple hidden data-rx-upload></label></div>
-                <div class="rx-thumbs" data-rx-dialog-thumbs>${thumbHtml(rec, c.cat, true) || '<span class="rx-nophoto">ยังไม่มีรูปบิล — แนบรูปแล้วระบบจะตั้งเป็น “ได้รับบิลแล้ว” ให้</span>'}</div></div>
+        const idx = stepOf(rec), reqs = state.data.flowReq || [];
+        const finished = idx >= LAST, nextIdx = finished ? LAST : Math.max(idx + 1, 0);
+        const req = reqs[nextIdx] || {};
+        const doneList = flowSteps().map((name, i) => {
+            if (i >= nextIdx && !finished) return '';
+            const h = (rec?.hist || []).filter(x => x.s === name).pop();
+            const n = (rec?.files || []).filter(f => Number(f.step) === i).length;
+            return `<li>${CIRCLED[i]} ${esc(FLOW_SHORT[i])} ✓ <small>${esc(h?.d || dayPart(h?.at) || '')}${n ? ` · 📷 ${n}` : ''}${h?.ck?.length ? ' · ยืนยันแล้ว ' + h.ck.length + ' ข้อ' : ''}</small></li>`;
+        }).join('');
+        const stepTitle = finished ? 'ครบทุกขั้นตอนแล้ว ✓' : `ขั้นถัดไป ${CIRCLED[nextIdx]} ${esc(flowSteps()[nextIdx])}`;
+        const status = flowSteps()[nextIdx];
+        dialog.innerHTML = `<form data-rx-form="flow" data-step="${nextIdx}" data-finished="${finished ? 1 : 0}" class="rx-flowform"><h3>${esc(label)} — ${esc(c.u.project)} ${esc(c.u.unit)} · ${esc(monthLabel(c.period))}</h3>
+            ${stepperHtml({ rec, idx }, c.cat)}
+            ${doneList ? `<ul class="rx-donelist">${doneList}</ul>` : ''}
+            <div class="rx-gate"><h4>${stepTitle}</h4>
+                <input type="hidden" name="status" value="${esc(status)}">
+                ${c.cat === 'other' ? `<fieldset class="rx-stepopts rx-kind"><legend>ประเภทค่าใช้จ่าย</legend>
+                    <label class="rx-stepopt"><input type="radio" name="kind" value="internet" ${(rec?.kind || 'internet') === 'internet' ? 'checked' : ''}><span>🌐 ค่าอินเทอร์เน็ต <small>(ไม่ต้องลงหมายเหตุก็ได้)</small></span></label>
+                    <label class="rx-stepopt"><input type="radio" name="kind" value="other" ${rec?.kind === 'other' ? 'checked' : ''}><span>ค่าอื่นๆ <small>(ต้องลงหมายเหตุว่าเป็นค่าอะไร)</small></span></label>
+                    <small class="rx-nets">ข้อมูลอินเทอร์เน็ตของยูนิตนี้: ${esc(netsLine(c.u))}</small></fieldset>` : ''}
+                ${finished ? `<input type="hidden" name="date" value="${esc(rec?.date || '')}">` : `<label>${esc(req.dateLabel || 'วันที่ทำขั้นตอนนี้')}${req.date ? ' <b class="rx-star">*</b>' : ''}${dateInput(req.date ? '' : todayDmy())}</label>`}
+                ${!finished && req.photo ? `<div class="rx-files"><div class="rx-files-head"><b>${esc(req.photoLabel)} <span class="rx-star">*</span></b><label class="rx-btn rx-upload">＋ แนบรูป / PDF<input type="file" accept="image/*,application/pdf" multiple hidden data-rx-upload data-step="${nextIdx}"></label></div>
+                    <div class="rx-thumbs" data-rx-dialog-thumbs>${thumbHtml(rec, c.cat, true, nextIdx) || '<span class="rx-nophoto">ยังไม่มีรูปของขั้นนี้ — ต้องแนบก่อนจึงไปต่อได้</span>'}</div></div>` : (finished ? `<div class="rx-thumbs" data-rx-dialog-thumbs>${thumbHtml(rec, c.cat, true) || '<span class="rx-nophoto">ไม่มีรูปแนบ</span>'}</div>` : '<div data-rx-dialog-thumbs hidden></div>')}
+                ${(req.checks || []).map(ck => `<label class="rx-stepopt rx-check"><input type="checkbox" name="checks" value="${esc(ck.key)}"><span>${esc(ck.label)} <b class="rx-star">*</b></span></label>`).join('')}
+                <label>จำนวนเงินตามบิล (บาท)<input name="amount" inputmode="decimal" value="${esc(rec?.amount || '')}" placeholder="เช่น 1,250"></label>
+                <label>หมายเหตุ<span data-rx-notehint></span><input name="note" maxlength="200" value="${esc(rec?.note || '')}"></label>
+                <div class="rx-need" data-rx-need></div></div>
             <p class="rx-hint">${rec ? 'บันทึกล่าสุดโดย ' + esc(rec.by) + ' ' + esc(rec.at) : 'ยังไม่เคยบันทึก'}</p>
             <p class="rx-msg" role="status"></p>
-            <div class="rx-actions"><button type="submit" class="rx-btn rx-primary">บันทึก</button><button type="button" class="rx-btn" data-rx-close>ปิด</button></div></form>`;
+            <div class="rx-actions"><button type="submit" class="rx-btn rx-primary" data-rx-confirm>${finished ? 'บันทึกจำนวนเงิน/หมายเหตุ' : `✔ ยืนยัน “${esc(flowSteps()[nextIdx])}” และไปต่อ`}</button><button type="button" class="rx-btn" data-rx-close>ปิด</button></div>
+            <details class="rx-alt"><summary>อื่นๆ — ย้อนขั้น / เดือนนี้ไม่มีบิล</summary>
+                ${idx > 0 ? `<button type="button" class="rx-btn" data-rx-alt="${esc(flowSteps()[idx - 1])}">↩ ย้อนกลับไปขั้น ${CIRCLED[idx - 1]} ${esc(FLOW_SHORT[idx - 1])}</button>` : ''}
+                <button type="button" class="rx-btn" data-rx-alt="ไม่มีรายการ">เดือนนี้ไม่มีบิล${esc(label)}</button></details></form>`;
         if (!dialog.open) dialog.showModal();
         syncKind();
         hydrateThumbs(dialog);
+        const form = dialog.querySelector('form');
+        if (!finished) flowGate(form);
     }
     const readAsDataUrl = file => new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(new Error('อ่านไฟล์ไม่ได้')); r.readAsDataURL(file); });
     async function prepareFile(file) {
@@ -374,12 +408,12 @@
         const form = dialog.querySelector('[data-rx-form]');
         if (!form || !target) return;
         const rec = anyRec(target.u.no, target.cat, target.period);
-        form.querySelector('[data-rx-dialog-thumbs]').innerHTML = thumbHtml(rec, target.cat, true) || '<span class="rx-nophoto">ยังไม่มีรูปบิล</span>';
+        const stepFilter = form.dataset.rxForm === 'flow' && form.dataset.step !== undefined && form.querySelector('[data-rx-upload]') ? Number(form.dataset.step) : null;
+        form.querySelector('[data-rx-dialog-thumbs]').innerHTML = thumbHtml(rec, target.cat, true, stepFilter) || '<span class="rx-nophoto">ยังไม่มีรูปบิล</span>';
         const cnt = form.querySelector('[data-rx-filecount]'); if (cnt) cnt.textContent = (rec?.files || []).length ? ' (' + rec.files.length + ')' : '';
         hydrateThumbs(dialog);
-        if (form.dataset.rxForm === 'flow' && rec && !current_status_chosen(form)) { const r = form.querySelector(`input[name=status][value="${flowSteps()[1]}"]`); if (r) r.checked = true; }
+        if (form.dataset.rxForm === 'flow') flowGate(form);
     }
-    const current_status_chosen = form => { const v = form.querySelector('input[name=status]:checked')?.value; return v && v !== flowSteps()[0]; };
     dialog.addEventListener('change', async event => {
         const input = event.target.closest('[data-rx-upload]'); if (!input) return;
         const form = input.closest('form'), msg = form.querySelector('.rx-msg');
@@ -398,7 +432,7 @@
             msg.className = 'rx-msg'; msg.textContent = `กำลังอัปโหลด ${file.name}… (${ok + 1}/${files.length})`;
             try {
                 const dataUrl = await prepareFile(file);
-                await request(`${API}/files`, { method: 'POST', body: JSON.stringify({ no: target.u.no, cat: target.cat, period: target.period, name: file.name, dataUrl }) });
+                await request(`${API}/files`, { method: 'POST', body: JSON.stringify({ no: target.u.no, cat: target.cat, period: target.period, name: file.name, dataUrl, step: input.dataset.step ?? '' }) });
                 ok++;
             } catch (error) { msg.className = 'rx-msg is-bad'; msg.textContent = `${file.name}: ${error.message}`; break; }
         }
@@ -446,26 +480,28 @@
         view = { cat, no: Number(no), period, i: Number(i) };
         showFile(0);
     });
-    // ไปขั้นถัดไปทันที (ปุ่มในแผงขยาย)
-    async function advance(index) {
-        const c = state.cells[index]; if (!c) return;
-        const rec = flowRec(c.u.no, c.cat, c.period), idx = stepOf(rec);
-        const next = flowSteps()[idx + 1]; if (!next) return;
-        try { await request(API, { method: 'PUT', body: JSON.stringify({ no: c.u.no, cat: c.cat, period: c.period, status: next, amount: rec?.amount || '', date: todayDmy(), note: rec?.note || '' }) }); await load(); }
-        catch (error) { window.alert(error.message); }
-    }
+    // ปุ่ม "ทำขั้นถัดไป" ในแผงขยาย → เปิดกล่องเงื่อนไขของขั้นนั้น (ไม่ข้ามเงื่อนไข)
+    function advance(index) { const c = state.cells[index]; if (!c) return; target = c; openFlow(c); }
+    dialog.addEventListener('click', async event => {
+        const alt = event.target.closest('[data-rx-alt]'); if (!alt || !target) return;
+        const status = alt.dataset.rxAlt, rec = flowRec(target.u.no, target.cat, target.period);
+        if (!window.confirm(status === 'ไม่มีรายการ' ? 'ตั้งเป็น "เดือนนี้ไม่มีบิล" ?' : `ย้อนกลับไปขั้น "${status}" ? (หลักฐานที่แนบไว้ยังอยู่)`)) return;
+        try { await request(API, { method: 'PUT', body: JSON.stringify({ no: target.u.no, cat: target.cat, period: target.period, status, amount: rec?.amount || '', date: rec?.date || todayDmy(), note: rec?.note || '', kind: rec?.kind || (target.cat === 'other' ? 'internet' : '') }) }); dialog.close(); await load(); }
+        catch (error) { const m = dialog.querySelector('.rx-msg'); if (m) { m.textContent = error.message; m.className = 'rx-msg is-bad'; } }
+    });
     dialog.addEventListener('click', event => { if (event.target === dialog || event.target.closest('[data-rx-close]')) dialog.close(); });
     dialog.addEventListener('submit', async event => {
         const form = event.target.closest('[data-rx-form]'); if (!form) return;
         event.preventDefault();
         const c = target;
         const body = Object.fromEntries([...new FormData(form).entries()].map(([k, v]) => [k, String(v).trim()]));
+        if (form.dataset.rxForm === 'flow') body.checks = [...form.querySelectorAll('input[name=checks]:checked')].map(x => x.value);
         const button = form.querySelector('[type=submit]'); button.disabled = true; button.textContent = 'กำลังบันทึก…';
         try {
             await request(API, { method: 'PUT', body: JSON.stringify({ no: c.u.no, cat: c.cat, period: c.period, ...body }) });
             dialog.close();
             await load();
-        } catch (error) { button.disabled = false; button.textContent = 'บันทึก'; const m = form.querySelector('.rx-msg'); m.textContent = error.message; m.className = 'rx-msg is-bad'; }
+        } catch (error) { button.disabled = false; button.textContent = 'ลองอีกครั้ง'; if (form.dataset.rxForm === 'flow') flowGate(form); const m = form.querySelector('.rx-msg'); m.textContent = error.message; m.className = 'rx-msg is-bad'; }
     });
 
     root.addEventListener('input', event => {
