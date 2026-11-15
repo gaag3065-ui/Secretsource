@@ -24,6 +24,15 @@
     wrap.className = 'dx-tabs-wrap';
     wrap.innerHTML = '<div class="dx-tabs" role="tablist"></div><div class="dx-panes"></div>';
     dash.after(wrap);
+    // การ์ดสรุปรายตึก (ส่วนเดิมใต้แท็บ) → พับเก็บไว้ในกล่อง กดเพื่อเปิด
+    const shell = document.querySelector('.accommodation-shell');
+    if (shell) {
+        const fold = document.createElement('details');
+        fold.className = 'dx-fold';
+        fold.innerHTML = '<summary><b>🏢 สรุปรายตึก</b><span>การ์ดจำนวนชั้น / ห้อง / พนักงานของแต่ละตึก · กดเพื่อเปิด/พับ</span></summary>';
+        wrap.after(fold);
+        fold.append(shell);
+    }
     const TABS = [
         { key: 'units', label: '🏠 ยูนิตและสถานะ', nodes: () => [$('roomOverview')] },
         { key: 'exp', label: '💳 ค่าใช้จ่ายและรอบกำหนด', nodes: () => [$('roomExpenses')] },

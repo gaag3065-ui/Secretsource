@@ -60,3 +60,12 @@
 .dx-pane > .ro, .dx-pane > .rx { margin-top: 0; }
 @media (max-width: 1250px) { .dx-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .dx-panels { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .dx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dx-panels { grid-template-columns: 1fr; } .dx-tab { flex: 1 1 calc(50% - 6px); justify-content: center; } }
+
+.dx-fold { margin: 14px 0; background: #fff; border: 1px solid #e3e0d6; border-radius: 14px; }
+.dx-fold > summary { cursor: pointer; list-style: none; padding: 14px 18px; display: flex; align-items: baseline; gap: 12px; }
+.dx-fold > summary::-webkit-details-marker { display: none; }
+.dx-fold > summary::before { content: '▸'; color: #6c7280; }
+.dx-fold[open] > summary::before { content: '▾'; }
+.dx-fold > summary b { font-size: 16px; }
+.dx-fold > summary span { font-size: 12px; color: #6c7280; }
+.dx-fold > .accommodation-shell { padding: 0 12px 12px; }
