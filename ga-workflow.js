@@ -32,6 +32,13 @@
     const thDate = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : ''; };
     const when = text => text ? new Date(text).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }) : '';
     const staffName = username => state.staff.find(p => p.username === username)?.name || username || '';
+    // ผู้รับผิดชอบได้หลายคน (assignees) — ข้อมูลเก่าที่มีคนเดียว (assignee) ยังอ่านได้
+    const asg = s => Array.isArray(s.assignees) && s.assignees.length ? s.assignees : (s.assignee ? [s.assignee] : []);
+    const asgNames = s => asg(s).map(staffName).join(', ');
+    const peopleInner = values => `${values.map(u => `<span class="wf-person">👤 ${esc(staffName(u))}<button type="button" data-people-rm="${esc(u)}" aria-label="เอาออก" title="เอาออก">×</button></span>`).join('')}<select data-people-add><option value="">＋ เพิ่มผู้รับผิดชอบ</option>${state.staff.filter(x => !values.includes(x.username)).map(x => `<option value="${esc(x.username)}">${esc(x.name)}</option>`).join('')}</select>`;
+    const peoplePicker = (values, key = 'assignees') => `<div class="wf-people" data-people data-e="${key}" data-values="${esc(JSON.stringify(values))}">${peopleInner(values)}</div>`;
+    const peopleValues = el => { try { return JSON.parse(el.dataset.values || '[]'); } catch { return []; } };
+    const setPeople = (el, values) => { el.dataset.values = JSON.stringify(values); el.innerHTML = peopleInner(values); };
     const isDone = s => s.status === 'done' || s.status === 'skip';
     const progressOf = p => ({ done: p.steps.filter(isDone).length, total: p.steps.length });
     const ITEM_KINDS = [['text', '✏️ กรอกข้อความ'], ['image', '🖼️ อัปโหลดรูปภาพ'], ['pdf', '📄 อัปโหลด PDF']];
@@ -74,7 +81,7 @@
     function cardHtml(p) {
         const { done, total } = progressOf(p);
         const next = p.steps.filter(s => !isDone(s) && s.ready);
-        const people = [...new Set(next.map(s => s.assignee).filter(Boolean))];
+        const people = [...new Set(next.flatMap(asg))];
         const late = p.due_date && p.status !== 'done' && p.due_date < new Date().toISOString().slice(0, 10);
         return `<button type="button" class="wf-card${p.status === 'done' ? ' is-done' : ''}" data-wf-open="${p.id}">
             <span class="wf-card-top"><span class="wf-chip">${esc(p.section_title)}</span>${p.due_date ? `<span class="wf-due${late ? ' is-late' : ''}">กำหนด ${esc(thDate(p.due_date))}</span>` : ''}</span>
@@ -144,7 +151,7 @@
             return `<button type="button" class="wf-node st-${st}${selected === s.id ? ' is-on' : ''}" style="left:${x}px;top:${y}px;width:${W}px;height:${H}px" data-wf-step="${esc(s.id)}">
                 <span class="wf-node-top"><span>${i + 1}. ${TYPE_ICON[s.type] || ''}</span><em>${label}${prog}</em></span>
                 <b>${esc(s.title)}</b>
-                <small>${esc(s.assignee ? `👤 ${staffName(s.assignee)}` : '')}</small>
+                <small>${esc(asg(s).length ? `👤 ${asgNames(s)}` : '')}</small>
             </button>`;
         }).join('');
         return `<div class="wf-canvas" style="width:${width}px;height:${height}px">
@@ -221,7 +228,7 @@
             ${s.done_at ? `<p class="wf-meta">${isDone(s) ? 'บันทึก' : ''}โดย ${esc(staffName(s.done_by))} ${esc(when(s.done_at))}</p>` : ''}
             ${action}
             <div class="wf-step-grid">
-                <label>ผู้รับผิดชอบ<select id="wfAssignee"><option value="">— ไม่ระบุ —</option>${state.staff.map(x => `<option value="${esc(x.username)}" ${x.username === s.assignee ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
+                <div class="wf-field"><span class="wf-field-label">ผู้รับผิดชอบ <small>เลือกได้หลายคน</small></span><div id="wfAssignee">${peoplePicker(asg(s))}</div></div>
                 <label>บันทึก / ผลลัพธ์ของขั้นตอนนี้<textarea id="wfNote" rows="5" placeholder="เช่น ของ 2 ลัง ฝากกับคุณ… เที่ยวบิน UL… ถึง 14:30">${esc(s.note)}</textarea></label>
             </div>
             <div class="wf-step-actions"><button type="button" class="fa-btn fa-btn-ghost" data-wf-save-note>บันทึก</button>${statusButtons}</div>`;
@@ -318,7 +325,7 @@
         state.edit.steps = rows.map(r => ({
             ...state.edit.steps.find(s => s.id === r.dataset.id),
             id: r.dataset.id, title: r.querySelector('[data-e=title]').value, type: r.querySelector('[data-e=type]').value,
-            assignee: r.querySelector('[data-e=assignee]').value, detail: r.querySelector('[data-e=detail]').value,
+            assignees: peopleValues(r.querySelector('[data-people]')), detail: r.querySelector('[data-e=detail]').value,
             after: [...r.querySelectorAll('[data-e=after]:checked')].map(c => c.value),
             items: readItems(r.querySelector('[data-items]'))
         }));
@@ -331,7 +338,7 @@
                 <div class="wf-eline">
                     <input data-e="title" maxlength="150" placeholder="ชื่อขั้นตอน" value="${esc(s.title)}">
                     <select data-e="type">${Object.entries(state.data.stepTypes).map(([k, v]) => `<option value="${k}" ${k === s.type ? 'selected' : ''}>${TYPE_ICON[k]} ${esc(v)}</option>`).join('')}</select>
-                    <select data-e="assignee"><option value="">ผู้รับผิดชอบ —</option>${state.staff.map(x => `<option value="${esc(x.username)}" ${x.username === s.assignee ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+                    ${peoplePicker(asg(s))}
                     <span class="wf-emove"><button type="button" data-wfe-up title="เลื่อนขึ้น">↑</button><button type="button" data-wfe-down title="เลื่อนลง">↓</button><button type="button" data-wfe-del title="ลบขั้นตอน">×</button></span>
                 </div>
                 <textarea data-e="detail" rows="3" maxlength="1000" placeholder="รายละเอียด / สิ่งที่ต้องทำในขั้นนี้">${esc(s.detail || '')}</textarea>
@@ -370,11 +377,13 @@
     $('wfDialog').addEventListener('click', event => {
         const t = event.target;
         if (t === $('wfDialog') || t.closest('[data-wf-close]')) { state.open = null; return $('wfDialog').close(); }
+        const rmPerson = t.closest('[data-people-rm]');
+        if (rmPerson) { const box = rmPerson.closest('[data-people]'); return setPeople(box, peopleValues(box).filter(u => u !== rmPerson.dataset.peopleRm)); }
         const step = t.closest('[data-wf-step]');
         if (step) { state.step = step.dataset.wfStep; return renderProject(project(state.open)); }
         const status = t.closest('[data-wf-status]');
-        if (status) return stepCall({ status: status.dataset.wfStatus, note: $('wfNote').value, assignee: $('wfAssignee').value }, status);
-        if (t.closest('[data-wf-save-note]')) return stepCall({ note: $('wfNote').value, assignee: $('wfAssignee').value }, t.closest('button'));
+        if (status) return stepCall({ status: status.dataset.wfStatus, note: $('wfNote').value, assignees: peopleValues($('wfAssignee').querySelector('[data-people]')) }, status);
+        if (t.closest('[data-wf-save-note]')) return stepCall({ note: $('wfNote').value, assignees: peopleValues($('wfAssignee').querySelector('[data-people]')) }, t.closest('button'));
         if (t.closest('[data-wf-collect]')) return sendCollect(t.closest('button'));
         const edit = t.closest('[data-wf-edit]');
         if (edit) return openEditor(Number(edit.dataset.wfEdit));
@@ -389,6 +398,7 @@
     });
     $('wfDialog').addEventListener('input', event => { if (event.target.id === 'wfPickSearch') renderPicks(); });
     $('wfDialog').addEventListener('change', event => {
+        if (event.target.matches('[data-people-add]')) { const box = event.target.closest('[data-people]'); if (event.target.value) setPeople(box, [...peopleValues(box), event.target.value]); return; }
         const pick = event.target.closest('[data-wf-pick]');
         if (!pick) return;
         if (pick.checked) state.picks.add(pick.dataset.wfPick); else state.picks.delete(pick.dataset.wfPick);
@@ -398,6 +408,8 @@
         const t = event.target;
         if (t.closest('[data-wfe-close]')) return $('wfEditDialog').close();
         if (t.closest('[data-wfe-add]')) { readEditSteps(); state.edit.steps.push({ id: `s${Date.now().toString(36)}`, title: '', type: 'general', after: state.edit.steps.length ? [state.edit.steps.at(-1).id] : [] }); return renderEditSteps(); }
+        const rmPerson = t.closest('[data-people-rm]');
+        if (rmPerson) { const box = rmPerson.closest('[data-people]'); return setPeople(box, peopleValues(box).filter(u => u !== rmPerson.dataset.peopleRm)); }
         const row = t.closest('.wf-erow');
         if (!row) return;
         const move = t.closest('[data-wfe-up], [data-wfe-down], [data-wfe-del]');
@@ -413,6 +425,7 @@
     });
     $('wfEditDialog').addEventListener('change', event => {
         const t = event.target;
+        if (t.matches('[data-people-add]')) { const box = t.closest('[data-people]'); if (t.value) setPeople(box, [...peopleValues(box), t.value]); return; }
         if (t.name === 'template') {
             const tpl = state.data.templates.find(x => x.key === t.value);
             state.edit.steps = JSON.parse(JSON.stringify(tpl.steps));
