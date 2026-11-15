@@ -64,7 +64,7 @@
     const snMatch = (u, q) => { const k = normSn(q); return !k || (u.nets || []).some(n => [n.account, n.contract, n.serial, n.holder].some(v => normSn(v).includes(k))); };
     const otherKind = rec => rec?.kind === 'internet' ? '🌐 อินเทอร์เน็ต' : 'อื่นๆ' + (rec?.note ? ': ' + rec.note : '');
     const netsLine = u => (u.nets || []).length ? (u.nets || []).map(n => [n.provider, n.package, n.account ? 'Account Number: ' + n.account : '', n.contract ? 'SLT / Contract Number: ' + n.contract : '', n.serial ? 'Serial Number: ' + n.serial : '', n.holder ? 'Name: ' + n.holder : ''].filter(Boolean).join(' · ')).join(' | ') : 'ยังไม่มีข้อมูลอินเทอร์เน็ตในไฟล์อินเตอร์เน็ต';
-    const FLOW_CATS = ['water', 'electric'];
+    const FLOW_CATS = ['water', 'electric', 'other'];
     const FLOW_SHORT = ['ตามบิล', 'ได้รับบิล', 'ตั้งเบิก', 'รอรับเงิน', 'รับเงิน', 'เตรียมจ่าย', 'จ่ายแล้ว', 'บันทึกบิล'];
     const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
     const flowSteps = () => state.data.flowSteps || [];
@@ -86,13 +86,14 @@
             if (period > current) return { ...base, tone: 'na', text: 'ยังไม่มีบิล' };
             if (period === current) return day > 5
                 ? { ...base, tone: 'bad', text: 'ยังไม่เริ่ม — เลยวันที่ 5', sub: 'ต้องตั้งเบิกไม่เกินวันที่ 5', alert: cat, late: true }
-                : { ...base, tone: 'warn', text: 'ยังไม่เริ่ม', sub: 'ตามบิลกับเจ้าของบ้าน (1–5)', alert: cat };
+                : { ...base, tone: 'bad', text: 'ยังไม่เริ่ม', sub: 'ตามบิลกับเจ้าของบ้าน (1–5)', alert: cat };
             return periodHasData(period) ? { ...base, tone: 'bad', text: 'ไม่มีข้อมูล', sub: 'เดือนนี้ผ่านไปแล้ว', alert: cat, late: true } : { ...base, tone: 'na', text: 'ยังไม่ได้บันทึก' };
         }
         const done = idx >= 6;
-        let tone = done ? 'ok' : 'warn', late = false;
-        if (!done && ((period === current && idx < 2 && day > 5) || period < current)) { tone = 'bad'; late = true; }
-        const sub = [rec.amount ? `฿${num(rec.amount)}` : '', rec.date, idx === 6 ? 'รอบันทึกบิล' : '', rec.files?.length ? `📷 ${rec.files.length}` : ''].filter(Boolean).join(' · ');
+        // สี: ยังไม่เริ่ม/ตามบิล = แดง · ได้รับบิล→เตรียมนำไปจ่าย (②–⑥) = ส้ม · จ่ายเรียบร้อย/บันทึกบิลแล้ว = เขียว
+        let tone = done ? 'ok' : idx === 0 ? 'bad' : 'warn', late = false;
+        if (!done && ((period === current && idx < 2 && day > 5) || period < current)) late = true;
+        const sub = [cat === 'other' ? otherKind(rec) : '', rec.amount ? `฿${num(rec.amount)}` : '', rec.date, idx === 6 ? 'รอบันทึกบิล' : '', rec.files?.length ? `📷 ${rec.files.length}` : ''].filter(Boolean).join(' · ');
         return { ...base, tone, late, text: `${idx + 1}/8 ${flowSteps()[idx]}`, sub, alert: done ? '' : cat };
     }
     function monthSummary(period, units) {
@@ -147,7 +148,7 @@
             const gas = recsOf(u.no, 'gas', state.month);
             if (gas?.status === 'ไม่มีรายการ' && !rec) return { tone: 'na', text: '–', edit: { u, cat, period: state.month, rec } };
         }
-        if (!rec) return future ? { tone: 'na', text: '–', edit: { u, cat, period: state.month, rec } } : { tone: cat === 'gas_recv' ? 'warn' : 'bad', text: def.states[1], alert: cat, edit: { u, cat, period: state.month, rec } };
+        if (!rec) return future ? { tone: 'na', text: '–', edit: { u, cat, period: state.month, rec } } : { tone: 'bad', text: def.states[1], alert: cat, edit: { u, cat, period: state.month, rec } };
         const done = rec.status === def.states[0];
         return { tone: rec.status === 'ไม่มีรายการ' ? 'na' : done ? 'ok' : (cat === 'gas_recv' ? 'warn' : 'bad'), text: rec.status === 'ไม่มีรายการ' ? '–' : (done ? '✓ ' : '') + rec.status, sub: [cat === 'other' ? otherKind(rec) : '', money, rec.date].filter(Boolean).join(' · '), alert: done || rec.status === 'ไม่มีรายการ' ? '' : cat, edit: { u, cat, period: state.month, rec } };
     }
@@ -209,8 +210,8 @@
         const alerts = [];
         const flowLate = FLOW_CATS.map(c => [c, rows.filter(r => r.cells[c].late).length]).filter(([, n]) => n);
         const flowOpen = FLOW_CATS.map(c => [c, rows.filter(r => r.cells[c].alert === c && !r.cells[c].late).length]).filter(([, n]) => n);
-        if (flowLate.length) alerts.push(['bad', `บิลค่าน้ำ/ไฟ ${monthLabel(state.month)} เลยกำหนดหรือค้างขั้นตอน ${flowLate.reduce((n, [, v]) => n + v, 0)} รายการ — ${flowLate.map(([c, n]) => `${labelOf(c)} ${n}`).join(' · ')}`, 'flow']);
-        if (flowOpen.length) alerts.push(['warn', `บิลค่าน้ำ/ไฟ ${monthLabel(state.month)} ที่ยังไม่ครบ 8 ขั้นตอน ${flowOpen.reduce((n, [, v]) => n + v, 0)} รายการ — ${flowOpen.map(([c, n]) => `${labelOf(c)} ${n}`).join(' · ')}`, 'flow']);
+        if (flowLate.length) alerts.push(['bad', `บิลค่าน้ำ/ไฟ/อื่นๆ ${monthLabel(state.month)} เลยกำหนดหรือค้างขั้นตอน ${flowLate.reduce((n, [, v]) => n + v, 0)} รายการ — ${flowLate.map(([c, n]) => `${labelOf(c)} ${n}`).join(' · ')}`, 'flow']);
+        if (flowOpen.length) alerts.push(['warn', `บิลค่าน้ำ/ไฟ/อื่นๆ ${monthLabel(state.month)} ที่ยังไม่ครบ 8 ขั้นตอน ${flowOpen.reduce((n, [, v]) => n + v, 0)} รายการ — ${flowOpen.map(([c, n]) => `${labelOf(c)} ${n}`).join(' · ')}`, 'flow']);
         const unpaidList = MONTH_CATS.filter(c => c !== 'gas_recv' && !FLOW_CATS.includes(c)).map(c => [c, unpaid(c)]).filter(([, n]) => n);
         if (unpaidList.length) alerts.push(['bad', `ค่าใช้จ่ายเดือน ${monthLabel(state.month)} ที่ยังไม่จ่าย ${unpaidList.reduce((n, [, v]) => n + v, 0)} รายการ — ${unpaidList.map(([c, n]) => `${labelOf(c)} ${n}`).join(' · ')}`, 'unpaid']);
         if (unpaid('gas_recv')) alerts.push(['warn', `ยังไม่ได้รับค่าแก๊สจากพนักงาน ${unpaid('gas_recv')} ยูนิต`, 'unpaid']);
@@ -337,15 +338,20 @@
         dialog.innerHTML = `<form data-rx-form="flow" class="rx-flowform"><h3>${esc(label)} — ${esc(c.u.project)} ${esc(c.u.unit)} · ${esc(monthLabel(c.period))}</h3>
             <fieldset class="rx-stepopts"><legend>ขั้นตอนตอนนี้</legend>${flowSteps().map((name, i) => `<label class="rx-stepopt"><input type="radio" name="status" value="${esc(name)}" ${name === (current || (rec ? '' : flowSteps()[0])) ? 'checked' : ''}><span><i>${CIRCLED[i]}</i> ${esc(name)}${i === 0 ? ' <small>(วันที่ 1–5)</small>' : i === 2 ? ' <small>(ไม่เกินวันที่ 5)</small>' : ''}</span></label>`).join('')}
                 <label class="rx-stepopt is-none"><input type="radio" name="status" value="ไม่มีรายการ" ${rec?.status === 'ไม่มีรายการ' ? 'checked' : ''}><span>เดือนนี้ไม่มีบิล${esc(label)}</span></label></fieldset>
+            ${c.cat === 'other' ? `<fieldset class="rx-stepopts rx-kind"><legend>ประเภทค่าใช้จ่าย</legend>
+                <label class="rx-stepopt"><input type="radio" name="kind" value="internet" ${(rec?.kind || 'internet') === 'internet' ? 'checked' : ''}><span>🌐 ค่าอินเทอร์เน็ต <small>(ไม่ต้องลงหมายเหตุก็ได้)</small></span></label>
+                <label class="rx-stepopt"><input type="radio" name="kind" value="other" ${rec?.kind === 'other' ? 'checked' : ''}><span>ค่าอื่นๆ <small>(ต้องลงหมายเหตุว่าเป็นค่าอะไร)</small></span></label>
+                <small class="rx-nets">ข้อมูลอินเทอร์เน็ตของยูนิตนี้: ${esc(netsLine(c.u))}</small></fieldset>` : ''}
             <div class="rx-two"><label>จำนวนเงินตามบิล (บาท)<input name="amount" inputmode="decimal" value="${esc(rec?.amount || '')}" placeholder="เช่น 1,250"></label>
             <label>วันที่ของขั้นตอนนี้ (วัน/เดือน/ปี)${dateInput(todayDmy())}</label></div>
-            <label>หมายเหตุ<input name="note" maxlength="200" value="${esc(rec?.note || '')}"></label>
+            <label>หมายเหตุ<span data-rx-notehint></span><input name="note" maxlength="200" value="${esc(rec?.note || '')}"></label>
             <div class="rx-files"><div class="rx-files-head"><b>รูปบิล</b><label class="rx-btn rx-upload">＋ แนบรูป / PDF<input type="file" accept="image/*,application/pdf" multiple hidden data-rx-upload></label></div>
                 <div class="rx-thumbs" data-rx-dialog-thumbs>${thumbHtml(rec, c.cat, true) || '<span class="rx-nophoto">ยังไม่มีรูปบิล — แนบรูปแล้วระบบจะตั้งเป็น “ได้รับบิลแล้ว” ให้</span>'}</div></div>
             <p class="rx-hint">${rec ? 'บันทึกล่าสุดโดย ' + esc(rec.by) + ' ' + esc(rec.at) : 'ยังไม่เคยบันทึก'}</p>
             <p class="rx-msg" role="status"></p>
             <div class="rx-actions"><button type="submit" class="rx-btn rx-primary">บันทึก</button><button type="button" class="rx-btn" data-rx-close>ปิด</button></div></form>`;
         if (!dialog.open) dialog.showModal();
+        syncKind();
         hydrateThumbs(dialog);
     }
     const readAsDataUrl = file => new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(new Error('อ่านไฟล์ไม่ได้')); r.readAsDataURL(file); });
@@ -424,7 +430,7 @@
         const stage = lightbox.querySelector('.rx-lb-stage');
         try {
             const url = await fileUrl(f.id);
-            stage.innerHTML = f.mime === 'application/pdf' ? `<iframe src="${url}" title="บิล PDF"></iframe>` : `<img src="${url}" alt="รูปบิล" data-rx-zoom>`;
+            stage.innerHTML = f.mime === 'application/pdf' ? `<iframe src="${url}#view=FitH" title="บิล PDF"></iframe>` : `<img src="${url}" alt="รูปบิล" data-rx-zoom>`;
         } catch (error) { stage.textContent = error.message; }
     }
     lightbox.addEventListener('click', event => {
