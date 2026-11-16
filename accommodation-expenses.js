@@ -183,7 +183,10 @@
         const edit = { u, cat: 'notice', period: iso(end), rec, due: deadline };
         const sub = `หมดสัญญา ${dmy(end)}`;
         if (rec && rec.status === 'แจ้งแล้ว') return { tone: 'ok', text: '✓ แจ้งยกเลิกแล้ว', sub, edit };
-        if (today > end) return { tone: 'bad', text: 'หมดสัญญาแล้ว', sub, alert: 'notice:over', edit };
+        const nFiles = rec?.files?.length ? ` · 📄 ${rec.files.length}` : '';
+        if (rec && rec.status === 'ต่อสัญญาใหม่แล้ว') return { tone: 'ok', text: '✓ ต่อสัญญาใหม่แล้ว', sub: `${sub}${nFiles} · อัปเดตวันสิ้นสุดใหม่ในทะเบียน`, edit };
+        if (rec && rec.status === 'ไม่ต่อสัญญา') return { tone: 'na', text: 'ไม่ต่อสัญญา', sub, edit };
+        if (today > end) return { tone: 'bad', text: 'หมดสัญญาแล้ว — ยังไม่ได้ต่อสัญญา', sub: `${sub} · กดเพื่อระบุว่าต่อสัญญาใหม่แล้วหรือยัง`, alert: 'notice:over', edit };
         const toDeadline = daysBetween(today, deadline);
         if (toDeadline <= 0) return { tone: 'bad', text: `ถึงกำหนดแจ้งยกเลิก (เหลือ ${daysBetween(today, end)} วันก่อนหมดสัญญา)`, sub: `ต้องแจ้งภายใน ${dmy(deadline)} · ${sub}`, alert: 'notice:due', edit };
         if (toDeadline <= 30) return { tone: 'warn', text: `ต้องแจ้งภายใน ${toDeadline} วัน`, sub: `${dmy(deadline)} · ${sub}`, alert: 'notice:soon', edit };
@@ -284,13 +287,14 @@
         if (!c) return;
         target = c;
         if (state.data.cats[c.cat].flow) return openFlow(c);
+        if (c.cat === 'notice' && parseIso(c.period) && parseIso(c.period) < parseIso(state.data.today)) return openRenewal(c);
         const def = state.data.cats[c.cat];
         const hasAmount = def.kind === 'month' || c.cat === 'rent_adv';
         const rec = c.rec;
         const title = def.label + ' — ' + c.u.project + ' ' + c.u.unit + ' · ' + (def.kind === 'month' ? monthLabel(c.period) : c.cat === 'notice' ? 'สัญญาหมด ' + dmy(parseIso(c.period)) : 'รอบ ' + dmy(parseIso(c.period)));
         const today = dmy(parseIso(state.data.today));
         dialog.innerHTML = `<form data-rx-form="${index}"><h3>${esc(title)}</h3>
-            <label>สถานะ<select name="status">${def.states.map(s => `<option ${s === (rec?.status || def.states[0]) ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
+            <label>สถานะ<select name="status">${(c.cat === 'notice' ? def.states.slice(0, 2) : def.states).map(s => `<option ${s === (rec?.status || def.states[0]) ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
             ${c.cat === 'other' ? `<fieldset class="rx-stepopts rx-kind"><legend>ประเภทค่าใช้จ่าย</legend>
                 <label class="rx-stepopt"><input type="radio" name="kind" value="internet" ${(rec?.kind || 'internet') === 'internet' ? 'checked' : ''}><span>🌐 ค่าอินเทอร์เน็ต <small>(ไม่ต้องลงหมายเหตุก็ได้)</small></span></label>
                 <label class="rx-stepopt"><input type="radio" name="kind" value="other" ${rec?.kind === 'other' ? 'checked' : ''}><span>ค่าอื่นๆ <small>(ต้องลงหมายเหตุว่าเป็นค่าอะไร)</small></span></label>
@@ -328,6 +332,84 @@
         const nat = event.target.closest('[data-rx-calnative]'); if (!nat || !nat.value) return;
         const [y, mo, d] = nat.value.split('-');
         nat.closest('.rx-date').querySelector('input[name=date]').value = `${d}/${mo}/${y}`;
+    });
+
+    // ---------------------------------------------------------------- สัญญาหมดแล้ว: ต่อสัญญาใหม่แล้วหรือยัง + อัปโหลดสัญญาใหม่ (PDF) + ให้ระบบอ่านข้อมูลสำคัญมาเสนอ
+    const RENEW_STATES = ['ยังไม่ได้ต่อสัญญา', 'ต่อสัญญาใหม่แล้ว', 'ไม่ต่อสัญญา'];
+    const CONTRACT_API = `${window.APP_CONFIG.API_BASE_URL}/api/room-inspection/contract-extract`;
+    const ROOMS_API = `${window.APP_CONFIG.API_BASE_URL}/api/accommodation-rooms/rooms`;
+    const pickOptions = (list, key, fmt) => { const seen = new Set(); return (list || []).filter(x => !seen.has(x[key]) && seen.add(x[key])).map(x => `<option value="${esc(x[key])}" title="${esc(x.context || '')}">${esc(fmt ? fmt(x) : x[key])}</option>`).join(''); };
+    function openRenewal(c) {
+        const rec = recsOf(c.u.no, 'notice', c.period);
+        const status = RENEW_STATES.includes(rec?.status) ? rec.status : RENEW_STATES[0];
+        const end = parseIso(c.period);
+        dialog.innerHTML = `<form data-rx-form="renew" class="rx-renew"><h3>สัญญาหมดแล้ว — ${esc(c.u.project)} ${esc(c.u.unit)}</h3>
+            <p class="rx-hint">สัญญาเดิมหมดเมื่อ ${end ? dmy(end) : '-'} · ค่าเช่าเดิม ${num(c.u.rent)} /เดือน</p>
+            <fieldset class="rx-stepopts"><legend>ต่อสัญญาใหม่แล้วหรือยัง</legend>${RENEW_STATES.map(s => `<label class="rx-stepopt"><input type="radio" name="status" value="${esc(s)}" ${s === status ? 'checked' : ''}><span>${esc(s)}</span></label>`).join('')}</fieldset>
+            <label>วันที่ตัดสินใจ/บันทึก (วัน/เดือน/ปี)${dateInput(rec?.date || todayDmy())}</label>
+            <label>หมายเหตุ<input name="note" maxlength="200" value="${esc(rec?.note || '')}"></label>
+            <div class="rx-gate" data-rx-renewbox ${status === 'ต่อสัญญาใหม่แล้ว' ? '' : 'hidden'}><h4>📄 สัญญาใหม่ (PDF)</h4>
+                <div class="rx-files-head"><small>แนบไฟล์สัญญาใหม่แล้วกด "อ่านข้อมูลจากสัญญา" — ระบบอ่านในเครื่องหลังบ้าน (ไม่ส่งออกภายนอก) แล้วเสนอวันเริ่ม/สิ้นสุด/ค่าเช่าให้คุณตรวจก่อนบันทึก</small>
+                    <label class="rx-btn rx-upload">＋ แนบสัญญาใหม่ (PDF)<input type="file" accept="application/pdf" hidden data-rx-contract></label></div>
+                <div class="rx-thumbs" data-rx-dialog-thumbs>${thumbHtml(rec, 'notice', true) || '<span class="rx-nophoto">ยังไม่มีไฟล์สัญญาใหม่</span>'}</div>
+                <div data-rx-extract></div></div>
+            <p class="rx-hint">${rec ? 'บันทึกล่าสุดโดย ' + esc(rec.by) + ' ' + esc(rec.at) : 'ยังไม่เคยบันทึก'}</p>
+            <p class="rx-msg" role="status"></p>
+            <div class="rx-actions"><button type="submit" class="rx-btn rx-primary">บันทึก</button><button type="button" class="rx-btn" data-rx-close>ยกเลิก</button></div></form>`;
+        if (!dialog.open) dialog.showModal();
+        hydrateThumbs(dialog);
+    }
+    dialog.addEventListener('change', event => {
+        const form = event.target.closest('form[data-rx-form=renew]'); if (!form) return;
+        if (event.target.name === 'status') form.querySelector('[data-rx-renewbox]').hidden = event.target.value !== 'ต่อสัญญาใหม่แล้ว';
+    });
+    dialog.addEventListener('change', async event => {
+        const input = event.target.closest('[data-rx-contract]'); if (!input || !target) return;
+        const form = input.closest('form'), msg = form.querySelector('.rx-msg'), box = form.querySelector('[data-rx-extract]');
+        const file = input.files[0]; input.value = ''; if (!file) return;
+        if (file.type !== 'application/pdf') { msg.className = 'rx-msg is-bad'; msg.textContent = 'แนบได้เฉพาะไฟล์ PDF'; return; }
+        try {
+            msg.className = 'rx-msg'; msg.textContent = 'กำลังบันทึกสถานะและอัปโหลดสัญญา…';
+            const body = Object.fromEntries([...new FormData(form).entries()].map(([k, v]) => [k, String(v).trim()]));
+            await request(API, { method: 'PUT', body: JSON.stringify({ no: target.u.no, cat: 'notice', period: target.period, ...body, status: 'ต่อสัญญาใหม่แล้ว' }) });
+            const dataUrl = await prepareFile(file);
+            await request(`${API}/files`, { method: 'POST', body: JSON.stringify({ no: target.u.no, cat: 'notice', period: target.period, name: file.name, dataUrl }) });
+            await load();
+            const rec = recsOf(target.u.no, 'notice', target.period);
+            form.querySelector('[data-rx-dialog-thumbs]').innerHTML = thumbHtml(rec, 'notice', true) || '';
+            hydrateThumbs(dialog);
+            msg.textContent = 'อัปโหลดแล้ว — กำลังอ่านข้อมูลจากสัญญา…';
+            const info = await request(CONTRACT_API, { method: 'POST', body: JSON.stringify({ dataUrl }) });
+            msg.textContent = '';
+            box.innerHTML = info.error ? `<div class="rx-warn">${esc(info.error)} — กรอกวันที่/ค่าเช่าของสัญญาใหม่เองด้านล่างได้</div>${extractForm({})}`
+                : `<div class="rx-hint">อ่านได้ ${info.pages} หน้า · เลือกค่าที่ถูกต้อง (เลื่อนเมาส์ที่ตัวเลือกเพื่อดูประโยคต้นฉบับ) — ระบบอ่านอัตโนมัติอาจผิดพลาด ต้องตรวจกับสัญญาทุกครั้ง</div>${extractForm(info)}`;
+        } catch (error) { msg.className = 'rx-msg is-bad'; msg.textContent = error.message; }
+    });
+    function extractForm(info) {
+        const first = k => (info[k] || [])[0]?.value || '';
+        const pickRow = (label, name, key, fmt) => `<label>${label}<select data-rx-pick="${name}"><option value="">— เลือกจากสัญญา —</option>${pickOptions(info[key], 'value', fmt)}</select><input name="new_${name}" data-rx-new="${name}" value="${esc(first(key) && key !== 'rent' ? first(key) : (key === 'rent' ? first(key) : ''))}" placeholder="${name === 'rent' ? 'ค่าเช่า/เดือน (ตัวเลข)' : 'วัน/เดือน/ปี'}"></label>`;
+        const ctxBox = (info.term || []).length ? `<div class="rx-hint">ระยะสัญญาที่พบ: ${[...new Set(info.term.map(t => t.months))].join(', ')} เดือน</div>` : '';
+        return `${ctxBox}<div class="rx-two">${pickRow('วันเริ่มสัญญาใหม่', 'start', 'start')}${pickRow('วันสิ้นสุดสัญญาใหม่', 'end', 'end')}</div>${pickRow(`ค่าเช่าต่อเดือน${info.currency ? ' (' + info.currency + ')' : ''}`, 'rent', 'rent', x => `${num(x.value)} ${x.currency || ''}`)}
+            <button type="button" class="rx-btn rx-primary" data-rx-apply>✔ อัปเดตวันเริ่ม/สิ้นสุด/ค่าเช่า ในทะเบียนห้อง</button>`;
+    }
+    dialog.addEventListener('change', event => {
+        const pick = event.target.closest('[data-rx-pick]'); if (!pick) return;
+        const field = pick.parentElement.querySelector(`[data-rx-new="${pick.dataset.rxPick}"]`); if (field && pick.value) field.value = pick.value;
+    });
+    dialog.addEventListener('click', async event => {
+        const apply = event.target.closest('[data-rx-apply]'); if (!apply || !target) return;
+        const form = apply.closest('form'), msg = form.querySelector('.rx-msg');
+        const v = n => (form.querySelector(`[data-rx-new="${n}"]`)?.value || '').trim();
+        const start = v('start'), end = v('end'), rent = v('rent').replace(/,/g, '');
+        if (!end || !parseDmy(end)) { msg.className = 'rx-msg is-bad'; msg.textContent = 'ต้องระบุวันสิ้นสุดสัญญาใหม่เป็น วัน/เดือน/ปี'; return; }
+        if (start && !parseDmy(start)) { msg.className = 'rx-msg is-bad'; msg.textContent = 'วันเริ่มสัญญาต้องเป็น วัน/เดือน/ปี'; return; }
+        if (rent && !/^\d+(\.\d+)?$/.test(rent)) { msg.className = 'rx-msg is-bad'; msg.textContent = 'ค่าเช่าต้องเป็นตัวเลข'; return; }
+        const old = target.u;
+        if (!window.confirm(`อัปเดตทะเบียนห้อง ${old.project} ${old.unit}\nวันสิ้นสุด: ${old.end || '-'} → ${end}${start ? `\nวันเริ่ม: → ${start}` : ''}${rent ? `\nค่าเช่า/เดือน: ${num(old.rent)} → ${num(rent)}` : ''}\nยืนยัน?`)) return;
+        try {
+            await request(`${ROOMS_API}/${old.no}`, { method: 'PUT', body: JSON.stringify({ ...(start ? { start } : {}), end, ...(rent ? { rent } : {}) })});
+            msg.className = 'rx-msg'; msg.textContent = 'อัปเดตทะเบียนห้องแล้ว'; dialog.close(); await load();
+        } catch (error) { msg.className = 'rx-msg is-bad'; msg.textContent = error.message; }
     });
 
     // ---------------------------------------------------------------- กล่องบันทึกบิลค่าน้ำ/ไฟ (เลือกขั้นตอน + แนบรูปบิล)

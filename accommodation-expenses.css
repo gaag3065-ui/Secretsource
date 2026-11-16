@@ -188,3 +188,7 @@ button.rx-chip:hover { filter: brightness(.96); outline: 2px solid rgba(8, 127, 
 .rx-alt .rx-btn { margin: 6px 6px 0 0; }
 button[data-rx-confirm]:disabled { opacity: .45; cursor: not-allowed; }
 .rx-dialog .rx-check { align-items: flex-start; }
+
+.rx-warn { background: #fff4d6; border: 1px solid #f2cf93; color: #9a5b00; border-radius: 10px; padding: 8px 12px; font-size: 13px; }
+.rx-renew select { width: 100%; margin-bottom: 4px; }
+.rx-dialog:has(.rx-renew) { width: min(640px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: auto; }
