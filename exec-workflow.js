@@ -5,10 +5,14 @@
     const status = s => finished(s) ? (s.status === 'skip' ? 'ข้ามขั้นตอน' : '✓ สำเร็จแล้ว') : s.status === 'doing' ? '● กำลังทำ' : s.ready ? 'พร้อมเริ่ม' : 'รอขั้นตอนก่อนหน้า';
     const kind = s => finished(s) ? 'done' : s.status === 'doing' ? 'doing' : s.ready ? 'ready' : 'wait';
     let projects = [];
-    // เส้นย้อนกลับ (ไปขั้นที่อยู่คอลัมน์ก่อนหน้าและอยู่แถวล่างลงไป): โค้งอ้อมลงใต้กล่องต้นทาง วิ่งตามช่องว่างระหว่างแถว แล้วลงเข้าด้านบนกล่องปลายทาง — ไม่ลอดใต้กล่องใดๆ
-    function wrapPath(sx, sy, tx, ty, gapY) {
-        const r = Math.min(8, gapY / 2 - 6), gy = sy + gapY / 2, dir = tx < sx ? -1 : 1;
-        return `M${sx},${sy} L${sx},${gy - r} Q${sx},${gy} ${sx + dir * r},${gy} L${tx - dir * r},${gy} Q${tx},${gy} ${tx},${gy + r} L${tx},${ty - 6}`;
+    // เส้นที่ข้ามคอลัมน์/ย้อนกลับ: วิ่งตามช่องว่างระหว่างแถวและช่องว่างระหว่างคอลัมน์ (มุมโค้ง) ไม่ตัดผ่านหรือลอดใต้กล่องใดๆ
+    function elbowPath(a, b, size) {
+        const { W, H, GX, GY } = size, r = 6;
+        const x1 = a.x + W, y1 = a.y + H / 2, x2 = b.x, y2 = b.y + H / 2;
+        const xs = x1 + GX / 2, xt = x2 - GX / 2;
+        const gy = (b.y < a.y ? b.y : a.y) + H + GY / 2;
+        const d1 = gy > y1 ? 1 : -1, d2 = y2 > gy ? 1 : -1, h = xt >= xs ? 1 : -1;
+        return `M${x1},${y1} L${xs - r},${y1} Q${xs},${y1} ${xs},${y1 + d1 * r} L${xs},${gy - d1 * r} Q${xs},${gy} ${xs + h * r},${gy} L${xt - h * r},${gy} Q${xt},${gy} ${xt},${gy + d2 * r} L${xt},${y2 - d2 * r} Q${xt},${y2} ${xt + r},${y2} L${x2 - 6},${y2}`;
     }
     function graph(p) {
         if (!p.steps.length) return '<p>ยังไม่มีขั้นตอนงาน</p>';
@@ -27,7 +31,7 @@
         const paths = p.steps.flatMap(s => s.after.map(a => {
             const from = positions.get(a), to = positions.get(s.id); if (!from || !to) return '';
             const x = from.x + w, y = from.y + h / 2, endX = to.x - 5, endY = to.y + h / 2, mid = (x + endX) / 2;
-            const d = (to.x <= from.x && to.y > from.y) ? wrapPath(from.x + w / 2, from.y + h, to.x + w / 2, to.y, 20) : `M${x},${y} C${mid},${y} ${mid},${endY} ${endX},${endY}`;
+            const d = (to.x - from.x > w + gap + 1 || to.x <= from.x) ? elbowPath(from, to, { W: w, H: h, GX: gap, GY: 20 }) : `M${x},${y} C${mid},${y} ${mid},${endY} ${endX},${endY}`;
             return `<path d="${d}" stroke="${finished(byId.get(a)) ? '#16a34a' : '#94a3b8'}" marker-end="url(#exArrow${p.id})"/>`;
         })).join('');
         return `<div class="ex-wf-scroll" tabindex="0" aria-label="ผังขั้นตอน ${esc(p.title)}"><div class="ex-wf-canvas" style="width:${width}px;height:${height}px">

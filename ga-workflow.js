@@ -134,10 +134,14 @@
         const width = 32 + cols.length * (W + GX) - GX, height = 32 + Math.max(...cols.map(c => c.length)) * (H + GY) - GY;
         return { pos, W, H, width, height };
     }
-    // เส้นย้อนกลับ (ไปขั้นที่อยู่คอลัมน์ก่อนหน้าและอยู่แถวล่างลงไป): โค้งอ้อมลงใต้กล่องต้นทาง วิ่งตามช่องว่างระหว่างแถว แล้วลงเข้าด้านบนกล่องปลายทาง — ไม่ลอดใต้กล่องใดๆ
-    function wrapPath(sx, sy, tx, ty, gapY) {
-        const r = Math.min(8, gapY / 2 - 6), gy = sy + gapY / 2, dir = tx < sx ? -1 : 1;
-        return `M${sx},${sy} L${sx},${gy - r} Q${sx},${gy} ${sx + dir * r},${gy} L${tx - dir * r},${gy} Q${tx},${gy} ${tx},${gy + r} L${tx},${ty - 6}`;
+    // เส้นที่ข้ามคอลัมน์/ย้อนกลับ: วิ่งตามช่องว่างระหว่างแถวและช่องว่างระหว่างคอลัมน์ (มุมโค้ง) ไม่ตัดผ่านหรือลอดใต้กล่องใดๆ
+    function elbowPath(a, b, size) {
+        const { W, H, GX, GY } = size, r = 6;
+        const x1 = a.x + W, y1 = a.y + H / 2, x2 = b.x, y2 = b.y + H / 2;
+        const xs = x1 + GX / 2, xt = x2 - GX / 2;
+        const gy = (b.y < a.y ? b.y : a.y) + H + GY / 2;
+        const d1 = gy > y1 ? 1 : -1, d2 = y2 > gy ? 1 : -1, h = xt >= xs ? 1 : -1;
+        return `M${x1},${y1} L${xs - r},${y1} Q${xs},${y1} ${xs},${y1 + d1 * r} L${xs},${gy - d1 * r} Q${xs},${gy} ${xs + h * r},${gy} L${xt - h * r},${gy} Q${xt},${gy} ${xt},${gy + d2 * r} L${xt},${y2 - d2 * r} Q${xt},${y2} ${xt + r},${y2} L${x2 - 6},${y2}`;
     }
     function diagramHtml(p, selected = state.step) {
         const { pos, W, H, width, height } = layout(p.steps);
@@ -146,8 +150,8 @@
             if (!from || !to) return '';
             const x1 = from.x + W, y1 = from.y + H / 2, x2 = to.x, y2 = to.y + H / 2, mx = (x1 + x2) / 2;
             const src = p.steps.find(x => x.id === a);
-            const back = to.x <= from.x && to.y > from.y;
-            const d = back ? wrapPath(from.x + W / 2, from.y + H, to.x + W / 2, to.y, 22) : `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2 - 6},${y2}`;
+            const skip = to.x - from.x > W + 64 + 1 || to.x <= from.x;
+            const d = skip ? elbowPath(from, to, { W, H, GX: 64, GY: 22 }) : `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2 - 6},${y2}`;
             return `<path d="${d}" class="${isDone(src) ? 'is-done' : ''}" marker-end="url(#wfArrow${isDone(src) ? 'Done' : ''})"/>`;
         })).join('');
         const nodes = p.steps.map((s, i) => {
