@@ -1,4 +1,4 @@
-window.APP_VERSION = '20261115-gate';
+window.APP_VERSION = '20261116-pay';
 
 console.log(
     `🚀 Secretsource Version: ${window.APP_VERSION}`
