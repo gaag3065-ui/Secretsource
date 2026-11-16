@@ -1,5 +1,6 @@
 {
   "role": "frontend",
   "pair": "../secretsource-backend",
-  "commands": []
+  "commands": ["npm run test:e2e --silent"],
+  "timeoutSec": 150
 }

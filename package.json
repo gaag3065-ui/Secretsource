@@ -2,5 +2,12 @@
   "dependencies": {
     "bcrypt": "^6.0.0",
     "readline-sync": "^1.4.10"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.65.1"
+  },
+  "scripts": {
+    "test:e2e": "node --test tests/e2e/*.test.js",
+    "test": "node --test tests/e2e/*.test.js"
   }
 }
