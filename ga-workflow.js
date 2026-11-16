@@ -134,6 +134,11 @@
         const width = 32 + cols.length * (W + GX) - GX, height = 32 + Math.max(...cols.map(c => c.length)) * (H + GY) - GY;
         return { pos, W, H, width, height };
     }
+    // เส้นย้อนกลับ (ไปขั้นที่อยู่คอลัมน์ก่อนหน้าและอยู่แถวล่างลงไป): โค้งอ้อมลงใต้กล่องต้นทาง วิ่งตามช่องว่างระหว่างแถว แล้วลงเข้าด้านบนกล่องปลายทาง — ไม่ลอดใต้กล่องใดๆ
+    function wrapPath(sx, sy, tx, ty, gapY) {
+        const r = Math.min(8, gapY / 2 - 6), gy = sy + gapY / 2, dir = tx < sx ? -1 : 1;
+        return `M${sx},${sy} L${sx},${gy - r} Q${sx},${gy} ${sx + dir * r},${gy} L${tx - dir * r},${gy} Q${tx},${gy} ${tx},${gy + r} L${tx},${ty - 6}`;
+    }
     function diagramHtml(p, selected = state.step) {
         const { pos, W, H, width, height } = layout(p.steps);
         const edges = p.steps.flatMap(s => s.after.map(a => {
@@ -141,7 +146,9 @@
             if (!from || !to) return '';
             const x1 = from.x + W, y1 = from.y + H / 2, x2 = to.x, y2 = to.y + H / 2, mx = (x1 + x2) / 2;
             const src = p.steps.find(x => x.id === a);
-            return `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2 - 6},${y2}" class="${isDone(src) ? 'is-done' : ''}" marker-end="url(#wfArrow${isDone(src) ? 'Done' : ''})"/>`;
+            const back = to.x <= from.x && to.y > from.y;
+            const d = back ? wrapPath(from.x + W / 2, from.y + H, to.x + W / 2, to.y, 22) : `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2 - 6},${y2}`;
+            return `<path d="${d}" class="${isDone(src) ? 'is-done' : ''}" marker-end="url(#wfArrow${isDone(src) ? 'Done' : ''})"/>`;
         })).join('');
         const nodes = p.steps.map((s, i) => {
             const { x, y } = pos.get(s.id);

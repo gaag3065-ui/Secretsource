@@ -5,6 +5,11 @@
     const status = s => finished(s) ? (s.status === 'skip' ? 'ข้ามขั้นตอน' : '✓ สำเร็จแล้ว') : s.status === 'doing' ? '● กำลังทำ' : s.ready ? 'พร้อมเริ่ม' : 'รอขั้นตอนก่อนหน้า';
     const kind = s => finished(s) ? 'done' : s.status === 'doing' ? 'doing' : s.ready ? 'ready' : 'wait';
     let projects = [];
+    // เส้นย้อนกลับ (ไปขั้นที่อยู่คอลัมน์ก่อนหน้าและอยู่แถวล่างลงไป): โค้งอ้อมลงใต้กล่องต้นทาง วิ่งตามช่องว่างระหว่างแถว แล้วลงเข้าด้านบนกล่องปลายทาง — ไม่ลอดใต้กล่องใดๆ
+    function wrapPath(sx, sy, tx, ty, gapY) {
+        const r = Math.min(8, gapY / 2 - 6), gy = sy + gapY / 2, dir = tx < sx ? -1 : 1;
+        return `M${sx},${sy} L${sx},${gy - r} Q${sx},${gy} ${sx + dir * r},${gy} L${tx - dir * r},${gy} Q${tx},${gy} ${tx},${gy + r} L${tx},${ty - 6}`;
+    }
     function graph(p) {
         if (!p.steps.length) return '<p>ยังไม่มีขั้นตอนงาน</p>';
         const levels = new Map(), byId = new Map(p.steps.map(s => [s.id, s]));
@@ -22,7 +27,8 @@
         const paths = p.steps.flatMap(s => s.after.map(a => {
             const from = positions.get(a), to = positions.get(s.id); if (!from || !to) return '';
             const x = from.x + w, y = from.y + h / 2, endX = to.x - 5, endY = to.y + h / 2, mid = (x + endX) / 2;
-            return `<path d="M${x},${y} C${mid},${y} ${mid},${endY} ${endX},${endY}" stroke="${finished(byId.get(a)) ? '#16a34a' : '#94a3b8'}" marker-end="url(#exArrow${p.id})"/>`;
+            const d = (to.x <= from.x && to.y > from.y) ? wrapPath(from.x + w / 2, from.y + h, to.x + w / 2, to.y, 20) : `M${x},${y} C${mid},${y} ${mid},${endY} ${endX},${endY}`;
+            return `<path d="${d}" stroke="${finished(byId.get(a)) ? '#16a34a' : '#94a3b8'}" marker-end="url(#exArrow${p.id})"/>`;
         })).join('');
         return `<div class="ex-wf-scroll" tabindex="0" aria-label="ผังขั้นตอน ${esc(p.title)}"><div class="ex-wf-canvas" style="width:${width}px;height:${height}px">
             <svg width="${width}" height="${height}" aria-hidden="true"><defs><marker id="exArrow${p.id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10z" fill="#94a3b8" stroke="none"/></marker></defs>${paths}</svg>
