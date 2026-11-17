@@ -104,10 +104,11 @@
                 return `<article><strong>${esc(e.name || e.nickname || '-')}</strong><small>${esc([e.nickname, e.employeeId, e.centralId, e.insuranceCode, e.company].filter(Boolean).join(' · '))}</small><span>${linked ? `✓ เชื่อมกับทะเบียน: ${esc(linked.project)} · ยูนิต ${esc(linked.unit)}` : `⚠ ยังเชื่อมยูนิตไม่ได้: ${esc(e.reason)}`}</span>${!linked ? `<small>ต้นทางระบุ: ${esc([e.building, e.floor, e.room].filter(Boolean).join(' · ') || 'ยังไม่ระบุที่พัก')}</small>` : ''}${linked ? `<button type="button" class="ro-btn ro-btn-sm" data-ro-detail="${linked.no}">ดูห้องและรายชื่อผู้พัก</button>` : ''}</article>`;
             }).join('')}</div>` : ''}
             <div class="ro-table-wrap"><table class="ro-table">
-                <thead><tr><th>#</th><th>ที่พัก / ยูนิต</th><th>สถานะสัญญา</th><th>พนักงาน</th><th>ประเภทห้อง</th><th>ค่าเช่า/เดือน</th><th>สัญญา</th><th>อินเตอร์เน็ต</th><th>ผู้จัดหา</th><th>จัดการ</th></tr></thead>
+                <thead><tr><th>#</th><th>ที่พัก / ยูนิต</th><th>ไฟล์สัญญาเช่า</th><th>สถานะสัญญา</th><th>พนักงาน</th><th>ประเภทห้อง</th><th>ค่าเช่า/เดือน</th><th>สัญญา</th><th>อินเตอร์เน็ต</th><th>ผู้จัดหา</th><th>จัดการ</th></tr></thead>
                 <tbody>${list.map(r => `<tr>
                     <td>${esc(r.no)}</td>
                     <td><b>${esc(r.project)}</b><small>${esc(r.unit)}</small></td>
+                    <td class="ro-lease-cell">${(r.signedLeases || []).map((f, i, a) => `<button type="button" class="ro-lease ro-lease-signed" data-ro-sfile="${esc(f.id)}" title="สัญญาเช่าที่เซ็นแล้ว: ${esc(f.name)}${f.at ? ' · แนบ ' + esc(f.at) : ''}">✅ สัญญาเซ็นแล้ว${a.length > 1 ? ' ' + (i + 1) : ''}</button>`).join('')}${(r.contracts || []).map((c, i, a) => `<a class="ro-lease" href="${esc(c.url)}" target="_blank" rel="noopener" title="เปิดไฟล์สัญญาเช่า: ${esc(c.name)}">📄 สัญญา${a.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('') || ((r.signedLeases || []).length ? '' : '<span class="ro-lease-none">–</span>')}</td>
                     <td><span class="ro-pill ${r.status === STATUS_LIST[0] ? 'is-ok' : 'is-process'}">${esc(r.status)}</span>${r.statusNote ? `<small class="ro-snote" title="หมายเหตุสถานะ${r.statusNoteBy ? ' · ' + esc(r.statusNoteBy) : ''}">📝 ${esc(r.statusNote)}</small>` : ''}</td>
                     <td>${r.employees ? `${num(r.employees)} คน<small>${esc(r.companies.join(', '))}</small>${q ? `<small>${(r.employeeList || []).map(e => esc(e.name || e.nickname)).join(' · ')}</small>` : ''}` : (r.group === 'กำลังดำเนินการ' ? '-' : '<span class="ro-pill is-empty">ไม่มีพนักงาน</span>')}</td>
                     <td>${esc(r.type || '-')}</td>
@@ -115,7 +116,7 @@
                     <td>${r.start || r.end ? `${esc(r.start)} – ${esc(r.end)}<small>${esc(r.remaining)}</small>` : '-'}</td>
                     <td class="ro-net-cell">${netCell(r)}</td>
                     <td>${esc(r.agent || '-')}</td>
-                    <td class="ro-actions-cell"><button type="button" class="ro-btn ro-btn-sm ${pendingReviews(r).length ? 'is-warn' : ''}" data-ro-detail="${esc(r.no)}">รายละเอียด${pendingReviews(r).length ? ` <span class="ro-badge" title="ต้องตรวจสอบที่พักพนักงาน">⚠ ${pendingReviews(r).length}</span>` : ''}</button> <button type="button" class="ro-btn ro-btn-sm" data-ro-edit="${esc(r.no)}">✏️ แก้ไข</button></td></tr>`).join('') || '<tr><td colspan="10" class="ro-empty">ไม่พบห้องตามเงื่อนไข</td></tr>'}</tbody>
+                    <td class="ro-actions-cell"><button type="button" class="ro-btn ro-btn-sm ${pendingReviews(r).length ? 'is-warn' : ''}" data-ro-detail="${esc(r.no)}">รายละเอียด${pendingReviews(r).length ? ` <span class="ro-badge" title="ต้องตรวจสอบที่พักพนักงาน">⚠ ${pendingReviews(r).length}</span>` : ''}</button> <button type="button" class="ro-btn ro-btn-sm" data-ro-edit="${esc(r.no)}">✏️ แก้ไข</button></td></tr>`).join('') || '<tr><td colspan="11" class="ro-empty">ไม่พบห้องตามเงื่อนไข</td></tr>'}</tbody>
             </table></div>`;
     }
 
@@ -247,6 +248,12 @@
     });
     root.addEventListener('click', async event => {
         const t = event.target;
+        const sfile = t.closest('[data-ro-sfile]');
+        if (sfile) {   // สัญญาที่เซ็นแล้ว (ไฟล์ใน Drive ของระบบ ต้องดึงผ่านสิทธิ์ผู้ใช้)
+            try { const r = await window.authFetch(`${API}/expenses/file/${encodeURIComponent(sfile.dataset.roSfile)}`); if (!r.ok) throw new Error('เปิดไม่ได้'); window.open(URL.createObjectURL(await r.blob()), '_blank'); }
+            catch { window.alert('เปิดไฟล์สัญญาไม่ได้ — ลองใหม่อีกครั้ง'); }
+            return;
+        }
         const detail = t.closest('[data-ro-detail]'); if (detail) return openRoom(detail.dataset.roDetail, false);
         const edit = t.closest('[data-ro-edit]'); if (edit) return openRoom(edit.dataset.roEdit, true);
         if (t.closest('[data-ro-close]')) { dialog.close(); return; }

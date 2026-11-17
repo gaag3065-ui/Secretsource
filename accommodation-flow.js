@@ -167,9 +167,13 @@
                 <label class="fl-inline"><input type="radio" name="lane" value="side"${isSide ? ' checked' : ''}> ทำคู่ขนาน ไปพร้อมกับ</label>
                 <select name="anchor">${anchorOptions(b, s.anchor || 'dL', s.id)}</select>
             </fieldset>
-            <section class="fl-evidence"><h4>📎 หลักฐานของขั้นตอนนี้ <span data-count>${s.files.length}</span></h4>
-                <div class="fl-files" data-files>${filesHtml(room.no, id, s.files)}</div>
+            <section class="fl-evidence"><h4>📎 หลักฐานของขั้นตอนนี้ <span data-count>${s.files.filter(f => !f.lease).length}</span></h4>
+                <div class="fl-files" data-files>${filesHtml(room.no, id, s.files.filter(f => !f.lease))}</div>
                 <label class="fl-upload">＋ แนบรูป / PDF<input type="file" accept="image/*,application/pdf" multiple hidden data-upload></label></section>
+            ${id === 'dQ' ? `<section class="fl-evidence fl-lease"><h4>📄 สัญญาเช่าที่เซ็นแล้ว (PDF) <span data-lcount>${s.files.filter(f => f.lease).length}</span></h4>
+                <p class="fl-hint">แนบไฟล์สัญญาฉบับเซ็นแล้ว — จะแสดงในหน้า “ยูนิตและสถานะ” ให้กดเปิดดูได้</p>
+                <div class="fl-files" data-lfiles>${filesHtml(room.no, id, s.files.filter(f => f.lease))}</div>
+                <label class="fl-upload">＋ แนบสัญญาเช่า (PDF)<input type="file" accept="application/pdf" multiple hidden data-upload-lease></label></section>` : ''}
             <p class="fl-error" data-error hidden></p>
             <footer>${s.custom ? '<button type="button" class="fl-danger" data-del>ลบขั้นตอนนี้</button>' : '<span></span>'}<span><button type="button" data-fl-close>ปิด</button><button type="submit" class="fl-primary">บันทึก</button></span></footer></form>`;
         dialog.showModal(); loadThumbs();
@@ -227,16 +231,23 @@
         });
         if (ok) { dialog.close(); render(); }
     });
+    function refreshLists() {
+        const all = rec(ctx.no, ctx.id)?.files || [], ev = all.filter(f => !f.lease), ls = all.filter(f => f.lease);
+        const box = dialog.querySelector('[data-files]'); if (box) { box.innerHTML = filesHtml(ctx.no, ctx.id, ev); dialog.querySelector('[data-count]').textContent = ev.length; }
+        const lbox = dialog.querySelector('[data-lfiles]'); if (lbox) { lbox.innerHTML = filesHtml(ctx.no, ctx.id, ls); dialog.querySelector('[data-lcount]').textContent = ls.length; }
+        loadThumbs();
+    }
     dialog.addEventListener('change', async e => {
-        if (!e.target.matches('[data-upload]')) return;
+        if (!e.target.matches('[data-upload], [data-upload-lease]')) return;
+        const lease = e.target.matches('[data-upload-lease]');
         const files = [...e.target.files]; e.target.value = '';
+        if (lease && files.some(f => f.type !== 'application/pdf')) { showError('สัญญาเช่าต้องเป็นไฟล์ PDF เท่านั้น'); return; }
         for (const file of files) {
             const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
-            const ok = await mutate(() => call('/flow/files', 'POST', { no: ctx.no, id: ctx.id, name: file.name, dataUrl }));
+            const ok = await mutate(() => call('/flow/files', 'POST', { no: ctx.no, id: ctx.id, name: file.name, dataUrl, ...(lease ? { lease: true } : {}) }));
             if (!ok) break;
         }
-        const s = rec(ctx.no, ctx.id);
-        const box = dialog.querySelector('[data-files]'); if (box) { box.innerHTML = filesHtml(ctx.no, ctx.id, s?.files || []); dialog.querySelector('[data-count]').textContent = (s?.files || []).length; loadThumbs(); }
+        refreshLists();
         render();
     });
     dialog.addEventListener('click', async e => {
@@ -246,7 +257,7 @@
         if (rm) {
             if (!confirm('เอาหลักฐานนี้ออกจากขั้นตอน? (ไฟล์ยังอยู่ใน Google Drive)')) return;
             const ok = await mutate(() => call('/flow/files', 'DELETE', { no: ctx.no, id: ctx.id, fileId: rm.dataset.rmfile }));
-            if (ok) { const s = rec(ctx.no, ctx.id); dialog.querySelector('[data-files]').innerHTML = filesHtml(ctx.no, ctx.id, s?.files || []); dialog.querySelector('[data-count]').textContent = (s?.files || []).length; loadThumbs(); render(); }
+            if (ok) { refreshLists(); render(); }
             return;
         }
         if (e.target.closest('[data-del]')) {

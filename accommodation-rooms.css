@@ -123,3 +123,10 @@
 .ro-snote-form label { display: grid; gap: 4px; font-weight: 700; font-size: 13px; }
 .ro-snote-form label small { font-weight: 400; color: #8a6b2f; }
 .ro-snote-form textarea { border: 1px solid #e7d2a0; border-radius: 8px; padding: 6px 10px; font: inherit; }
+
+/* ไฟล์สัญญาเช่าในตารางยูนิตและสถานะ */
+.ro-lease-cell { white-space: nowrap; }
+.ro-lease { display: inline-block; margin: 0 4px 4px 0; padding: 2px 9px; border: 1px solid #c7d7fe; background: #eef4ff; color: #3538cd; border-radius: 999px; font: inherit; font-size: 11.5px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.ro-lease:hover { background: #dde8ff; }
+.ro-lease-signed { border-color: #75e0a7; background: #ecfdf3; color: #067647; }
+.ro-lease-none { color: #98a2b3; }
