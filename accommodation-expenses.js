@@ -415,6 +415,38 @@
     // ---------------------------------------------------------------- กล่องบันทึกบิลค่าน้ำ/ไฟ (เลือกขั้นตอน + แนบรูปบิล)
     const todayDmy = () => dmy(parseIso(state.data.today));
     // กล่องทำขั้นตอน: แสดงเฉพาะ "ขั้นถัดไป" พร้อมเงื่อนไขที่ต้องครบ (วันที่ + รูปหลักฐาน + ติ๊กยืนยัน) — ครบแล้วปุ่มจึงกดได้ (เหมือนลดขาตั้งก่อนสตาร์ท)
+    // ประวัติขั้นตอน + การแก้ไข (ใครทำ เมื่อไร)
+    function histHtml(rec) {
+        const list = rec?.hist || [];
+        if (!list.length) return '';
+        const idxOf = name => flowSteps().indexOf(name);
+        return `<details class="rx-hist-log"><summary>🕘 ประวัติขั้นตอนและการแก้ไข (${list.length})</summary><ul>${list.map(h => h.e
+            ? `<li class="is-edit">✎ ${esc(h.e)} <small>· ${esc(h.at || '')}${h.by ? ' · ' + esc(h.by) : ''}</small></li>`
+            : `<li>${idxOf(h.s) >= 0 ? CIRCLED[idxOf(h.s)] : '•'} ${esc(h.s)} <small>${h.d ? '· วันที่ ' + esc(h.d) : ''} · ${esc(h.at || '')}${h.by ? ' · ' + esc(h.by) : ''}</small></li>`).join('')}</ul></details>`;
+    }
+    // แก้ไขขั้นที่ผ่านมาแล้ว: วันที่ของขั้น · ยอดบิล · หมายเหตุ · เพิ่ม/ลบรูปของขั้นนั้น — ไม่เปลี่ยนขั้นปัจจุบัน
+    function openStepEdit(c, idx) {
+        const rec = flowRec(c.u.no, c.cat, c.period), req = (state.data.flowReq || [])[idx] || {};
+        const h = [...(rec?.hist || [])].reverse().find(x => x.s === flowSteps()[idx] && !x.e);
+        dialog.innerHTML = `<form data-rx-form="stepedit" data-step="${idx}" class="rx-flowform"><h3>✎ แก้ไขขั้น ${CIRCLED[idx]} ${esc(flowSteps()[idx])}</h3>
+            <p class="rx-hint">${esc(state.data.cats[c.cat].label)} — ${esc(c.u.project)} ${esc(c.u.unit)} · ${esc(monthLabel(c.period))} · การแก้ไขทุกครั้งถูกบันทึกในประวัติ (ใคร/เมื่อไร/แก้อะไร)</p>
+            <div class="rx-gate">
+                ${idx > 0 ? `<label>${esc(req.dateLabel || 'วันที่ของขั้นนี้')}${dateInput(h?.d || rec?.date || '')}</label>` : ''}
+                ${idx > 0 && req.photo ? `<div class="rx-files"><div class="rx-files-head"><b>${esc(req.photoLabel || 'รูปหลักฐาน')}</b><label class="rx-btn rx-upload">＋ แนบรูป / PDF<input type="file" accept="image/*,application/pdf" multiple hidden data-rx-upload data-step="${idx}"></label></div>
+                    <div class="rx-thumbs" data-rx-dialog-thumbs>${thumbHtml(rec, c.cat, true, idx) || '<span class="rx-nophoto">ไม่มีรูปของขั้นนี้</span>'}</div></div>` : '<div data-rx-dialog-thumbs hidden></div>'}
+                <label>จำนวนเงินตามบิล (บาท)<input name="amount" inputmode="decimal" value="${esc(rec?.amount || '')}"></label>
+                <label>หมายเหตุ<input name="note" maxlength="200" value="${esc(rec?.note || '')}"></label>
+            </div>
+            ${histHtml(rec)}
+            <p class="rx-msg" role="status"></p>
+            <div class="rx-actions"><button type="submit" class="rx-btn rx-primary">บันทึกการแก้ไข</button><button type="button" class="rx-btn" data-rx-back>↩ กลับ</button></div></form>`;
+        if (!dialog.open) dialog.showModal();
+        hydrateThumbs(dialog);
+    }
+    dialog.addEventListener('click', event => {
+        const ed = event.target.closest('[data-rx-editstep]'); if (ed && target) return openStepEdit(target, Number(ed.dataset.rxEditstep));
+        if (event.target.closest('[data-rx-back]') && target) openFlow(target);
+    });
     function flowGate(form) {
         const req = state.data.flowReq?.[Number(form.dataset.step)];
         const btn = form.querySelector('[data-rx-confirm]'), need = form.querySelector('[data-rx-need]');
@@ -438,13 +470,14 @@
             if (i >= nextIdx && !finished) return '';
             const h = (rec?.hist || []).filter(x => x.s === name).pop();
             const n = (rec?.files || []).filter(f => Number(f.step) === i).length;
-            return `<li>${CIRCLED[i]} ${esc(FLOW_SHORT[i])} ✓ <small>${esc(h?.d || dayPart(h?.at) || '')}${n ? ` · 📷 ${n}` : ''}${h?.ck?.length ? ' · ยืนยันแล้ว ' + h.ck.length + ' ข้อ' : ''}</small></li>`;
+            return `<li>${CIRCLED[i]} ${esc(FLOW_SHORT[i])} ✓ <small>${esc(h?.d || dayPart(h?.at) || '')}${n ? ` · 📷 ${n}` : ''}${h?.ck?.length ? ' · ยืนยันแล้ว ' + h.ck.length + ' ข้อ' : ''}</small> <button type="button" class="rx-miniedit" data-rx-editstep="${i}" title="ย้อนกลับมาแก้ไขขั้นนี้ (รูป/วันที่/ยอด/หมายเหตุ) — บันทึกประวัติการแก้ไขทุกครั้ง">✎ แก้ไข</button></li>`;
         }).join('');
         const stepTitle = finished ? 'ครบทุกขั้นตอนแล้ว ✓' : `ขั้นถัดไป ${CIRCLED[nextIdx]} ${esc(flowSteps()[nextIdx])}`;
         const status = flowSteps()[nextIdx];
         dialog.innerHTML = `<form data-rx-form="flow" data-step="${nextIdx}" data-finished="${finished ? 1 : 0}" class="rx-flowform"><h3>${esc(label)} — ${esc(c.u.project)} ${esc(c.u.unit)} · ${esc(monthLabel(c.period))}</h3>
             ${stepperHtml({ rec, idx }, c.cat)}
             ${doneList ? `<ul class="rx-donelist">${doneList}</ul>` : ''}
+            ${histHtml(rec)}
             <div class="rx-gate"><h4>${stepTitle}</h4>
                 <input type="hidden" name="status" value="${esc(status)}">
                 ${c.cat === 'other' ? `<fieldset class="rx-stepopts rx-kind"><legend>ประเภทค่าใช้จ่าย</legend>
@@ -490,7 +523,7 @@
         const form = dialog.querySelector('[data-rx-form]');
         if (!form || !target) return;
         const rec = anyRec(target.u.no, target.cat, target.period);
-        const stepFilter = form.dataset.rxForm === 'flow' && form.dataset.step !== undefined && form.querySelector('[data-rx-upload]') ? Number(form.dataset.step) : null;
+        const stepFilter = (form.dataset.rxForm === 'flow' || form.dataset.rxForm === 'stepedit') && form.dataset.step !== undefined && form.querySelector('[data-rx-upload]') ? Number(form.dataset.step) : null;
         form.querySelector('[data-rx-dialog-thumbs]').innerHTML = thumbHtml(rec, target.cat, true, stepFilter) || '<span class="rx-nophoto">ยังไม่มีรูปบิล</span>';
         const cnt = form.querySelector('[data-rx-filecount]'); if (cnt) cnt.textContent = (rec?.files || []).length ? ' (' + rec.files.length + ')' : '';
         hydrateThumbs(dialog);
@@ -501,7 +534,7 @@
         const form = input.closest('form'), msg = form.querySelector('.rx-msg');
         const files = [...input.files]; input.value = '';
         let ok = 0;
-        if (form.dataset.rxForm !== 'flow' && !anyRec(target.u.no, target.cat, target.period)) {
+        if (!['flow', 'stepedit'].includes(form.dataset.rxForm) && !anyRec(target.u.no, target.cat, target.period)) {
             // ยังไม่เคยบันทึกรายการ → บันทึกข้อมูลในกล่องก่อน (ระบบต้องมีรายการให้ผูกรูป)
             msg.className = 'rx-msg'; msg.textContent = 'กำลังบันทึกรายการก่อนแนบรูป…';
             try {
@@ -577,6 +610,14 @@
         event.preventDefault();
         const c = target;
         const body = Object.fromEntries([...new FormData(form).entries()].map(([k, v]) => [k, String(v).trim()]));
+        if (form.dataset.rxForm === 'stepedit') {
+            const btn = form.querySelector('[type=submit]'), msg = form.querySelector('.rx-msg'); btn.disabled = true;
+            try {
+                await request(`${API}/step-edit`, { method: 'PUT', body: JSON.stringify({ no: c.u.no, cat: c.cat, period: c.period, editStep: Number(form.dataset.step), ...(body.date !== undefined ? { date: body.date } : {}), amount: body.amount, note: body.note }) });
+                await load(); const fresh = flowRec(c.u.no, c.cat, c.period); openFlow({ ...c, rec: fresh });
+            } catch (error) { btn.disabled = false; msg.className = 'rx-msg is-bad'; msg.textContent = error.message; }
+            return;
+        }
         if (form.dataset.rxForm === 'flow') body.checks = [...form.querySelectorAll('input[name=checks]:checked')].map(x => x.value);
         const button = form.querySelector('[type=submit]'); button.disabled = true; button.textContent = 'กำลังบันทึก…';
         try {
