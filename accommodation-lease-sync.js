@@ -94,7 +94,7 @@
     async function load() {
         state.data = await request(API); state.pick.clear();
         for (const row of state.data.rows) {
-            if (row.newRow) state.pick.set(row.key, { add: true, fields: {} });
+            if (row.newRow) state.pick.set(row.key, { add: false, fields: {} });   // เพิ่มห้องใหม่: ต้องติ๊กเอง
             else if (row.fields.length) state.pick.set(row.key, { add: false, fields: Object.fromEntries(row.fields.map(f => [f.k, f.mode === 'fill' || f.suggest])) });
         }
     }
