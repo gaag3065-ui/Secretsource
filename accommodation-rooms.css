@@ -133,3 +133,4 @@
 .ro-lease-add { border-style: dashed; background: #fff; color: #475467; border-color: #98a2b3; }
 .ro-lease-add.is-need { border-color: #f79009; background: #fffaeb; color: #b54708; }
 .ro-lease-add:hover { background: #f2f4f7; }
+.ro-lease-box p { margin: 6px 0; } .ro-upload-lease { display: inline-block; cursor: pointer; }

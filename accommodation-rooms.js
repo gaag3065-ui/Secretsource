@@ -108,7 +108,7 @@
                 <tbody>${list.map(r => `<tr>
                     <td>${esc(r.no)}</td>
                     <td><b>${esc(r.project)}</b><small>${esc(r.unit)}</small></td>
-                    <td class="ro-lease-cell">${(r.signedLeases || []).map((f, i, a) => `<button type="button" class="ro-lease ro-lease-signed" data-ro-sfile="${esc(f.id)}" title="สัญญาเช่าที่เซ็นแล้ว: ${esc(f.name)}${f.at ? ' · แนบ ' + esc(f.at) : ''}">✅ สัญญาเซ็นแล้ว${a.length > 1 ? ' ' + (i + 1) : ''}</button>`).join('')}${(r.contracts || []).map((c, i, a) => `<a class="ro-lease" href="${esc(c.url)}" target="_blank" rel="noopener" title="เปิดไฟล์สัญญาเช่า: ${esc(c.name)}">📄 สัญญา${a.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('') || ((r.signedLeases || []).length ? '' : '<span class="ro-lease-none">–</span>')}${r.status === STATUS_LIST[0] ? `<label class="ro-lease ro-lease-add${(r.signedLeases || []).length ? '' : ' is-need'}" title="อัปโหลดไฟล์สัญญาเช่าที่เซ็นแล้ว (PDF ไม่เกิน 12 MB) — เก็บในขั้น เซ็นสัญญา ของห้องนี้">＋ ${(r.signedLeases || []).length ? 'แนบเพิ่ม' : 'อัปโหลดสัญญา'}<input type="file" accept="application/pdf" hidden data-ro-upload="${esc(r.no)}"></label>` : ''}</td>
+                    <td class="ro-lease-cell">${(r.signedLeases || []).map((f, i, a) => `<button type="button" class="ro-lease ro-lease-signed" data-ro-sfile="${esc(f.id)}" title="สัญญาเช่าที่เซ็นแล้ว: ${esc(f.name)}${f.at ? ' · แนบ ' + esc(f.at) : ''}">✅ สัญญาเซ็นแล้ว${a.length > 1 ? ' ' + (i + 1) : ''}</button>`).join('')}${(r.contracts || []).map((c, i, a) => `<a class="ro-lease" href="${esc(c.url)}" target="_blank" rel="noopener" title="เปิดไฟล์สัญญาเช่า: ${esc(c.name)}">📄 สัญญา${a.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('') || ((r.signedLeases || []).length ? '' : '<span class="ro-lease-none">–</span>')}</td>
                     <td><span class="ro-pill ${r.status === STATUS_LIST[0] ? 'is-ok' : 'is-process'}">${esc(r.status)}</span>${r.statusNote ? `<small class="ro-snote" title="หมายเหตุสถานะ${r.statusNoteBy ? ' · ' + esc(r.statusNoteBy) : ''}">📝 ${esc(r.statusNote)}</small>` : ''}</td>
                     <td>${r.employees ? `${num(r.employees)} คน<small>${esc(r.companies.join(', '))}</small>${q ? `<small>${(r.employeeList || []).map(e => esc(e.name || e.nickname)).join(' · ')}</small>` : ''}` : (r.group === 'กำลังดำเนินการ' ? '-' : '<span class="ro-pill is-empty">ไม่มีพนักงาน</span>')}</td>
                     <td>${esc(r.type || '-')}</td>
@@ -144,6 +144,17 @@
         if (!response.ok || !data.success) throw new Error(data.message || 'บันทึกไม่สำเร็จ');
         return data;
     }
+    // ส่วน "สัญญาเช่า" ในหน้ารายละเอียด: ดู/เปิดไฟล์สัญญาที่เซ็นแล้ว + อัปโหลด (เก็บในขั้น เซ็นสัญญา ของห้อง)
+    function leaseSection(r) {
+        const signed = (r.signedLeases || []).map((f, i, a) => '<button type="button" class="ro-lease ro-lease-signed" data-ro-sfile="' + esc(f.id) + '" title="' + esc(f.name) + '">✅ สัญญาเซ็นแล้ว' + (a.length > 1 ? ' ' + (i + 1) : '') + '</button> <small>' + esc(f.name) + (f.at ? ' · แนบ ' + esc(f.at) : '') + '</small>').join('<br>');
+        const links = (r.contracts || []).map((c, i, a) => '<a class="ro-lease" href="' + esc(c.url) + '" target="_blank" rel="noopener" title="' + esc(c.name) + '">📄 สัญญา' + (a.length > 1 ? ' ' + (i + 1) : '') + '</a>').join('');
+        const can = r.status === STATUS_LIST[0];
+        return '<section class="ro-lease-box"><h4>สัญญาเช่า</h4>' +
+            (signed ? '<p>' + signed + '</p>' : '<p class="ro-hint">' + (can ? '⚠ ยังไม่มีไฟล์สัญญาที่เซ็นแล้วในระบบ' : 'ยังไม่ถึงขั้นทำสัญญา') + '</p>') +
+            (links ? '<p>ไฟล์สัญญาจากไฟล์ "สัญญาเช่า": ' + links + '</p>' : '') +
+            (can ? '<label class="ro-btn ro-btn-primary ro-upload-lease">＋ อัปโหลดสัญญาเช่า (PDF ไม่เกิน 12 MB)<input type="file" accept="application/pdf" hidden data-ro-upload="' + esc(r.no) + '"></label><p class="ro-hint">เก็บไว้ที่ขั้น "เซ็นสัญญา" ของห้องนี้ และแสดงให้ HR เปิดดูได้</p>' : '') +
+            '</section>';
+    }
     function openRoom(no, edit) {
         const r = roomByNo(no);
         if (!r) return;
@@ -165,6 +176,7 @@
                 fieldsOf().filter(([k]) => !DATE_KEYS.includes(k) || r[k]).map(([k, label]) => '<dt>' + esc(label.replace(/ \(.*\)$/, '')) + '</dt><dd>' + esc((k === 'rent' ? (r.rent ? num(r.rent) : '') : r[k]) || '-') + '</dd>').join('') +
                 '<dt>เหลือเวลาสัญญา</dt><dd>' + esc(r.remaining || '-') + '</dd>' +
                 '<dt>พนักงานที่พักอยู่</dt><dd>' + (employees.length ? employees.map(e => '<b>' + esc(e.name) + '</b> <small>' + esc([e.nickname, e.employeeId, e.centralId, e.insuranceCode, e.company].filter(Boolean).join(' · ')) + '</small>').join('<br>') : '-') + '</dd></dl></section>' +
+            leaseSection(r) +
             netSection(r) +
             '<section class="ro-edit" ' + (edit ? '' : 'hidden') + '><h4>✏️ แก้ไขข้อมูลห้อง <small>บันทึกลงไฟล์ทะเบียนห้องพักใน Google Sheet</small></h4><form data-ro-form="' + esc(r.no) + '">' +
                 '<div class="ro-form-grid">' + fieldsOf().map(([k, label]) => {
@@ -261,6 +273,7 @@
             if (response.status === 403) throw new Error('บัญชีนี้ไม่มีสิทธิ์อัปโหลด (ต้องมีสิทธิ์ "ติดตามขั้นตอนที่พักใหม่ (Flow chart)")');
             if (!response.ok || data.success === false) throw new Error(data.message || 'อัปโหลดไม่สำเร็จ');
             await load(true, true);
+            if (dialog.open && dialog.dataset.no === String(input.dataset.roUpload)) openRoom(input.dataset.roUpload, false);
         } catch (error) { label.firstChild.textContent = old; window.alert(error.message); }
     });
     root.addEventListener('click', async event => {
