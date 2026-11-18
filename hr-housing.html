@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="no-referrer">
+    <title>HR ที่พักพนักงาน | GA</title>
+    <link rel="stylesheet" href="hr-housing.css?v=20261118-2">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+</head>
+<body>
+<header class="hr-top">
+    <div class="hr-bar">
+        <div class="hr-title"><b>ที่พักพนักงาน</b><small>สำหรับ HR</small></div>
+        <div class="hr-tools">
+            <input type="search" id="hrQ" placeholder="ค้นหาชื่อ / ชื่อเล่น / รหัส / ที่พัก…" aria-label="ค้นหา">
+            <button type="button" id="hrRefresh" class="hr-btn">รีเฟรช</button>
+        </div>
+    </div>
+    <nav class="hr-tabs" id="hrTabs" aria-label="มุมมอง"><button type="button" data-view="people" class="is-on">👥 พนักงานพักที่ไหน</button><button type="button" data-view="houses">🏠 บ้านทั้งหมด / สัญญาเช่า</button></nav>
+    <nav class="hr-chips" id="hrChips" aria-label="ตัวกรอง"></nav>
+</header>
+<main class="hr-main">
+    <p id="hrStatus" class="hr-status" role="status">กำลังโหลด…</p>
+    <div class="hr-wrap" id="hrHouseWrap" hidden><table class="hr-table">
+        <thead><tr><th>บ้าน (กดชื่อเพื่อเปิด PDF รูปตรวจห้อง)</th><th>ยูนิต</th><th>สถานะสัญญา</th><th>ผู้พัก</th><th>สัญญาเช่า</th></tr></thead>
+        <tbody id="hrHouseBody"></tbody>
+    </table></div>
+    <div class="hr-wrap" id="hrPeopleWrap"><table class="hr-table" id="hrTable" hidden>
+        <thead><tr><th>พนักงาน</th><th>บริษัท</th><th>ที่พักตามไฟล์ HR</th><th>ห้องในทะเบียน</th><th>สัญญาเช่า</th><th></th></tr></thead>
+        <tbody id="hrBody"></tbody>
+    </table></div>
+</main>
+<dialog id="hrDialog" class="hr-dialog"></dialog>
+<script src="config.js"></script>
+<script src="hr-housing.js?v=20261118-2"></script>
+</body>
+</html>

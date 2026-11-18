@@ -150,6 +150,13 @@ window.isExecutiveOnly = function (permissions, role) {
     return granted.length > 0 && granted.every(key => key === 'ViewExecutive');
 };
 
+// บัญชี HR = ไม่ใช่ ADMIN และมีเฉพาะสิทธิ์หน้า HR ที่พัก → เข้าได้เฉพาะ hr-housing.html
+window.isHrOnly = function (permissions, role) {
+    if (String(role || '').trim().toUpperCase() === 'ADMIN') return false;
+    const granted = Object.entries(permissions || {}).filter(([, value]) => value === true).map(([key]) => key);
+    return granted.length > 0 && granted.every(key => key === 'AccommodationHr' || key === 'AccommodationHrEdit');
+};
+
 window.requirePagePermission = async function (
     permissionKey
 ) {
@@ -185,6 +192,10 @@ window.requirePagePermission = async function (
     ) {
         if (response.ok && window.isExecutiveOnly(data.permissions, data.user?.role)) {
             window.location.replace('exec-dashboard.html');
+            throw new Error('PERMISSION_DENIED');
+        }
+        if (response.ok && window.isHrOnly(data.permissions, data.user?.role)) {
+            window.location.replace('hr-housing.html');
             throw new Error('PERMISSION_DENIED');
         }
         alert('บัญชีนี้ไม่มีสิทธิ์เข้าถึงหน้านี้');

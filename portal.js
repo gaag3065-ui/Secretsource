@@ -1028,6 +1028,11 @@ function renderTaskContent(
             window.location.replace('exec-dashboard.html');
             throw new Error('EXECUTIVE_REDIRECT');
         }
+        // บัญชี HR: ส่งไปหน้า HR ที่พักพนักงานทันที
+        if (typeof window.isHrOnly === 'function' && window.isHrOnly(permissions, sessionUser.role)) {
+            window.location.replace('hr-housing.html');
+            throw new Error('HR_REDIRECT');
+        }
     }
 
     function updateAccountInformation() {
