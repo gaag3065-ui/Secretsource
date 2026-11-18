@@ -46,6 +46,7 @@
             ${(job.results || []).length && !job.running ? `<div class="ia-note">ผลรอบล่าสุด: สำเร็จ ${job.results.filter(r => r.ok).length} · ไม่สำเร็จ ${job.results.filter(r => !r.ok).length}${job.results.filter(r => !r.ok).map(r => `<br>⚠ ${esc(r.name)}: ${esc(r.error)}`).join('')}</div>` : ''}
             <div><button type="button" class="ia-btn" data-ia-scan ${state.busy || job.running ? 'disabled' : ''}>สแกนโฟลเดอร์</button>
                 <button type="button" class="ia-btn primary" data-ia-run ${todo && !state.busy && !job.running ? '' : 'disabled'}>ทำทุกบ้านที่พร้อม (${todo})</button>
+                <button type="button" class="ia-btn" data-ia-redo ${houses.some(h => h.no && h.status === 'done') && !state.busy && !job.running ? '' : 'disabled'} title="ทำใหม่ทุกบ้านที่เคยทำแล้ว — คัดเฉพาะ PDF ที่เป็นรูปภาพของที่พัก ไฟล์อื่นที่เคยแนบไว้จะถูกเอาออก">ทำใหม่ทั้งหมด (คัดเฉพาะ PDF รูปภาพ)</button>
                 <span class="ia-note">${d.last ? 'สแกนล่าสุด ' + new Date(d.last.at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }) : 'ยังไม่เคยสแกน'}</span></div>
             <p class="ia-msg ${state.bad ? 'bad' : ''}" role="status">${esc(state.msg)}</p>
             <div style="overflow:auto;max-height:56dvh"><table class="ia-table"><thead><tr><th>บ้าน (โฟลเดอร์)</th><th>ห้องในทะเบียน</th><th>PDF</th><th>รูป</th><th>วิดีโอ</th><th>สถานะ</th><th></th></tr></thead><tbody>${houses.map(h => `<tr data-fid="${esc(h.folderId)}">
@@ -61,6 +62,7 @@
         if (t === dialog || t.closest('[data-ia-close]')) { clearTimeout(state.timer); return dialog.close(); }
         const run = async (fn, doing) => { state.busy = true; state.msg = doing; state.bad = false; render(); try { await fn(); state.msg = ''; } catch (error) { state.msg = error.message; state.bad = true; } state.busy = false; try { await refresh(); } catch { render(); } };
         if (t.closest('[data-ia-scan]')) return run(async () => { state.data = await request('/scan', { method: 'POST', body: '{}' }); }, 'กำลังสแกนโฟลเดอร์ใน Drive…');
+        if (t.closest('[data-ia-redo]')) { if (!window.confirm('ทำใหม่ทุกบ้านที่เคยทำแล้ว?\nระบบจะคัดเฉพาะ PDF ที่เป็นรูปภาพของที่พัก และเอาไฟล์อื่น (ฟอร์ม/สัญญา/ใบเสร็จ) ที่เคยแนบไว้ออกจากรายการของห้อง')) return; return run(async () => { await request('/run', { method: 'POST', body: JSON.stringify({ redo: true }) }); }, 'เริ่มทำงานเบื้องหลัง…'); }
         if (t.closest('[data-ia-run]')) return run(async () => { await request('/run', { method: 'POST', body: '{}' }); }, 'เริ่มทำงานเบื้องหลัง…');
         const one = t.closest('[data-ia-one]');
         if (one) { const fid = one.closest('tr').dataset.fid; return run(async () => { await request('/run', { method: 'POST', body: JSON.stringify({ folderIds: [fid], redo: true }) }); }, 'เริ่มทำงานเบื้องหลัง…'); }

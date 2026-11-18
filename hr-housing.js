@@ -6,12 +6,23 @@
     const state = { data: null, filter: 'all', query: '', canEdit: false, view: 'people' };
     const norm = v => String(v ?? '').normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim();
 
-    try { await window.requirePagePermission('AccommodationHr'); } catch { return; }
-    state.canEdit = window.isCurrentUserAdmin === true || window.USER_PERMISSIONS?.AccommodationHrEdit === true;
-
+    // เข้าได้ 2 ทาง: (1) ใส่รหัสเข้าชมที่ GA ให้ HR → บัตรผ่าน 12 ชม. เก็บในแท็บนี้ (2) ล็อกอินบัญชีที่มีสิทธิ์ AccommodationHr อยู่แล้ว
+    let token = '';
+    try { token = sessionStorage.getItem('hrToken') || ''; } catch { token = ''; }
+    const lock = msg => {
+        token = ''; try { sessionStorage.removeItem('hrToken'); } catch { /* ignore */ }
+        document.body.classList.add('is-locked'); $('hrLock').hidden = false; $('hrLockMsg').textContent = msg || '';
+    };
+    async function http(path, options) {
+        const opts = { cache: 'no-store', ...(options || {}), headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) } };
+        if (!token) return window.authFetch(API + path, opts);
+        opts.headers['X-HR-Token'] = token; opts.credentials = 'omit';
+        return fetch(API + path, opts);
+    }
     async function request(path, options) {
-        const response = await window.authFetch(API + path, { cache: 'no-store', ...(options || {}), headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) } });
+        const response = await http(path, options);
         const data = await response.json().catch(() => ({}));
+        if (token && response.status === 401) { lock('บัตรผ่านหมดอายุ — กรุณาใส่รหัสเข้าชมอีกครั้ง'); throw new Error('บัตรผ่านหมดอายุ'); }
         if (response.status === 403) throw new Error('บัญชีนี้ไม่มีสิทธิ์ทำรายการนี้');
         if (response.status === 404) throw new Error('เครื่องหลังบ้านยังไม่ได้อัปเดต — รอ 1–2 นาทีแล้วลองใหม่');
         if (!response.ok || data.success === false) throw new Error(data.message || 'ทำรายการไม่สำเร็จ');
@@ -39,7 +50,7 @@
     }
     // เปิดไฟล์ PDF (ผ่านสิทธิ์ผู้ใช้ — ระบบเปิดให้เฉพาะ PDF ตรวจห้อง/สัญญาที่เซ็นแล้ว)
     async function openFile(id) {
-        try { const r = await window.authFetch(`${API}/file/${encodeURIComponent(id)}`); if (!r.ok) throw new Error('เปิดไม่ได้'); window.open(URL.createObjectURL(await r.blob()), '_blank'); }
+        try { const r = await http(`/file/${encodeURIComponent(id)}`, { headers: {} }); if (!r.ok) throw new Error('เปิดไม่ได้'); window.open(URL.createObjectURL(await r.blob()), '_blank'); }
         catch { window.alert('เปิดไฟล์ไม่ได้ — ลองใหม่อีกครั้ง'); }
     }
     const peopleOf = no => state.data.people.filter(p => p.roomNo === no);
@@ -129,7 +140,43 @@
         try { state.data = await request('/overview'); render(); } catch (error) { if (silent !== true) $('hrStatus').textContent = error.message; }
     }
     $('hrRefresh').addEventListener('click', () => load());
-    load();
-    // แก้ในไฟล์ HR แล้วหน้านี้อัปเดตเอง (ข้ามถ้ากำลังเปิดฟอร์มแก้ไขหรือแท็บถูกซ่อน)
-    setInterval(() => { if (!$('hrDialog').open && !document.hidden) load(true); }, 45000);
+    let started = false;
+    function open() {
+        document.body.classList.remove('is-locked'); $('hrLock').hidden = true;
+        state.canEdit = Boolean(token) || window.isCurrentUserAdmin === true || window.USER_PERMISSIONS?.AccommodationHrEdit === true;
+        if (!started) {
+            started = true;
+            // แก้ในไฟล์ HR แล้วหน้านี้อัปเดตเอง (ข้ามถ้ากำลังเปิดฟอร์มแก้ไข แท็บถูกซ่อน หรือหน้ากรอกรหัสเปิดอยู่)
+            setInterval(() => { if (!$('hrDialog').open && !document.hidden && !document.body.classList.contains('is-locked')) load(true); }, 45000);
+        }
+        load();
+    }
+    $('hrLockForm').addEventListener('submit', async event => {
+        event.preventDefault();
+        const code = $('hrCode').value.trim();
+        if (!code) { $('hrLockMsg').textContent = 'กรุณากรอกรหัสเข้าชม'; return; }
+        $('hrLockBtn').disabled = true; $('hrLockMsg').textContent = '';
+        try {
+            const response = await fetch(API + '/unlock', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }), credentials: 'omit' });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.token) { $('hrLockMsg').textContent = data.message || 'เข้าสู่ระบบไม่สำเร็จ'; $('hrCode').select(); return; }
+            token = data.token; try { sessionStorage.setItem('hrToken', token); } catch { /* ignore */ }
+            $('hrCode').value = ''; open();
+        } catch { $('hrLockMsg').textContent = 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — ลองใหม่อีกครั้ง'; } finally { $('hrLockBtn').disabled = false; }
+    });
+    $('hrLogout').addEventListener('click', () => { if (token) { lock(''); } else { window.location.href = 'portal.html'; } });
+    // เริ่มต้น: มีบัตรผ่านแล้ว → เข้าเลย · ล็อกอินบัญชีที่มีสิทธิ์อยู่ → เข้าเลย · ไม่งั้นแสดงหน้ากรอกรหัส (ไม่เด้งไปหน้าล็อกอินบัญชี)
+    if (token) { open(); return; }
+    try {
+        const accessToken = sessionStorage.getItem('accessToken');
+        const response = await fetch(window.APP_CONFIG.API_BASE_URL + '/api/session', { headers: accessToken ? { Authorization: 'Bearer ' + accessToken } : {}, credentials: 'include', cache: 'no-store' });
+        const data = await response.json().catch(() => ({}));
+        if (data.csrfToken) { try { sessionStorage.setItem('csrfToken', data.csrfToken); } catch { /* ignore */ } }
+        if (response.ok && data.user && (String(data.user.role || '').toUpperCase() === 'ADMIN' || data.permissions?.AccommodationHr === true)) {
+            window.isCurrentUserAdmin = String(data.user.role || '').toUpperCase() === 'ADMIN';
+            window.USER_PERMISSIONS = data.permissions || {};
+            open(); return;
+        }
+    } catch { /* ไปหน้ากรอกรหัส */ }
+    lock('');
 })();

@@ -153,5 +153,21 @@
             toast('ตั้งรหัสเข้าชมเรียบร้อยแล้ว');
         } catch (error) { toast(error.message, true); } finally { button.disabled = false; }
     });
+    // รหัสเข้าชมหน้า HR ที่พักพนักงาน (ADMIN เท่านั้น) — ทำงานเหมือนรหัสแดชบอร์ดผู้บริหาร
+    const hrUrl = `${window.APP_CONFIG.API_BASE_URL}/api/accommodation-hr/access-code`;
+    window.authFetch(hrUrl, { cache: 'no-store' }).then(r => { if (r.ok) $('gwSetHrCode').hidden = false; }).catch(() => {});
+    $('gwSetHrCode').addEventListener('click', async () => {
+        const code = prompt('ตั้งรหัสเข้าชมหน้า HR ใหม่ (6–64 ตัวอักษร) — ผู้ที่ใช้รหัสเดิมต้องกรอกรหัสใหม่');
+        if (code === null) return;
+        if (code.length < 6 || code.length > 64) return toast('รหัสต้องยาว 6–64 ตัวอักษร', true);
+        const button = $('gwSetHrCode'); button.disabled = true;
+        try {
+            await ensureCsrf();
+            const response = await window.authFetch(hrUrl, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) throw new Error(data.message || 'ตั้งรหัสไม่สำเร็จ');
+            toast('ตั้งรหัสหน้า HR เรียบร้อยแล้ว');
+        } catch (error) { toast(error.message, true); } finally { button.disabled = false; }
+    });
     load();
 })();

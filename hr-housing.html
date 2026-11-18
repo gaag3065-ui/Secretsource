@@ -6,16 +6,29 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="referrer" content="no-referrer">
     <title>HR ที่พักพนักงาน | GA</title>
-    <link rel="stylesheet" href="hr-housing.css?v=20261118-3">
+    <link rel="stylesheet" href="hr-housing.css?v=20261118-4">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
-<body>
+<body class="is-locked">
+<section id="hrLock" class="hr-lock" hidden>
+    <div class="hr-lock-card">
+        <h1>ที่พักพนักงาน (สำหรับ HR)</h1>
+        <form id="hrLockForm" autocomplete="off">
+            <label for="hrCode">รหัสเข้าชม</label>
+            <input id="hrCode" type="password" placeholder="กรอกรหัสเข้าชม" autocomplete="off" spellcheck="false">
+            <button type="submit" class="hr-lock-btn" id="hrLockBtn">เข้าสู่ระบบ →</button>
+        </form>
+        <p id="hrLockMsg" class="hr-lock-msg" role="status"></p>
+        <p class="hr-lock-foot">General Affairs · ขอรหัสเข้าชมได้จาก GA</p>
+    </div>
+</section>
 <header class="hr-top">
     <div class="hr-bar">
         <div class="hr-title"><b>ที่พักพนักงาน</b><small>สำหรับ HR</small></div>
         <div class="hr-tools">
             <input type="search" id="hrQ" placeholder="ค้นหาชื่อ / ชื่อเล่น / รหัส / ที่พัก…" aria-label="ค้นหา">
             <button type="button" id="hrRefresh" class="hr-btn">รีเฟรช</button>
+            <button type="button" id="hrLogout" class="hr-btn" title="ออกจากหน้านี้">ออก</button>
         </div>
     </div>
     <nav class="hr-tabs" id="hrTabs" aria-label="มุมมอง"><button type="button" data-view="people" class="is-on">👥 พนักงานพักที่ไหน</button><button type="button" data-view="houses">🏠 บ้านทั้งหมด / สัญญาเช่า</button></nav>
@@ -34,6 +47,6 @@
 </main>
 <dialog id="hrDialog" class="hr-dialog"></dialog>
 <script src="config.js"></script>
-<script src="hr-housing.js?v=20261118-3"></script>
+<script src="hr-housing.js?v=20261118-4"></script>
 </body>
 </html>
