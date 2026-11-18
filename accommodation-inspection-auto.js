@@ -40,7 +40,7 @@
         const pct = job.total ? Math.round(job.index / job.total * 100) : 0;
         const opts = rooms().map(r => `<option value="${r.no}">${esc(r.label)}</option>`).join('');
         dialog.innerHTML = `<div class="ia-wrap"><div class="ia-top"><h2>รวมรูปตรวจห้องเป็น PDF อัตโนมัติ</h2><button type="button" class="ia-btn" data-ia-close>ปิด</button></div>
-            <div class="ia-note">อ่านโฟลเดอร์ "งานตรวจบ้าน" ใน Drive · บ้านที่มี PDF รายงานรูปภาพอยู่แล้ว → คัดลอกไปเก็บ · บ้านที่มีแต่รูป → ย่อรูป เรียงตามเวลาถ่าย ใส่คำอธิบาย แล้วสร้าง PDF รูปแบบเดียวกัน · เก็บที่ขั้น "ตรวจสอบ" ของห้อง และ${d.public ? 'เปิดสิทธิ์ดูแบบ "ผู้มีลิงก์" ให้ HR' : 'ไม่เปิดสาธารณะ (HR ดูผ่านหน้าล็อกอิน)'}</div>
+            <div class="ia-note">อ่านโฟลเดอร์ PDF รายบ้านใน Drive (ที่ Apps Script สร้างไว้) · บ้านที่มี PDF → คัดลอกทุกไฟล์มาเก็บในระบบ · บ้านที่มีแต่รูป → ย่อรูป เรียงตามเวลาถ่าย ใส่คำอธิบาย แล้วสร้าง PDF รูปแบบเดียวกัน · เก็บที่ขั้น "ตรวจสอบ" ของห้อง และ${d.public ? 'เปิดสิทธิ์ดูแบบ "ผู้มีลิงก์" ให้ HR' : 'ไม่เปิดสาธารณะ (HR ดูผ่านหน้าล็อกอิน)'}</div>
             <div class="ia-warn">คำอธิบายใต้รูป: ${d.ai ? 'ใช้ AI (Claude) ดูรูปย่อของบ้านนั้นเขียนให้ — รูปห้องถูกส่งไปบริการภายนอก' : 'ยังไม่ได้ตั้ง ANTHROPIC_API_KEY → ใช้ "รูปที่ 1, 2, 3…" แทน (ไม่ส่งรูปออกนอกระบบ)'}</div>
             ${job.running ? `<div><b>กำลังทำ ${esc(job.index)}/${esc(job.total)}: ${esc(job.current)}</b><div class="ia-bar"><i style="width:${pct}%"></i></div></div>` : ''}
             ${(job.results || []).length && !job.running ? `<div class="ia-note">ผลรอบล่าสุด: สำเร็จ ${job.results.filter(r => r.ok).length} · ไม่สำเร็จ ${job.results.filter(r => !r.ok).length}${job.results.filter(r => !r.ok).map(r => `<br>⚠ ${esc(r.name)}: ${esc(r.error)}`).join('')}</div>` : ''}
