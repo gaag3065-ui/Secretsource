@@ -50,15 +50,22 @@
         $('hrChips').innerHTML = `<span class="hr-count">บ้านทั้งหมด <b>${d.units.length}</b> หลัง · ทำสัญญาแล้ว <b>${signed}</b> · มี PDF รูปตรวจห้อง <b>${withPdf}</b></span>`;
         $('hrStatus').textContent = `แสดง ${list.length} จาก ${d.units.length} หลัง · อัปเดต ${new Date(d.at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}`;
         $('hrHouseBody').innerHTML = list.map(u => {
-            const ins = u.inspections;
+            const ins = u.inspections, ppl = peopleOf(u.no);
             const name = ins.length
                 ? `<button type="button" class="hr-link" data-open="${esc(ins[0].id)}" title="เปิด PDF รูปตรวจห้อง: ${esc(ins[0].name)}">${esc(u.project)}</button>${ins.slice(1).map((f, i) => `<button type="button" class="hr-link hr-link-sm" data-open="${esc(f.id)}" title="${esc(f.name)}">ไฟล์ ${i + 2}</button>`).join('')}`
-                : `<b>${esc(u.project)}</b><small class="hr-warn">ยังไม่แนบ PDF รูปตรวจห้อง</small>`;
-            const files = [...u.signedLeases.map((f, i, a) => `<button type="button" class="hr-chip hr-chip-ok" data-open="${esc(f.id)}" title="${esc(f.name)}">✅ สัญญาเซ็นแล้ว${a.length > 1 ? ' ' + (i + 1) : ''}</button>`),
-                ...u.contracts.map((c, i, a) => `<a class="hr-chip" href="${esc(c.url)}" target="_blank" rel="noopener" title="${esc(c.name)}">📄 สัญญา${a.length > 1 ? ' ' + (i + 1) : ''}</a>`)].join('');
-            return `<tr><td>${name}</td><td>${esc(u.unit)}</td><td>${esc(u.status || '-')}</td><td>${peopleOf(u.no).length ? peopleOf(u.no).length + ' คน' : '<span class="hr-none">–</span>'}</td>
-                <td>${leaseCell(u)}${files ? `<div class="hr-files">${files}</div>` : ''}</td></tr>`;
-        }).join('') || '<tr><td colspan="5" class="hr-empty">ไม่พบบ้านตามเงื่อนไข</td></tr>';
+                : `<b>${esc(u.project)}</b>`;
+            const chips = [...u.signedLeases.map((f, i, a) => `<button type="button" class="hr-chip hr-chip-ok" data-open="${esc(f.id)}" title="สัญญาที่เซ็นแล้ว: ${esc(f.name)}">✅ สัญญาเซ็นแล้ว${a.length > 1 ? ' ' + (i + 1) : ''}</button>`),
+                ...u.contracts.map((c, i, a) => `<a class="hr-chip" href="${esc(c.url)}" target="_blank" rel="noopener" title="เปิดไฟล์สัญญาเช่า: ${esc(c.name)}">📄 สัญญา${a.length > 1 ? ' ' + (i + 1) : ''}</a>`)].join('');
+            const companies = [...new Set(ppl.map(p => p.company).filter(Boolean))].join(', ');
+            const pill = u.status === 'ทำสัญญาแล้ว' ? 'is-ok' : 'is-process';
+            return `<tr><td>${esc(u.no)}</td>
+                <td>${name}<small>${esc(u.unit)}${ins.length ? '' : ' · <span class="hr-warn">ยังไม่แนบ PDF รูปตรวจห้อง</span>'}</small></td>
+                <td class="hr-files-cell">${chips || '<span class="hr-none">–</span>'}</td>
+                <td><span class="hr-pill ${pill}">${esc(u.status || '-')}</span></td>
+                <td>${ppl.length ? `${ppl.length} คน<small>${esc(companies)}</small>` : '<span class="hr-pill is-empty">ไม่มีพนักงาน</span>'}</td>
+                <td>${esc(u.type || '-')}</td>
+                <td>${u.start || u.end ? `${esc(u.start)} – ${esc(u.end)}` : '-'}${u.remaining ? `<small>${esc(u.remaining)}</small>` : ''}${u.noticeBy ? `<small>แจ้งยกเลิกก่อน ${esc(u.noticeBy)}</small>` : ''}</td></tr>`;
+        }).join('') || '<tr><td colspan="7" class="hr-empty">ไม่พบบ้านตามเงื่อนไข</td></tr>';
     }
     function render() {
         $('hrTabs').querySelectorAll('button').forEach(b => b.classList.toggle('is-on', b.dataset.view === state.view));
