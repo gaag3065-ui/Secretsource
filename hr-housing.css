@@ -51,3 +51,4 @@ body { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; 
 .hr-pill { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .hr-pill.is-ok { background: #d1fadf; color: #067647; } .hr-pill.is-process { background: #fef0c7; color: #93370d; } .hr-pill.is-empty { background: #f2f4f7; color: #667085; }
 .hr-files-cell { white-space: nowrap; }
+a.hr-link { text-decoration: underline; }

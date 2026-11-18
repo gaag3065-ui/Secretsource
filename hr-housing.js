@@ -51,8 +51,12 @@
         $('hrStatus').textContent = `แสดง ${list.length} จาก ${d.units.length} หลัง · อัปเดต ${new Date(d.at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}`;
         $('hrHouseBody').innerHTML = list.map(u => {
             const ins = u.inspections, ppl = peopleOf(u.no);
+            // ไฟล์ที่เปิดสิทธิ์ดูแบบผู้มีลิงก์แล้ว (url) เปิดตรงได้ · ไม่มี url ใช้ปุ่มเปิดผ่านระบบ (ต้องล็อกอิน)
+            const link = (f, cls, label, title) => /^https:\/\//.test(f.url || '')
+                ? `<a class="${cls}" href="${esc(f.url)}" target="_blank" rel="noopener" title="${esc(title)}">${label}</a>`
+                : `<button type="button" class="${cls}" data-open="${esc(f.id)}" title="${esc(title)}">${label}</button>`;
             const name = ins.length
-                ? `<button type="button" class="hr-link" data-open="${esc(ins[0].id)}" title="เปิด PDF รูปตรวจห้อง: ${esc(ins[0].name)}">${esc(u.project)}</button>${ins.slice(1).map((f, i) => `<button type="button" class="hr-link hr-link-sm" data-open="${esc(f.id)}" title="${esc(f.name)}">ไฟล์ ${i + 2}</button>`).join('')}`
+                ? `${link(ins[0], 'hr-link', esc(u.project), 'เปิด PDF รูปตรวจห้อง: ' + ins[0].name)}${ins.slice(1).map((f, i) => link(f, 'hr-link hr-link-sm', 'ไฟล์ ' + (i + 2), f.name)).join('')}`
                 : `<b>${esc(u.project)}</b>`;
             const chips = [...u.signedLeases.map((f, i, a) => `<button type="button" class="hr-chip hr-chip-ok" data-open="${esc(f.id)}" title="สัญญาที่เซ็นแล้ว: ${esc(f.name)}">✅ สัญญาเซ็นแล้ว${a.length > 1 ? ' ' + (i + 1) : ''}</button>`),
                 ...u.contracts.map((c, i, a) => `<a class="hr-chip" href="${esc(c.url)}" target="_blank" rel="noopener" title="เปิดไฟล์สัญญาเช่า: ${esc(c.name)}">📄 สัญญา${a.length > 1 ? ' ' + (i + 1) : ''}</a>`)].join('');
