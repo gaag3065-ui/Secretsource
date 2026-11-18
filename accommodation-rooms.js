@@ -144,17 +144,8 @@
         if (!response.ok || !data.success) throw new Error(data.message || 'บันทึกไม่สำเร็จ');
         return data;
     }
-    // ส่วน "สัญญาเช่า" ในหน้ารายละเอียด: ดู/เปิดไฟล์สัญญาที่เซ็นแล้ว + อัปโหลด (เก็บในขั้น เซ็นสัญญา ของห้อง)
-    function leaseSection(r) {
-        const signed = (r.signedLeases || []).map((f, i, a) => '<button type="button" class="ro-lease ro-lease-signed" data-ro-sfile="' + esc(f.id) + '" title="' + esc(f.name) + '">✅ สัญญาเซ็นแล้ว' + (a.length > 1 ? ' ' + (i + 1) : '') + '</button> <small>' + esc(f.name) + (f.at ? ' · แนบ ' + esc(f.at) : '') + '</small>').join('<br>');
-        const links = (r.contracts || []).map((c, i, a) => '<a class="ro-lease" href="' + esc(c.url) + '" target="_blank" rel="noopener" title="' + esc(c.name) + '">📄 สัญญา' + (a.length > 1 ? ' ' + (i + 1) : '') + '</a>').join('');
-        const can = r.status === STATUS_LIST[0];
-        return '<section class="ro-lease-box"><h4>สัญญาเช่า</h4>' +
-            (signed ? '<p>' + signed + '</p>' : '<p class="ro-hint">' + (can ? '⚠ ยังไม่มีไฟล์สัญญาที่เซ็นแล้วในระบบ' : 'ยังไม่ถึงขั้นทำสัญญา') + '</p>') +
-            (links ? '<p>ไฟล์สัญญาจากไฟล์ "สัญญาเช่า": ' + links + '</p>' : '') +
-            (can ? '<label class="ro-btn ro-btn-primary ro-upload-lease">＋ อัปโหลดสัญญาเช่า (PDF ไม่เกิน 12 MB)<input type="file" accept="application/pdf" hidden data-ro-upload="' + esc(r.no) + '"></label><p class="ro-hint">เก็บไว้ที่ขั้น "เซ็นสัญญา" ของห้องนี้ และแสดงให้ HR เปิดดูได้</p>' : '') +
-            '</section>';
-    }
+    // ส่วน "สัญญาเช่า" ในหน้ารายละเอียด: เนื้อหา/ปุ่มจัดการทั้งหมดอยู่ใน accommodation-lease-manage.js (mount หลังเปิด dialog)
+    function leaseSection(r) { return '<section class="ro-lease-box" data-ro-lbox="' + esc(r.no) + '"></section>'; }
     function openRoom(no, edit) {
         const r = roomByNo(no);
         if (!r) return;
@@ -190,6 +181,7 @@
             '<div class="ro-dlg-foot">' + (edit ? '' : '<button type="button" class="ro-btn" data-ro-show-edit>✏️ แก้ไขข้อมูลห้อง</button>') + '<button type="button" class="ro-btn" data-ro-close>ปิด</button></div></div>';
         if (!dialog.open) dialog.showModal();
         dialog.dataset.no = r.no;
+        window.AccommodationLease?.mount(dialog.querySelector('[data-ro-lbox]'), r, async () => { await load(true, true); return roomByNo(r.no); });
     }
     // ---------------------------------------------------------------- อินเตอร์เน็ต: แก้ไข/เพิ่ม (ลงไฟล์ของส่วนกลางโดยตรง) · ไฟล์เปลี่ยน → หน้านี้อัปเดตเอง
     const NET_STATES = ['ใช้งานได้', 'ใช้งานไม่ได้', 'ยังไม่ติดตั้ง'], NET_BY = ['บริษัทติดตั้ง', 'เจ้าของติดตั้ง'];
@@ -257,24 +249,6 @@
             publish(); openRoom(nf.dataset.roNetForm, false);
             note(result.unchanged ? 'ไม่มีข้อมูลที่เปลี่ยนแปลง' : 'บันทึกลงไฟล์อินเตอร์เน็ตของส่วนกลางแล้ว — แสดงผลทันที', false);
         } catch (error) { button.disabled = false; button.textContent = 'บันทึกลงไฟล์ส่วนกลาง'; note(error.message, true); }
-    });
-    root.addEventListener('change', async event => {
-        const input = event.target.closest('[data-ro-upload]'); if (!input) return;
-        const file = input.files[0]; input.value = '';
-        if (!file) return;
-        if (file.type !== 'application/pdf') return window.alert('สัญญาเช่าต้องเป็นไฟล์ PDF');
-        if (file.size > 12 * 1024 * 1024) return window.alert('ไฟล์ใหญ่เกิน 12 MB');
-        const label = input.closest('label'); const old = label.firstChild.textContent; label.firstChild.textContent = '… กำลังอัปโหลด ';
-        try {
-            if (!(window.getCsrfToken && window.getCsrfToken())) { const r = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/session`, { cache: 'no-store' }); const d = await r.json().catch(() => ({})); if (d.csrfToken) sessionStorage.setItem('csrfToken', d.csrfToken); }
-            const dataUrl = await new Promise((resolve, reject) => { const fr = new FileReader(); fr.onload = () => resolve(fr.result); fr.onerror = reject; fr.readAsDataURL(file); });
-            const response = await window.authFetch(`${API}/flow/files`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ no: Number(input.dataset.roUpload), id: 'dQ', name: file.name, dataUrl, lease: true }) });
-            const data = await response.json().catch(() => ({}));
-            if (response.status === 403) throw new Error('บัญชีนี้ไม่มีสิทธิ์อัปโหลด (ต้องมีสิทธิ์ "ติดตามขั้นตอนที่พักใหม่ (Flow chart)")');
-            if (!response.ok || data.success === false) throw new Error(data.message || 'อัปโหลดไม่สำเร็จ');
-            await load(true, true);
-            if (dialog.open && dialog.dataset.no === String(input.dataset.roUpload)) openRoom(input.dataset.roUpload, false);
-        } catch (error) { label.firstChild.textContent = old; window.alert(error.message); }
     });
     root.addEventListener('click', async event => {
         const t = event.target;

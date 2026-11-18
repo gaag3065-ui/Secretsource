@@ -134,3 +134,15 @@
 .ro-lease-add.is-need { border-color: #f79009; background: #fffaeb; color: #b54708; }
 .ro-lease-add:hover { background: #f2f4f7; }
 .ro-lease-box p { margin: 6px 0; } .ro-upload-lease { display: inline-block; cursor: pointer; }
+
+/* จัดการสัญญาเช่าในหน้ารายละเอียดห้อง */
+.al-row { border: 1px solid #e4e7ec; border-radius: 10px; padding: 8px 10px; margin: 6px 0; display: grid; gap: 6px; background: #fff; }
+.al-row.is-edit { background: #fffaeb; border-color: #f5c26b; }
+.al-main { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; } .al-main small { color: #667085; font-size: 11.5px; }
+.al-actions { display: flex; flex-wrap: wrap; gap: 6px; } .al-label { cursor: pointer; display: inline-block; }
+.al-up { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; } .al-up select { font: inherit; padding: 6px 8px; border: 1px solid #d0d5dd; border-radius: 8px; }
+.al-form { display: grid; gap: 8px; } .al-form label, .al-ex label { display: grid; gap: 3px; font-size: 12.5px; font-weight: 700; } .al-form input, .al-form select, .al-ex input, .al-ex select { font: inherit; padding: 6px 8px; border: 1px solid #d0d5dd; border-radius: 8px; font-weight: 400; }
+.al-hist { margin: 4px 0 0; padding-left: 18px; font-size: 12px; color: #475467; max-height: 140px; overflow: auto; }
+.al-ex { background: #f0f9ff; border: 1px solid #b9e6fe; border-radius: 10px; padding: 8px 10px; display: grid; gap: 8px; } .al-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+.al-bin { margin-top: 8px; font-size: 12.5px; } .al-bin summary { cursor: pointer; color: #475467; }
+.ro-btn.is-danger { color: #b42318; border-color: #fda29b; }
