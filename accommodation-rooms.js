@@ -108,7 +108,7 @@
                 <tbody>${list.map(r => `<tr>
                     <td>${esc(r.no)}</td>
                     <td><b>${esc(r.project)}</b><small>${esc(r.unit)}</small></td>
-                    <td class="ro-lease-cell">${(r.signedLeases || []).map((f, i, a) => `<button type="button" class="ro-lease ro-lease-signed" data-ro-sfile="${esc(f.id)}" title="สัญญาเช่าที่เซ็นแล้ว: ${esc(f.name)}${f.at ? ' · แนบ ' + esc(f.at) : ''}">✅ สัญญาเซ็นแล้ว${a.length > 1 ? ' ' + (i + 1) : ''}</button>`).join('')}${(r.contracts || []).map((c, i, a) => `<a class="ro-lease" href="${esc(c.url)}" target="_blank" rel="noopener" title="เปิดไฟล์สัญญาเช่า: ${esc(c.name)}">📄 สัญญา${a.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('') || ((r.signedLeases || []).length ? '' : '<span class="ro-lease-none">–</span>')}</td>
+                    <td class="ro-lease-cell">${(r.signedLeases || []).map((f, i, a) => `<button type="button" class="ro-lease ro-lease-signed" data-ro-sfile="${esc(f.id)}" title="สัญญาเช่าที่เซ็นแล้ว: ${esc(f.name)}${f.at ? ' · แนบ ' + esc(f.at) : ''}">✅ สัญญาเซ็นแล้ว${a.length > 1 ? ' ' + (i + 1) : ''}</button>`).join('')}${(r.contracts || []).map((c, i, a) => `<a class="ro-lease" href="${esc(c.url)}" target="_blank" rel="noopener" title="เปิดไฟล์สัญญาเช่า: ${esc(c.name)}">📄 สัญญา${a.length > 1 ? ' ' + (i + 1) : ''}</a>`).join('') || ((r.signedLeases || []).length ? '' : '<span class="ro-lease-none">–</span>')}${r.status === STATUS_LIST[0] ? `<label class="ro-lease ro-lease-add${(r.signedLeases || []).length ? '' : ' is-need'}" title="อัปโหลดไฟล์สัญญาเช่าที่เซ็นแล้ว (PDF ไม่เกิน 12 MB) — เก็บในขั้น เซ็นสัญญา ของห้องนี้">＋ ${(r.signedLeases || []).length ? 'แนบเพิ่ม' : 'อัปโหลดสัญญา'}<input type="file" accept="application/pdf" hidden data-ro-upload="${esc(r.no)}"></label>` : ''}</td>
                     <td><span class="ro-pill ${r.status === STATUS_LIST[0] ? 'is-ok' : 'is-process'}">${esc(r.status)}</span>${r.statusNote ? `<small class="ro-snote" title="หมายเหตุสถานะ${r.statusNoteBy ? ' · ' + esc(r.statusNoteBy) : ''}">📝 ${esc(r.statusNote)}</small>` : ''}</td>
                     <td>${r.employees ? `${num(r.employees)} คน<small>${esc(r.companies.join(', '))}</small>${q ? `<small>${(r.employeeList || []).map(e => esc(e.name || e.nickname)).join(' · ')}</small>` : ''}` : (r.group === 'กำลังดำเนินการ' ? '-' : '<span class="ro-pill is-empty">ไม่มีพนักงาน</span>')}</td>
                     <td>${esc(r.type || '-')}</td>
@@ -245,6 +245,23 @@
             publish(); openRoom(nf.dataset.roNetForm, false);
             note(result.unchanged ? 'ไม่มีข้อมูลที่เปลี่ยนแปลง' : 'บันทึกลงไฟล์อินเตอร์เน็ตของส่วนกลางแล้ว — แสดงผลทันที', false);
         } catch (error) { button.disabled = false; button.textContent = 'บันทึกลงไฟล์ส่วนกลาง'; note(error.message, true); }
+    });
+    root.addEventListener('change', async event => {
+        const input = event.target.closest('[data-ro-upload]'); if (!input) return;
+        const file = input.files[0]; input.value = '';
+        if (!file) return;
+        if (file.type !== 'application/pdf') return window.alert('สัญญาเช่าต้องเป็นไฟล์ PDF');
+        if (file.size > 12 * 1024 * 1024) return window.alert('ไฟล์ใหญ่เกิน 12 MB');
+        const label = input.closest('label'); const old = label.firstChild.textContent; label.firstChild.textContent = '… กำลังอัปโหลด ';
+        try {
+            if (!(window.getCsrfToken && window.getCsrfToken())) { const r = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/session`, { cache: 'no-store' }); const d = await r.json().catch(() => ({})); if (d.csrfToken) sessionStorage.setItem('csrfToken', d.csrfToken); }
+            const dataUrl = await new Promise((resolve, reject) => { const fr = new FileReader(); fr.onload = () => resolve(fr.result); fr.onerror = reject; fr.readAsDataURL(file); });
+            const response = await window.authFetch(`${API}/flow/files`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ no: Number(input.dataset.roUpload), id: 'dQ', name: file.name, dataUrl, lease: true }) });
+            const data = await response.json().catch(() => ({}));
+            if (response.status === 403) throw new Error('บัญชีนี้ไม่มีสิทธิ์อัปโหลด (ต้องมีสิทธิ์ "ติดตามขั้นตอนที่พักใหม่ (Flow chart)")');
+            if (!response.ok || data.success === false) throw new Error(data.message || 'อัปโหลดไม่สำเร็จ');
+            await load(true, true);
+        } catch (error) { label.firstChild.textContent = old; window.alert(error.message); }
     });
     root.addEventListener('click', async event => {
         const t = event.target;

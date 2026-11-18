@@ -130,3 +130,6 @@
 .ro-lease:hover { background: #dde8ff; }
 .ro-lease-signed { border-color: #75e0a7; background: #ecfdf3; color: #067647; }
 .ro-lease-none { color: #98a2b3; }
+.ro-lease-add { border-style: dashed; background: #fff; color: #475467; border-color: #98a2b3; }
+.ro-lease-add.is-need { border-color: #f79009; background: #fffaeb; color: #b54708; }
+.ro-lease-add:hover { background: #f2f4f7; }
