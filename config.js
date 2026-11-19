@@ -261,11 +261,11 @@ window.performSecureLogout =
 (function () {
     if (window.GA_LOADING || typeof document === 'undefined') return;
     const API = String(window.APP_CONFIG?.API_BASE_URL || '');
-    const SHOW_AFTER_MS = 250;        // เร็วกว่านี้ไม่ต้องขึ้น (กันกะพริบ)
-    const MIN_SHOW_MS = 400;          // ขึ้นแล้วอยู่อย่างน้อยเท่านี้
+    const SHOW_AFTER_MS = 120;        // เร็วกว่านี้ไม่ต้องขึ้น (กันกะพริบ)
+    const MIN_SHOW_MS = 700;          // ขึ้นแล้วอยู่อย่างน้อยเท่านี้ ให้เห็นชัดทุกครั้ง
     const USER_WINDOW_MS = 1500;      // คำขอที่เริ่มภายในเวลานี้หลังผู้ใช้กด/พิมพ์ ถือว่ามาจากผู้ใช้
     let lastUser = 0, lastEnd = 0, pending = 0, shownAt = 0, startedAt = 0, showTimer = 0, hideTimer = 0, ticker = 0, label = '';
-    let box = null;
+    let box = null, dismissed = false;
 
     // นับเฉพาะการกระทำจริง: คลิก/แตะ · Enter/Space · ส่งฟอร์ม · เปลี่ยนค่าช่องเลือก (พิมพ์ตัวอักษรเฉยๆ ไม่นับ)
     ['pointerdown', 'submit', 'change'].forEach(type => document.addEventListener(type, () => { lastUser = Date.now(); }, true));
@@ -280,19 +280,21 @@ window.performSecureLogout =
         box.setAttribute('aria-label', 'กำลังโหลด');
         box.innerHTML = '<style>#gaLoading{border:0;padding:0;background:transparent;max-width:none;max-height:none;width:100vw;height:100vh;outline:0}#gaLoading::backdrop{background:rgba(15,23,42,.38)}#gaLoading .gl{position:fixed;inset:0;display:grid;place-items:center}#gaLoading .gl-card{background:#fff;color:#172033;border-radius:16px;padding:22px 28px;min-width:260px;max-width:min(92vw,380px);text-align:center;box-shadow:0 18px 50px rgba(15,23,42,.35);font-family:inherit}#gaLoading .gl-spin{width:38px;height:38px;margin:0 auto 12px;border:4px solid #dbe5ff;border-top-color:#1d4ed8;border-radius:50%;animation:glspin .8s linear infinite}#gaLoading b{display:block;font-size:16px}#gaLoading small{display:block;margin-top:6px;color:#667085;font-size:13px;line-height:1.5}@keyframes glspin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){#gaLoading .gl-spin{animation-duration:2.4s}}</style><div class="gl"><div class="gl-card"><div class="gl-spin"></div><b class="gl-title">กำลังโหลด…</b><small class="gl-sub"></small></div></div>';
         box.addEventListener('cancel', event => event.preventDefault());   // กัน Esc ปิดทิ้งระหว่างรอ
-        box.addEventListener('close', () => { if (pending) setTimeout(show, 0); });   // ถูกปิดทั้งที่ยังรออยู่ (เช่น กด Esc ซ้ำ) → เปิดกลับ
+        box.addEventListener('close', () => { if (pending && !dismissed) setTimeout(show, 0); });   // ถูกปิดทั้งที่ยังรออยู่ (เช่น กด Esc ซ้ำ) → เปิดกลับ
         document.body.append(box);
         return box;
     }
     function paint() {
         if (!box || !box.open) return;
         const sec = Math.max(0, Math.round((Date.now() - startedAt) / 1000));
-        box.querySelector('.gl-title').textContent = label || 'กำลังโหลดข้อมูล…';
+        box.querySelector('.gl-title').textContent = label || domLabel() || 'กำลังโหลดข้อมูล…';
+        let hide = box.querySelector('.gl-hide');
+        if (sec >= 45 && !hide) { hide = document.createElement('button'); hide.type = 'button'; hide.className = 'gl-hide'; hide.textContent = 'ซ่อนไว้ก่อน (ระบบยังรออยู่เบื้องหลัง)'; hide.style.cssText = 'margin-top:10px;border:0;background:none;color:#1d4ed8;cursor:pointer;font:inherit;font-size:13px;text-decoration:underline'; hide.addEventListener('click', () => { dismissed = true; if (box.open) box.close(); }); box.querySelector('.gl-card').append(hide); }
         box.querySelector('.gl-sub').textContent = (sec >= 3 ? `รอมา ${sec} วินาที · ` : '') + (sec >= 20 ? 'ระบบยังทำงานอยู่ ข้อมูลที่ใหญ่หรือเครือข่ายช้าอาจใช้เวลานาน — ' : '') + 'กรุณารอจนกว่าจะเสร็จ ห้ามปิดหน้านี้';
     }
     function show() {
         showTimer = 0;
-        if (!pending || !document.body) return;
+        if (!pending || dismissed || !document.body) return;
         const el = build();
         if (!el.open) { try { el.showModal(); } catch { return; } shownAt = Date.now(); ticker = setInterval(paint, 500); }
         paint();
@@ -304,7 +306,7 @@ window.performSecureLogout =
         if (box?.open) box.close();
     }
     function begin(text) {
-        if (!pending) { startedAt = Date.now(); label = ''; }
+        if (!pending) { startedAt = Date.now(); label = ''; dismissed = false; box?.querySelector('.gl-hide')?.remove(); }
         pending += 1;
         if (text) label = text;
         clearTimeout(hideTimer); hideTimer = 0;
@@ -343,6 +345,45 @@ window.performSecureLogout =
             return response;
         }, error => { release(); throw error; });
     };
+
+
+    // ---- ข้อความ "กำลัง…" ที่หน้าแสดงเอง (เช่น ปุ่ม "กำลังบันทึก…", แถบสถานะ, "กำลังโหลด…") → ถือว่ากำลังรอ แล้วขึ้นป็อปอัปเดียวกัน
+    //      นับเฉพาะที่เกิดจากการกดของผู้ใช้ หรือช่วง 15 วินาทีแรกของการเปิดหน้า (รีเฟรชเบื้องหลังที่ขึ้นข้อความเองไม่นับ) · ค้างเกิน 2 นาทีปล่อยเอง กันหน้าล็อกถาวรกรณีข้อความค้าง
+    const WAIT_RE = /^\s*กำลัง[\s\S]{0,100}?(…|\.\.\.)\s*$/;
+    const waiting = new Map(), ignored = new WeakMap();   // ignored: element → ข้อความที่ปล่อยแล้ว (ข้อความเดิมไม่นับซ้ำ)
+    let domToken = false, domSince = 0;
+    const visible = el => el.getClientRects().length > 0;
+    const isWaitText = el => el.isConnected && ignored.get(el) !== el.textContent && !(box && box.contains(el)) && el.children.length === 0 && (el.textContent || '').length < 120 && WAIT_RE.test(el.textContent || '') && visible(el);
+    function consider(el) {
+        if (!el || el.nodeType !== 1 || waiting.has(el)) return;
+        if (isWaitText(el) && (fromUser() || performance.now() < 15000)) waiting.set(el, Date.now());
+    }
+    function scanTree(root) {
+        if (!root || root.nodeType !== 1 || !(root.textContent || '').includes('กำลัง')) return;
+        if (root.children.length === 0) return consider(root);
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) if (node.nodeValue.includes('กำลัง')) consider(node.parentElement);
+    }
+    function syncDom() {
+        for (const el of [...waiting.keys()]) if (!isWaitText(el)) waiting.delete(el);
+        if (domToken && Date.now() - domSince > 120000) { waiting.forEach((_, el) => ignored.set(el, el.textContent)); waiting.clear(); }
+        if (waiting.size && !domToken) { domToken = true; domSince = Date.now(); begin(); }
+        else if (!waiting.size && domToken) { domToken = false; end(); }
+    }
+    function domLabel() { const el = [...waiting.keys()][0]; return el ? el.textContent.trim() : ''; }
+    function watchDom() {
+        new MutationObserver(records => {
+            for (const r of records) {
+                const target = r.type === 'characterData' ? r.target.parentElement : r.target;
+                if (target && target.children.length === 0) consider(target);
+                r.addedNodes.forEach(node => scanTree(node.nodeType === 3 ? node.parentElement : node));
+            }
+            syncDom();
+        }).observe(document.body, { subtree: true, childList: true, characterData: true });
+        setInterval(syncDom, 700);
+        scanTree(document.body); syncDom();
+    }
+    if (document.body) watchDom(); else document.addEventListener('DOMContentLoaded', watchDom, { once: true });
 
     window.GA_LOADING = { run: (text, promise) => track(promise, text), begin, end, wrap: track };
 })();
