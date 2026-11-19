@@ -200,7 +200,8 @@
             <tr class="grand"><td colspan="6">Grand Total — เลือก ${picked.length} จาก ${rows.length} รายการ</td><td class="n" id="pmGrand">${num(sum(picked))}</td></tr></tbody></table></div>`
             : '<div class="pm-warn">ยังไม่มีบิลที่รอตั้งเบิก — ทำขั้น ② ได้รับบิลและลงเว็บ (วันที่ + รูปบิล + ยอดเงิน) ในแท็บค่าใช้จ่ายและรอบกำหนดก่อน หรือส่งบิลกลับมาจากชุดที่ตั้งเบิกแล้ว (ด้านล่าง)</div>'}
         <label style="margin-top:8px">หมายเหตุด้านล่างใบ (บรรทัดละ 1 ข้อ — แสดงตัวอักษรสีแดงใต้ตาราง)<textarea data-pm-top="notes" rows="2">${esc(state.notes)}</textarea></label>
-        <div style="margin-top:8px"><button type="button" class="pm-btn primary" data-pm-create ${picked.length && !state.busy ? '' : 'disabled'}>📄 สร้างชุดตั้งเบิก + ดาวน์โหลด PDF</button></div></div>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="pm-btn primary" data-pm-create ${picked.length && !state.busy ? '' : 'disabled'} title="บันทึกเป็นชุดตั้งเบิก (ไม่โหลดไฟล์) — ใช้กรณีตั้งเบิกไปแล้วและมาลงข้อมูลย้อนหลัง">📄 สร้างชุดตั้งเบิก</button>
+            <button type="button" class="pm-btn" data-pm-dlsel ${picked.length && !state.busy ? '' : 'disabled'} title="โหลด PDF จากรายการที่เลือก โดยยังไม่สร้างชุด">⬇ ดาวน์โหลด PDF</button></div></div>
         ${pending.map(b => confirmRequestHtml(b)).join('')}`;
     }
     // ยืนยันตั้งเบิก: หลักฐานแคปหน้าแชท + วันที่ → ทุกบิลที่เลือกเลื่อนเป็น "ตั้งเบิกแล้ว"
@@ -234,12 +235,20 @@
     async function createBatch() {
         const picked = state.cands.map(c => state.rows.get(c.key)).filter(r => state.sel.has(r.key));
         const bad = validatePicked(picked); if (bad) { state.msg = bad; state.bad = true; return render(); }
-        await act('กำลังบันทึกชุดตั้งเบิกและสร้าง PDF', async () => {
+        await act('กำลังบันทึกชุดตั้งเบิก', async () => {
             const saved = await request(`${PAY}/batches`, { method: 'PUT', body: JSON.stringify({ status: 'requested', period: state.period, round: state.round, label: `${state.period} ${state.round}`, requestedAt: todayDmy(),
                 notes: state.notes.split('\n').map(x => x.trim()).filter(Boolean), items: picked.map(r => ({ ...r, payDate: state.payDate })) }) });
             state.sel.clear(); state.rows.clear(); applyOverview(saved); state.batchId = saved.batch.id;
-            try { await downloadPdf(saved.batch); return `สร้างชุดตั้งเบิกแล้ว (${saved.batch.items.length} รายการ) และดาวน์โหลด PDF แล้ว — ส่งใบให้บัญชี แล้วกลับมาแนบหลักฐานและกด "ยืนยันตั้งเบิก" ด้านล่าง`; }
-            catch (error) { state.bad = true; return `บันทึกชุดตั้งเบิกแล้ว แต่สร้าง PDF ไม่สำเร็จ: ${error.message} — กด "โหลด PDF ตั้งเบิกอีกครั้ง" ได้`; }
+            return `สร้างชุดตั้งเบิกแล้ว (${saved.batch.items.length} รายการ) — แนบหลักฐานแล้วกด "ยืนยันตั้งเบิก" ด้านล่าง (ต้องการไฟล์ใบตั้งเบิก กด "โหลด PDF ตั้งเบิกอีกครั้ง")`;
+        });
+    }
+    // ดาวน์โหลด PDF จากรายการที่เลือก โดยไม่สร้างชุด (ไม่บันทึกอะไรลงชีต)
+    async function downloadSelected() {
+        const picked = state.cands.map(c => state.rows.get(c.key)).filter(r => state.sel.has(r.key));
+        const bad = validatePicked(picked); if (bad) { state.msg = bad; state.bad = true; return render(); }
+        await act('กำลังสร้าง PDF', async () => {
+            await downloadPdf({ period: state.period, round: state.round, notes: state.notes.split('\n').map(x => x.trim()).filter(Boolean), items: picked.map(r => ({ ...r, payDate: state.payDate })) });
+            return 'ดาวน์โหลด PDF แล้ว (ยังไม่ได้สร้างชุดตั้งเบิก — ถ้าจะบันทึกให้กด "สร้างชุดตั้งเบิก")';
         });
     }
 
@@ -344,6 +353,7 @@
         const tab = t.closest('[data-pm-tab]'); if (tab) { readTop(dialog); state.tab = tab.dataset.pmTab; state.msg = ''; state.bad = false; return render(); }
         const f = t.closest('[data-pm-filter]'); if (f) { state.filter = f.dataset.pmFilter; return render(); }
         if (t.closest('[data-pm-create]')) { readTop(dialog); return createBatch(); }
+        if (t.closest('[data-pm-dlsel]')) { readTop(dialog); return downloadSelected(); }
         const pdf = t.closest('[data-pm-pdf]');
         if (pdf) { const bb = state.batches.find(x => x.id === (pdf.dataset.batch || state.batchId)); return act('กำลังสร้าง PDF', async () => { await downloadPdf(bb); return 'ดาวน์โหลด PDF แล้ว'; }); }
         const pa = t.closest('[data-pm-pickall]'); if (pa && b) { const sc = pa.dataset.pmPickall; (sc === 'rq' ? [] : b.items).forEach(i => state.picks.add(sc + '|' + i.key)); return render(); }
