@@ -189,7 +189,7 @@
                 <header><b>${esc(t.title)}</b>
                     ${t.acknowledged_at ? '' : '<span class="gd-tag is-new">ใหม่</span>'}
                     ${t.priority && t.priority !== 'ปกติ' ? `<span class="gd-tag ${t.priority === 'ด่วน' ? 'is-urgent' : ''}">${esc(t.priority)}</span>` : ''}
-                    <span class="gd-tag">${esc(t.submitted_at ? 'บันทึกเรียบร้อยแล้ว' : t.kind_label)}</span>
+                    <span class="gd-tag">${esc(t.submitted_at ? 'บันทึกเรียบร้อยแล้ว' : (Object.values(t.response || {}).some(Boolean) || (t.files || []).length) ? 'บันทึกไว้ก่อน (ยังไม่ครบ)' : t.kind_label)}</span>
                 </header>
                 <span class="gd-task-meta">บันทึกรายการเมื่อ ${esc(when(t.created_at))}${t.due_date ? ` · กำหนดเสร็จ ${esc(thDate(t.due_date))}` : ''}</span>
                 ${t.repeatable ? `<p class="gd-travel-date">วันที่เดินทาง: ${esc((t.fields || []).filter(f => f.type === 'date' || f.type === 'select').map(f => f.type === 'date' ? thDate(t.response?.[f.id]) : t.response?.[f.id]).filter(Boolean).join(' · ') || 'ยังไม่ได้ระบุ')}</p>` : ''}
@@ -243,7 +243,8 @@
                 <div class="gd-thumbs" data-task-thumbs="${esc(u.id)}"></div>
                 ${u.type === 'pdf' ? `<input type="text" data-password="${esc(u.id)}" placeholder="รหัสเปิดไฟล์ PDF (ถ้ามี)" autocomplete="off">` : ''}
             </div>`).join('')}
-            <button type="submit" class="gd-btn gd-btn-primary gd-submit-task">บันทึกข้อมูล</button>
+            <button type="submit" class="gd-btn gd-btn-primary gd-submit-task">บันทึกข้อมูล (ส่งครบแล้ว)</button>
+            ${t.repeatable || t.submitted_at ? '' : '<button type="button" class="gd-btn gd-submit-draft" data-task-draft>💾 บันทึกไว้ก่อน (ยังกรอก/แนบไม่ครบ)</button><p class="gd-task-meta">กรอกหรือแนบได้เท่าที่มีตอนนี้ แล้วกลับมาเพิ่มทีหลังได้ — เช่น รับของแล้วค่อยถ่ายรูปมาแนบ</p>'}
         </form>` : '';
         $('gdInfo').innerHTML = `<article class="gd-task ${t.acknowledged_at ? 'is-read' : ''}">
             <span class="gd-task-meta">มอบหมายเมื่อ ${esc(when(t.created_at))}${t.due_date ? ` · กำหนดเสร็จ ${esc(thDate(t.due_date))}` : ''}${t.priority && t.priority !== 'ปกติ' ? ` · ${esc(t.priority)}` : ''}</span>
@@ -293,21 +294,22 @@
             msg($('gdFormMsg'), 'รับทราบแล้ว', 'ok');
         } catch (error) { msg($('gdFormMsg'), error.message, 'bad'); button.disabled = false; }
     }
-    async function submitTask(form) {
+    async function submitTask(form, partial = false) {
         const t = state.task;
         const values = {};
         for (const f of t.fields || []) {
             values[f.id] = form.elements[f.id].value.trim();
-            if (!values[f.id]) return msg($('gdFormMsg'), `กรุณากรอก "${f.label}"`, 'bad');
+            if (!partial && !values[f.id]) return msg($('gdFormMsg'), `กรุณากรอก "${f.label}"`, 'bad');
         }
         for (const u of t.uploads || []) {
-            if (!(state.taskFiles[u.id] || []).length && !(t.files || []).some(f => f.slot === u.id)) return msg($('gdFormMsg'), `กรุณาแนบ "${u.label}"`, 'bad');
+            if (!partial && !(state.taskFiles[u.id] || []).length && !(t.files || []).some(f => f.slot === u.id)) return msg($('gdFormMsg'), `กรุณาแนบ "${u.label}"`, 'bad');
         }
+        if (partial && !Object.values(values).some(Boolean) && !(t.uploads || []).some(u => (state.taskFiles[u.id] || []).length) && !(t.files || []).length) return msg($('gdFormMsg'), 'ยังไม่ได้กรอกหรือแนบอะไรเลย', 'bad');
         const files = [...form.querySelectorAll('[data-keep-file]')].map(input => ({ n: Number(input.dataset.keepFile), key: t.files.find(f => f.n === Number(input.dataset.keepFile))?.key, keep: input.checked, password: form.querySelector(`[data-file-password="${input.dataset.keepFile}"]`)?.value || '' }));
         const jobs = (t.uploads || []).flatMap(u => (state.taskFiles[u.id] || []).map(item => ({ slot: u.id, file: item.file, uploadKey: item.uploadKey ||= crypto.randomUUID(),
             password: form.querySelector(`[data-password="${u.id}"]`)?.value.trim() || '' })));
-        const button = form.querySelector('[type=submit]');
-        button.disabled = true;
+        const button = form.querySelector('[type=submit]'), draftButton = form.querySelector('[data-task-draft]');
+        button.disabled = true; if (draftButton) draftButton.disabled = true;
         const bar = $('gdProgress');
         bar.hidden = false;
         try {
@@ -317,14 +319,14 @@
                 const uploaded = await call('/upload/task', { id: t.id, slot: jobs[i].slot, password: jobs[i].password, upload_key: jobs[i].uploadKey, data: await toDataUrl(jobs[i].file) });
                 if (uploaded.task) replaceTask(uploaded.task);
             }
-            msg($('gdFormMsg'), 'กำลังส่งงาน…');
-            const { task } = await call(`/tasks/${t.id}/respond`, { values, files });
+            msg($('gdFormMsg'), partial ? 'กำลังบันทึก…' : 'กำลังส่งงาน…');
+            const { task } = await call(`/tasks/${t.id}/respond`, { values, files, ...(partial ? { partial: true } : {}) });
             replaceTask(task);
             openTask(task.id);
-            msg($('gdFormMsg'), 'บันทึกเรียบร้อยแล้ว ✓ ข้อมูลปลายทางจะอัปเดตอัตโนมัติ', 'ok');
+            msg($('gdFormMsg'), partial ? 'บันทึกไว้ก่อนแล้ว ✓ กลับมากรอก/แนบส่วนที่เหลือแล้วกด "บันทึกข้อมูล (ส่งครบแล้ว)" ได้ภายหลัง' : 'บันทึกเรียบร้อยแล้ว ✓ ข้อมูลปลายทางจะอัปเดตอัตโนมัติ', 'ok');
         } catch (error) {
             msg($('gdFormMsg'), `ส่งไม่สำเร็จ: ${error.message}`, 'bad');
-            button.disabled = false;
+            button.disabled = false; if (draftButton) draftButton.disabled = false;
             bar.hidden = true;
         }
     }
@@ -669,6 +671,7 @@
             return div;
         }));
     });
+    $('gdInfo').addEventListener('click', event => { const d = event.target.closest('[data-task-draft]'); if (d && state.task) { event.preventDefault(); const form = d.closest('form'); if (form) submitTask(form, true); } });
     $('gdInfo').addEventListener('submit', event => { if (event.target.id === 'gdTaskForm') { event.preventDefault(); submitTask(event.target); } });
     $('gdFields').addEventListener('change', event => {
         const input = event.target.closest('input[data-files]');
