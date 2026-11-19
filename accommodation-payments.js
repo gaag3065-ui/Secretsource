@@ -269,7 +269,7 @@
         const paidTotal = sum(groups.filter(g => b.paid?.[g.key]?.at).flatMap(g => g.items));
         const chip = (k, l) => `<button type="button" class="pm-chip ${state.filter === k ? 'is-on' : ''}" data-pm-filter="${esc(k)}">${esc(l)}</button>`;
         return `${batchPicker()}
-        ${notReq.length ? `<div class="pm-warn">มี ${notReq.length} บิลในชุดนี้ยังไม่ได้ "ยืนยันตั้งเบิก" (แท็บ ① ด้านล่าง) — ต้องยืนยันตั้งเบิกก่อนจึงรับเงินได้</div>` : ''}
+        ${notReq.length ? `<div class="pm-warn">มี ${notReq.length} บิลในชุดนี้ยังไม่ได้ "ยืนยันตั้งเบิก" (แท็บ ① ด้านล่าง) — ต้องยืนยันตั้งเบิกก่อนจึงแนบหลักฐานและรับเงินได้ <button type="button" class="pm-btn sm" data-pm-tab="request">ไปแท็บ ① ยืนยันตั้งเบิก →</button></div>` : ''}
         <div class="pm-ev"><h3 style="margin:0">💵 บันทึกการรับเงิน — ${toRecv.length} บิลรอรับเงิน</h3>
             <div class="pm-grid"><label>วันที่ได้รับเงิน<input data-pm-recv="date" value="${esc(state.recvIn[b.id]?.date ?? (b.receivedAt || todayDmy()))}"></label>
             <label>ยอดเงินที่ได้รับจริง (LKR)<input data-pm-recv="amount" inputmode="decimal" value="${esc(state.recvIn[b.id]?.amount ?? (b.receivedAmount || total))}"></label>
@@ -430,6 +430,7 @@
             const keys = sc === 'rq' ? bb.items.filter(i => state.picks.has('rq|' + i.key) && idxOf(i.key) < 2).map(i => i.key)
                 : sc === 'rc' ? bb.items.filter(i => idxOf(i.key) === 2).map(i => i.key)
                     : sc === 'item' ? [t.dataset.key] : (groupsOf(bb).find(g => g.key === t.dataset.gk)?.items.map(i => i.key) || []);
+            if (!keys.length && sc === 'rc') { state.msg = 'ยังแนบหลักฐานรับเงินไม่ได้ — ไม่มีบิลที่ "ยืนยันตั้งเบิก" แล้วในชุดนี้ (ตอนนี้ ' + bb.items.filter(i => idxOf(i.key) < 2).length + ' บิลยังอยู่ขั้นก่อนตั้งเบิก) · ไปที่แท็บ ① ตั้งเบิก → แนบหลักฐาน + ติ๊กรวมบิล → กด "ยืนยันตั้งเบิก" ก่อน แล้วกลับมาแท็บนี้'; state.bad = true; return render(); }
             return act('กำลังอัปโหลด', () => uploadEvidence(files, keys, step));
         }
         const row = t.closest('tr[data-key]');
