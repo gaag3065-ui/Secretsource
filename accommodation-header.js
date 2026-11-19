@@ -2,7 +2,7 @@
 // ย้ายมาจากหน้า "ภาพรวมที่พัก (Google Sheet)" เดิม — ตัวเลขดึงใหม่เองทุก 30 วินาที
 // กล่องพื้นที่ (GE/ML/PP/SL/TH) · กล่องสถานะ · ช่องค้นหา → แสดงรายชื่อที่พักด้านล่างทันที (กดที่พักเพื่อดูรายชื่อพนักงาน)
 (() => {
-    const REFRESH_MS = 30 * 1000;
+    const REFRESH_MS = 90 * 1000;   // เดิม 30 วิ ถี่เกินไป ทำให้เซิร์ฟเวอร์/Google Sheets ติดโควตา
     const AREAS = ['GE', 'ML', 'PP', 'SL', 'TH'];
     const state = { data: null, area: null, status: 'all', query: '', open: new Set(), loading: false };
     const $ = id => document.getElementById(id);
@@ -36,7 +36,7 @@
     function render() {
         const data = state.data;
         const totals = data.totals;
-        $('asUpdated').textContent = `อัปเดต ${new Date(data.fetchedAt).toLocaleTimeString('th-TH')} · รีเฟรชเองทุก 30 วินาที`;
+        $('asUpdated').textContent = `อัปเดต ${new Date(data.fetchedAt).toLocaleTimeString('th-TH')} · รีเฟรชเองทุก 90 วินาที`;
         $('asStats').innerHTML = [
             ['พนักงาน on work', totals.onWork],
             ['มีที่พักในรายการ', totals.housed],

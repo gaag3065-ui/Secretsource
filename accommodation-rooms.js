@@ -222,9 +222,9 @@
             publish();
         } catch { /* รอบหน้าลองใหม่ */ }
     }
-    setInterval(pollInternet, 10 * 1000);
-    // ข้อมูลทะเบียน/พนักงาน (แก้ที่ไฟล์ HR หรือไฟล์ทะเบียน) อัปเดตเองทุก 30 วินาที แบบเงียบ
-    setInterval(() => { if (!document.hidden && !busy()) load(false, true); }, 30 * 1000);
+    // ดึงถี่เกินไปทำให้ Google Sheets จำกัดโควตา/เซิร์ฟเวอร์ช้า → "Failed to fetch" จึงลดความถี่: อินเทอร์เน็ตทุก 60 วิ · ทะเบียน/พนักงานทุก 2 นาที (แบบเงียบ)
+    setInterval(pollInternet, 60 * 1000);
+    setInterval(() => { if (!document.hidden && !busy()) load(false, true); }, 120 * 1000);
     const reopen = async no => { await load(true); if (dialog.open) openRoom(no, false); };
 
     root.addEventListener('click', event => {

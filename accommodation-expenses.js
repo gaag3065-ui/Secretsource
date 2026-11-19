@@ -8,6 +8,7 @@
     const num = v => (Number(String(v ?? '').replace(/,/g, '')) || 0).toLocaleString('th-TH');
     const state = { data: null, month: '', filter: 'all', loading: false, cells: [], step: 'all', open: new Set(), serial: '' };
     let target = null;   // ช่องที่กำลังแก้ในกล่องบันทึก
+    let retryLeft = 4;   // จำนวนครั้งที่ลองโหลดใหม่เองหลังพลาด
     const DAY = 86400000;
     const MONTH_CATS = ['water', 'electric', 'gas', 'gas_recv', 'other'];
     const MONTH_NAMES = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -24,8 +25,19 @@
     const monthLabel = m => { const [y, mo] = m.split('-').map(Number); return `${MONTH_NAMES[mo - 1]} ${y + 543}`; };
     const shiftMonth = (m, n) => { const [y, mo] = m.split('-').map(Number); const d = new Date(Date.UTC(y, mo - 1 + n, 1)); return d.toISOString().slice(0, 7); };
 
+    // อ่านข้อมูล (GET) ที่เครือข่ายสะดุด/เซิร์ฟเวอร์ตอบ 5xx → ลองใหม่อัตโนมัติ 2 ครั้ง (รอ 1.5 วิ แล้ว 3 วิ) · การบันทึก (PUT/POST) ไม่ลองซ้ำเอง กันบันทึกซ้ำ
     async function request(url, options) {
-        const response = await window.authFetch(url, { cache: 'no-store', ...(options || {}), headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) } });
+        const isRead = !options?.method || String(options.method).toUpperCase() === 'GET';
+        let response;
+        for (let attempt = 0; ; attempt += 1) {
+            try {
+                response = await window.authFetch(url, { cache: 'no-store', ...(options || {}), headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) } });
+                if (!(isRead && response.status >= 500 && attempt < 2)) break;
+            } catch (error) {
+                if (!isRead || attempt >= 2 || /เซสชัน|CSRF/.test(String(error.message))) throw (error instanceof TypeError ? new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (อินเทอร์เน็ตหลุดหรือเซิร์ฟเวอร์กำลังรีสตาร์ท)') : error);
+            }
+            await new Promise(resolve => setTimeout(resolve, 1500 * (attempt + 1)));
+        }
         const data = await response.json().catch(() => ({}));
         if (response.status === 403) throw new Error('บัญชีนี้ไม่มีสิทธิ์แก้ไขข้อมูลห้องพัก');
         if (!response.ok || !data.success) throw new Error(data.message || 'ทำรายการไม่สำเร็จ');
@@ -50,7 +62,16 @@
             state.data = await request(`${API}?month=${encodeURIComponent(state.month)}`);
             state.month = state.data.month;
             render();
-        } catch (error) { root.innerHTML = `<div class="rx-head"><h2>ค่าใช้จ่ายและรอบกำหนด</h2></div><p class="rx-empty rx-error">${esc(error.message)}</p>`; }
+            retryLeft = 4;
+        } catch (error) {
+            // มีข้อมูลเดิมอยู่ → คงหน้าเดิมไว้ ไม่ล้างทิ้ง แล้วแจ้งแถบเล็กๆ · ไม่มีข้อมูลเลย → แสดงข้อความ + ปุ่มลองใหม่
+            const retry = `<button type="button" class="rx-btn" data-rx-reload>ลองใหม่</button>`;
+            if (state.data) {
+                root.querySelector('.rx-offline')?.remove();
+                root.insertAdjacentHTML('afterbegin', `<p class="rx-offline" role="status" style="margin:0 0 8px;padding:8px 12px;border-radius:8px;background:#fff4e5;color:#9a3412;font-size:13px">โหลดข้อมูลล่าสุดไม่สำเร็จ (${esc(error.message)}) — กำลังแสดงข้อมูลเดิม · ${retry}</p>`);
+            } else root.innerHTML = `<div class="rx-head"><h2>ค่าใช้จ่ายและรอบกำหนด</h2></div><p class="rx-empty rx-error">${esc(error.message)} ${retry}</p>`;
+            if (retryLeft > 0) { retryLeft -= 1; setTimeout(() => { if (!document.hidden && !dialog.open) load(); }, 15000); }   // ลองใหม่เองห่างกัน 15 วิ ไม่เกิน 4 ครั้ง
+        }
         finally { state.loading = false; root.classList.remove('is-loading'); overlay?.remove(); }
     }
 
