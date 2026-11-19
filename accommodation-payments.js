@@ -203,7 +203,7 @@
         <div style="margin-top:8px"><button type="button" class="pm-btn primary" data-pm-create ${picked.length && !state.busy ? '' : 'disabled'}>📄 สร้างชุดตั้งเบิก + ดาวน์โหลด PDF</button></div></div>
         ${pending.map(b => confirmRequestHtml(b)).join('')}`;
     }
-    // ยืนยันตั้งเบิก: หลักฐานแคปหน้าแชท + วันที่ + ติ๊กรวมบิล → ทุกบิลที่เลือกเลื่อนเป็น "ตั้งเบิกแล้ว"
+    // ยืนยันตั้งเบิก: หลักฐานแคปหน้าแชท + วันที่ → ทุกบิลที่เลือกเลื่อนเป็น "ตั้งเบิกแล้ว"
     function confirmRequestHtml(b) {
         const todo = b.items.filter(i => idxOf(i.key) < 2), picks = todo.filter(i => state.picks.has('rq|' + i.key));
         const ev = filesOf(picks.map(i => i.key), 2);
@@ -212,7 +212,6 @@
             ${todo.map(i => `<div class="pm-item"><input type="checkbox" data-pm-pick="rq|${esc(i.key)}" ${state.picks.has('rq|' + i.key) ? 'checked' : ''}><span><b>${esc(i.building)}</b> — ${esc(i.desc)} · LKR ${num(itemTotal(i))}</span>${stepChip(i.key)}</div>`).join('')}
             <div class="pm-grid"><label>วันที่ตั้งเบิก<input data-pm-ev-date="rq-${esc(b.id)}" value="${esc(state.dates['rq-' + b.id] ?? todayDmy())}"></label>
                 <div><div class="pm-thumbs">${thumbs(ev, 'ev', 2)}</div><label class="pm-up" style="margin-top:4px">＋ แนบรูปแคปหน้าแชทตั้งเบิก<input type="file" hidden accept="image/*,application/pdf" multiple data-pm-evup="2" data-batch="${esc(b.id)}" data-scope="rq"></label></div></div>
-            <label class="pm-check"><input type="checkbox" data-pm-bundle="${esc(b.id)}" ${state.bundle[b.id] ? 'checked' : ''}><span>รวมรูปบิลทั้งหมดที่ลงเว็บไว้ ส่งตั้งเบิกครบแล้ว <b style="color:#b42318">*</b></span></label>
             <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="pm-btn primary" data-pm-advance="request" data-batch="${esc(b.id)}" ${picks.length && ev.length && !state.busy ? '' : 'disabled'}>✔ ยืนยันตั้งเบิก ${picks.length} บิล</button>
                 <button type="button" class="pm-btn warn" data-pm-return="rq" data-batch="${esc(b.id)}" ${picks.length && !state.busy ? '' : 'disabled'}>↩ ส่ง ${picks.length} บิลที่เลือกกลับไปเลือกใหม่</button>
                 <button type="button" class="pm-btn" data-pm-pdf data-batch="${esc(b.id)}">⬇ โหลด PDF ตั้งเบิกอีกครั้ง</button></div></div>`;
@@ -359,10 +358,10 @@
         if (adv) {
             const bb = state.batches.find(x => x.id === (adv.dataset.batch || state.batchId)), stage = adv.dataset.pmAdvance;
             if (stage === 'request') {
-                const keys = keysIn('rq', bb), date = dialog.querySelector(`[data-pm-ev-date="rq-${bb.id}"]`)?.value.trim(), bundle = state.bundle[bb.id];
+                const keys = keysIn('rq', bb), date = dialog.querySelector(`[data-pm-ev-date="rq-${bb.id}"]`)?.value.trim();
                 if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(date || '')) { state.msg = 'กรอกวันที่ตั้งเบิกเป็น วัน/เดือน/ปี'; state.bad = true; return render(); }
-                if (!bundle) { state.msg = 'ต้องติ๊กยืนยัน "รวมรูปบิลทั้งหมดส่งตั้งเบิกครบแล้ว"'; state.bad = true; return render(); }
-                return act('กำลังยืนยันตั้งเบิก', () => advanceFlow(bb, 'request', keys, date, ['bundle'], 'ยืนยันตั้งเบิก'));
+                if (!keys.length) { state.msg = 'ยังไม่ได้เลือกบิลที่จะยืนยันตั้งเบิก'; state.bad = true; return render(); }
+                return act('กำลังยืนยันตั้งเบิก', () => advanceFlow(bb, 'request', keys, date, [], 'ยืนยันตั้งเบิก'));
             }
             const g = groupsOf(bb).find(x => x.key === adv.dataset.gk); if (!g) return;
             return act('กำลังยืนยันจ่ายและส่งหลักฐาน', async () => { const msg = await advanceFlow(bb, 'paid', g.items.map(i => i.key), bb.paid?.[g.key]?.at || todayDmy(), ['sl', 'owner'], 'ยืนยันจ่าย+ส่งหลักฐาน'); await maybeFinish(bb.id); return msg; });
@@ -422,7 +421,6 @@
         const t = event.target, b = batchOf();
         if (t.matches('[data-pm-batch]')) { state.batchId = t.value; return render(); }
         if (t.matches('[data-pm-all]')) { readTop(dialog); state.cands.forEach(c => t.checked ? state.sel.add(c.key) : state.sel.delete(c.key)); return render(); }
-        if (t.matches('[data-pm-bundle]')) { state.bundle[t.dataset.pmBundle] = t.checked; return; }
         if (t.matches('[data-pm-pick]')) { t.checked ? state.picks.add(t.dataset.pmPick) : state.picks.delete(t.dataset.pmPick); return render(); }
         if (t.matches('[data-pm-evup]')) {
             const files = [...t.files]; t.value = ''; if (!files.length || !b) return;
@@ -430,7 +428,7 @@
             const keys = sc === 'rq' ? bb.items.filter(i => state.picks.has('rq|' + i.key) && idxOf(i.key) < 2).map(i => i.key)
                 : sc === 'rc' ? bb.items.filter(i => idxOf(i.key) === 2).map(i => i.key)
                     : sc === 'item' ? [t.dataset.key] : (groupsOf(bb).find(g => g.key === t.dataset.gk)?.items.map(i => i.key) || []);
-            if (!keys.length && sc === 'rc') { state.msg = 'ยังแนบหลักฐานรับเงินไม่ได้ — ไม่มีบิลที่ "ยืนยันตั้งเบิก" แล้วในชุดนี้ (ตอนนี้ ' + bb.items.filter(i => idxOf(i.key) < 2).length + ' บิลยังอยู่ขั้นก่อนตั้งเบิก) · ไปที่แท็บ ① ตั้งเบิก → แนบหลักฐาน + ติ๊กรวมบิล → กด "ยืนยันตั้งเบิก" ก่อน แล้วกลับมาแท็บนี้'; state.bad = true; return render(); }
+            if (!keys.length && sc === 'rc') { state.msg = 'ยังแนบหลักฐานรับเงินไม่ได้ — ไม่มีบิลที่ "ยืนยันตั้งเบิก" แล้วในชุดนี้ (ตอนนี้ ' + bb.items.filter(i => idxOf(i.key) < 2).length + ' บิลยังอยู่ขั้นก่อนตั้งเบิก) · ไปที่แท็บ ① ตั้งเบิก → แนบหลักฐาน + กรอกวันที่ → กด "ยืนยันตั้งเบิก" ก่อน แล้วกลับมาแท็บนี้'; state.bad = true; return render(); }
             return act('กำลังอัปโหลด', () => uploadEvidence(files, keys, step));
         }
         const row = t.closest('tr[data-key]');
