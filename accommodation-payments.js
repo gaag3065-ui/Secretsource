@@ -215,7 +215,7 @@
                 <div><div class="pm-thumbs">${thumbs(ev, 'ev', 2)}</div><label class="pm-up" style="margin-top:4px">＋ แนบรูปแคปหน้าแชทตั้งเบิก<input type="file" hidden accept="image/*,application/pdf" multiple data-pm-evup="2" data-batch="${esc(b.id)}" data-scope="rq"></label></div></div>
             <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="pm-btn primary" data-pm-advance="request" data-batch="${esc(b.id)}" ${picks.length && ev.length && !state.busy ? '' : 'disabled'}>✔ ยืนยันตั้งเบิก ${picks.length} บิล</button>
                 <button type="button" class="pm-btn warn" data-pm-return="rq" data-batch="${esc(b.id)}" ${picks.length && !state.busy ? '' : 'disabled'}>↩ ส่ง ${picks.length} บิลที่เลือกกลับไปเลือกใหม่</button>
-                <button type="button" class="pm-btn" data-pm-pdf data-batch="${esc(b.id)}">⬇ โหลด PDF ตั้งเบิกอีกครั้ง</button></div></div>`;
+                <button type="button" class="pm-btn" data-pm-pdf data-batch="${esc(b.id)}" title="รวมรูปบิลทั้งชุดเป็น PDF ไฟล์เดียว 3 รูปต่อหน้า แยกตามบริษัท — ส่งครั้งเดียวแทนส่งรูปทีละใบ">📨 ส่งสรุปการเบิก (PDF รูปบิล)</button></div></div>`;
     }
     function readTop(root) { root.querySelectorAll('[data-pm-top]').forEach(el => { state[el.dataset.pmTop] = el.value; }); }
     function validatePicked(picked) {
@@ -258,7 +258,7 @@
         const b = batchOf();
         return `<div class="pm-grid"><label>ชุดตั้งเบิก<select data-pm-batch>${state.batches.map(x => `<option value="${esc(x.id)}" ${x.id === state.batchId ? 'selected' : ''}>${esc(x.label || x.period)} · ${x.items.length} รายการ · ${esc(STATUS[x.status] || x.status)}</option>`).join('')}</select></label>
             <div class="pm-kpi"><span>ยอดตั้งเบิกรวม</span><b>LKR ${num(sum(b.items))}</b></div>
-            <div style="align-self:end"><button type="button" class="pm-btn" data-pm-pdf data-batch="${esc(b.id)}">⬇ โหลด PDF ตั้งเบิกอีกครั้ง</button></div></div>`;
+            <div style="align-self:end"><button type="button" class="pm-btn" data-pm-pdf data-batch="${esc(b.id)}" title="รวมรูปบิลทั้งชุดเป็น PDF ไฟล์เดียว 3 รูปต่อหน้า แยกตามบริษัท — ส่งครั้งเดียวแทนส่งรูปทีละใบ">📨 ส่งสรุปการเบิก (PDF รูปบิล)</button></div></div>`;
     }
     const pickBar = (scope, b) => { const n = b.items.filter(i => state.picks.has(scope + '|' + i.key)).length; return `<div class="pm-chips"><button type="button" class="pm-btn sm" data-pm-pickall="${scope}">เลือกทั้งหมด</button><button type="button" class="pm-btn sm" data-pm-pickclear="${scope}">ล้าง</button>
         <button type="button" class="pm-btn sm warn" data-pm-return="${scope}" data-batch="${esc(b.id)}" ${n && !state.busy ? '' : 'disabled'}>↩ ส่ง ${n} บิลที่เลือกกลับไปตั้งเบิกใหม่</button><span class="pm-note">ไม่ต้องโหลด PDF ซ้ำ — บิลกลับไปอยู่ในรายการเลือกตั้งเบิก</span></div>`; };
@@ -355,7 +355,15 @@
         if (t.closest('[data-pm-create]')) { readTop(dialog); return createBatch(); }
         if (t.closest('[data-pm-dlsel]')) { readTop(dialog); return downloadSelected(); }
         const pdf = t.closest('[data-pm-pdf]');
-        if (pdf) { const bb = state.batches.find(x => x.id === (pdf.dataset.batch || state.batchId)); return act('กำลังสร้าง PDF', async () => { await downloadPdf(bb); return 'ดาวน์โหลด PDF แล้ว'; }); }
+        if (pdf) {
+            const bb = state.batches.find(x => x.id === (pdf.dataset.batch || state.batchId));
+            return act('กำลังรวมรูปบิลเป็น PDF (อาจใช้เวลาสักครู่ตามจำนวนรูป)', async () => {
+                const blob = await request(`${PAY}/summary-pdf`, { method: 'POST', body: JSON.stringify({ batchId: bb.id }), blob: true });
+                const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `สรุปการเบิก ${bb.period} ${bb.round}.pdf`.replace(/[\\/:*?"<>|]/g, '-') });
+                document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+                return 'ดาวน์โหลดสรุปการเบิก (PDF รูปบิล) แล้ว — แนบส่งในแชทครั้งเดียว';
+            });
+        }
         const pa = t.closest('[data-pm-pickall]'); if (pa && b) { const sc = pa.dataset.pmPickall; (sc === 'rq' ? [] : b.items).forEach(i => state.picks.add(sc + '|' + i.key)); return render(); }
         const pc = t.closest('[data-pm-pickclear]'); if (pc && b) { const sc = pc.dataset.pmPickclear; b.items.forEach(i => state.picks.delete(sc + '|' + i.key)); return render(); }
         const ret = t.closest('[data-pm-return]');
