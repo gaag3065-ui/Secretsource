@@ -18,7 +18,7 @@ const LOCAL_API_URL = `http://127.0.0.1:${localApiPort}`;
 
 
 
-const PRODUCTION_API_URL = 'https://got-extent-movements-emotions.trycloudflare.com';
+const PRODUCTION_API_URL = 'https://conservative-miniature-indicating-representation.trycloudflare.com';
 
 
 
@@ -412,4 +412,5 @@ window.performSecureLogout =
 
     window.GA_LOADING = { run: (text, promise) => track(promise, text), begin, end, wrap: track };
 })();
+
 
