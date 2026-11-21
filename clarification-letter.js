@@ -140,7 +140,7 @@
     function printable() {
         const w = window.open('', '_blank');
         if (!w) return alert('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ — กรุณาอนุญาต pop-up แล้วลองใหม่');
-        w.document.write(`<!doctype html><meta charset="utf-8"><title>บันทึกข้อความ</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap"><style>@page{size:A4;margin:15mm 18mm}html,body{margin:0}${PAPER_CSS}.cl-paper{width:auto}</style><div class="cl-paper" style="--fs:${fsOf(state.v)}pt">${html(build(state.v))}</div>`);
+        w.document.write(`<!doctype html><meta charset="utf-8"><title>บันทึกข้อความ</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap"><style>@page{size:A4;margin:0}html,body{margin:0}${PAPER_CSS}.cl-paper{padding:15mm 18mm;min-height:0}</style><div class="cl-paper" style="--fs:${fsOf(state.v)}pt">${html(build(state.v))}</div>`);
         w.document.close();
         w.focus();
         const go = () => w.print();
