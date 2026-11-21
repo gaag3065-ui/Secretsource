@@ -51,6 +51,8 @@
         const room = roomOf(no), old = host.querySelector(`[data-card="${Number(no)}"]`);
         if (!room || !old) return render();
         const t = document.createElement('div'); t.innerHTML = card(build(room)); old.replaceWith(t.firstElementChild);
+        const kpi = host.querySelector('.fl-kpis');   // ตัวเลข KPI ด้านบนคำนวณใหม่จากข้อมูลล่าสุดทันที
+        if (kpi) { const open = (state.data.rooms || []).filter(r => r.status !== DONE); kpi.innerHTML = kpiHtml(open, open.map(build)); }
         alignRework();
     }
     async function loadFlow() { try { setFlow((await call('/flow')).steps); state.error = ''; } catch (error) { state.error = error.message; } render(); }
@@ -140,6 +142,12 @@
         </article>`;
     }
 
+    function kpiHtml(openRooms, builds) {
+        const withDates = builds.filter(x => x.last);
+        const avgWait = withDates.length ? Math.round(withDates.reduce((n, x) => n + x.waiting, 0) / withDates.length) : 0;
+        const longest = withDates.slice().sort((a, b) => b.waiting - a.waiting)[0];
+        return `<span><small>ยูนิตที่กำลังดำเนินการ</small><b>${num(openRooms.length)}</b></span><span><small>ค้างขั้นล่าสุดเฉลี่ย</small><b>${num(avgWait)} วัน</b></span>${longest ? `<span class="is-hot"><small>ค้างนานสุด</small><b>${num(longest.waiting)} วัน</b><em>${esc(longest.room.project)} ${esc(longest.room.unit)}</em></span>` : ''}`;
+    }
     function render() {
         if (!state.data) { host.innerHTML = '<p class="fl-empty">กำลังโหลดข้อมูลทะเบียนห้องพัก…</p>'; return; }
         const openRooms = (state.data.rooms || []).filter(r => r.status !== DONE);
@@ -147,14 +155,11 @@
         const statuses = [...new Set(openRooms.map(r => r.status))];
         const q = state.query.trim().toLowerCase();
         const shown = builds.filter(b => (state.filter === 'all' || b.room.status === state.filter) && (!q || `${b.room.project} ${b.room.unit} ${b.room.status}`.toLowerCase().includes(q))).sort((a, b) => (b.waiting ?? -1) - (a.waiting ?? -1));
-        const withDates = builds.filter(x => x.last);
-        const avgWait = withDates.length ? Math.round(withDates.reduce((n, x) => n + x.waiting, 0) / withDates.length) : 0;
-        const longest = withDates.slice().sort((a, b) => b.waiting - a.waiting)[0];
         const chip = (key, label, n) => `<button type="button" data-fl-filter="${esc(key)}" class="${state.filter === key ? 'is-on' : ''}">${esc(label)} <b>${n}</b></button>`;
         const typing = document.activeElement?.matches?.('[data-fl-q]');
         host.innerHTML = `<div class="fl-top">
             <div><h2>🧭 ติดตามขั้นตอนการดำเนินงานที่พักใหม่</h2><p>ยูนิตที่ยังไม่ขึ้น “ทำสัญญาแล้ว” ${num(openRooms.length)} ยูนิต · กดกล่องขั้นตอนเพื่อใส่วันที่และแนบหลักฐาน · กด ＋ เพื่อแทรกขั้นตอนเสริม · เรียงตามที่ค้างนานสุดก่อน</p></div>
-            <div class="fl-kpis"><span><small>ยูนิตที่กำลังดำเนินการ</small><b>${num(openRooms.length)}</b></span><span><small>ค้างขั้นล่าสุดเฉลี่ย</small><b>${num(avgWait)} วัน</b></span>${longest ? `<span class="is-hot"><small>ค้างนานสุด</small><b>${num(longest.waiting)} วัน</b><em>${esc(longest.room.project)} ${esc(longest.room.unit)}</em></span>` : ''}</div>
+            <div class="fl-kpis">${kpiHtml(openRooms, builds)}</div>
         </div>
         ${state.error ? `<p class="fl-warn">⚠️ โหลดหลักฐาน/ขั้นตอนเสริมไม่ได้: ${esc(state.error)} (ยังดูผังตามทะเบียนได้)</p>` : ''}
         <div class="fl-filters">${chip('all', 'ทั้งหมด', openRooms.length)}${statuses.map(s => chip(s, s, openRooms.filter(r => r.status === s).length)).join('')}<input type="search" data-fl-q placeholder="ค้นหาที่พัก / ยูนิต…" value="${esc(state.query)}"></div>
