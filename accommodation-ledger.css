@@ -287,5 +287,11 @@ html, body { height: auto; min-height: 100%; overflow: visible auto; }
 .fl-form footer .fl-danger { color: #b91c1c; border-color: #f0b4a9; margin-left: 0; }
 .fl-x { border: 0; background: none; font-size: 24px; cursor: pointer; color: #6c7280; line-height: 1; }
 @media (max-width: 720px) { .fl-box { width: 150px; } .fl-chart { gap: 14px 0; } }
-.fl-sides { display: flex; align-items: flex-start; gap: 0; }
+.fl-sides { display: flex; align-items: flex-start; gap: 0; contain: inline-size; }   /* กลุ่มย่อยยื่นออกนอกคอลัมน์ได้ แต่ไม่ดันความกว้างคอลัมน์ → แถวบนชิดต่อเนื่อง ไม่มีช่องว่าง */
 .fl-sides .fl-side.is-rw { margin-left: 0; }
+.fl-box.is-cancel { border-color: #b42318; background: #fef3f2; cursor: default; }
+.fl-box.is-cancel .fl-date { color: #b42318; }
+.fl-box.is-cancel .fl-date.is-empty { color: #b42318; font-weight: 700; }
+button.fl-box.is-cancel { cursor: pointer; }
+.fl-danger { border: 1px solid #b42318; background: #fff; color: #b42318; border-radius: 8px; padding: 8px 12px; font: inherit; font-weight: 700; cursor: pointer; }
+.fl-danger:hover { background: #fef3f2; }

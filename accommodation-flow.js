@@ -60,6 +60,13 @@
             if (!a) continue;
             (side.get(a) || side.set(a, []).get(a)).push(s);
         }
+        // ยกเลิกสัญญา: มีขั้น kind=cancel หรือสถานะในทะเบียนมีคำว่า "ยกเลิก" → จบสายงานที่ข้อสี่เหลี่ยม (ซ่อนขั้นหลักที่ตามมา) กล่อง "ยกเลิกสัญญา" ปิดท้ายกลุ่มวนแก้สัญญา
+        let cancelled = [...all.values()].some(x => x.kind === 'cancel' && x.lane === 'side');
+        if (!cancelled && /ยกเลิก/.test(String(room.status || ''))) {
+            const virtual = { id: '_cancel', label: 'ยกเลิกสัญญา', text: '', date: null, note: 'ตามสถานะในทะเบียน: ' + room.status, files: [], lane: 'side', anchor: 'dL', kind: 'cancel', custom: true, virtual: true };
+            (side.get('dL') || side.set('dL', []).get('dL')).push(virtual); cancelled = true;
+        }
+        for (const list of side.values()) list.sort((x, y) => (x.kind === 'cancel') - (y.kind === 'cancel'));   // กล่องยกเลิกสัญญาอยู่ท้ายสุดเสมอ
         // ระยะเวลา: ขั้นหลักนับจากขั้นหลักที่มีวันที่ก่อนหน้า · ขั้นคู่ขนานนับจากขั้นที่มันทำไปพร้อมกัน
         let prev = null;
         for (const m of main) { if (m.date) { m.gap = prev ? days(prev.date, m.date) : null; m.from = prev ? prev.label : ''; prev = m; } }
@@ -68,35 +75,37 @@
         const first = dated[0] || null, lastMainDated = [...main].reverse().find(m => m.date) || null;
         const now = todayUtc();
         const rework = [...all.values()].filter(s => s.kind === 'rework');
-        return { room, main, side, all, first, last: lastMainDated, rework, total: first && lastMainDated ? days(first.date, lastMainDated.date) : null, waiting: lastMainDated ? days(lastMainDated.date, now) : null };
+        return { room, main, side, all, first, last: lastMainDated, rework, cancelled, total: first && lastMainDated ? days(first.date, lastMainDated.date) : null, waiting: lastMainDated ? days(lastMainDated.date, now) : null };
     }
 
     // ---------------------------------------------------------------- แสดงผล
     function node(s, room, extra = '') {
         const cls = s.date ? 'is-done' : 'is-todo';
         const gap = s.date && s.gap != null ? `<span class="fl-gap${s.gap < 0 ? ' is-bad' : s.gap >= 14 ? ' is-slow' : ''}" title="จาก “${esc(s.from)}”">⏱ +${s.gap < 0 ? '?' : s.gap} วัน</span>` : '';
-        return `<button type="button" class="fl-box ${cls}${s.kind === 'rework' ? ' is-rework' : ''}${extra}" data-step="${esc(s.id)}" data-no="${room.no}" title="กดเพื่อกำหนดวันที่ / แนบหลักฐาน">
-            <b class="fl-label">${s.kind === 'rework' ? '↩ ' : ''}${esc(s.label)}</b>
+        const tag = s.virtual ? 'div' : 'button', attrs = s.virtual ? '' : ` type="button" data-step="${esc(s.id)}" data-no="${room.no}" title="กดเพื่อกำหนดวันที่ / แนบหลักฐาน"`;
+        return `<${tag}${attrs} class="fl-box ${cls}${s.kind === 'rework' ? ' is-rework' : ''}${s.kind === 'cancel' ? ' is-cancel' : ''}${extra}">
+            <b class="fl-label">${s.kind === 'rework' ? '↩ ' : s.kind === 'cancel' ? '✖ ' : ''}${esc(s.label)}</b>
             ${s.date ? `<span class="fl-date">${esc(thDate(s.date))}</span><small>${esc(s.text)}</small>` : '<span class="fl-date is-empty">ยังไม่มีวันที่</span>'}
             ${s.note ? `<small class="fl-note">📝 ${esc(s.note)}</small>` : ''}
-            ${s.files.length ? `<span class="fl-clip">📎 ${s.files.length} หลักฐาน</span>` : '<span class="fl-clip is-none">＋ แนบหลักฐาน</span>'}
-            ${gap}</button>`;
+            ${s.virtual ? '' : s.files.length ? `<span class="fl-clip">📎 ${s.files.length} หลักฐาน</span>` : '<span class="fl-clip is-none">＋ แนบหลักฐาน</span>'}
+            ${gap}</${tag}>`;
     }
     const plus = (room, after, lane = 'main') => `<button type="button" class="fl-plus" data-add="${esc(after)}" data-lane="${lane}" data-no="${room.no}" title="เพิ่มขั้นตอนเสริมตรงนี้">＋</button>`;
 
     function flowOf(b) {
-        const { room, main, side } = b;
+        const { room, side } = b;
+        const main = b.cancelled ? b.main.slice(0, Math.max(0, b.main.findIndex(m => m.id === 'dL')) + 1) : b.main;
         const cols = main.map((m, i) => {
             const sides = side.get(m.id) || [];
             const decision = m.id === 'dL' ? `<span class="fl-arrow">→</span>${diamond(b)}` : '';
-            return `<div class="fl-col"><div class="fl-row">${i ? `<span class="fl-arrow">→</span>` : `<span class="fl-start" title="เริ่ม">เริ่ม</span><span class="fl-arrow">→</span>`}${node(m, room)}${decision}${plus(room, m.id)}</div>
-                <div class="fl-sides">${[['⇉ ทำไปพร้อมกัน', sides.filter(s => s.kind !== 'rework')], ['↩ วนแก้สัญญา (ส่งกลับเจ้าของบ้าน → ส่งส่วนกลางอีกครั้ง)', sides.filter(s => s.kind === 'rework')]].filter(g => g[1].length).map(([tag, list]) => `<div class="fl-side${list[0].kind === 'rework' ? ' is-rw' : ''}"><span class="fl-side-tag">${tag}</span>${list.map(s => `<div class="fl-side-item">${node(s, room)}${s.kind === 'rework' && /ส่งสัญญาให้ส่วนกลางอีกครั้ง/.test(s.label) ? '<span class="fl-loopback">↺ วนกลับไปตรวจสัญญาที่ส่วนกลาง</span>' : ''}</div>`).join('')}</div>`).join('')}</div></div>`;
+            return `<div class="fl-col"><div class="fl-row">${i ? `<span class="fl-arrow">→</span>` : `<span class="fl-start" title="เริ่ม">เริ่ม</span><span class="fl-arrow">→</span>`}${node(m, room)}${decision}${b.cancelled && m.id === 'dL' ? '' : plus(room, m.id)}</div>
+                <div class="fl-sides">${[['⇉ ทำไปพร้อมกัน', sides.filter(s => s.kind !== 'rework' && s.kind !== 'cancel')], ['↩ วนแก้สัญญา (ส่งกลับเจ้าของบ้าน → ส่งส่วนกลางอีกครั้ง)', sides.filter(s => s.kind === 'rework' || s.kind === 'cancel')]].filter(g => g[1].length).map(([tag, list]) => `<div class="fl-side${list[0].kind === 'rework' || list[0].kind === 'cancel' ? ' is-rw' : ''}"><span class="fl-side-tag">${tag}</span>${list.map(s => `<div class="fl-side-item">${node(s, room)}${s.kind === 'rework' && /ส่งสัญญาให้ส่วนกลางอีกครั้ง/.test(s.label) ? '<span class="fl-loopback">↺ วนกลับไปตรวจสัญญาที่ส่วนกลาง</span>' : ''}</div>`).join('')}</div>`).join('')}</div></div>`;
         }).join('');
-        return `<div class="fl-chart">${cols}<span class="fl-end">เซ็นสัญญา ✔</span></div>`;
+        return `<div class="fl-chart">${cols}${b.cancelled ? '' : '<span class="fl-end">เซ็นสัญญา ✔</span>'}</div>`;
     }
     function diamond(b) {
         const rounds = b.rework.filter(s => /ส่งกลับให้เจ้าของบ้าน/.test(s.label)).length;
-        return `<button type="button" class="fl-diamond${rounds ? ' has-rework' : ''}" data-decision="${b.room.no}" title="กดเพื่อเพิ่มรอบแก้สัญญา"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon points="50,2 98,50 50,98 2,50"/></svg><span>สัญญา<br>ต้องแก้ไข?</span><i class="fl-yes">ใช่ ↓ ${rounds ? rounds + ' รอบ' : ''}</i><i class="fl-no">ไม่ →</i></button>`;
+        return `<button type="button" class="fl-diamond${rounds ? ' has-rework' : ''}" data-decision="${b.room.no}" title="กดเพื่อเพิ่มรอบแก้สัญญา"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon points="50,2 98,50 50,98 2,50"/></svg><span>สัญญา<br>ต้องแก้ไข?</span><i class="fl-yes">ใช่ ↓ ${rounds ? rounds + ' รอบ' : ''}</i>${b.cancelled ? '' : '<i class="fl-no">ไม่ →</i>'}</button>`;
     }
 
     function card(b) {
@@ -220,8 +229,9 @@
         Object.assign(ctx, { no: room.no, id: '', add: null });
         dialog.innerHTML = `<div class="fl-form"><header><div><h3>สัญญาต้องแก้ไขไหม?</h3><p>${esc(room.project)} ${esc(room.unit)}</p></div><button type="button" class="fl-x" data-fl-close aria-label="ปิด">×</button></header>
             <p class="fl-hint">ถ้าทนาย/ส่วนกลางตรวจแล้วสัญญาต้องแก้ไข → ส่งกลับให้เจ้าของบ้านแก้ แล้ววนกลับมาส่งให้ส่วนกลางตรวจอีกครั้ง ${rounds ? `<br>ตอนนี้แก้ไปแล้ว <b>${rounds}</b> รอบ` : ''}</p>
+            ${b.cancelled ? '<p class="fl-hint"><b>บ้านนี้ยกเลิกสัญญาแล้ว</b> — ผังจบที่ข้อนี้ · กดกล่อง "ยกเลิกสัญญา" เพื่อแก้วันที่/หมายเหตุ หรือลบ (ลบ = กลับมาดำเนินการต่อ)</p>' : ''}
             <p class="fl-error" data-error hidden></p>
-            <footer><span></span><span><button type="button" data-fl-close>ไม่ต้องแก้ (ปิด)</button><button type="button" class="fl-primary" data-rework>↩ สัญญาต้องแก้ไข — เพิ่มรอบที่ ${rounds + 1}</button></span></footer></div>`;
+            <footer><span>${b.cancelled ? '' : '<button type="button" class="fl-danger" data-cancel-contract>✖ ยกเลิกสัญญา</button>'}</span><span><button type="button" data-fl-close>ไม่ต้องแก้ (ปิด)</button><button type="button" class="fl-primary" data-rework>↩ สัญญาต้องแก้ไข — เพิ่มรอบที่ ${rounds + 1}</button></span></footer></div>`;
         dialog.showModal();
     }
     const showError = msg => { const el = dialog.querySelector('[data-error]'); if (el) { el.textContent = msg; el.hidden = !msg; } };
@@ -279,6 +289,13 @@
         if (e.target.closest('[data-del]')) {
             if (!confirm('ลบขั้นตอนเสริมนี้? (หลักฐานที่แนบจะไม่แสดงอีก)')) return;
             if (await mutate(() => call('/flow', 'PUT', { no: ctx.no, id: ctx.id, remove: true }))) { dialog.close(); render(); }
+            return;
+        }
+        if (e.target.closest('[data-cancel-contract]')) {
+            const room = roomOf(ctx.no);
+            if (!room || !confirm(`ยกเลิกสัญญา ${room.project} ${room.unit}?\nผังจะจบที่ข้อ "สัญญาต้องแก้ไข?" และซ่อนขั้นตอนที่ตามมา (กู้คืนได้โดยลบกล่อง "ยกเลิกสัญญา")`)) return;
+            const d = todayUtc(), today = `${d.getUTCDate()}/${d.getUTCMonth() + 1}/${d.getUTCFullYear()}`;
+            if (await mutate(() => call('/flow', 'PUT', { no: ctx.no, label: 'ยกเลิกสัญญา', date: today, lane: 'side', anchor: 'dL', kind: 'cancel' }))) { dialog.close(); render(); }
             return;
         }
         if (e.target.closest('[data-rework]')) {
