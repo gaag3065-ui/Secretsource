@@ -264,7 +264,7 @@ window.performSecureLogout =
     const SHOW_AFTER_MS = 120;        // เร็วกว่านี้ไม่ต้องขึ้น (กันกะพริบ)
     const MIN_SHOW_MS = 700;          // ขึ้นแล้วอยู่อย่างน้อยเท่านี้ ให้เห็นชัดทุกครั้ง
     const USER_WINDOW_MS = 1500;      // คำขอที่เริ่มภายในเวลานี้หลังผู้ใช้กด/พิมพ์ ถือว่ามาจากผู้ใช้
-    let lastUser = 0, lastEnd = 0, pending = 0, shownAt = 0, startedAt = 0, showTimer = 0, hideTimer = 0, ticker = 0, label = '';
+    let lastUser = 0, lastBlockEnd = 0, pending = 0, blockers = 0, shownAt = 0, startedAt = 0, showTimer = 0, hideTimer = 0, ticker = 0, label = '';
     let box = null, dismissed = false;
 
     // นับเฉพาะการกระทำจริง: คลิก/แตะ · Enter/Space · ส่งฟอร์ม · เปลี่ยนค่าช่องเลือก (พิมพ์ตัวอักษรเฉยๆ ไม่นับ)
@@ -280,7 +280,7 @@ window.performSecureLogout =
         box.setAttribute('aria-label', 'กำลังโหลด');
         box.innerHTML = '<style>#gaLoading{border:0;padding:0;background:transparent;max-width:none;max-height:none;width:100vw;height:100vh;outline:0}#gaLoading::backdrop{background:rgba(15,23,42,.38)}#gaLoading .gl{position:fixed;inset:0;display:grid;place-items:center}#gaLoading .gl-card{background:#fff;color:#172033;border-radius:16px;padding:22px 28px;min-width:260px;max-width:min(92vw,380px);text-align:center;box-shadow:0 18px 50px rgba(15,23,42,.35);font-family:inherit}#gaLoading .gl-spin{width:38px;height:38px;margin:0 auto 12px;border:4px solid #dbe5ff;border-top-color:#1d4ed8;border-radius:50%;animation:glspin .8s linear infinite}#gaLoading b{display:block;font-size:16px}#gaLoading small{display:block;margin-top:6px;color:#667085;font-size:13px;line-height:1.5}@keyframes glspin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){#gaLoading .gl-spin{animation-duration:2.4s}}</style><div class="gl"><div class="gl-card"><div class="gl-spin"></div><b class="gl-title">กำลังโหลด…</b><small class="gl-sub"></small></div></div>';
         box.addEventListener('cancel', event => event.preventDefault());   // กัน Esc ปิดทิ้งระหว่างรอ
-        box.addEventListener('close', () => { if (pending && !dismissed) setTimeout(show, 0); });   // ถูกปิดทั้งที่ยังรออยู่ (เช่น กด Esc ซ้ำ) → เปิดกลับ
+        box.addEventListener('close', () => { if (blockers && !dismissed) setTimeout(show, 0); });   // ถูกปิดทั้งที่ยังรออยู่ (เช่น กด Esc ซ้ำ) → เปิดกลับ
         document.body.append(box);
         return box;
     }
@@ -292,39 +292,61 @@ window.performSecureLogout =
         if (sec >= 45 && !hide) { hide = document.createElement('button'); hide.type = 'button'; hide.className = 'gl-hide'; hide.textContent = 'ซ่อนไว้ก่อน (ระบบยังรออยู่เบื้องหลัง)'; hide.style.cssText = 'margin-top:10px;border:0;background:none;color:#1d4ed8;cursor:pointer;font:inherit;font-size:13px;text-decoration:underline'; hide.addEventListener('click', () => { dismissed = true; if (box.open) box.close(); }); box.querySelector('.gl-card').append(hide); }
         box.querySelector('.gl-sub').textContent = (sec >= 3 ? `รอมา ${sec} วินาที · ` : '') + (sec >= 20 ? 'ระบบยังทำงานอยู่ ข้อมูลที่ใหญ่หรือเครือข่ายช้าอาจใช้เวลานาน — ' : '') + 'กรุณารอจนกว่าจะเสร็จ ห้ามปิดหน้านี้';
     }
+    // 2 ระดับ: "บล็อก" = การบันทึก/อัปโหลด/สร้างไฟล์ (POST/PUT/PATCH/DELETE หรือสั่งผ่าน GA_LOADING.run) → ป็อปอัปกลางจอกันกดซ้ำ
+    //          "ไม่บล็อก" = การอ่านข้อมูล (GET) และข้อความ "กำลัง…" → ป้ายเล็กมุมขวาล่าง ไม่ขวางการใช้งาน (ผู้ใช้ทำงานต่อได้)
     function show() {
         showTimer = 0;
-        if (!pending || dismissed || !document.body) return;
+        if (!blockers || dismissed || !document.body) return;
         const el = build();
         if (!el.open) { try { el.showModal(); } catch { return; } shownAt = Date.now(); ticker = setInterval(paint, 500); }
         paint();
     }
     function hide() {
         hideTimer = 0;
-        if (pending) return;
+        if (blockers) return;
         clearInterval(ticker); ticker = 0;
         if (box?.open) box.close();
     }
-    function begin(text) {
-        if (!pending) { startedAt = Date.now(); label = ''; dismissed = false; box?.querySelector('.gl-hide')?.remove(); }
-        pending += 1;
-        if (text) label = text;
-        clearTimeout(hideTimer); hideTimer = 0;
-        if (!box?.open && !showTimer) showTimer = setTimeout(show, SHOW_AFTER_MS);
-        else paint();
+    let chip = null, chipTimer = 0;
+    function syncChip() {
+        const want = pending > 0 && !blockers;
+        if (!want) { clearTimeout(chipTimer); chipTimer = 0; if (chip) chip.style.display = 'none'; return; }
+        if (chip?.style.display === 'block') { chip.textContent = label || domLabel() || 'กำลังโหลดข้อมูล…'; return; }
+        if (chipTimer || !document.body) return;
+        chipTimer = setTimeout(() => {   // รอ 0.4 วิ ก่อนขึ้น กันกะพริบกับคำขอที่เร็ว
+            chipTimer = 0;
+            if (!(pending > 0 && !blockers)) return;
+            if (!chip) { chip = document.createElement('div'); chip.id = 'gaLoadingChip'; chip.setAttribute('role', 'status'); chip.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:2147483000;display:none;max-width:min(80vw,320px);padding:8px 14px;border-radius:999px;background:rgba(23,32,51,.92);color:#fff;font:13px/1.4 system-ui,sans-serif;box-shadow:0 6px 18px rgba(15,23,42,.3);pointer-events:none'; document.body.append(chip); }
+            chip.textContent = label || domLabel() || 'กำลังโหลดข้อมูล…'; chip.style.display = 'block';
+        }, 400);
     }
-    function end() {
-        pending = Math.max(0, pending - 1);
-        lastEnd = Date.now();
-        if (pending) return;
-        clearTimeout(showTimer); showTimer = 0;
-        if (box?.open) hideTimer = setTimeout(hide, Math.max(0, MIN_SHOW_MS - (Date.now() - shownAt)));
+    function begin(text, blocking = false) {
+        if (!pending) { startedAt = Date.now(); label = ''; }
+        if (blocking && !blockers) { dismissed = false; box?.querySelector('.gl-hide')?.remove(); startedAt = Date.now(); }
+        pending += 1; if (blocking) blockers += 1;
+        if (text) label = text;
+        if (blocking) {
+            clearTimeout(hideTimer); hideTimer = 0;
+            if (!box?.open && !showTimer) showTimer = setTimeout(show, SHOW_AFTER_MS);
+            else paint();
+        }
+        syncChip();
+    }
+    function end(blocking = false) {
+        pending = Math.max(0, pending - 1); if (blocking) blockers = Math.max(0, blockers - 1);
+        if (blocking) lastBlockEnd = Date.now();
+        if (!blockers) {
+            clearTimeout(showTimer); showTimer = 0;
+            if (box?.open) hideTimer = setTimeout(hide, Math.max(0, MIN_SHOW_MS - (Date.now() - shownAt)));
+        }
+        syncChip();
     }
     function track(promise, text) {
-        begin(text);
-        return Promise.resolve(promise).finally(end);
+        begin(text, true);
+        return Promise.resolve(promise).finally(() => end(true));
     }
-    const fromUser = () => pending > 0 || Date.now() - lastUser < USER_WINDOW_MS || Date.now() - lastEnd < 600;
+    // คำขอนับว่ามาจากผู้ใช้ เมื่อเริ่มภายใน 1.5 วิ หลังกด/ส่งฟอร์ม หรืออยู่ในลำดับงานบันทึกที่กำลังทำ/เพิ่งจบไม่เกิน 0.8 วิ (เช่น บันทึกแล้วโหลดใหม่) — ไม่ต่อโซ่ด้วยการอ่านข้อมูลเฉยๆ
+    const fromUser = () => blockers > 0 || Date.now() - lastUser < USER_WINDOW_MS || Date.now() - lastBlockEnd < 800;
     const isApi = url => { const u = String(url || ''); return API ? u.startsWith(API) : u.startsWith('/api/'); };
 
     // ครอบ fetch: เฉพาะคำขอไป API หลังบ้านที่เริ่มจากการกดของผู้ใช้ · รวมช่วงอ่านเนื้อหาตอบกลับ (json/blob/…) ด้วย
@@ -332,14 +354,17 @@ window.performSecureLogout =
     window.fetch = function (input, options) {
         const url = typeof input === 'string' ? input : input?.url;
         if (options?.gaSilent || !isApi(url) || !fromUser()) return nativeFetch(input, options);
-        begin();
+        // บันทึก/แก้/ลบ/อัปโหลด (ไม่ใช่ GET/HEAD) = บล็อก · อ่านข้อมูล = ป้ายเล็กไม่บล็อก
+        const verb = String(options?.method || (typeof input !== 'string' && input?.method) || 'GET').toUpperCase();
+        const blocking = !['GET', 'HEAD', 'OPTIONS'].includes(verb);
+        begin('', blocking);
         let released = false;
-        const release = () => { if (!released) { released = true; end(); } };
+        const release = () => { if (!released) { released = true; end(blocking); } };
         return nativeFetch(input, options).then(response => {
             for (const method of ['json', 'text', 'blob', 'arrayBuffer', 'formData']) {
                 const original = response[method]?.bind(response);
                 if (!original) continue;
-                response[method] = () => { begin(); return original().finally(end); };
+                response[method] = () => { begin('', blocking); return original().finally(() => end(blocking)); };
             }
             release();
             return response;
@@ -367,7 +392,7 @@ window.performSecureLogout =
     function syncDom() {
         for (const el of [...waiting.keys()]) if (!isWaitText(el)) waiting.delete(el);
         if (domToken && Date.now() - domSince > 120000) { waiting.forEach((_, el) => ignored.set(el, el.textContent)); waiting.clear(); }
-        if (waiting.size && !domToken) { domToken = true; domSince = Date.now(); begin(); }
+        if (waiting.size && !domToken) { domToken = true; domSince = Date.now(); begin(); }       // ข้อความ "กำลัง…" ของหน้า = ป้ายเล็กไม่บล็อก (การบันทึกจริงบล็อกผ่านคำขอ PUT/POST อยู่แล้ว)
         else if (!waiting.size && domToken) { domToken = false; end(); }
     }
     function domLabel() { const el = [...waiting.keys()][0]; return el ? el.textContent.trim() : ''; }
