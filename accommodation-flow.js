@@ -27,13 +27,32 @@
     const labels = () => KEYS.map((k, i) => String(state.data?.dateHeaders?.[k] || FALLBACK[i]).replace(/\s*\(.*?\)\s*$/, ''));
 
     // ---------------------------------------------------------------- ข้อมูลเสริม (หลังบ้าน)
-    async function call(path, method = 'GET', body) {
-        const response = await window.authFetch(`${API}${path}`, { method, cache: 'no-store', headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || !data.success) throw new Error(data.message || 'ทำรายการไม่สำเร็จ');
-        return data;
+    async function call(path, method = 'GET', body, status) {
+        const run = async () => {
+            const response = await window.authFetch(`${API}${path}`, { method, cache: 'no-store', headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.message || 'ทำรายการไม่สำเร็จ');
+            if (method !== 'GET') absorb(data);   // อัปเดตเฉพาะขั้นที่เพิ่งบันทึก — ไม่ต้องโหลดทุกบ้านใหม่
+            return data;
+        };
+        return status && window.GA_LOADING ? window.GA_LOADING.run(status, run()) : run();
     }
     const setFlow = steps => { state.flow = new Map((steps || []).map(s => [`${s.no}|${s.id}`, s])); };
+    // รับผลจากหลังบ้าน: step = ขั้นที่บันทึก (ลบแล้ว → เอาออก) · files = รายการไฟล์ใหม่ของขั้น · steps = ทั้งตาราง (ทางเดิม)
+    function absorb(data) {
+        if (data.step) { const k = `${data.step.no}|${data.step.id}`; if (data.step.deleted) state.flow.delete(k); else state.flow.set(k, data.step); }
+        else if (data.files && data.id) {
+            const k = `${data.no}|${data.id}`, old = state.flow.get(k);
+            state.flow.set(k, old ? { ...old, files: data.files } : { no: Number(data.no), id: data.id, label: '', date: '', note: '', files: data.files, lane: '', anchor: '', kind: '', custom: false, deleted: false });
+        } else if (data.steps) setFlow(data.steps);
+    }
+    // วาดใหม่เฉพาะการ์ดบ้านที่แก้ (บ้านอื่น/ตัวกรอง/ช่องค้นหาไม่ถูกแตะ) — ถ้าไม่พบการ์ดค่อยวาดทั้งหน้า
+    function renderRoom(no) {
+        const room = roomOf(no), old = host.querySelector(`[data-card="${Number(no)}"]`);
+        if (!room || !old) return render();
+        const t = document.createElement('div'); t.innerHTML = card(build(room)); old.replaceWith(t.firstElementChild);
+        alignRework();
+    }
     async function loadFlow() { try { setFlow((await call('/flow')).steps); state.error = ''; } catch (error) { state.error = error.message; } render(); }
     const rec = (no, id) => state.flow.get(`${no}|${id}`) || null;
 
@@ -114,7 +133,7 @@
         const summary = b.first
             ? `<span>เริ่ม <b>${esc(thDate(b.first.date))}</b></span>${b.last ? `<span>ขั้นล่าสุด <b>${esc(b.last.label)}</b> · ${esc(thDate(b.last.date))}</span><span>ใช้เวลาตั้งแต่เริ่มถึงขั้นล่าสุด <b>${esc(span(b.total))}</b></span><span class="${hot ? 'is-hot' : ''}">ค้างอยู่ที่ขั้นนี้มา <b>${esc(span(b.waiting))}</b> (ถึงวันนี้)</span>` : ''}${b.rework.length ? `<span class="is-hot">แก้สัญญา <b>${b.rework.filter(s => /ส่งกลับให้เจ้าของบ้าน/.test(s.label)).length}</b> รอบ</span>` : ''}`
             : '<span class="is-hot">ยังไม่มีวันที่ในทะเบียนเลย — กดที่กล่องขั้นตอนเพื่อกำหนดวันที่</span>';
-        return `<article class="fl-card${hot ? ' is-hot' : ''}">
+        return `<article class="fl-card${hot ? ' is-hot' : ''}" data-card="${room.no}">
             <header><div><h3>${esc(room.project)} <small>${esc(room.unit)}</small></h3><span class="fl-status">${esc(room.status)}</span></div><div class="fl-meta">${room.rent ? `ค่าเช่า ${num(room.rent)}/เดือน` : ''}${room.type ? ` · ${esc(room.type)}` : ''}</div></header>
             <div class="fl-summary">${summary}</div>
             ${flowOf(b)}
@@ -239,7 +258,7 @@
 
     async function mutate(fn) {
         busy(true); showError('');
-        try { const data = await fn(); if (data?.steps) setFlow(data.steps); return true; } catch (error) { showError(error.message); return false; } finally { busy(false); }
+        try { await fn(); return true; } catch (error) { showError(error.message); return false; } finally { busy(false); }
     }
     const bodyOf = form => { const f = new FormData(form); return { date: fromInput(f.get('date')), note: String(f.get('note') || ''), lane: f.get('lane'), anchor: f.get('anchor') }; };
     function applyDateLocally(no, id, date) { const r = roomOf(no); if (r && KEYS.includes(id)) r[id] = date; }
@@ -248,14 +267,14 @@
         e.preventDefault();
         const form = e.target, b = bodyOf(form), label = String(new FormData(form).get('label') || '').trim();
         const ok = await mutate(async () => {
-            if (ctx.add) return call('/flow', 'PUT', { no: ctx.no, label, ...b, anchor: b.anchor || ctx.add.after });
+            if (ctx.add) return call('/flow', 'PUT', { no: ctx.no, label, ...b, anchor: b.anchor || ctx.add.after }, 'กำลังบันทึก…');
             const payload = { no: ctx.no, id: ctx.id, ...b };
             if (!KEYS.includes(ctx.id)) payload.label = label;
-            const data = await call('/flow', 'PUT', payload);
+            const data = await call('/flow', 'PUT', payload, 'กำลังบันทึก…');
             applyDateLocally(ctx.no, ctx.id, b.date);
             return data;
         });
-        if (ok) { dialog.close(); render(); }
+        if (ok) { dialog.close(); renderRoom(ctx.no); }
     });
     function refreshLists() {
         const all = rec(ctx.no, ctx.id)?.files || [], ev = all.filter(f => !f.lease), ls = all.filter(f => f.lease);
@@ -263,18 +282,32 @@
         const lbox = dialog.querySelector('[data-lfiles]'); if (lbox) { lbox.innerHTML = filesHtml(ctx.no, ctx.id, ls); dialog.querySelector('[data-lcount]').textContent = ls.length; }
         loadThumbs();
     }
+    const readUrl = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(new Error('อ่านไฟล์ไม่ได้')); r.readAsDataURL(blob); });
+    // ย่อรูปก่อนส่ง (ด้านยาวสุด 1800px · JPEG 0.8) ผ่านอุโมงค์ได้เร็วขึ้นมาก — PDF และรูปที่เล็กอยู่แล้วส่งตามเดิม · ย่อไม่ได้ก็ส่งไฟล์เดิม
+    async function packFile(file) {
+        if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 300 * 1024) return readUrl(file);
+        try {
+            const bmp = await createImageBitmap(file), k = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
+            const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+            const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+            const blob = await new Promise(res => c.toBlob(res, 'image/jpeg', 0.8));
+            return blob && blob.size < file.size ? readUrl(blob) : readUrl(file);
+        } catch { return readUrl(file); }
+    }
     dialog.addEventListener('change', async e => {
         if (!e.target.matches('[data-upload], [data-upload-lease]')) return;
         const lease = e.target.matches('[data-upload-lease]');
         const files = [...e.target.files]; e.target.value = '';
         if (lease && files.some(f => f.type !== 'application/pdf')) { showError('สัญญาเช่าต้องเป็นไฟล์ PDF เท่านั้น'); return; }
         for (const file of files) {
-            const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
-            const ok = await mutate(() => call('/flow/files', 'POST', { no: ctx.no, id: ctx.id, name: file.name, dataUrl, ...(lease ? { lease: true } : {}) }));
+            const ok = await mutate(async () => {
+                const dataUrl = await window.GA_LOADING.run('กำลังเตรียมรูป…', packFile(file));
+                return call('/flow/files', 'POST', { no: ctx.no, id: ctx.id, name: file.name, dataUrl, ...(lease ? { lease: true } : {}) }, 'กำลังอัปโหลด…');
+            });
             if (!ok) break;
         }
         refreshLists();
-        render();
+        renderRoom(ctx.no);
     });
     dialog.addEventListener('click', async e => {
         const open = e.target.closest('[data-open]');
@@ -283,29 +316,29 @@
         if (rm) {
             if (!confirm('เอาหลักฐานนี้ออกจากขั้นตอน? (ไฟล์ยังอยู่ใน Google Drive)')) return;
             const ok = await mutate(() => call('/flow/files', 'DELETE', { no: ctx.no, id: ctx.id, fileId: rm.dataset.rmfile }));
-            if (ok) { refreshLists(); render(); }
+            if (ok) { refreshLists(); renderRoom(ctx.no); }
             return;
         }
         if (e.target.closest('[data-del]')) {
             if (!confirm('ลบขั้นตอนเสริมนี้? (หลักฐานที่แนบจะไม่แสดงอีก)')) return;
-            if (await mutate(() => call('/flow', 'PUT', { no: ctx.no, id: ctx.id, remove: true }))) { dialog.close(); render(); }
+            if (await mutate(() => call('/flow', 'PUT', { no: ctx.no, id: ctx.id, remove: true }, 'กำลังลบ…'))) { dialog.close(); renderRoom(ctx.no); }
             return;
         }
         if (e.target.closest('[data-cancel-contract]')) {
             const room = roomOf(ctx.no);
             if (!room || !confirm(`ยกเลิกสัญญา ${room.project} ${room.unit}?\nผังจะจบที่ข้อ "สัญญาต้องแก้ไข?" และซ่อนขั้นตอนที่ตามมา (กู้คืนได้โดยลบกล่อง "ยกเลิกสัญญา")`)) return;
             const d = todayUtc(), today = `${d.getUTCDate()}/${d.getUTCMonth() + 1}/${d.getUTCFullYear()}`;
-            if (await mutate(() => call('/flow', 'PUT', { no: ctx.no, label: 'ยกเลิกสัญญา', date: today, lane: 'side', anchor: 'dL', kind: 'cancel' }))) { dialog.close(); render(); }
+            if (await mutate(() => call('/flow', 'PUT', { no: ctx.no, label: 'ยกเลิกสัญญา', date: today, lane: 'side', anchor: 'dL', kind: 'cancel' }, 'กำลังบันทึก…'))) { dialog.close(); renderRoom(ctx.no); }
             return;
         }
         if (e.target.closest('[data-rework]')) {
             const room = roomOf(ctx.no), b = build(room);
             const n = b.rework.filter(s => /ส่งกลับให้เจ้าของบ้าน/.test(s.label)).length + 1;
             const ok = await mutate(async () => {
-                await call('/flow', 'PUT', { no: ctx.no, label: `ส่งกลับให้เจ้าของบ้านแก้สัญญา (รอบ ${n})`, lane: 'side', anchor: 'dL', kind: 'rework' });
-                return call('/flow', 'PUT', { no: ctx.no, label: `ส่งสัญญาให้ส่วนกลางอีกครั้ง (รอบ ${n})`, lane: 'side', anchor: 'dL', kind: 'rework' });
+                await call('/flow', 'PUT', { no: ctx.no, label: `ส่งกลับให้เจ้าของบ้านแก้สัญญา (รอบ ${n})`, lane: 'side', anchor: 'dL', kind: 'rework' }, 'กำลังบันทึก…');
+                return call('/flow', 'PUT', { no: ctx.no, label: `ส่งสัญญาให้ส่วนกลางอีกครั้ง (รอบ ${n})`, lane: 'side', anchor: 'dL', kind: 'rework' }, 'กำลังบันทึก…');
             });
-            if (ok) { dialog.close(); render(); }
+            if (ok) { dialog.close(); renderRoom(ctx.no); }
         }
     });
 
