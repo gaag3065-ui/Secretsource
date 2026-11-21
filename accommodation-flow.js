@@ -90,7 +90,7 @@
             const sides = side.get(m.id) || [];
             const decision = m.id === 'dL' ? `<span class="fl-arrow">→</span>${diamond(b)}` : '';
             return `<div class="fl-col"><div class="fl-row">${i ? `<span class="fl-arrow">→</span>` : `<span class="fl-start" title="เริ่ม">เริ่ม</span><span class="fl-arrow">→</span>`}${node(m, room)}${decision}${plus(room, m.id)}</div>
-                ${[['⇉ ทำไปพร้อมกัน', sides.filter(s => s.kind !== 'rework')], ['↩ วนแก้สัญญา (ส่งกลับเจ้าของบ้าน → ส่งส่วนกลางอีกครั้ง)', sides.filter(s => s.kind === 'rework')]].filter(g => g[1].length).map(([tag, list]) => `<div class="fl-side"><span class="fl-side-tag">${tag}</span>${list.map(s => `<div class="fl-side-item">${node(s, room)}${s.kind === 'rework' && /ส่งสัญญาให้ส่วนกลางอีกครั้ง/.test(s.label) ? '<span class="fl-loopback">↺ วนกลับไปตรวจสัญญาที่ส่วนกลาง</span>' : ''}</div>`).join('')}</div>`).join('')}</div>`;
+                <div class="fl-sides">${[['⇉ ทำไปพร้อมกัน', sides.filter(s => s.kind !== 'rework')], ['↩ วนแก้สัญญา (ส่งกลับเจ้าของบ้าน → ส่งส่วนกลางอีกครั้ง)', sides.filter(s => s.kind === 'rework')]].filter(g => g[1].length).map(([tag, list]) => `<div class="fl-side${list[0].kind === 'rework' ? ' is-rw' : ''}"><span class="fl-side-tag">${tag}</span>${list.map(s => `<div class="fl-side-item">${node(s, room)}${s.kind === 'rework' && /ส่งสัญญาให้ส่วนกลางอีกครั้ง/.test(s.label) ? '<span class="fl-loopback">↺ วนกลับไปตรวจสัญญาที่ส่วนกลาง</span>' : ''}</div>`).join('')}</div>`).join('')}</div></div>`;
         }).join('');
         return `<div class="fl-chart">${cols}<span class="fl-end">เซ็นสัญญา ✔</span></div>`;
     }
@@ -132,7 +132,22 @@
         <div class="fl-filters">${chip('all', 'ทั้งหมด', openRooms.length)}${statuses.map(s => chip(s, s, openRooms.filter(r => r.status === s).length)).join('')}<input type="search" data-fl-q placeholder="ค้นหาที่พัก / ยูนิต…" value="${esc(state.query)}"></div>
         ${shown.length ? shown.map(card).join('') : '<p class="fl-empty">ไม่พบยูนิตที่ตรงเงื่อนไข</p>'}`;
         if (typing) { const input = host.querySelector('[data-fl-q]'); input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+        alignRework();
     }
+    // กลุ่ม "วนแก้สัญญา" อยู่ใต้ข้อสี่เหลี่ยม "สัญญาต้องแก้ไข? ใช่ ↓" ให้ตรงกึ่งกลางกับข้อสี่เหลี่ยมด้านบน (วัดตำแหน่งจริงหลังวาดเสร็จ จึงตรงทุกหน้าจอ)
+    function alignRework() {
+        host.querySelectorAll('.fl-col').forEach(col => {
+            const side = col.querySelector('.fl-side.is-rw'), diamond = col.querySelector('.fl-diamond');
+            if (!side || !diamond) return;
+            side.style.marginLeft = '0px';
+            const dBox = diamond.getBoundingClientRect(), sBox = side.getBoundingClientRect();
+            const left = dBox.left + dBox.width / 2 - sBox.width / 2 - sBox.left;   // ระยะที่ต้องขยับจากตำแหน่งปัจจุบัน (ถัดจากกลุ่มทำไปพร้อมกัน) ให้กึ่งกลางตรงข้อสี่เหลี่ยม
+            side.style.marginLeft = Math.max(0, Math.round(left)) + 'px';
+        });
+    }
+    window.addEventListener('resize', () => alignRework());
+    // แท็บนี้อาจถูกซ่อนตอนวาดผัง (วัดได้ 0) → จัดตำแหน่งใหม่เมื่อพื้นที่แสดงเปลี่ยน/แท็บถูกเปิด
+    if (typeof ResizeObserver === 'function') new ResizeObserver(() => alignRework()).observe(host);
 
     // ---------------------------------------------------------------- หน้าต่างกำหนดขั้นตอน / แนบหลักฐาน
     const dialog = Object.assign(document.createElement('dialog'), { className: 'fl-dialog' });

@@ -287,3 +287,5 @@ html, body { height: auto; min-height: 100%; overflow: visible auto; }
 .fl-form footer .fl-danger { color: #b91c1c; border-color: #f0b4a9; margin-left: 0; }
 .fl-x { border: 0; background: none; font-size: 24px; cursor: pointer; color: #6c7280; line-height: 1; }
 @media (max-width: 720px) { .fl-box { width: 150px; } .fl-chart { gap: 14px 0; } }
+.fl-sides { display: flex; align-items: flex-start; gap: 0; }
+.fl-sides .fl-side.is-rw { margin-left: 0; }
