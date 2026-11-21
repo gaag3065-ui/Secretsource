@@ -140,9 +140,10 @@
             const side = col.querySelector('.fl-side.is-rw'), diamond = col.querySelector('.fl-diamond');
             if (!side || !diamond) return;
             side.style.marginLeft = '0px';
-            const dBox = diamond.getBoundingClientRect(), sBox = side.getBoundingClientRect();
-            const left = dBox.left + dBox.width / 2 - sBox.width / 2 - sBox.left;   // ระยะที่ต้องขยับจากตำแหน่งปัจจุบัน (ถัดจากกลุ่มทำไปพร้อมกัน) ให้กึ่งกลางตรงข้อสี่เหลี่ยม
-            side.style.marginLeft = Math.max(0, Math.round(left)) + 'px';
+            const first = side.querySelector('.fl-box') || side;   // จัดกึ่งกลาง "คอลัมน์กล่อง" (ไม่นับป้าย ↺ วนกลับที่ยื่นไปทางขวา) ให้ตรงข้อสี่เหลี่ยม
+            const dBox = diamond.getBoundingClientRect(), fBox = first.getBoundingClientRect();
+            const left = dBox.left + dBox.width / 2 - fBox.width / 2 - fBox.left;   // ระยะที่ต้องขยับจากตำแหน่งปัจจุบัน (ถัดจากกลุ่มทำไปพร้อมกัน)
+            side.style.marginLeft = Math.max(-10, Math.round(left)) + 'px';   // ยอมซ้อนช่องว่างขอบของกลุ่มซ้ายได้ไม่เกิน 10px เพื่อให้กึ่งกลางตรงจริง
         });
     }
     window.addEventListener('resize', () => alignRework());
