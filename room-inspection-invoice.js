@@ -44,7 +44,9 @@
             used.add(inv.invoiceNo);
         });
     }
-    const coverDescription = inv => inv.coverDescription || [inv.items.find(i => i.description)?.description, location(inv)].filter(Boolean).join(' ');
+    const oneLine = t => String(t || '').replace(/\s*[\r\n]+\s*/g, ' ').trim();   // ใบปะหน้าใช้บรรทัดเดียว (Invoice เท่านั้นที่ขึ้นหลายบรรทัด)
+    const coverDescription = inv => inv.coverDescription || [oneLine(inv.items.find(i => i.description)?.description), location(inv)].filter(Boolean).join(' ');
+    const fitText = box => { box.style.height = 'auto'; box.style.height = box.scrollHeight + 'px'; };
     const coverRemark = inv => inv.coverRemark || longDate(inv.dueDate);
     function coverMonthText() {
         const [y, m] = String(state.cover.month || '').split('-').map(Number);
@@ -78,7 +80,7 @@
                     <thead><tr><th>No.</th><th>Description</th><th>Period / Reference</th><th class="ri-num">Amount (LKR)</th><th></th></tr></thead>
                     <tbody>${inv.items.map((item, j) => `<tr>
                         <td>${j + 1}</td>
-                        <td><input data-inv="${i}" data-item="${j}" data-k="description" value="${esc(item.description)}" placeholder="เช่น ค่าเช่าล่วงหน้า 4 เดือน"></td>
+                        <td><textarea class="ri-desc" rows="1" data-inv="${i}" data-item="${j}" data-k="description" placeholder="เช่น ค่าเช่าล่วงหน้า 4 เดือน (กด Enter = ขึ้นบรรทัดใหม่ในรายการเดิม)">${esc(item.description)}</textarea></td>
                         <td><input data-inv="${i}" data-item="${j}" data-k="period" value="${esc(item.period)}"></td>
                         <td><input class="ri-num${num(item.amount) < 0 ? ' is-neg' : ''}" data-inv="${i}" data-item="${j}" data-k="amount" value="${esc(item.amount)}" inputmode="decimal" placeholder="0.00"></td>
                         <td><button type="button" class="ri-btn ri-btn-ghost ri-btn-sm" data-item-remove="${i}:${j}" ${inv.items.length === 1 ? 'disabled' : ''} aria-label="ลบรายการ">×</button></td>
@@ -94,6 +96,7 @@
                     <label>Remark (ใบปะหน้า) <small>(เว้นว่าง = Due Date)</small><input data-inv="${i}" data-k="coverRemark" value="${esc(inv.coverRemark)}" placeholder="${esc(longDate(inv.dueDate))}"></label>
                 </div>
             </article>`).join('');
+        document.querySelectorAll('#riInvoiceList textarea.ri-desc').forEach(fitText);
         renderCover();
     }
 
@@ -103,7 +106,7 @@
             const base = { bank: inv.bank || 'เงินสด', accountNo: '-', accountName: '-', remark: coverRemark(inv) };
             if (!inv.coverItemize) return [{ ...base, description: coverDescription(inv), amount: total(inv) }];
             return inv.items.filter(item => String(item.description).trim() || num(item.amount))
-                .map(item => ({ ...base, description: [String(item.description).trim(), location(inv)].filter(Boolean).join(' '), amount: num(item.amount) }));
+                .map(item => ({ ...base, description: [oneLine(item.description), location(inv)].filter(Boolean).join(' '), amount: num(item.amount) }));
         });
     }
 
@@ -127,6 +130,7 @@
         const inv = state.invoices[Number(field.dataset.inv)];
         const key = field.dataset.k;
         const value = field.type === 'checkbox' ? field.checked : field.value;
+        if (field.tagName === 'TEXTAREA') fitText(field);
         if (field.dataset.item !== undefined) inv.items[Number(field.dataset.item)][key] = value;
         else inv[key] = value;
         if (key === 'invoiceNo') inv.invoiceNoManual = true;

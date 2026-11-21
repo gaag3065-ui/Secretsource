@@ -37,6 +37,7 @@ button, input, select, textarea { font: inherit; }
 }
 .ri-page input:focus, .ri-page select:focus, .ri-page textarea:focus { outline: 2px solid var(--ri-brand-soft); border-color: var(--ri-brand); }
 .ri-page textarea { resize: vertical; min-height: 64px; }
+.ri-inv-items textarea.ri-desc { min-height: 0; margin-top: 0; resize: none; overflow: hidden; font: inherit; line-height: 1.35; display: block; }
 
 .ri-checks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 14px; margin-bottom: 8px; }
 .ri-check { display: flex; align-items: flex-start; gap: 8px; padding: 4px 6px; border-radius: 7px; cursor: pointer; }
