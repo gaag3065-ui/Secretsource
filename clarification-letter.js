@@ -66,9 +66,10 @@
 
     // CSS หน้ากระดาษ — ใช้ชุดเดียวกันทั้งตัวอย่างและหน้าพิมพ์ (ตัวอย่าง = ที่จะได้ใน PDF)
     const PAPER_CSS = `
-.cl-paper { box-sizing: border-box; width: 210mm; background: #fff; color: #000; font-family: 'TH Sarabun New', 'THSarabunNew', 'TH SarabunPSK', 'Sarabun', Tahoma, sans-serif; font-size: 15pt; line-height: 1.22; }
+.cl-paper { box-sizing: border-box; width: 210mm; background: #fff; color: #000; font-family: 'TH Sarabun New', 'THSarabunNew', 'TH SarabunPSK', 'Sarabun', Tahoma, sans-serif; font-size: var(--fs, 15pt); line-height: 1.22; font-weight: 300; }
+.cl-paper b, .cl-paper .cl-title { font-weight: 600; }
 .cl-paper p { margin: 0 0 2pt; overflow-wrap: break-word; }
-.cl-paper .cl-title { margin: 0 0 14pt; text-align: center; font-size: 21pt; font-weight: 700; }
+.cl-paper .cl-title { margin: 0 0 14pt; text-align: center; font-size: calc(var(--fs, 15pt) * 1.4); }
 .cl-paper .cl-kv { margin-bottom: 8pt; }
 .cl-paper .cl-p { margin: 0 0 6pt; text-indent: 2.2em; white-space: pre-wrap; }
 .cl-paper .cl-h { margin: 8pt 0 3pt; }
@@ -79,7 +80,7 @@
 .cl-paper .cl-sigbox { position: relative; min-height: 46pt; display: flex; flex-direction: column; justify-content: flex-end; }
 .cl-paper .cl-sigbox img { position: absolute; left: 50%; top: -2pt; transform: translateX(-50%); max-height: 46pt; max-width: 70%; object-fit: contain; }
 .cl-paper .cl-sigline { margin: 0; white-space: nowrap; }
-.cl-paper .cl-sign-r { border: 1px solid #000; padding: 8pt 10pt; text-align: center; font-size: 13pt; }
+.cl-paper .cl-sign-r { border: 1px solid #000; padding: 8pt 10pt; text-align: center; font-size: calc(var(--fs, 15pt) * 0.87); }
 .cl-paper .cl-sign-r p { margin: 0 0 4pt; white-space: nowrap; overflow: hidden; }
 .cl-paper .cl-boxh { margin-bottom: 6pt !important; }
 .cl-paper .cl-ck { display: flex; justify-content: center; gap: 28pt; margin-bottom: 10pt !important; }
@@ -106,9 +107,14 @@
 .cl-fit .cl-paper { transform-origin: top left; padding: 15mm 18mm; min-height: 297mm; }
 .cl-warn { margin: 6px 0 0; font-size: 12.5px; color: #b42318; }
 .cl-msg { font-size: 12.5px; color: #027a48; }
+.cl-size { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: #475467; }
+.cl-size button { border: 1px solid #d0d5dd; background: #fff; border-radius: 8px; min-width: 34px; height: 32px; cursor: pointer; font: inherit; font-weight: 700; }
+.cl-size output { min-width: 48px; text-align: center; font-weight: 700; color: #101828; }
 @media (max-width: 820px) { .cl-body { grid-template-columns: 1fr; } .cl-form { grid-template-columns: 1fr; } }
 ` + PAPER_CSS;
     let dlg = null;
+    const FS = { min: 9, max: 22, def: 15, step: 0.5 };
+    const fsOf = v => Math.min(FS.max, Math.max(FS.min, Number(v.fs) || FS.def));
     const fresh = () => ({ dept: 'แผนก GA', date: today(), era: 'be', to: 'ผู้บริหาร', closing: DEFAULT_CLOSING, ownerDept: 'แผนก GA', reviewerPosition: 'ผู้บริหาร' });
     const state = { v: fresh() };
     const KEY = 'gaMemoDraft';
@@ -118,6 +124,8 @@
         const fitBox = dlg.querySelector('.cl-fit'), paper = dlg.querySelector('.cl-paper');
         const w = fitBox.clientWidth; if (!w) return;
         const k = Math.min(1, w / A4_PX);
+        paper.style.setProperty('--fs', fsOf(state.v) + 'pt');
+        dlg.querySelector('.cl-fsval').textContent = fsOf(state.v) + ' pt';
         paper.style.transform = `scale(${k})`;
         fitBox.style.height = Math.ceil(paper.offsetHeight * k) + 'px';
         dlg.querySelector('.cl-warn').hidden = paper.offsetHeight <= (297 / 25.4 * 96) + 2;   // ยาวเกิน 1 หน้า A4
@@ -132,7 +140,7 @@
     function printable() {
         const w = window.open('', '_blank');
         if (!w) return alert('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ — กรุณาอนุญาต pop-up แล้วลองใหม่');
-        w.document.write(`<!doctype html><meta charset="utf-8"><title>บันทึกข้อความ</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap"><style>@page{size:A4;margin:15mm 18mm}html,body{margin:0}${PAPER_CSS}.cl-paper{width:auto}</style><div class="cl-paper">${html(build(state.v))}</div>`);
+        w.document.write(`<!doctype html><meta charset="utf-8"><title>บันทึกข้อความ</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap"><style>@page{size:A4;margin:15mm 18mm}html,body{margin:0}${PAPER_CSS}.cl-paper{width:auto}</style><div class="cl-paper" style="--fs:${fsOf(state.v)}pt">${html(build(state.v))}</div>`);
         w.document.close();
         w.focus();
         const go = () => w.print();
@@ -157,7 +165,7 @@
     function open() {
         if (!dlg) {
             document.head.append(Object.assign(document.createElement('style'), { textContent: CSS }));
-            document.head.append(Object.assign(document.createElement('link'), { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap' }));
+            document.head.append(Object.assign(document.createElement('link'), { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap' }));
             dlg = document.createElement('dialog');
             dlg.className = 'cl-dialog';
             const field = ([k, label, type, ph]) => `<label class="${WIDE.has(k) ? 'is-wide' : ''}">${esc(label)}${
@@ -168,6 +176,7 @@
             dlg.innerHTML = `<div class="cl-wrap">
                 <div class="cl-top"><h2>📄 บันทึกข้อความ</h2><button type="button" data-cl-close aria-label="ปิด">✕</button></div>
                 <div class="cl-body"><form class="cl-form" autocomplete="off">${FIELDS.map(field).join('')}
+                    <div class="cl-size"><span>ขนาดตัวอักษร</span><button type="button" data-cl="fsdown" title="ลดขนาด" aria-label="ลดขนาดตัวอักษร">−</button><output class="cl-fsval"></output><button type="button" data-cl="fsup" title="เพิ่มขนาด" aria-label="เพิ่มขนาดตัวอักษร">+</button><button type="button" data-cl="fsfit" title="ลดขนาดอัตโนมัติให้พอดี 1 หน้า">พอดี 1 หน้า</button></div>
                     <div class="cl-actions"><button type="button" class="is-primary" data-cl="print">🖨️ พิมพ์ / บันทึกเป็น PDF</button><button type="button" data-cl="copy">📋 คัดลอกข้อความ</button><button type="button" data-cl="clear">ล้างฟอร์ม</button><span class="cl-msg" role="status"></span></div></form>
                     <div class="cl-stage"><div class="cl-fit"><div class="cl-paper"></div></div><p class="cl-warn" hidden>⚠ เนื้อหายาวเกิน 1 หน้า A4 — ลดข้อความให้พอดีหนึ่งหน้า</p></div></div></div>`;
             document.body.append(dlg);
@@ -182,6 +191,13 @@
                 const act = e.target.closest('[data-cl]')?.dataset.cl;
                 const msg = dlg.querySelector('.cl-msg');
                 if (act === 'print') printable();
+                if (act === 'fsdown' || act === 'fsup') { state.v.fs = fsOf(state.v) + (act === 'fsup' ? FS.step : -FS.step); refresh(); }
+                if (act === 'fsfit') {   // ลดทีละขั้นจนพอดี 1 หน้า A4
+                    const paper = dlg.querySelector('.cl-paper');
+                    let n = 0;
+                    while (fsOf(state.v) > FS.min && paper.scrollHeight > 297 / 25.4 * 96 + 2 && n++ < 40) { state.v.fs = fsOf(state.v) - FS.step; paper.style.setProperty('--fs', state.v.fs + 'pt'); }
+                    refresh(); msg.textContent = paper.scrollHeight > 297 / 25.4 * 96 + 2 ? 'ลดถึงขนาดต่ำสุดแล้วยังเกิน 1 หน้า — ลดข้อความด้วย' : '✓ พอดี 1 หน้า';
+                }
                 if (act === 'unsign') { delete state.v.signature; dlg.querySelector('[name=signature]').value = ''; refresh(); }
                 if (act === 'copy') {
                     try { await navigator.clipboard.writeText(plain(build(state.v))); msg.textContent = '✓ คัดลอกแล้ว'; } catch { msg.textContent = 'คัดลอกไม่ได้ — ใช้ปุ่มพิมพ์แทน'; }
