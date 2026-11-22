@@ -1,5 +1,5 @@
 // หน้าสรุปภาพรวมห้องพัก (บนสุด) + จัดตาราง/รายงานเดิมเข้าแท็บ — ดูภาพรวมในจอเดียว กดแท็บหรือกล่องเพื่อดูรายละเอียด
-// ระดับ 1: แถบตัวเลข + แถบแจ้งเตือน · ระดับ 2: กล่องย่อย 4 กล่อง · ระดับ 3: แท็บรายละเอียด (ย้ายส่วนเดิมมาไว้ ไม่เปลี่ยนการทำงานของส่วนนั้น)
+// ระดับ 1: แถบตัวเลข · ระดับ 2: กล่องสรุป 3 กล่อง · ระดับ 3: แท็บรายละเอียด
 (() => {
     const layout = document.querySelector('.accommodation-layout');
     const head = document.querySelector('.as-head');
@@ -36,8 +36,7 @@
     const TABS = [
         { key: 'units', label: '🏠 ยูนิตและสถานะ', nodes: () => [$('roomOverview')] },
         { key: 'exp', label: '💳 ค่าใช้จ่ายและรอบกำหนด', nodes: () => [$('roomExpenses')] },
-        { key: 'checks', label: '🔍 ตรวจสอบกับส่วนกลาง', nodes: () => [$('roomChecks')] },
-        { key: 'people', label: '👥 พนักงานและที่พัก', nodes: () => [$('asStats'), head.querySelector('.as-filters'), head.querySelector('.as-toolbar'), $('asResults')] },
+        { key: 'people', label: '👥 พนักงานและที่พัก', nodes: () => [$('asStats'), head.querySelector('.as-filters'), head.querySelector('.as-toolbar'), $('asResults'), $('roomChecks')] },
         { key: 'ledger', label: '🧭 ติดตามขั้นตอนการดำเนินงานที่พักใหม่', nodes: () => [$('accommodationFlow'), $('accommodationLedger')] }
     ];
     const tabBar = wrap.querySelector('.dx-tabs'), panes = wrap.querySelector('.dx-panes');
@@ -52,6 +51,7 @@
         tabBar.appendChild(btn);
     }
     function show(key, scroll) {
+        if (key === 'checks') key = 'people'; // เปิดแท็บเดิมที่บันทึกไว้ให้ไปยังตำแหน่งใหม่
         if (!TABS.some(t => t.key === key)) key = 'units';
         state.tab = key;
         tabBar.querySelectorAll('.dx-tab').forEach(b => { const on = b.dataset.tab === key; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', on); });
@@ -87,45 +87,18 @@
             kpi('พนักงาน on work', num(c.employeesOnWork), `ยังไม่ระบุที่พัก <b>${num(c.employeesWithoutRoom)}</b> · จับคู่ห้องได้ <b>${num(c.employeesMatched)}</b>`, c.employeesWithoutRoom ? 'is-warn' : '')
         ].join('');
 
-        // แถบแจ้งเตือน (รวมจากทุกส่วน — กดเพื่อไปยังรายการ)
         const s = state.rx;
-        const items = [];
-        if (s) {
-            if (s.unpaid) items.push(['bad', `ค่าใช้จ่ายเดือนนี้ค้างจ่าย ${num(s.unpaid)} รายการ`, 'exp']);
-            if (s.gasPending) items.push(['warn', `รอรับค่าแก๊ส ${num(s.gasPending)} ยูนิต`, 'exp']);
-            if (s.rentOver || s.airOver) items.push(['bad', `เลยกำหนดค่าเช่าล่วงหน้า ${num(s.rentOver)} · ล้างแอร์ ${num(s.airOver)} ยูนิต`, 'exp']);
-            if (s.rentSoon || s.airSoon) items.push(['warn', `ใกล้ถึงกำหนด 30 วัน: ค่าเช่าล่วงหน้า ${num(s.rentSoon)} · ล้างแอร์ ${num(s.airSoon)} ยูนิต`, 'exp']);
-            if (s.noticeDue) items.push(['bad', `ถึงกำหนดแจ้งยกเลิกเช่า ${num(s.noticeDue)} ยูนิต`, 'exp']);
-            if (s.noticeSoon) items.push(['warn', `ใกล้กำหนดแจ้งยกเลิกเช่า ${num(s.noticeSoon)} ยูนิต`, 'exp']);
-        }
-        const netDown = contracted.filter(r => (r.internet || []).some(x => x.kind === 'down') && !(r.internet || []).some(x => x.kind === 'ok')).length;
-        const netNone = contracted.filter(r => (r.internet || []).length && (r.internet || []).every(x => x.kind === 'none')).length;
-        if (netDown) items.push(['bad', `อินเตอร์เน็ตใช้งานไม่ได้ ${num(netDown)} ยูนิต`, 'units']);
-        if (netNone) items.push(['warn', `ยังไม่ติดตั้งอินเตอร์เน็ต ${num(netNone)} ยูนิต`, 'units']);
         const ck = d.checks || {};
-        const ckBad = ['center', 'internet'].reduce((n, k) => n + ((ck[k]?.issues || []).filter(i => i.severity === 'bad').length), 0);
-        const ckWarn = ['center', 'internet'].reduce((n, k) => n + ((ck[k]?.issues || []).filter(i => i.severity === 'warn').length), 0);
-        const ckDiag = ['center', 'internet'].some(k => ck[k]?.diag);
-        if (ckBad || ckWarn) items.push([ckBad ? 'bad' : 'warn', `ไม่ตรงกับไฟล์ส่วนกลาง ${num(ckBad)} · ควรตรวจ ${num(ckWarn)} รายการ`, 'checks']);
-        if (ckDiag) items.push(['warn', 'อ่านไฟล์ส่วนกลางไม่ได้ (ต้องแชร์ไฟล์ให้บัญชีระบบ)', 'checks']);
-        badge('checks', ckBad + ckWarn);
-        if (reviews) items.push(['warn', `ต้องยืนยันที่พักพนักงาน ${num(reviews)} ยูนิต`, 'units']);
-        if (c.issues) items.push(['warn', `ทะเบียนมีจุดต้องตรวจ ${num(c.issues)} จุด`, 'units']);
+        const checkIssues = ['center', 'internet'].reduce((n, k) =>
+            n + (ck[k]?.issues || []).filter(i => i.severity === 'bad' || i.severity === 'warn').length, 0);
+        badge('people', checkIssues);
         badge('exp', s ? (s.unpaid + s.rentOver + s.airOver + s.noticeDue) : 0);
         badge('units', reviews);
-        const alertHtml = items.length
-            ? `<b class="dx-alert-title">🔔 ต้องดำเนินการ</b>${items.map(([tone, text, tab]) => `<button type="button" class="dx-alert is-${tone}" data-go="${tab}">${esc(text)}</button>`).join('')}`
-            : `<b class="dx-alert-title">${s ? '✅ ไม่มีรายการค้าง' : 'กำลังโหลดแจ้งเตือน…'}</b>`;
 
         // กล่องย่อย 1: สถานะยูนิต 9 ขั้น
         const byStatus = STATUS_LIST.map(st => [st, rooms.filter(r => r.status === st).length]);
         const maxSt = Math.max(1, ...byStatus.map(x => x[1]));
         const p1 = `<h3>สถานะยูนิต <small>กดเพื่อกรอง</small></h3><div class="dx-bars">${byStatus.map(([st, n]) => `<button type="button" class="dx-bar" data-status="${esc(st)}"><span>${esc(st)}</span><i style="--w:${Math.round(n / maxSt * 100)}%"></i><b>${num(n)}</b></button>`).join('')}</div>`;
-        // กล่องย่อย 2: อัตราเข้าพักรายตึก
-        const byB = new Map();
-        for (const r of contracted) { const k = r.project; const o = byB.get(k) || { name: k, cap: 0, occ: 0, units: 0 }; o.cap += bedsOf(r) * PER_BED; o.occ += r.employees || 0; o.units++; byB.set(k, o); }
-        const top = [...byB.values()].sort((a, b) => b.occ - a.occ).slice(0, 6);
-        const p2 = `<h3>อัตราเข้าพักรายตึก <small>6 อันดับแรก</small></h3><div class="dx-bars">${top.map(b => { const f = b.cap ? Math.min(100, Math.round(b.occ / b.cap * 100)) : 0; return `<div class="dx-bar is-static"><span>${esc(b.name)} <em>${b.units} ยูนิต</em></span><i class="${f >= 100 ? 'is-full' : ''}" style="--w:${f}%"></i><b>${b.occ}/${b.cap}</b></div>`; }).join('') || '<p class="dx-empty">ยังไม่มีข้อมูล</p>'}</div>`;
         // กล่องย่อย 3: สัญญาใกล้หมด
         const now = new Date(); const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
         const expiring = contracted.map(r => ({ r, end: parseDmy(r.end) })).filter(x => x.end && x.end >= today).sort((a, b) => a.end - b.end).slice(0, 5);
@@ -134,8 +107,8 @@
         const paidPct = s && s.total ? Math.round(s.paid / s.total * 100) : 0;
         const p4 = `<h3>ค่าใช้จ่ายเดือนนี้ <small>${s ? esc(s.monthLabel) : ''}</small></h3>${s ? `<div class="dx-meter"><i style="--w:${paidPct}%"></i></div><p class="dx-meter-t"><b>${num(s.paid)}</b> / ${num(s.total)} รายการ จ่ายแล้ว (${paidPct}%)</p>
             <div class="dx-mini">${s.cats.map(([label, paid, total]) => `<span class="${paid === total ? 'is-ok' : 'is-bad'}">${esc(label)} <b>${paid}/${total}</b></span>`).join('')}</div>` : '<p class="dx-empty">กำลังโหลด…</p>'}`;
-        dash.innerHTML = `<div class="dx-kpis">${kpis}</div><div class="dx-alerts ${items.length ? 'has-alert' : ''}">${alertHtml}</div>
-            <div class="dx-panels"><article class="dx-panel">${p1}</article><article class="dx-panel">${p2}</article><article class="dx-panel" data-go="ledger" title="ดูตารางสัญญาทั้งหมด">${p3}</article><article class="dx-panel" data-go="exp" title="ดูรายละเอียดค่าใช้จ่าย">${p4}</article></div>`;
+        dash.innerHTML = `<div class="dx-kpis">${kpis}</div>
+            <div class="dx-panels"><article class="dx-panel">${p1}</article><article class="dx-panel" data-go="ledger" title="ดูตารางสัญญาทั้งหมด">${p3}</article><article class="dx-panel" data-go="exp" title="ดูรายละเอียดค่าใช้จ่าย">${p4}</article></div>`;
     }
     dash.addEventListener('click', e => {
         const st = e.target.closest('[data-status]');

@@ -95,7 +95,7 @@
 }
 
     </style>
-    <link rel="stylesheet" href="responsive.css?v=20260902-mobile-layout-02">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=20260902-mobile-layout-02">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -291,7 +291,7 @@ function loadConfig() {
         const script = document.createElement('script');
 
         // ใช้ Version ที่ GitHub Actions สร้างให้
-        script.src = `config.js?v=${window.APP_VERSION}`;
+        script.src = `assets/js/core/config.js?v=${window.APP_VERSION}`;
 
         script.onload = () => {
             console.log(
@@ -831,6 +831,6 @@ recoveryForm.addEventListener(
     }
 });
 </script>
-<script src="pwa.js"></script>
+<script src="assets/js/core/pwa.js"></script>
 </body>
 </html>

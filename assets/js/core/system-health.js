@@ -155,7 +155,7 @@
     }
 
     const readDeployedApiUrl = async () => {
-        const text = await fetch(`config.js?ts=${Date.now()}`, { cache: 'no-store' }).then(r => r.text());
+        const text = await fetch(`assets/js/core/config.js?ts=${Date.now()}`, { cache: 'no-store' }).then(r => r.text());
         return (text.match(/const PRODUCTION_API_URL\s*=\s*'([^']+)'/) || [])[1] || '';
     };
 

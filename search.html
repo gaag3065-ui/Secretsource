@@ -14,9 +14,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบบริหารจัดการพนักงานและบันทึกข้อมูลการเข้ารักษา</title>
-  <link rel="stylesheet" href="style.css?v=20260831-insurance-25">
-  <link rel="stylesheet" href="responsive.css?v=20261106-intake-11">
-  <link rel="stylesheet" href="insurance-combined.css?v=20261104-1">
+  <link rel="stylesheet" href="assets/css/style.css?v=20260831-insurance-25">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=20261106-intake-11">
+  <link rel="stylesheet" href="assets/css/insurance-combined.css?v=20261104-1">
       <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -85,11 +85,11 @@
 <!-- version.js ต้องโหลดใหม่ทุกครั้ง (หน้านี้เปิดใน iframe ของพอร์ทัล กด Ctrl+F5 แล้วไม่รีเฟรช) -->
 <script>document.write('<script src="version.js?t=' + Date.now() + '"><\/script>');</script>
 <!-- ฟังก์ชันกลางที่ฝั่งขวาและฝั่งล่างใช้ร่วมกัน -->
-<script src="ui-utils.js?v=20261122-perf"></script>
-<script src="ui-helper.js?v=20261122-case"></script>
-<script src="api-cache.js?v=20261122-case"></script>
+<script src="assets/js/core/ui-utils.js?v=20261122-perf"></script>
+<script src="assets/js/core/ui-helper.js?v=20261122-case"></script>
+<script src="assets/js/core/api-cache.js?v=20261122-case"></script>
 <!-- รายชื่อสถานพยาบาลชุดเดียวที่ทุกส่วนใช้ร่วมกัน -->
-<script src="hospitals.js?v=20261012-1"></script>
+<script src="assets/js/core/hospitals.js?v=20261012-1"></script>
 
 <script>
 const APP_VERSION = window.APP_VERSION;
@@ -254,7 +254,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // =====================================================
         // 1. โหลด Config ก่อนทุกอย่าง
         // =====================================================
-        await loadScript('config.js');
+        await loadScript('assets/js/core/config.js');
 
         if (!window.APP_CONFIG) {
             throw new Error('ไม่พบ APP_CONFIG หลังโหลด config.js');
@@ -455,9 +455,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         // =====================================================
         // 4. โหลด Script ฝั่งซ้าย
         // =====================================================
-            if (canSearch || canViewHistory) await loadScript('treatment-rounds.js');
+            if (canSearch || canViewHistory) await loadScript('assets/js/core/treatment-rounds.js');
             if (canSearch) {
-                await loadScript('searchinformation.js');
+                await loadScript('assets/js/pages/searchinformation.js');
 
                 if (typeof initSearchBoxEvents === 'function') {
                     initSearchBoxEvents();
@@ -469,12 +469,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         // 5. โหลด Script ฝั่งขวา
         // =====================================================
                 if (canCreate || canViewHistory) {
-                    await loadScript('additional-evidence.js');
+                    await loadScript('assets/js/pages/additional-evidence.js');
                 }
 
                 if (canCreate) {
-                await loadScript('recordtreatment.js');
-                await loadScript('treatment-intake.js');   // แจ้งเข้ารักษาจากพนักงาน + ส่งข้อความผ่าน LINE / Telegram
+                await loadScript('assets/js/pages/recordtreatment.js');
+                await loadScript('assets/js/pages/treatment-intake.js');   // แจ้งเข้ารักษาจากพนักงาน + ส่งข้อความผ่าน LINE / Telegram
 
                 if (typeof initHospitalEvents === 'function') {
                     initHospitalEvents();
@@ -494,8 +494,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         // 6. โหลด Script ฝั่งล่าง
         // =====================================================
             if (canViewHistory) {
-                await loadScript('insuranceclaimhistory.js');
-                await loadScript('history-claim-report.js');
+                await loadScript('assets/js/pages/insuranceclaimhistory.js');
+                await loadScript('assets/js/pages/history-claim-report.js');
 
                 if (typeof initHistoryModalEvents === 'function') {
                     initHistoryModalEvents();
@@ -538,7 +538,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             if (canUpdateTreatment && canViewHistory) {
-                await loadScript('continuitycare.js');
+                await loadScript('assets/js/pages/continuitycare.js');
 
                 if (typeof refreshContinuitySummary === 'function') {
                     await refreshContinuitySummary();
@@ -564,6 +564,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 //#endregion
 </script>
-<script src="pwa.js"></script>
+<script src="assets/js/core/pwa.js"></script>
 </body>
 </html>

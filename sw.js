@@ -1,13 +1,13 @@
 'use strict';
 
-const CACHE_VERSION = 'ga-east-pwa-v3-mobile-layout';
+const CACHE_VERSION = 'ga-east-pwa-v4-assets';
 
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
 const STATIC_FILES = [
     './manifest.webmanifest',
-    './responsive.css',
+    'assets/css/responsive.css',
     './icons/icon-192.png',
     './icons/icon-512.png'
 ];

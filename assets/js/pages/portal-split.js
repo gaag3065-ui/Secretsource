@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const link = doc.createElement('link');
             link.id = 'splitEmbedCss';
             link.rel = 'stylesheet';
-            link.href = new URL('split-embed.css?v=20261104-1', location.href).href;
+            link.href = new URL('assets/css/split-embed.css?v=20261104-1', location.href).href;
             doc.head.append(link);
         } catch { /* หน้าต่างโดเมนอื่น — ข้าม */ }
     });
