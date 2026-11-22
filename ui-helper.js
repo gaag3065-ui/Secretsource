@@ -48,5 +48,19 @@
         }
         line.textContent = text;
     }
+    // จับเวลาจุดสำคัญของหน้า (เฟส 0): GaPerf.start('ชื่อ') → เรียกฟังก์ชันที่ได้เมื่อเสร็จ · ดูสรุปที่ window.__gaPerf หรือ GaPerf.report()
+    const perfStore = (window.__gaPerf = window.__gaPerf || {});
+    function perfStart(name) {
+        const t0 = performance.now();
+        return () => {
+            const ms = Math.round(performance.now() - t0);
+            const item = perfStore[name] && typeof perfStore[name] === 'object' ? perfStore[name] : { n: 0, avg: 0, max: 0, last: 0 };
+            item.n += 1; item.last = ms; item.max = Math.max(item.max, ms); item.avg = Math.round(((item.avg * (item.n - 1)) + ms) / item.n);
+            perfStore[name] = item;
+            if (ms > 1500) console.warn(`🐢 [perf] ${name} ใช้เวลา ${ms} ms`);
+            return ms;
+        };
+    }
+    window.GaPerf = { start: perfStart, report: () => JSON.parse(JSON.stringify(perfStore)) };
     window.GaUI = { skeletonRows, statusLine };
 })();

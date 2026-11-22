@@ -273,6 +273,64 @@ window.performSecureLogout =
     ['pointerdown', 'submit', 'change'].forEach(type => document.addEventListener(type, () => { lastUser = Date.now(); }, true));
     document.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') lastUser = Date.now(); }, true);
 
+    // ---- กันกดบันทึกซ้ำ (ใช้แทนป๊อปอัปล็อกจอเดิม): ปุ่มที่ผู้ใช้เพิ่งกด/ปุ่มส่งฟอร์ม ถูกล็อก (disabled + "กำลังบันทึก...")
+    //      ตลอดที่คำขอเขียน (POST/PUT/PATCH/DELETE) ยังค้างอยู่ แล้วคืนค่าเดิมให้อัตโนมัติ · ฟอร์มที่กำลังส่งอยู่จะไม่รับการส่งซ้ำ
+    //      ไม่ทำกับคำขอ gaSilent (งานเบื้องหลัง) · ปุ่มที่ไม่ต้องการ: ใส่ data-ga-noguard
+    const GUARD_WINDOW_MS = 2500, GUARD_TEXT = 'กำลังบันทึก...', GUARD_HOLD_MS = 350;
+    const BTN_SEL = 'button, input[type="submit"], input[type="button"], [role="button"]';
+    let actionBtn = null, actionForm = null, actionAt = 0;
+    const markAction = (btn, form) => { actionBtn = btn || null; actionForm = form || btn?.form || btn?.closest?.('form') || null; actionAt = Date.now(); };
+    document.addEventListener('pointerdown', event => markAction(event.target.closest?.(BTN_SEL), null), true);
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') markAction(event.target.closest?.(BTN_SEL), event.target.closest?.('form'));
+    }, true);
+    document.addEventListener('submit', event => {
+        const form = event.target;
+        if (!form?.dataset) return;
+        if (form.dataset.gaBusy === '1') { event.preventDefault(); event.stopImmediatePropagation(); return; }   // กำลังส่งอยู่ — ไม่รับซ้ำ
+        markAction(event.submitter || (actionForm === form ? actionBtn : null), form);
+        form.dataset.gaBusy = '1';   // กันกดซ้ำช่วงเตรียมข้อมูล (ก่อนยิงคำขอ) — ถ้าไม่มีคำขอเขียนตามมา ปลดเองใน 1.5 วินาที
+        clearTimeout(form.__gaBusyTimer);
+        form.__gaBusyTimer = setTimeout(() => { if (!form.__gaGuards) delete form.dataset.gaBusy; }, 1500);
+    }, true);
+    function guardStart() {
+        if (Date.now() - actionAt > GUARD_WINDOW_MS) return null;
+        const btn = actionBtn, form = actionForm;
+        const token = { btn: null, form: null };
+        if (form?.dataset) {
+            form.__gaGuards = (form.__gaGuards || 0) + 1;
+            form.dataset.gaBusy = '1';
+            token.form = form;
+        }
+        if (btn && btn.isConnected && !btn.hasAttribute('data-ga-noguard')) {
+            if (btn.dataset.gaGuard === '1') { btn.__gaCount += 1; token.btn = btn; }
+            else if (!btn.disabled) {
+                btn.dataset.gaGuard = '1'; btn.__gaCount = 1;
+                btn.dataset.gaOrig = btn.tagName === 'INPUT' ? btn.value : btn.innerHTML;
+                if (btn.tagName === 'INPUT') btn.value = GUARD_TEXT; else btn.textContent = GUARD_TEXT;
+                btn.disabled = true;
+                token.btn = btn;
+            }
+        }
+        return token;
+    }
+    function guardEnd(token) {
+        if (!token) return;
+        setTimeout(() => {   // รอสั้นๆ ให้คำขอถัดไปของขั้นตอนเดียวกัน (เช่น จองเลข → อัปโหลด → บันทึก) ต่อกันได้ ไม่ให้ปุ่มกะพริบ
+            const { btn, form } = token;
+            if (form && --form.__gaGuards <= 0) { form.__gaGuards = 0; delete form.dataset.gaBusy; }
+            if (btn && --btn.__gaCount <= 0 && btn.dataset.gaGuard === '1') {
+                delete btn.dataset.gaGuard;
+                const current = btn.tagName === 'INPUT' ? btn.value : btn.textContent;
+                if (current === GUARD_TEXT) {   // หน้าเปลี่ยนข้อความ/สถานะปุ่มเองแล้ว = ไม่ทับ ไม่แตะ
+                    if (btn.tagName === 'INPUT') btn.value = btn.dataset.gaOrig; else btn.innerHTML = btn.dataset.gaOrig;
+                    btn.disabled = false;
+                }
+                delete btn.dataset.gaOrig;
+            }
+        }, GUARD_HOLD_MS);
+    }
+
     // แถบสถานะบางๆ ด้านบนจอ (ไม่บังและไม่รับคลิก) — ใช้แทนป๊อปอัปกลางจอและป้ายมุมขวาล่าง
     function ensureBar() {
         if (bar || !document.body) return bar;
@@ -319,7 +377,8 @@ window.performSecureLogout =
     }
     function track(promise, text) {
         begin(text, true);
-        return Promise.resolve(promise).finally(() => end(true));
+        const guard = guardStart();
+        return Promise.resolve(promise).finally(() => { end(true); guardEnd(guard); });
     }
     const fromUser = () => blockers > 0 || Date.now() - lastUser < USER_WINDOW_MS || Date.now() - lastBlockEnd < 800;
     const isApi = url => { const u = String(url || ''); return API ? u.startsWith(API) : u.startsWith('/api/'); };
@@ -332,8 +391,9 @@ window.performSecureLogout =
         const verb = String(options?.method || (typeof input !== 'string' && input?.method) || 'GET').toUpperCase();
         const blocking = !['GET', 'HEAD', 'OPTIONS'].includes(verb);
         begin('', blocking);
+        const guard = blocking ? guardStart() : null;   // คำขอเขียน: ล็อกปุ่มที่เพิ่งกดจนกว่าจะเสร็จ
         let released = false;
-        const release = () => { if (!released) { released = true; end(blocking); } };
+        const release = () => { if (!released) { released = true; end(blocking); guardEnd(guard); } };
         return nativeFetch(input, options).then(response => {
             for (const method of ['json', 'text', 'blob', 'arrayBuffer', 'formData']) {
                 const original = response[method]?.bind(response);

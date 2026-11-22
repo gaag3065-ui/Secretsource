@@ -582,6 +582,7 @@ async function performEmployeeSearch() {
     const request = beginInsuranceSearch();
     setSearchButtonBusy(searchButton, true, 'กำลังค้นหา…');
     setInsuranceSearchMessage('กำลังดึงข้อมูลพนักงานและประวัติล่าสุด…', 'loading');
+    const doneSearch = window.GaPerf?.start('employeeSearch');
 
     try {
         const response = await window.authFetch(
@@ -607,6 +608,7 @@ async function performEmployeeSearch() {
         }
 
         renderEmployeeResults(employees, { autoSelect: true });
+        doneSearch?.();
     } catch (error) {
         if (error.name === 'AbortError') return;
         console.error('Employee search error:', error);

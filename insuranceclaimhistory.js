@@ -2684,8 +2684,19 @@ function scheduleHistoryFilterOptions() {
     historyOptionsTimer = setTimeout(loadHistoryFilterOptions, 250);
 }
 
+// ตัวเลือกตัวกรองตอนยังไม่เลือกอะไร: เก็บแคช (รายชื่อพื้นที่/บริษัท/สถานพยาบาล/ผลการรักษา + จำนวน — ไม่มีข้อมูลบุคคล)
+// เปิดหน้าแล้วแสดงทันที แล้วอัปเดตเบื้องหลัง · ผูกกับผู้ใช้ ล้างตอน Logout (ApiCache)
+const HISTORY_OPTIONS_CACHE_KEY = 'history:filterOptions:v1';
+async function showCachedHistoryFilterOptions() {
+    try {
+        const cached = await window.ApiCache?.read(HISTORY_OPTIONS_CACHE_KEY, { maxAgeMs: 12 * 3600e3 });
+        if (cached?.data) applyHistoryFilterOptions({ success: true, ...cached.data });
+    } catch { /* ไม่มีแคชก็ไม่เป็นไร */ }
+}
+
 async function loadHistoryFilterOptions() {
     // โหลดใหม่ทุกครั้งที่เปิด เพื่อให้ตัวเลือกตรงกับข้อมูลล่าสุดในชีต
+    const done = window.GaPerf?.start('historyFilterOptions');
 
     try {
         const response = await window.authFetch(
@@ -2714,8 +2725,12 @@ async function loadHistoryFilterOptions() {
         }
 
         applyHistoryFilterOptions(data);
+        if (!Object.values(currentHistoryFilterValues()).some(Boolean)) {   // ไม่ได้เลือกตัวกรองใด = ชุดเต็ม เก็บเป็นแคช
+            void window.ApiCache?.write(HISTORY_OPTIONS_CACHE_KEY, { options: data.options, optionCounts: data.optionCounts });
+        }
 
         historyFilterOptionsLoaded = true;
+        done?.();
     } catch (error) {
         console.error(
             'Load filter options error:',
@@ -2811,6 +2826,7 @@ async function loadFilteredAllHistory() {
         summary.textContent =
             'กำลังค้นหาประวัติตามเงื่อนไข...';
         showHistorySkeleton();
+        const doneHistory = window.GaPerf?.start('historyLoad');
 
         const response = await window.authFetch(
             `${window.APP_CONFIG.API_BASE_URL}/api/history/all`,
@@ -2863,6 +2879,7 @@ async function loadFilteredAllHistory() {
         }
 
         window.closeHistoryFilterModal?.();
+        doneHistory?.();
     } catch (error) {
         console.error(error);
 
@@ -2888,6 +2905,7 @@ function initHistoryFilterApplyEvent() {
 
     if (!applyButton) return;
 
+    void showCachedHistoryFilterOptions();   // แสดงตัวเลือกที่แคชไว้ทันที (ถ้ามี) ก่อนโหลดของใหม่
     // ตัวเลือกตัวกรองไม่ต้องโหลดตอนเปิดหน้า: โหลดเบื้องหลังเมื่อหน้าว่าง หรือเมื่อผู้ใช้แตะตัวกรองก่อน (ครั้งเดียว)
     let filterOptionsRequested = false;
     const ensureFilterOptions = () => {
