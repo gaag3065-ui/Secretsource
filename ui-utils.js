@@ -83,7 +83,8 @@ function openImageViewer(imageUrl, imageName = 'รูปภาพ') {
 //function fileToDataUrl(file) {
 //#region
 function fileToDataUrl(file) {
-    return new Promise((resolve, reject) => {
+    // รูปภาพ: ย่อ/บีบอัดก่อนส่ง (เล็กลงมาก อัปโหลดผ่านอุโมงค์เร็วขึ้น) — ไฟล์อื่นส่งตามเดิม
+    return window.compressImageFile(file).then(prepared => new Promise((resolve, reject) => {
         const reader = new FileReader();
 
         reader.onload = () => resolve(reader.result);
@@ -91,9 +92,32 @@ function fileToDataUrl(file) {
             new Error(`อ่านไฟล์ ${file.name} ไม่สำเร็จ`)
         );
 
-        reader.readAsDataURL(file);
-    });
+        reader.readAsDataURL(prepared);
+    }));
 }
+
+// ย่อรูปฝั่ง browser: ด้านยาวสุด 1600px, JPEG คุณภาพ ~0.78 — ใช้เมื่อรูปใหญ่กว่า 350 KB เท่านั้น
+// ถ้าย่อไม่ได้/ไม่เล็กลง ส่งไฟล์เดิม (ไม่ทำให้การอัปโหลดล้ม) · คืน File เสมอ (นามสกุล .jpg เมื่อถูกบีบอัด)
+window.compressImageFile = async function compressImageFile(file, { maxEdge = 1600, quality = 0.78, minBytes = 350 * 1024 } = {}) {
+    try {
+        if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < minBytes || typeof createImageBitmap !== 'function') return file;
+        const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+        const context = canvas.getContext('2d');
+        context.fillStyle = '#fff';   // PNG โปร่งใส → พื้นขาว (JPEG ไม่มีช่องโปร่งใส)
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        bitmap.close?.();
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+        if (!blob || blob.size >= file.size) return file;
+        return new File([blob], String(file.name || 'image').replace(/\.[A-Za-z0-9]+$/, '') + '.jpg', { type: 'image/jpeg', lastModified: Date.now() });
+    } catch {
+        return file;
+    }
+};
 //#endregion
 
 // Shared non-blocking feedback for successful insurance operations.
@@ -158,6 +182,7 @@ window.isSlkWorkLocation = function (value) {
 };
 
 window.setSlkColumnsVisibility = function (show) {
+    window.__slkColumnsShown = show;   // จำสถานะล่าสุด (ตารางที่วาดเพิ่มทีหลังใช้ค่านี้)
     document
         .querySelectorAll('.slk-column')
         .forEach(element => {

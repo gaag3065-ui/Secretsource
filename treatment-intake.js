@@ -664,10 +664,11 @@
     }
     // หลังบันทึกเปิดเคสสำเร็จ (recordtreatment.js เรียก) → ผูกเลขเคสกับรายการแจ้ง
     window.TreatmentIntake = {
-        async linkCase(caseId) {
-            const intake = window.__treatmentIntake;
+        async linkCase(caseId, intakeOfJob) {
+            // บันทึกเบื้องหลัง: ผูกกับรายการแจ้งที่ใช้ตอนกดบันทึก (ผู้ใช้อาจเปิดรายการอื่นต่อแล้ว)
+            const intake = intakeOfJob || window.__treatmentIntake;
             if (!intake) return;
-            window.__treatmentIntake = null;
+            if (!intakeOfJob || window.__treatmentIntake?.id === intake.id) window.__treatmentIntake = null;
             try {
                 const res = await window.authFetch(`${API()}/records/${intake.id}/case`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ case_id: String(caseId) }) });
                 const data = await res.json();

@@ -80,12 +80,14 @@
     const safeName = name => String(name || 'ไม่ทราบชื่อ').trim().replace(/\s+/g, '_').replace(/[\\/:*?"<>|]/g, '');
 
     // อัปโหลดทีละรูปตามลำดับ — buildName(ลำดับ, นามสกุลไฟล์) คืนชื่อไฟล์
-    async function upload(files, { caseId = ' ', employeeName = '', buildName }) {
+    async function upload(files, { caseId = ' ', employeeName = '', buildName, silent = false }) {
         const urls = [];
-        for (const [index, file] of files.entries()) {
+        for (const [index, original] of files.entries()) {
+            const file = await window.compressImageFile(original);   // ย่อรูปก่อนส่ง (ไม่ใหญ่/ย่อไม่ได้ = ไฟล์เดิม)
             const response = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/upload-drive`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                gaSilent: silent,   // งานเบื้องหลัง (บันทึกเคส) ไม่ต้องขึ้นป๊อปอัปล็อกจอ
                 body: JSON.stringify({ caseId, fileName: buildName(index + 1, extensionOf(file)), employeeName, fileData: await readFile(file) })
             });
             const result = await response.json().catch(() => ({}));

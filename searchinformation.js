@@ -211,6 +211,21 @@ function applySelectedEmployee(employee, selectedItem, options = {}) {
     const canOpenNewCase = employee.canOpenNewCase !== false;
     setTreatmentFormLocked(!canOpenNewCase);
 
+    if (canOpenNewCase) {
+        // ค่าเริ่มต้นอัจฉริยะ: วันที่/เวลา = ตอนนี้ (ถ้าผู้ใช้ไม่ได้แก้เอง) · โรงพยาบาล = ที่พนักงานคนนี้ใช้ล่าสุด (ถ้าช่องยังว่าง)
+        window.applyTreatmentTimeDefaults?.();
+        const hospitalSelect = document.getElementById('hospitalSelect');
+        const lastHospital = [...(Array.isArray(employee.history) ? employee.history : [])]
+            .reverse()
+            .map((item) => String(item?.hospital || '').trim())
+            .find((name) => name && name !== '-');
+        if (hospitalSelect && !hospitalSelect.value && lastHospital
+            && [...hospitalSelect.options].some((option) => option.value === lastHospital)) {
+            hospitalSelect.value = lastHospital;
+            hospitalSelect.dispatchEvent(new Event('change'));
+        }
+    }
+
     if (
         typeof window.setSlkColumnsVisibility === 'function' &&
         typeof window.isSlkWorkLocation === 'function'
@@ -251,7 +266,7 @@ window.refreshSelectedTreatmentLimits = async function (insuranceId) {
     const sequence = ++limitRefreshSequence;
     try {
         const response = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/search`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store', gaSilent: true,
             body: JSON.stringify({ keyword: code })
         });
         const data = await readSearchResponse(response);
@@ -574,6 +589,7 @@ async function performEmployeeSearch() {
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                gaSilent: true,   // อ่านอย่างเดียว: ปุ่ม "กำลังค้นหา…" บอกสถานะเฉพาะจุด ไม่ล็อกทั้งหน้าจอ
                 body: JSON.stringify({ keyword }),
                 signal: request.controller.signal
             }
@@ -657,6 +673,7 @@ async function performCaseSearch() {
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                gaSilent: true,
                 body: JSON.stringify({ caseId }),
                 signal: request.controller.signal
             }

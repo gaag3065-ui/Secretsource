@@ -2692,6 +2692,7 @@ async function loadHistoryFilterOptions() {
             `${window.APP_CONFIG.API_BASE_URL}/api/history/all`,
             {
                 method: 'POST',
+                gaSilent: true,   // อ่านอย่างเดียวเบื้องหลัง — ไม่ล็อกหน้าจอ
                 headers: {
                     'Content-Type':
                         'application/json'
@@ -2723,6 +2724,31 @@ async function loadHistoryFilterOptions() {
     }
 }
 
+
+// แถวโครงตาราง (skeleton) ระหว่างโหลดประวัติ — แสดงเฉพาะในตาราง ไม่ล็อกทั้งหน้า
+function showHistorySkeleton() {
+    const tableBody = document.getElementById('tableBodyResult');
+    if (!tableBody) return;
+    if (!document.getElementById('historySkeletonStyle')) {
+        const style = document.createElement('style');
+        style.id = 'historySkeletonStyle';
+        style.textContent = '@keyframes histSkel{0%{background-position:100% 0}100%{background-position:-100% 0}}'
+            + '.history-skeleton-bar{height:18px;border-radius:6px;background:linear-gradient(90deg,#eef1f5 25%,#f8fafc 37%,#eef1f5 63%);background-size:200% 100%;animation:histSkel 1.2s linear infinite;}';
+        document.head.appendChild(style);
+    }
+    const rows = Array.from({ length: 4 }, () => {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 23;
+        cell.style.padding = '14px';
+        const bar = document.createElement('div');
+        bar.className = 'history-skeleton-bar';
+        cell.appendChild(bar);
+        row.appendChild(cell);
+        return row;
+    });
+    tableBody.replaceChildren(...rows);
+}
 
 async function loadFilteredAllHistory() {
     const applyButton =
@@ -2784,11 +2810,13 @@ async function loadFilteredAllHistory() {
 
         summary.textContent =
             'กำลังค้นหาประวัติตามเงื่อนไข...';
+        showHistorySkeleton();
 
         const response = await window.authFetch(
             `${window.APP_CONFIG.API_BASE_URL}/api/history/all`,
             {
                 method: 'POST',
+                gaSilent: true,   // โหลดเฉพาะจุด: ปุ่ม + แถวโครงตาราง แทนป๊อปอัปล็อกทั้งหน้า
                 headers: {
                     'Content-Type':
                         'application/json'
@@ -2843,6 +2871,7 @@ async function loadFilteredAllHistory() {
             'เกิดข้อผิดพลาดในการกรองข้อมูล';
 
         reportButton.hidden = true;
+        document.getElementById('tableBodyResult')?.replaceChildren();   // เอาแถวโครงตาราง (skeleton) ออกเมื่อโหลดไม่สำเร็จ
     } finally {
         applyButton.disabled = false;
         applyButton.textContent =
@@ -2859,7 +2888,21 @@ function initHistoryFilterApplyEvent() {
 
     if (!applyButton) return;
 
-    loadHistoryFilterOptions();
+    // ตัวเลือกตัวกรองไม่ต้องโหลดตอนเปิดหน้า: โหลดเบื้องหลังเมื่อหน้าว่าง หรือเมื่อผู้ใช้แตะตัวกรองก่อน (ครั้งเดียว)
+    let filterOptionsRequested = false;
+    const ensureFilterOptions = () => {
+        if (filterOptionsRequested) return;
+        filterOptionsRequested = true;
+        loadHistoryFilterOptions();
+    };
+    ['historyStartDate', 'historyEndDate', 'historyAreaFilter', 'historyCompanyFilter',
+        'historyTreatmentResultFilter', 'historyHospitalFilter'].forEach(id => {
+        const control = document.getElementById(id);
+        control?.addEventListener('pointerdown', ensureFilterOptions, { once: true });
+        control?.addEventListener('focus', ensureFilterOptions, { once: true });
+    });
+    if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(ensureFilterOptions, { timeout: 6000 });
+    else setTimeout(ensureFilterOptions, 3000);
 
     // เปลี่ยนวันที่หรือช่องใดช่องหนึ่ง → ตัวเลือกช่องอื่นเหลือเฉพาะค่าที่มีข้อมูลจริง
     [
@@ -3622,7 +3665,15 @@ function renderFlatHistoryTable(history) {
         compareCaseIdDescending(caseIdA, caseIdB)
     );
 
-    for (const [caseId, events] of sortedCaseGroups) {
+    // วาดทีละ 40 เคส (ตารางยาวหลายพันแถวทำให้หน้าค้าง) — ข้อมูลทั้งหมดยังอยู่ใน window.currentFilteredHistory ให้รายงาน/แก้ไขใช้ครบ
+    const HISTORY_PAGE_SIZE = 40;
+    let renderedCases = 0;
+    const pagerRow = document.createElement('tr');
+    pagerRow.className = 'history-pager-row';
+    const renderNextBatch = () => {
+    const batch = sortedCaseGroups.slice(renderedCases, renderedCases + HISTORY_PAGE_SIZE);
+    renderedCases += batch.length;
+    for (const [caseId, events] of batch) {
         events.sort(
             (a, b) =>
                 Number(a.targetRowNumber) -
@@ -3784,7 +3835,24 @@ function renderFlatHistoryTable(history) {
         }
     }
 
+    pagerRow.remove();
     tableBody.appendChild(fragment);
+    if (window.__slkColumnsShown !== undefined) window.setSlkColumnsVisibility(window.__slkColumnsShown);   // แถวที่เพิ่งเพิ่มจาก "แสดงเพิ่ม" ต้องซ่อน/แสดงคอลัมน์ SLK ตามตัวกรองเดิม
+    if (renderedCases < sortedCaseGroups.length) {
+        const cell = document.createElement('td');
+        cell.colSpan = 23;
+        cell.style.cssText = 'padding:14px;text-align:center;';
+        const more = document.createElement('button');
+        more.type = 'button';
+        more.className = 'btn';
+        more.textContent = `แสดงเพิ่มอีก ${Math.min(HISTORY_PAGE_SIZE, sortedCaseGroups.length - renderedCases)} เคส (แสดงแล้ว ${renderedCases} จาก ${sortedCaseGroups.length} เคส)`;
+        more.addEventListener('click', renderNextBatch);
+        cell.appendChild(more);
+        pagerRow.replaceChildren(cell);
+        tableBody.appendChild(pagerRow);
+    }
+    };
+    renderNextBatch();
 }
 //#endregion
 
