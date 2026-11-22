@@ -100,6 +100,7 @@ async function refreshContinuitySummary(options = {}) {
             `${window.APP_CONFIG.API_BASE_URL}/api/history/all`,
             {
                 method: 'POST',
+                gaSilent: true,   // อ่านอย่างเดียว: สถานะ "กำลังโหลดข้อมูลสรุป…" ในการ์ดบอกอยู่แล้ว ไม่ต้องล็อกทั้งหน้า
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({}),
                 cache: 'no-store'
