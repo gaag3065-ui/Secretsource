@@ -254,6 +254,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // =====================================================
         // 1. โหลด Config ก่อนทุกอย่าง
         // =====================================================
+        await loadScript('assets/js/core/api-url.js');
         await loadScript('assets/js/core/config.js');
 
         if (!window.APP_CONFIG) {

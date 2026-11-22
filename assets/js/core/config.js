@@ -18,7 +18,9 @@ const LOCAL_API_URL = `http://127.0.0.1:${localApiPort}`;
 
 
 
-const PRODUCTION_API_URL = 'https://conservative-miniature-indicating-representation.trycloudflare.com';
+// ลิงก์หลังบ้านอยู่ในไฟล์ assets/js/core/api-url.js (ระบบซ่อม Cloudflare tunnel อัตโนมัติแก้เฉพาะไฟล์นั้น) — ต้องโหลดก่อน config.js เสมอ
+const PRODUCTION_API_URL = window.GA_API_URL || '';
+if (!IS_LOCAL && !PRODUCTION_API_URL) console.error('[APP CONFIG] ไม่พบ GA_API_URL — ตรวจว่าโหลด assets/js/core/api-url.js ก่อน config.js');
 
 
 

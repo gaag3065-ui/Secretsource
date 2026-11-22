@@ -293,6 +293,13 @@ function loadConfig() {
         // ใช้ Version ที่ GitHub Actions สร้างให้
         script.src = `assets/js/core/config.js?v=${window.APP_VERSION}`;
 
+        // ลิงก์หลังบ้านอยู่ใน api-url.js — ต้องรันก่อน config.js (async=false ทำให้รันตามลำดับที่แทรก)
+        const apiUrlScript = document.createElement('script');
+        apiUrlScript.async = false;
+        script.async = false;
+        apiUrlScript.src = `assets/js/core/api-url.js?v=${window.APP_VERSION}`;
+        document.head.appendChild(apiUrlScript);
+
         script.onload = () => {
             console.log(
                 `⚙️ config.js โหลดสำเร็จ | Version: ${window.APP_VERSION}`
