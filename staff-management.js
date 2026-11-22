@@ -49,22 +49,106 @@
     }
     const when = text => text ? new Date(text).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }) : '-';
     const thDate = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? `${m[3]}/${m[2]}/${Number(m[1]) + 543}` : ''; };
-    const tasksOf = key => (state.data?.tasks || []).filter(t => t.employee_key === key).sort((a, b) => (OPEN.has(b.status) - OPEN.has(a.status)) || b.id - a.id);
+    // ดัชนีงาน/เอกสารต่อพนักงาน: สร้างครั้งเดียวต่อการวาด/กรอง (เดิมไล่กรองงานทั้งหมดซ้ำทีละคนทุกครั้งที่พิมพ์ค้นหา)
+    const idx = { t: null, r: null };
+    function buildIdx() {
+        const byTask = new Map();
+        for (const task of state.data?.tasks || []) {
+            if (!byTask.has(task.employee_key)) byTask.set(task.employee_key, []);
+            byTask.get(task.employee_key).push(task);
+        }
+        for (const list of byTask.values()) list.sort((a, b) => (OPEN.has(b.status) - OPEN.has(a.status)) || b.id - a.id);
+        const byRec = new Map(), order = new Map();
+        (state.records || []).forEach((rec, i) => {
+            order.set(rec, i);
+            for (const id of new Set([String(rec.employee_id || '').toUpperCase(), String(rec.insurance_code || '').toUpperCase()])) {
+                if (!id) continue;
+                if (!byRec.has(id)) byRec.set(id, []);
+                byRec.get(id).push(rec);
+            }
+        });
+        idx.t = byTask; idx.r = { byRec, order };
+    }
+    let idxDepth = 0;
+    function withIdx(fn) {
+        if (idxDepth++ === 0) buildIdx();
+        try { return fn(); } finally { if (--idxDepth === 0) { idx.t = null; idx.r = null; } }
+    }
+    const tasksOf = key => idx.t
+        ? (idx.t.get(key) || []).slice()
+        : (state.data?.tasks || []).filter(t => t.employee_key === key).sort((a, b) => (OPEN.has(b.status) - OPEN.has(a.status)) || b.id - a.id);
     const isOnWork = e => /on\s*work/i.test(e.status);
 
     // ---------------------------------------------------------------- โหลด
+    // ---- แคชรายชื่อ (เปิดหน้าแสดงทันที แล้วอัปเดตเบื้องหลัง) — เก็บเฉพาะรายการย่อที่ใช้แสดงตาราง/ค้นหา
+    //      ไม่เก็บงาน เอกสาร ไฟล์ รูป หรือรายละเอียดส่วนตัว (detail) · ผูกกับผู้ใช้ · ล้างตอน Logout · มีอายุ 12 ชม.
+    const CACHE_KEY = 'staff:employees:v1';
+    const CACHE_MAX_AGE = 12 * 3600e3;
+    const cacheProjection = result => ({
+        columns: result.data.columns,
+        employees: (result.data.employees || []).map(e => ({
+            key: e.key, row: e.row, fullname: e.fullname, nickname: e.nickname, employeeId: e.employeeId, centralId: e.centralId,
+            insuranceCode: e.insuranceCode, company: e.company, status: e.status, area: e.area, building: e.building, floor: e.floor,
+            room: e.room, size: e.size, contracts: e.contracts, contractText: e.contractText
+        }))
+    });
+    const timeText = at => new Date(at).toLocaleTimeString('th-TH');
+    const perfNote = (name, ms) => { (window.__gaPerf = window.__gaPerf || {})[name] = ms; };
+    function showCached(cached, at) {
+        state.partial = true;   // ข้อมูลย่อจากแคช: ยังไม่มีงาน/กล่อง/สิทธิ์ — ปุ่มที่ต้องใช้ถูกกันไว้จนกว่าข้อมูลสดจะมา
+        state.data = { employees: cached.employees, columns: cached.columns, tasks: [], boxes: [], removedBoxes: [], statuses: {}, priorities: [], categories: [], links: {}, updatedAt: new Date(at).toISOString() };
+        state.records = [];
+        state.byKey = new Map(state.data.employees.map(e => [e.key, e]));
+        $('smUpdated').textContent = `· แสดงข้อมูลที่บันทึกไว้ (${timeText(at)}) · กำลังอัปเดต…`;
+        fillFilters();
+        render();
+    }
+    function applyFresh({ data, records }) {
+        state.partial = false;
+        state.data = { ...data, boxes: workBoxes(data.boxes) };
+        state.records = records.filter(r => !INSURANCE_BOXES.has(r.type));
+        state.byKey = new Map(state.data.employees.map(e => [e.key, e]));
+        $('smUpdated').textContent = `· อัปเดต ${new Date(state.data.updatedAt).toLocaleTimeString('th-TH')}`;
+        fillFilters();
+        render();
+    }
+    // กดปุ่มที่ต้องใช้งาน/สิทธิ์ ขณะยังเป็นข้อมูลย่อจากแคช → รอข้อมูลสดสักครู่ (ปกติไม่กี่วินาที)
+    document.addEventListener('click', event => {
+        if (!state.partial) return;
+        if (event.target.closest('.sm-actions, .sm-tasks-cell, #smBoxes, [data-action]')) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            toast('กำลังอัปเดตข้อมูลล่าสุด… รอสักครู่แล้วลองอีกครั้ง');
+        }
+    }, true);
+
     async function load(refresh = false) {
-        $('smRows').innerHTML = '<tr><td colspan="7" class="fa-empty">กำลังโหลด…</td></tr>';
-        try {
+        const t0 = performance.now();
+        const firstPaint = !state.data;
+        if (firstPaint) window.GaUI?.skeletonRows($('smRows'), 7, 8);   // ครั้งแรกที่ยังไม่มีอะไรให้เห็น: โครงตารางแทนข้อความ "กำลังโหลด…"
+        const fetchFresh = async () => {
             const [data, records] = await Promise.all([request(`/employees${refresh ? '?refresh=1' : ''}`), loadRecords(), loadClaimed()]);
-            state.data = { ...data, boxes: workBoxes(data.boxes) };
-            state.records = records.filter(r => !INSURANCE_BOXES.has(r.type));
-            state.byKey = new Map(state.data.employees.map(e => [e.key, e]));
-            $('smUpdated').textContent = `· อัปเดต ${new Date(state.data.updatedAt).toLocaleTimeString('th-TH')}`;
-            fillFilters();
-            render();
+            return { data, records };
+        };
+        try {
+            if (!firstPaint || refresh || !window.ApiCache) {
+                // รีเฟรช/โหลดซ้ำหลังแก้ไข: ดึงสดเลย (ตารางเดิมยังอยู่ ไม่กะพริบ)
+                const result = await fetchFresh();
+                applyFresh(result);
+                if (window.ApiCache) void window.ApiCache.write(CACHE_KEY, cacheProjection(result));
+                perfNote('staffFreshMs', Math.round(performance.now() - t0));
+                return;
+            }
+            await window.ApiCache.swr(CACHE_KEY, fetchFresh, {
+                maxAgeMs: CACHE_MAX_AGE,
+                project: cacheProjection,
+                onCached: (cached, meta) => { showCached(cached, meta.at); perfNote('staffFirstPaintMs', Math.round(performance.now() - t0)); },
+                onFresh: result => { applyFresh(result); perfNote('staffFreshMs', Math.round(performance.now() - t0)); },
+                onError: (error, info) => { if (info.hadCache) { $('smUpdated').textContent = '· อัปเดตไม่สำเร็จ — แสดงข้อมูลที่บันทึกไว้'; toast(error.message, true); } }
+            });
         } catch (error) {
-            $('smRows').innerHTML = `<tr><td colspan="7" class="fa-empty">${esc(error.message)}</td></tr>`;
+            if (!state.data) $('smRows').innerHTML = `<tr><td colspan="7" class="fa-empty">${esc(error.message)}</td></tr>`;
+            else toast(error.message, true);
         }
     }
 
@@ -136,7 +220,15 @@
 
     const REVIEW = new Set(['pending']);
     const recIds = e => [e.employeeId, e.centralId, e.insuranceCode, e.key].filter(Boolean).map(x => String(x).toUpperCase());
-    const recordsOf = e => { const ids = recIds(e); return (state.records || []).filter(r => ids.includes(String(r.employee_id || '').toUpperCase()) || ids.includes(String(r.insurance_code || '').toUpperCase())); };
+    const recordsOf = e => {
+        const ids = recIds(e);
+        if (idx.r) {
+            const found = new Set();
+            for (const id of ids) for (const rec of idx.r.byRec.get(id) || []) found.add(rec);
+            return [...found].sort((a, b) => idx.r.order.get(a) - idx.r.order.get(b));
+        }
+        return (state.records || []).filter(r => ids.includes(String(r.employee_id || '').toUpperCase()) || ids.includes(String(r.insurance_code || '').toUpperCase()));
+    };
 
     // ตัวเลือกในตัวกรองมาจากข้อมูลจริง (พร้อมจำนวนคน)
     // หัวตัวเลือก: "ตึกพัก : ยังไม่เลือก" / "ตึกพัก : ทุกตึก" / "ตึกพัก : <ค่า> (จำนวน)"
@@ -156,7 +248,8 @@
         }).join('');
     }
 
-    function filtered() {
+    function filtered() { return withIdx(filteredNow); }
+    function filteredNow() {
         const q = $('smSearch').value.trim().toLowerCase();
         const taskMode = $('smTask').value;
         const picks = Object.fromEntries(FILTERS.map(f => [f.key, pick(f.key)]));
@@ -213,16 +306,18 @@
     }
 
     // ---------------------------------------------------------------- ตาราง
-    function render() {
+    function render() { return withIdx(renderNow); }
+    function renderNow() {
         const rows = filtered();
         const all = state.data.employees;
         const tasks = state.data.tasks;
-        const stat = (n, label) => `<div class="fa-stat"><strong>${n.toLocaleString('th-TH')}</strong><span>${label}</span></div>`;
+        // ข้อมูลย่อจากแคช (state.partial) ยังไม่มีงาน/เอกสาร → ตัวเลขกลุ่มนั้นแสดง "…" แทน 0
+        const stat = (n, label, needsFull = false) => `<div class="fa-stat"><strong>${needsFull && state.partial ? '…' : n.toLocaleString('th-TH')}</strong><span>${label}</span></div>`;
         $('smStats').innerHTML = stat(all.length, 'พนักงานทั้งหมด') + stat(all.filter(isOnWork).length, 'สถานะ on work')
-            + stat(new Set(tasks.filter(t => OPEN.has(t.status)).map(t => t.employee_key)).size, 'คนที่มีงานค้าง')
-            + stat(tasks.filter(t => OPEN.has(t.status)).length, 'งานที่ยังไม่เสร็จ') + stat(tasks.filter(t => t.status === 'done').length, 'งานเสร็จแล้ว')
+            + stat(new Set(tasks.filter(t => OPEN.has(t.status)).map(t => t.employee_key)).size, 'คนที่มีงานค้าง', true)
+            + stat(tasks.filter(t => OPEN.has(t.status)).length, 'งานที่ยังไม่เสร็จ', true) + stat(tasks.filter(t => t.status === 'done').length, 'งานเสร็จแล้ว', true)
             + stat(all.filter(e => e.contracts > 0).length, 'เคยเซ็นสัญญาเช่าบ้าน SL')
-            + stat((state.records || []).filter(r => REVIEW.has(r.status)).length, 'เอกสารส่งมา รอตรวจ');
+            + stat((state.records || []).filter(r => REVIEW.has(r.status)).length, 'เอกสารส่งมา รอตรวจ', true);
         renderBoxes();
         document.querySelectorAll('.sm-toolbar select').forEach(s => s.classList.toggle('is-set', Boolean(s.value)));
         $('smCount').textContent = `แสดง ${rows.length.toLocaleString('th-TH')} จาก ${all.length.toLocaleString('th-TH')} คน`;
@@ -245,7 +340,7 @@
         $('smHead').innerHTML = `<th class="sm-no">ลำดับ</th><th>บริษัท</th><th>สถานะปัจจุบัน</th><th>ชื่อเล่น</th><th>ชื่อพนักงาน</th>${extra.map(f => `<th>${esc(f.label)}</th>`).join('')}<th class="sm-tasks-head">งานที่มอบหมาย ${groupChips ? `<span class="sm-groups">${groupChips}</span>` : ''}</th><th class="sm-bulk-head">${can('broadcast') ? `<button type="button" class="fa-btn sm-broadcast" data-action="broadcast" title="ส่งข้อความถึงพนักงานที่แสดงอยู่ทั้งหมด ผ่านคิว LINE OA">📢 ส่งข้อความแบบหมู่ (${rows.length})</button>` : ''}</th>`;
         const span = 7 + extra.length;
         if (!rows.length) { $('smRows').innerHTML = `<tr><td colspan="${span}" class="fa-empty">ไม่พบพนักงานตามตัวกรอง</td></tr>`; return; }
-        $('smRows').innerHTML = rows.map((e, index) => {
+        const rowHtml = (e, index) => {
             const list = tasksOf(e.key).filter(t => t.status !== 'cancelled');
             const pills = claimCard(e) + boxGroupsOf(list, recordsOf(e)).map(boxLinkHtml).join('');
             return `<tr>
@@ -268,7 +363,21 @@
                     return '<button type="button" class="fa-btn sm-check" disabled title="ยังไม่มีงานที่ต้องส่งข้อมูล">ตรวจ</button>';
                 })()}<button type="button" class="fa-btn sm-plan" data-plan="${esc(e.key)}">จัดงาน</button></td>
             </tr>`;
-        }).join('');
+        };
+        // วาดแถวแรก 100 แถวทันที ที่เหลือทยอยเติมเป็นชุด (ตารางหลายร้อยแถวใหญ่ ถ้าวาดครั้งเดียวหน้าจะค้างตอนพิมพ์ค้นหา/เปลี่ยนตัวกรอง)
+        const FIRST = 100, CHUNK = 150;
+        const token = state.rowsToken = (state.rowsToken || 0) + 1;
+        $('smRows').innerHTML = rows.slice(0, FIRST).map(rowHtml).join('');
+        let done = FIRST;
+        const more = () => {
+            if (token !== state.rowsToken || done >= rows.length) return;   // มีการวาดใหม่แล้ว → เลิกชุดเก่า
+            const from = done, to = Math.min(rows.length, done + CHUNK);
+            const html = withIdx(() => rows.slice(from, to).map((e, i) => rowHtml(e, from + i)).join(''));
+            $('smRows').insertAdjacentHTML('beforeend', html);
+            done = to;
+            if (done < rows.length) setTimeout(more, 0);
+        };
+        if (rows.length > FIRST) setTimeout(more, 0);
     }
 
     // ---------------------------------------------------------------- จัดงาน (รายคน)
@@ -1653,7 +1762,8 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
     // ---------------------------------------------------------------- เหตุการณ์
     // ตัวกรองถูกสร้างใหม่ตอนโหลด → ฟังที่แถบเครื่องมือแทน
     document.querySelector('.sm-toolbar').addEventListener('change', event => { if (event.target.matches('select')) render(); });
-    $('smSearch').addEventListener('input', render);
+    let searchFrame = 0;   // พิมพ์ค้นหา: กรองทันทีบนข้อมูลที่โหลดแล้ว (รวมการวาดหนึ่งครั้งต่อเฟรม ไม่ยิง API)
+    $('smSearch').addEventListener('input', () => { if (searchFrame) return; searchFrame = requestAnimationFrame(() => { searchFrame = 0; render(); }); });
     $('smDialog').addEventListener('change', event => { if (event.target.closest('#smRecForm') && event.target.name === 'status') syncRecForm(event.target.form); });
     $('smDialog').addEventListener('submit', event => {
         if (event.target.id === 'smNewTask') { event.preventDefault(); createTask(event.target); }
