@@ -3163,3 +3163,7 @@ tr.has-bill { outline: 2px solid #fb923c; outline-offset: -2px; }
 .intake-req { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; }
 #intakeCloseDialog label, #intakeRequestDocs label { display: grid; gap: 4px; margin-top: 8px; font-size: 13px; }
 #intakeCloseDialog input, #intakeCloseDialog textarea, #intakeRequestDocs input[type=text], #intakeRequestDocs textarea { width: 100%; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 8px; font: inherit; }
+.intake-alert > .intake-cancel { max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; }
+#intakeRequestDocs label.intake-req { display: flex; margin-top: 0; flex-direction: row; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; line-height: 1.45; }
+#intakeRequestDocs label.intake-req input[type=checkbox] { flex: none; width: 20px; height: 20px; margin: 2px 0 0; padding: 0; }
+.intake-cancel-actions button { flex: 1 1 auto; min-height: 40px; }
