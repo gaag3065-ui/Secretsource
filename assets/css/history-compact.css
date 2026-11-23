@@ -36,6 +36,8 @@
 .hc-btn { padding: 5px 11px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #1f2937; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
 .hc-btn:hover { background: #f1f5f9; }
 .hc-btn.is-edit { border-color: #fcd34d; background: #fffbeb; color: #92400e; margin-left: 4px; }
+.hc-btn.is-update { border-color: #86efac; background: #f0fdf4; color: #166534; margin-left: 4px; }
+.hc-update-btn { float: right; margin: -4px 0 0 !important; }
 .hc-btn.is-del { border-color: #fecaca; color: #b91c1c; }
 .hc-btn.is-primary { background: #198754; border-color: #198754; color: #fff; margin-top: 10px; }
 .hc-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 2px; color: var(--hc-muted); }
@@ -72,7 +74,8 @@
 .hc-evid .history-evidence-item { width: auto !important; min-width: 0 !important; display: flex; flex-direction: column; gap: 4px; padding: 0 !important; border: 0 !important; background: transparent !important; }
 .hc-evid .history-evidence-title { font-size: 11.5px !important; color: #475569; max-width: 110px; line-height: 1.25; }
 .hc-evid .history-evidence-preview { width: 100px !important; height: 100px !important; min-height: 0 !important; padding: 0 !important; border: 1px solid #cbd5e1 !important; border-radius: 8px !important; overflow: hidden; display: grid; place-items: center; font-size: 11px; color: #64748b; background: #f8fafc; cursor: zoom-in; }
-.hc-evid .history-evidence-preview img { width: 100% !important; height: 100% !important; object-fit: cover; display: block; }
+.hc-evid .history-evidence-preview img { width: 100% !important; height: 100% !important; object-fit: cover; display: block; opacity: 0; transition: opacity .15s; }
+.hc-evid .history-evidence-preview img.hc-loaded { opacity: 1; }   /* ซ่อนจนโหลดสำเร็จ — ไม่โชว์ไอคอนรูปแตก/ข้อความ alt */
 .hc-evid .history-evidence-empty { display: inline-block !important; padding: 2px 8px !important; width: auto !important; min-height: 0 !important; height: auto !important; border: 1px dashed #d1d5db !important; border-radius: 999px; font-size: 11px !important; color: #9ca3af !important; background: #fff !important; white-space: nowrap; }
 /* ไทม์ไลน์ */
 .hc-tl { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -106,3 +109,10 @@
     .hc-body { padding: 10px 12px 18px; }
     .hc-evid .history-evidence-preview { width: 84px !important; height: 84px !important; }
 }
+
+/* แก้ไขแบบ inline ในหน้าต่าง (ย้ายแถวจริงของตารางเดิมมาไว้ในหน้าต่าง — ช่องกรอกใช้สไตล์เดิมของ #table-box-placeholder) */
+.hc-inline-panel { width: min(960px, 100%); }
+.hc-inline-table { width: 100%; border-collapse: collapse; }
+.hc-inline-table tbody, .hc-inline-table tr { display: block; }
+.hc-inline-table td:not([data-label]):not(:last-child) { display: none; }
+.hc-inline-table td:last-child { display: flex; gap: 8px; justify-content: flex-end; padding: 10px 0 0; }

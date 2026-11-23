@@ -57,6 +57,7 @@
         const shell = document.querySelector('#table-box-placeholder .history-table-shell');
         if (!shell) return null;
         shell.classList.add('hc-legacy');
+        window.__hcLazyEvidence = true;   // ตารางเดิมซ่อนอยู่ → รูปเอกสารในตารางเดิมไม่ต้องดึงจนกว่าจะมองเห็นจริง
         const root = document.createElement('section');
         root.id = 'hcRoot';
         root.className = 'hc-root';
@@ -78,7 +79,7 @@
             <td class="hc-col-sym"><span class="hc-sym">${esc(blank(e.symptoms) || '-')}</span><small>${esc(blank(e.hospital) || '-')}</small></td>
             <td class="hc-col-amt">${c.amounts.length ? c.amounts.map(a => `<span class="hc-chip ${a.cls}">${esc(a.label)}: <b>${money(a.value)}</b> ${esc(a.unit)}</span>`).join('') : '<span class="hc-none">—</span>'}</td>
             <td class="hc-col-status">${pill(c.status)}${note ? `<small title="${esc(note)}">📝 ${esc(note.length > 40 ? note.slice(0, 40) + '…' : note)}</small>` : ''}</td>
-            <td class="hc-col-act"><button type="button" class="hc-btn" data-hc-view>ดูรายละเอียด</button>${can('EditTreatment') ? '<button type="button" class="hc-btn is-edit" data-hc-edit>แก้ไข</button>' : ''}</td>
+            <td class="hc-col-act"><button type="button" class="hc-btn" data-hc-view>ดูรายละเอียด</button>${can('EditTreatment') ? '<button type="button" class="hc-btn is-update" data-hc-update>อัปเดตเคส</button><button type="button" class="hc-btn is-edit" data-hc-edit>แก้ไข</button>' : ''}</td>
         </tr><tr class="hc-flags-row" hidden><td colspan="7"></td></tr>`;
     }
     function render() {
@@ -113,6 +114,7 @@
         if (event.target.closest('[data-hc-more]')) { state.shown += PAGE; paint(); return; }
         const row = event.target.closest('tr.hc-row');
         if (!row || event.target.closest('a')) return;
+        if (event.target.closest('[data-hc-update]')) return runUpdate(row.dataset.case);
         openDetail(row.dataset.case, { focus: event.target.closest('[data-hc-edit]') ? 'timeline' : '' });
     }
 
@@ -180,11 +182,16 @@
                     ${slk && (blank(e.ExchangeRatesIns) || blank(e.ExchangeRatesInt)) ? `<tr class="is-rate"><th>เรทค่าเงิน (ประกัน / ปัจจุบัน)</th><td>${esc(blank(e.ExchangeRatesIns) || '-')} / ${esc(blank(e.ExchangeRatesInt) || '-')}</td></tr>` : ''}
                 </tbody></table>` : '<p class="hc-none">ยังไม่มียอดเบิกในเคสนี้</p>'}</section>
                 <section class="hc-zone hc-docs"><h4>เอกสารแนบ &amp; รูปภาพ <small>(กดรูปเพื่อขยาย)</small></h4><table class="hc-evid"><tbody><tr data-hc-evidence></tr></tbody></table></section>
-                <section class="hc-zone hc-timeline" id="hcTimeline"><h4>ไทม์ไลน์ของเคส <small>${c.events.length} รายการ</small></h4><div data-hc-timeline></div></section>
+                <section class="hc-zone hc-timeline" id="hcTimeline"><h4>ไทม์ไลน์ของเคส <small>${c.events.length} รายการ</small>${can('EditTreatment') ? '<button type="button" class="hc-btn is-primary hc-update-btn" data-hc-update-modal>🏥 อัปเดตเคส</button>' : ''}</h4><div data-hc-timeline></div></section>
             </div></div>`;
         document.body.append(modal);
         document.addEventListener('keydown', onKey);
-        modal.addEventListener('click', event => { if (event.target === modal || event.target.closest('[data-hc-close]')) closeDetail(); });
+        modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-hc-close]')) return closeDetail();
+            if (event.target.closest('[data-hc-update-modal]')) return runUpdate(c.id);
+        });
+        // รูปในหน้าต่าง: ซ่อนไว้จนกว่าจะโหลดสำเร็จ (กันกรอบรูปแตก/alt ค้าง) — ที่โหลดไม่ได้ ตัวโหลดเดิมจะเปลี่ยนเป็นข้อความสั้นแทนอยู่แล้ว
+        modal.addEventListener('load', event => { if (event.target?.tagName === 'IMG') event.target.classList.add('hc-loaded'); }, true);
         fillEvidence(modal.querySelector('[data-hc-evidence]'), c);
         fillTimeline(modal.querySelector('[data-hc-timeline]'), c);
         modal.querySelector('.hc-x').focus();
@@ -213,16 +220,72 @@
                 <div class="hc-tl-body">${blank(ev.hospital) ? `<span>${esc(ev.hospital)}</span>` : ''}${blank(ev.symptoms) ? `<span>${esc(ev.symptoms)}</span>` : ''}${blank(ev.notes) ? `<em>${esc(ev.notes)}</em>` : ''}</div>
                 ${amounts.length ? `<div class="hc-tl-amt">${amounts.map(a => `<span class="hc-chip ${a.cls}">${esc(a.label)}: <b>${money(a.value)}</b> ${esc(a.unit)}</span>`).join('')}</div>` : ''}
                 ${(item.edit || item.full || item.del) ? `<div class="hc-tl-act">${item.edit ? '<button type="button" class="hc-btn is-edit" data-act="edit">✏️ แก้ไข</button>' : ''}${item.full ? '<button type="button" class="hc-btn" data-act="full">📝 แก้ไขทุกรายละเอียด</button>' : ''}${item.del ? '<button type="button" class="hc-btn is-del" data-act="del">🗑️ ลบ</button>' : ''}</div>` : ''}</li>`;
-        }).join('') || '<li class="hc-none">ยังไม่มีรายการ</li>'}</ol>${actions.update ? '<button type="button" class="hc-btn is-primary" data-act="update">🏥 อัปเดตผลการรักษา</button>' : ''}`;
+        }).join('') || '<li class="hc-none">ยังไม่มีรายการ</li>'}</ol>`;
         host.addEventListener('click', event => {
             const button = event.target.closest('[data-act]');
             if (!button) return;
             const li = button.closest('li');
-            const target = button.dataset.act === 'update' ? actions.update : items[Number(li?.dataset.i)]?.[{ edit: 'edit', full: 'full', del: 'del' }[button.dataset.act]];
+            const target = items[Number(li?.dataset.i)]?.[{ edit: 'edit', full: 'full', del: 'del' }[button.dataset.act]];
             if (!target || !target.isConnected) return alert('ปุ่มนี้ใช้ไม่ได้ในขณะนี้ กรุณาโหลดประวัติใหม่');
+            if (button.dataset.act === 'edit') return startInlineEdit(target);   // ตารางเดิมซ่อนอยู่ → ย้ายแถวจริงมาแก้ในหน้าต่างที่มองเห็น
             closeDetail();
-            target.click();   // ใช้ปุ่มจริงของตารางเดิม → ระบบแก้ไข/ลบ/อัปเดตเดิมทำงานเหมือนเดิมทุกอย่าง
+            target.click();   // แก้ไขทุกรายละเอียด/ลบ: ใช้ปุ่มจริงของตารางเดิม (เปิดป๊อปอัปเดิม/ยืนยันลบเดิม)
         });
+    }
+
+    // ---------------------------------------------------------------- อัปเดตเคส (ฟอร์มอัปเดตผลการรักษาเดิม populateOutcomeToModal)
+    function runUpdate(caseId) {
+        const c = state.cases.find(x => x.id === String(caseId));
+        if (!c) return;
+        if (typeof window.populateOutcomeToModal !== 'function') return alert('ฟอร์มอัปเดตเคสยังไม่พร้อม กรุณารีเฟรชหน้า');
+        closeDetail();
+        const latest = (typeof latestCaseEvent === 'function' ? latestCaseEvent(c.events) : null) || c.latest;
+        window.populateOutcomeToModal({ ...latest, ...(state.mode === 'filtered' && c.status ? { statusText: c.status } : {}) });
+    }
+
+    // ---------------------------------------------------------------- แก้ไขแบบ inline ในหน้าต่างที่มองเห็น
+    // ระบบเดิมแปลงช่องของ "แถวในตาราง" ให้เป็นช่องกรอกในที่เดิม (populateDataToForm) แต่ตารางเดิมซ่อนอยู่ จึงย้ายแถวจริงมาไว้ในหน้าต่างชั่วคราว
+    // บันทึก/ยกเลิกเรียก cancelInlineRowEdit() เดิม (ตารางเดิมวาดใหม่ทั้งชุด) → ปิดหน้าต่างนี้พร้อมกัน
+    let inline = null;
+    function closeInline(restore) {
+        const current = inline;
+        if (!current) return;
+        inline = null;
+        current.overlay.remove();
+        document.removeEventListener('keydown', onInlineKey);
+        if (restore && typeof originalCancel === 'function') originalCancel();   // ปิดเอง: ให้ตารางเดิมกลับสภาพ (ไม่ค้างโหมดแก้ไข)
+    }
+    const onInlineKey = event => { if (event.key === 'Escape') closeInline(true); };
+    let originalCancel = null;
+    function hookCancel() {
+        if (typeof window.cancelInlineRowEdit !== 'function' || window.cancelInlineRowEdit.__hc) return;
+        originalCancel = window.cancelInlineRowEdit;
+        const patched = function (...args) { closeInline(false); return originalCancel.apply(this, args); };
+        patched.__hc = true;
+        window.cancelInlineRowEdit = patched;
+    }
+    function startInlineEdit(editButton) {
+        const row = editButton.closest('tr');
+        if (!row) return alert('เปิดแถวนี้เพื่อแก้ไขไม่ได้ กรุณาโหลดประวัติใหม่');
+        hookCancel();
+        closeDetail();
+        closeInline(true);
+        const host = document.getElementById('table-box-placeholder') || document.body;   // อยู่ใน placeholder เพื่อใช้สไตล์ช่องกรอกเดิม
+        const overlay = document.createElement('div');
+        overlay.id = 'hcInline';
+        overlay.className = 'hc-modal hc-inline-modal';
+        overlay.innerHTML = `<div class="hc-panel hc-inline-panel" role="dialog" aria-modal="true" aria-label="แก้ไขรายการ">
+            <header class="hc-head"><div><h3>✏️ แก้ไขรายการ <small>แก้ไขแล้วกด "💾 บันทึก" หรือ "ยกเลิก"</small></h3></div><button type="button" class="hc-x" data-hc-inline-close aria-label="ปิด">×</button></header>
+            <div class="hc-body"><table class="hc-inline-table"><tbody></tbody></table></div></div>`;
+        host.append(overlay);
+        row.hidden = false;
+        row.style.display = '';
+        overlay.querySelector('tbody').append(row);   // ย้ายแถวจริง (ปุ่ม/ข้อมูลเดิมครบ) มาไว้ในหน้าต่าง
+        overlay.addEventListener('click', event => { if (event.target === overlay || event.target.closest('[data-hc-inline-close]')) closeInline(true); });
+        document.addEventListener('keydown', onInlineKey);
+        inline = { overlay, row };
+        editButton.click();   // สลับช่องของแถวเป็นช่องกรอก (populateDataToForm เดิม)
+        overlay.querySelector('.inline-edit-field')?.focus();
     }
 
     // ---------------------------------------------------------------- เริ่มทำงาน + ติดตามการวาดตารางเดิมใหม่

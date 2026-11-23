@@ -2832,6 +2832,7 @@ async function loadFilteredAllHistory() {
             `${window.APP_CONFIG.API_BASE_URL}/api/history/all`,
             {
                 method: 'POST',
+                signal: typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(60000) : undefined,   // ไม่ให้ป้าย/ปุ่ม "กำลังโหลด" ค้างไม่รู้จบ
                 gaSilent: true,   // โหลดเฉพาะจุด: ปุ่ม + แถวโครงตาราง แทนป๊อปอัปล็อกทั้งหน้า
                 headers: {
                     'Content-Type':
@@ -2885,8 +2886,9 @@ async function loadFilteredAllHistory() {
         console.error(error);
 
         summary.textContent =
-            error.message ||
-            'เกิดข้อผิดพลาดในการกรองข้อมูล';
+            (error?.name === 'TimeoutError' || error?.name === 'AbortError')
+                ? 'โหลดประวัตินานเกินไป (เกิน 60 วินาที) — ตรวจการเชื่อมต่อแล้วกด "กรองประวัติ" อีกครั้ง'
+                : (error.message || 'เกิดข้อผิดพลาดในการกรองข้อมูล');
 
         reportButton.hidden = true;
         document.getElementById('tableBodyResult')?.replaceChildren();   // เอาแถวโครงตาราง (skeleton) ออกเมื่อโหลดไม่สำเร็จ
@@ -3066,11 +3068,32 @@ function getEvidencePreviewUrl(url, size = 'w320') {
 
 // Private Drive files need the application's authenticated request, not a public thumbnail.
 const evidenceImageBlobs = new Map();
-window.loadEvidenceImage = async function (image, url) {
+// มุมมองกระชับซ่อนตารางเดิมไว้ (display:none) → รูปในตารางเดิมต้องไม่ถูกดึงตอนวาด (เดิมยิงรูปทุกเคสทันที หลายร้อยคำขอ ทำให้ป้าย "กำลังโหลด" ค้างและรูปในหน้าต่างรอคิว)
+// ใช้ IntersectionObserver: รูปที่มองเห็นจริง (เช่น ในหน้าต่างสรุป) เท่านั้นถึงดึง · องค์ประกอบใน display:none ไม่ถูกดึง
+let lazyEvidenceObserver = null;
+function observeEvidenceImage(image, url) {
+    if (!lazyEvidenceObserver) {
+        lazyEvidenceObserver = new IntersectionObserver((entries) => entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            lazyEvidenceObserver.unobserve(entry.target);
+            fetchEvidenceImage(entry.target, entry.target.__evidenceUrl);
+        }), { rootMargin: '120px' });
+    }
+    image.__evidenceUrl = url;
+    lazyEvidenceObserver.observe(image);
+}
+window.loadEvidenceImage = function (image, url) {
     if (!String(url).startsWith(`${window.APP_CONFIG.API_BASE_URL}/api/case-evidence/file/`)) {
         image.src = url;
         return;
     }
+    if (window.__hcLazyEvidence && typeof IntersectionObserver === 'function') {
+        observeEvidenceImage(image, url);
+        return;
+    }
+    return fetchEvidenceImage(image, url);
+};
+async function fetchEvidenceImage(image, url) {
     try {
         if (!evidenceImageBlobs.has(url)) {
             if (evidenceImageBlobs.size >= 60) evidenceImageBlobs.delete(evidenceImageBlobs.keys().next().value);
@@ -3093,7 +3116,7 @@ window.loadEvidenceImage = async function (image, url) {
         image.dataset.loadError = error.message;
         image.dispatchEvent(new Event('error'));
     }
-};
+}
 
 // แยกเอกสารแนบออกเป็นหลักฐานเปิดเคส ใบเสร็จ ใบรับรองแพทย์ และหลักฐานปิดเคส
 //#region parseEvidenceDocuments

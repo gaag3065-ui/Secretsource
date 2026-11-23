@@ -98,6 +98,7 @@ test('ปุ่มแก้ไขในหน้าต่างสรุปเ�
                 const status = (await page.locator('#hcModal .hc-tl li').nth(i).locator('.hc-pill').innerText()).trim();
                 await page.locator('#hcModal .hc-tl li').nth(i).locator('[data-act="edit"]').click();
                 const clicked = await page.evaluate(() => window.__edits.pop());
+                await page.evaluate(() => document.querySelector('#hcInline .inline-edit-cancel')?.click());   // แก้ไขเปิดฟอร์มในหน้าต่างแล้ว → ยกเลิกก่อนทดสอบรายการถัดไป
                 got.push({ status, clicked });
             }
             return got;
