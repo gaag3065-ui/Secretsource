@@ -1160,7 +1160,7 @@
                     <table class="sm-group-table"><thead><tr><th></th><th>ห้องแชท (Monitoring)</th><th>พนักงาน (รหัสส่วนกลาง · ชื่อ)</th></tr></thead><tbody>
                     ${list.map(({ x, i }) => { const p = x.best && people[x.best.key]; return `<tr>
                         <td><input type="checkbox" data-lm-pick="${i}" data-lm-group="${status}" ${on && p ? 'checked' : ''}></td>
-                        <td><div class="sm-lm-room">${x.picture ? `<img src="${esc(x.picture)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<span class="sm-lm-noimg">👤</span>'}<div>
+                        <td><div class="sm-lm-room">${x.picture ? `<img src="${esc(window.GA_LINE_AVATAR ? window.GA_LINE_AVATAR.safe(x.picture) : x.picture)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<span class="sm-lm-noimg">👤</span>'}<div>
                             <b>${esc(roomName(x.room))}</b><small>${esc([x.room.managerName && x.room.customName ? `OA: ${x.room.managerName}` : '', (x.room.customName || x.room.managerName) && x.room.lineName ? `LINE: ${x.room.lineName}` : '', x.room.channelName].filter(Boolean).join(' · '))}</small>
                             ${x.note ? `<small class="sm-lm-note">📝 ${esc(x.note)}</small>` : ''}
                             ${(x.recent || []).map(t => `<small class="sm-lm-msg">💬 ${esc(t)}</small>`).join('')}

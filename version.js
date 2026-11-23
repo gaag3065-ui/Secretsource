@@ -1,5 +1,6 @@
-window.APP_VERSION = '20261116-tl';
+﻿window.APP_VERSION = '20261123-avatar';
 
 console.log(
-    `🚀 Secretsource Version: ${window.APP_VERSION}`
+    `ðŸš€ Secretsource Version: ${window.APP_VERSION}`
 );
+
