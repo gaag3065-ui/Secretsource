@@ -3157,3 +3157,9 @@ tr.has-bill { outline: 2px solid #fb923c; outline-offset: -2px; }
 #table-box-placeholder .bill-flag-files { min-width: 0; max-width: 100%; }
 #table-box-placeholder .bill-flag-files button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 .bill-status-cancel { padding: 6px 14px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; cursor: pointer; font: inherit; }
+
+/* เฟส 2-3: หน้าต่างตีกลับ/ปิดเคส ของ GA */
+.intake-req-list { display: grid; gap: 6px; margin: 8px 0; }
+.intake-req { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; }
+#intakeCloseDialog label, #intakeRequestDocs label { display: grid; gap: 4px; margin-top: 8px; font-size: 13px; }
+#intakeCloseDialog input, #intakeCloseDialog textarea, #intakeRequestDocs input[type=text], #intakeRequestDocs textarea { width: 100%; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 8px; font: inherit; }

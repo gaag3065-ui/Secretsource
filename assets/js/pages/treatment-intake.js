@@ -15,7 +15,7 @@
         if (r.type !== 'medical') return '';
         const list = r.follow_ups || [];
         if (list.length) return `<div class="intake-close-readiness">🔁 เคสต่อเนื่อง ${list.map(x => `#${esc(x.label)} (${x.status === 'billed' ? 'ส่งบิลแล้ว' : x.status === 'cancelled' ? 'ยกเลิก' : 'รอส่งบิลรอบนี้'})`).join(' · ')}</div>`;
-        return ['pending', 'rejected', 'approved'].includes(r.status) ? `<div class="intake-close-readiness"><button type="button" class="intake-end" data-bill-followup="${r.id}" title="แพทย์นัดตรวจต่อเนื่อง — สร้างเคสย่อยให้พนักงานส่งบิลรอบถัดไป เคสหลักยังไม่ปิด">🔁 แพทย์นัดตรวจต่อเนื่อง</button></div>` : '';
+        return r.case_id && ['pending', 'rejected', 'approved'].includes(r.status) ? `<div class="intake-close-readiness"><button type="button" class="intake-end" data-bill-followup="${r.id}" title="แพทย์นัดตรวจต่อเนื่อง — สร้างเคสย่อยให้พนักงานส่งบิลรอบถัดไป เคสหลักยังไม่ปิด">🔁 แพทย์นัดตรวจต่อเนื่อง</button></div>` : '';
     }
     async function addFollowUp(button) {
         const input = prompt('วันที่แพทย์นัดครั้งถัดไป (รูปแบบ ปีค.ศ.-เดือน-วัน เช่น 2026-12-05)'+String.fromCharCode(10)+'เว้นว่างได้ถ้ายังไม่ทราบ', '');
@@ -31,19 +31,113 @@
             await load();
         } catch (error) { alert(error.message); button.disabled = false; }
     }
-    function billReadiness(r) { return billReadinessBase(r) + followUpControl(r); }
+    // ตีกลับ / ขอเอกสารเพิ่มแบบติ๊กเลือกรายการ → พนักงานเห็นแถบเหลืองพร้อมรายการบนหน้าเว็บ
+    function rejectControl(r) {
+        return r.type === 'medical' && ['pending', 'approved', 'partial', 'rejected'].includes(r.status) ? `<div class="intake-close-readiness"><button type="button" class="intake-end" data-bill-reject="${r.id}" title="ติ๊กเลือกเอกสารที่ขาด / ภาพไม่ชัด แล้วแจ้งพนักงานให้ส่งเพิ่มในเคสเดิม">↩️ ตีกลับ / ขอเอกสารเพิ่ม</button>${r.status === 'rejected' && (r.requested_docs || []).length ? ` <small>รอพนักงานส่ง: ${r.requested_docs.map(d => esc(d.label)).join(' · ')}</small>` : ''}</div>` : '';
+    }
+    const REQUEST_PRESETS = [
+        { label: 'ใบเสร็จรับเงิน (ตัวจริง)', field: 'receipt' }, { label: 'ภาพใบเสร็จไม่ชัด — กรุณาถ่ายใหม่ให้เห็นทั้งใบ', field: 'receipt' },
+        { label: 'ใบรับรองแพทย์', field: 'certificate' }, { label: 'ภาพใบรับรองแพทย์ไม่ชัด — กรุณาถ่ายใหม่', field: 'certificate' },
+        { label: 'ใบสั่งยา / รายการยา', field: 'prescription' }, { label: 'ผลตรวจ / ฟิล์ม / ใบนัด', field: 'other_docs' },
+        { label: 'สลิปการโอน', field: 'slip' }, { label: 'ข้อมูลบัญชีรับเงินคืนไม่ถูกต้อง — กรุณาตรวจสอบเลขบัญชี / ชื่อบัญชี', field: '' }
+    ];
+    function openRequestDocs(id) {
+        const r = state.records.find(x => x.id === Number(id));
+        if (!r) return;
+        document.getElementById('intakeRequestDocs')?.remove();
+        const pop = document.createElement('div');
+        pop.id = 'intakeRequestDocs';
+        pop.className = 'intake-alert';
+        pop.innerHTML = `<div class="intake-cancel">
+            <h3>↩️ ตีกลับ / ขอเอกสารเพิ่ม — ${esc(r.fullname)} (บิลเลขที่ ${r.id}${r.case_label ? ` · เคส #${esc(r.case_label)}` : ''})</h3>
+            <p class="intake-meta">ติ๊กรายการที่ต้องการให้พนักงานส่งเพิ่ม — พนักงานจะเห็นแถบเหลืองพร้อมรายการนี้ และอัปโหลดเพิ่มในเคสเดิมได้</p>
+            <div class="intake-req-list">${REQUEST_PRESETS.map((x, i) => `<label class="intake-req"><input type="checkbox" data-req-pick="${i}"> ${esc(x.label)}</label>`).join('')}</div>
+            <label>รายการอื่น (พิมพ์เอง) <input type="text" data-req-custom maxlength="80" placeholder="เช่น สำเนาบัตรประชาชน"></label>
+            <label>หมายเหตุถึงพนักงาน (ถ้ามี) <textarea data-req-note rows="2" maxlength="200"></textarea></label>
+            <p class="ib-msg" data-req-msg></p>
+            <div class="intake-cancel-actions"><button type="button" class="intake-end" data-req-close>ยกเลิก</button><button type="button" class="intake-take" data-req-go>ส่งให้พนักงาน</button></div></div>`;
+        pop.addEventListener('click', async e => {
+            if (e.target === pop || e.target.closest('[data-req-close]')) return pop.remove();
+            const go = e.target.closest('[data-req-go]');
+            if (!go) return;
+            const items = [...pop.querySelectorAll('[data-req-pick]:checked')].map(c => REQUEST_PRESETS[Number(c.dataset.reqPick)]);
+            const custom = pop.querySelector('[data-req-custom]').value.trim();
+            if (custom) items.push({ label: custom, field: '' });
+            const out = pop.querySelector('[data-req-msg]');
+            if (!items.length) { out.textContent = 'กรุณาติ๊กเลือกรายการอย่างน้อย 1 รายการ'; return; }
+            go.disabled = true;
+            try {
+                const res = await window.authFetch(`${API()}/records/${r.id}/request-docs`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, note: pop.querySelector('[data-req-note]').value.trim() }) });
+                const d = await res.json().catch(() => ({}));
+                if (!res.ok || d.success === false) throw new Error(d.message || 'ส่งไม่สำเร็จ');
+                pop.remove();
+                window.showInsuranceToast?.(`ขอเอกสารเพิ่มแล้ว (${items.length} รายการ) — พนักงานเห็นแถบเหลืองบนหน้าเว็บ`, 'success', 5000);
+                await load();
+            } catch (error) { out.textContent = '⚠️ ' + error.message; go.disabled = false; }
+        });
+        document.body.append(pop);
+    }
+    // ปิดเคสบิลค่ารักษา: กรอกยอดที่อนุมัติจริง (+เหตุผลถ้าน้อยกว่าที่ขอ) · Walk-in = เปิดเคสในชีตให้ด้วย
+    function openCloseDialog(r, { walkIn = false, statusText = 'ปิดเคส เอกสารและบัญชีครบถ้วน' } = {}) {
+        document.getElementById('intakeCloseDialog')?.remove();
+        const requested = Number(val(r, 'amount')) || 0;
+        const pop = document.createElement('div');
+        pop.id = 'intakeCloseDialog';
+        pop.className = 'intake-alert';
+        pop.innerHTML = `<div class="intake-cancel">
+            <h3>${walkIn ? '⚡ เปิดเคส + ปิดเคส' : '✅ ปิดเคส'} — ${esc(r.fullname)}</h3>
+            <p class="intake-meta">${walkIn ? 'บิลย้อนหลัง (พนักงานไม่ได้เปิดเคสไว้) · ระบบจะเปิดเคสใหม่ในชีต ลงเอกสาร และปิดเคสในขั้นตอนเดียว' : `เคส #${esc(r.case_label || r.case_id)} · บิลเลขที่ ${r.id}`} · ${esc(val(r, 'hospital') || '-')} · ${esc(String(val(r, 'treat_type') || '').split(' ')[0] || '-')}</p>
+            <label>ยอดที่พนักงานขอเบิก (บาท)<input type="text" value="${esc(money(requested))}" disabled></label>
+            <label>ยอดที่อนุมัติจริง (บาท) <span style="color:#e11d48">*</span><input type="number" step="0.01" min="0" max="${requested}" value="${requested}" data-approved></label>
+            <label data-reason-wrap hidden>เหตุผลที่อนุมัติน้อยกว่าที่ขอ <span style="color:#e11d48">*</span><textarea rows="2" maxlength="300" data-reason placeholder="เช่น ยาบางรายการไม่อยู่ในสิทธิ์ / ค่าห้องเกินสิทธิ์"></textarea></label>
+            ${walkIn ? '<p class="intake-meta">หมายเหตุ: ระบบลงยอดใช้วงเงิน (OPD/IPD) ในชีตเป็น 0 — กรอกยอดตามเงื่อนไขประกันในหน้าอัปเดตเคสเหมือนเคสปกติ</p>' : ''}
+            <p class="ib-msg" data-close-msg></p>
+            <div class="intake-cancel-actions"><button type="button" class="intake-end" data-close-cancel>ยกเลิก</button><button type="button" class="intake-take" data-close-go>${walkIn ? 'เปิดเคสและปิดเคส' : 'ปิดเคส'}</button></div></div>`;
+        const approvedInput = pop.querySelector('[data-approved]');
+        const syncReason = () => { pop.querySelector('[data-reason-wrap]').hidden = !(Number(approvedInput.value) < requested - 0.004); };
+        approvedInput.addEventListener('input', syncReason);
+        pop.addEventListener('click', async e => {
+            if (e.target === pop || e.target.closest('[data-close-cancel]')) return pop.remove();
+            const go = e.target.closest('[data-close-go]');
+            if (!go) return;
+            const out = pop.querySelector('[data-close-msg]');
+            const approved = approvedInput.value.trim();
+            const reason = pop.querySelector('[data-reason]').value.trim();
+            if (approved === '' || !(Number(approved) >= 0)) { out.textContent = 'กรุณากรอกยอดที่อนุมัติ'; return; }
+            if (Number(approved) > requested + 0.004) { out.textContent = 'ยอดอนุมัติมากกว่ายอดที่ขอเบิกไม่ได้'; return; }
+            if (Number(approved) < requested - 0.004 && !reason) { out.textContent = 'กรุณาระบุเหตุผลที่อนุมัติน้อยกว่าที่ขอ'; return; }
+            go.disabled = true;
+            try {
+                if (walkIn) {
+                    const res = await window.authFetch(`${API()}/records/${r.id}/walk-in-close`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ approved_amount: approved, approved_reason: reason }) });
+                    const d = await res.json().catch(() => ({}));
+                    if (!res.ok || d.success === false) { await load(); throw new Error(d.message || 'ไม่สำเร็จ'); }
+                    pop.remove();
+                    window.showInsuranceToast?.(`เปิดเคส #${d.case_id} และปิดเคสแล้ว (เอกสาร ${d.copied || 0} ไฟล์)`, 'success', 6000);
+                    await load();
+                } else {
+                    pop.remove();
+                    await saveBillStatus(null, r, go, statusText, { approved_amount: approved, approved_reason: reason });
+                }
+            } catch (error) { out.textContent = '⚠️ ' + error.message; go.disabled = false; }
+        });
+        document.body.append(pop);
+    }
+    function billReadiness(r) { return billReadinessBase(r) + rejectControl(r) + followUpControl(r); }
     function billReadinessBase(r) {
         const info = r.close_readiness;
         if (info?.closed) return '<div class="intake-close-readiness">บันทึกปิดเคสแล้ว</div>';
         const missing = [...(info?.missing || ['กำลังตรวจเงื่อนไขจากกล่องงาน'])];
+        const walkIn = r.walk_in && !r.case_id;   // ส่งบิลย้อนหลัง (ยังไม่เปิดเคส) → ปุ่มเดียว เปิดเคส + ปิดเคส
+        if (r.status === 'partial') return `<div class="intake-close-readiness">พนักงานส่งเอกสารบางส่วน — รอส่งเพิ่ม${missing.length ? ` · ยังขาด: ${missing.map(esc).join(' · ')}` : ''}</div>`;
+        if (walkIn) return `<div class="intake-close-readiness">🏥 ส่งบิลย้อนหลัง (ยังไม่มีเลขเคส) ${info?.ready && ['pending', 'approved'].includes(r.status) ? `<button type="button" class="intake-take" data-walkin-close="${r.id}">⚡ เปิดเคส + ปิดเคส</button>` : `· ${r.status === 'rejected' ? 'รอพนักงานส่งเอกสารเพิ่ม' : 'ยังขาด: '} ${missing.map(esc).join(' · ')}`}</div>`;
         if (!r.case_id) missing.unshift('เลขเคสที่ผูกกับบิล');
         return `<div class="intake-close-readiness">${info?.ready && !missing.length ? `<button type="button" class="intake-take" data-bill-close="${r.id}">สามารถปิดเคสได้</button>` : `ยังขาด: ${missing.map(esc).join(' · ')}`}</div>`;
     }
     function closeBillFromButton(button) {
         const r = state.records.find(r => String(r.id) === button.dataset.billClose);
         if (!r?.close_readiness?.ready || !r.case_id || button.disabled) return;
-        if (!confirm(`ปิดเคส #${r.case_id} ของ ${r.fullname} และบันทึกเอกสารเข้าเคส?`)) return;
-        return saveBillStatus(button.parentElement, r, button, 'ปิดเคส เอกสารและบัญชีครบถ้วน');
+        return openCloseDialog(r);
     }
     function evidenceGallery(r) {
         return `<div class="intake-evidence-gallery">${r.files.map(f => `<button type="button" class="intake-evidence-tile" data-annual-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">${/^image\//.test(f.mime) ? `<img data-intake-preview="${r.id}/${f.n}" alt="${esc(f.field_label)} ${f.index}" loading="lazy">` : '<span class="intake-file-icon">PDF / ไฟล์แนบ</span>'}<span>${esc(f.field_label)} ${f.index}</span></button>`).join('')}</div>`;
@@ -72,6 +166,14 @@
         panel.innerHTML = `<b>ตรวจเอกสารและข้อมูลจากระบบจัดการองค์กร · ${esc(r.fullname)}</b>${missing.length ? `<p>ยังขาด: ${missing.map(esc).join(' · ')}</p>` : `<p>เอกสารและข้อมูลครบ · เคส #${esc(closeContext.caseId)}</p><label>เลือกสถานะ <select data-intake-final-status>${choices.map(value => `<option value="${value}"${value === selected ? ' selected' : ''}>${value}</option>`).join('')}</select></label><button type="button" class="intake-take" data-intake-close-ready>บันทึกสถานะ</button>`}`;
     }
     document.addEventListener('click', async event => {
+        const rejectBtn = event.target.closest('[data-bill-reject]');
+        if (rejectBtn) { event.stopPropagation(); return openRequestDocs(rejectBtn.dataset.billReject); }
+        const walkInBtn = event.target.closest('[data-walkin-close]');
+        if (walkInBtn) {
+            event.stopPropagation();
+            const wr = state.records.find(x => String(x.id) === walkInBtn.dataset.walkinClose);
+            return wr && openCloseDialog(wr, { walkIn: true });
+        }
         const followUp = event.target.closest('[data-bill-followup]');
         if (followUp) { event.stopPropagation(); return addFollowUp(followUp); }
         const billClose = event.target.closest('[data-bill-close]');
@@ -231,8 +333,8 @@
                     <span class="bill-item-badge">${list.length}</span>
                     <b>${esc(list[0].fullname)}</b>
                     <small>${esc(list[0].company || '')} · ${esc(list[0].insurance_code || list[0].employee_id || '')}</small>
-                    <span class="bill-item-cases">${list.map(r => `เคส #${esc(r.case_label || r.case_id)} · ${esc(String(val(r, 'treat_type') || '').split(' ')[0] || '-')} · ${esc(money(val(r, 'amount')))} ฿`).join('<br>')}</span>
-                </button><div class="bill-item-actions">${list.map(r => `<div>${billReadiness(r)}<button type="button" class="bill-status-cancel" data-cancel-open="${r.id}">ยกเลิกบิลเคส #${esc(r.case_id)}</button></div>`).join('')}</div></div>`).join('')}</div>`;
+                    <span class="bill-item-cases">${list.map(r => `${r.case_id ? `เคส #${esc(r.case_label || r.case_id)}` : 'ส่งบิลย้อนหลัง (ยังไม่มีเลขเคส)'} · ${esc(String(val(r, 'treat_type') || '').split(' ')[0] || '-')} · ${esc(money(val(r, 'amount')))} ฿`).join('<br>')}</span>
+                </button><div class="bill-item-actions">${list.map(r => `<div>${billReadiness(r)}<button type="button" class="bill-status-cancel" data-cancel-open="${r.id}">ยกเลิกบิล${r.case_id ? ` เคส #${esc(r.case_label || r.case_id)}` : ' (ยังไม่มีเลขเคส)'}</button></div>`).join('')}</div></div>`).join('')}</div>`;
         markCards();
     }
     // ที่ห่อกระดานบนกล่องประวัติ: ตรวจสุขภาพ (บน) + บิลรอปิดเคส (ล่าง)
@@ -461,13 +563,15 @@
             <span><button type="button" class="intake-take" data-bill-go>บันทึก</button><button type="button" class="bill-status-cancel" data-bill-cancel>ยกเลิก</button></span>`;
         flag.append(pop);
     }
-    async function saveBillStatus(flag, r, button, forcedStatus) {
+    async function saveBillStatus(flag, r, button, forcedStatus, extra) {
         if (button.disabled) return;
         const statusText = forcedStatus || flag.querySelector('[data-bill-select]')?.value || '';
+        // เลือกสถานะ "ปิดเคส…" → ต้องผ่านหน้าต่างกรอกยอดที่อนุมัติจริงก่อน
+        if (!extra && r.type === 'medical' && /^ปิดเคส/.test(statusText)) return openCloseDialog(r, { statusText });
         button.disabled = true; button.textContent = '⏳ กำลังบันทึก…';
         let data;
         try {
-            const res = await window.authFetch(`${API()}/records/${r.id}/step`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: 'insurance', status_text: statusText }) });
+            const res = await window.authFetch(`${API()}/records/${r.id}/step`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: 'insurance', status_text: statusText, ...(extra || {}) }) });
             data = await res.json();
             if (!res.ok || data.success === false) throw new Error(data.message || 'บันทึกไม่สำเร็จ');
         } catch (error) {
@@ -556,7 +660,7 @@
         const list = pending().sort((a, b) => (b.urgent - a.urgent) || a.id - b.id);
         const urgent = list.filter(r => r.urgent).length;
         const count = document.getElementById('intakeCount');
-        const billWait = state.records.filter(r => r.type === 'medical' && ['pending', 'rejected', 'approved'].includes(r.status)).length;
+        const billWait = state.records.filter(r => r.type === 'medical' && ['pending', 'rejected', 'approved', 'partial'].includes(r.status)).length;
         count.textContent = [list.length ? `รอรับเคส ${list.length}` : '', urgent ? `ด่วน ${urgent}` : '', billWait ? `บิลรอปิดเคส ${billWait}` : ''].filter(Boolean).join(' · ') || 'ไม่มีเรื่องค้าง';
         count.className = `intake-count${urgent ? ' is-urgent' : list.length || billWait ? ' is-wait' : ''}`;
         const backfill = box.querySelector('[data-bill-backfill]');
@@ -569,7 +673,7 @@
         // เปิดเคสแล้ว (ยังไม่ส่งบิล) → GA เลือกสถานะแจ้งกลับให้พนักงาน
         const recent = state.records.filter(r => r.type !== 'medical' && r.case_id && !['billed', 'deleted', 'waiting', 'insurance', 'refunded', 'done', 'cancelled'].includes(r.status)).slice(0, 15);
         // บิลค่ารักษาที่พนักงานส่งจากเคส → GA บันทึกลงเคส แล้วกด "ปิดเคสแล้ว"
-        const bills = state.records.filter(r => r.type === 'medical' && ['pending', 'rejected', 'approved'].includes(r.status)).slice(0, 30);
+        const bills = state.records.filter(r => r.type === 'medical' && ['pending', 'rejected', 'approved', 'partial'].includes(r.status)).slice(0, 30);
         document.getElementById('intakeList').innerHTML = (list.length ? `<table class="intake-table">
             <thead><tr><th>ประเภท</th><th>พนักงาน</th><th>วันที่</th><th>โรงพยาบาล / อาการ</th><th class="num">ยอด (฿)</th><th>ติดต่อ</th><th>เอกสาร</th><th>แจ้งเมื่อ</th><th></th></tr></thead>
             <tbody>${list.map(r => {

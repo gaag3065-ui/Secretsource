@@ -144,7 +144,7 @@
             node.hidden = !n;
             node.textContent = n;
         });
-        const total = unread().length + gaNotes().length;
+        const total = unread().length + gaNotes().length + needDocsList().length;
         $('gdBellCount').hidden = !total;
         $('gdBellCount').textContent = total > 99 ? '99+' : total;
     }
@@ -152,7 +152,8 @@
     const seenKey = () => `gdSeenNotes:${state.session?.employee?.ID || ''}`;
     const seenNotes = () => { try { return new Set(JSON.parse(localStorage.getItem(seenKey()) || '[]')); } catch { return new Set(); } };
     const noteId = r => `${r.id}|${r.handled_at || ''}`;
-    const gaNotes = () => { const seen = seenNotes(); return (state.mine || []).filter(r => r.admin_note && r.handled_at && !(r.status === 'cancelled' && r.fields?.__cancelBy === 'employee') && !seen.has(noteId(r))); };
+    const needDocsList = () => (state.mine || []).filter(r => ['rejected', 'partial'].includes(r.status) && r.type !== 'treatment');
+    const gaNotes = () => { const seen = seenNotes(); return (state.mine || []).filter(r => r.admin_note && r.handled_at && !(r.status === 'cancelled' && r.fields?.__cancelBy === 'employee') && !['rejected', 'partial'].includes(r.status) && !(r.type === 'treatment' && r.status === 'billed') && !(r.closed_at_stage && /^เปิดเคสประกันแล้ว/.test(r.admin_note)) && !seen.has(noteId(r))); };
     function markNoteSeen(id) {
         const seen = seenNotes(); seen.add(id);
         try { localStorage.setItem(seenKey(), JSON.stringify([...seen].slice(-300))); } catch { /* ไม่เป็นไร */ }
@@ -162,11 +163,17 @@
         const list = unread();
         const notes = gaNotes();
         const box = $('gdAlerts');
-        const total = list.length + notes.length;
+        const needs = needDocsList();
+        const total = list.length + notes.length + needs.length;
         box.classList.toggle('is-empty', !total);
         const groups = new Map();
         list.forEach(t => { if (!groups.has(t.box)) groups.set(t.box, []); groups.get(t.box).push(t); });
         box.innerHTML = `<h3>🔔 แจ้งเตือนสำหรับคุณ ${total ? `<span class="gd-count">${total}</span>` : ''}</h3>`
+            + needs.map(r => `<button type="button" class="gd-alert is-need-docs" data-need-docs="${r.id}">
+                    <span>⚠️</span>
+                    <span><b>${esc(r.type_title)}${r.case_label ? ` · เคส #${esc(r.case_label)}` : ''} — ${r.status === 'partial' ? 'ส่งเอกสารไม่ครบ' : 'GA ขอเอกสารเพิ่ม'}</b><small>${esc([...new Set([...(r.requested_docs || []).map(d => d.label), ...(r.missing_docs || [])])].join(' · ') || r.admin_note || 'กดเพื่อดูรายการที่ต้องส่งเพิ่ม')}</small></span>
+                    <span class="gd-tag is-new">ต้องส่งเพิ่ม</span>
+                </button>`).join('')
             + notes.map(r => `<button type="button" class="gd-alert is-ga-note" data-ga-note="${esc(noteId(r))}">
                     <span>📣</span>
                     <span><b>${esc(r.type_title)}${r.case_id ? ` · เคส #${esc(r.case_id)}` : ''}</b><small>GA: ${esc(r.admin_note)}</small></span>
@@ -179,7 +186,7 @@
                     <span><b>${esc(items[0].box_title || info.title)}</b><small>${esc(items.map(t => t.title).join(' · '))}</small></span>
                     <span class="gd-count">${items.length}</span>
                 </button>`;
-            }).join('') : notes.length ? '' : '<p class="gd-empty">ไม่มีงานแจ้งเตือน ✓</p>');
+            }).join('') : (notes.length || needs.length) ? '' : '<p class="gd-empty">ไม่มีงานแจ้งเตือน ✓</p>');
     }
     // หน้ารวมงานในกล่อง (กล่องที่สร้างเอง / ข่าวและภารกิจ)
     function tasksHtml(tasks) {
@@ -341,6 +348,13 @@
     }
     // สถานะที่ GA เลือกแจ้ง (หน้างานประกัน) แทนป้าย "รับเรื่องแล้ว" — ไม่ใช้ข้อความอัตโนมัติตอนเปิดเคส
     const gaStatus = r => (r.case_id && ['received', 'waiting'].includes(r.status) && r.admin_note && !/^เปิดเคสประกันแล้ว/.test(r.admin_note)) ? r.admin_note : '';
+    // สรุปยอดเบิก: เติมวงเงินคงเหลือล่าสุด (OPD / IPD) ลงในการ์ดที่ปิดเคสแล้ว
+    function fillSettleLimits() {
+        document.querySelectorAll('[data-settle-limit]').forEach(el => {
+            const info = state.limits?.[el.dataset.settleLimit];
+            el.textContent = info && info.balance !== null && info.balance !== undefined ? `${money(info.balance)} บาท (จาก ${money(info.limit)})` : 'ยังไม่ทราบ — ดูที่ส่วนวงเงิน';
+        });
+    }
     let caseHistorySequence = 0;
     let caseHistorySignature = '';
     // เคสที่ GA เปิดตรงในหน้าประกัน (ไม่มีรายการแจ้งเข้ารักษาในระบบนี้) → พนักงานบันทึกค่ารักษาได้จากเคสนั้นเลย
@@ -369,6 +383,8 @@
             if (sequence !== caseHistorySequence || state.session?.token !== token) return;
             if (!summary) { box.innerHTML = '<p class="gd-empty">ยังไม่พบข้อมูลประกันของคุณ กรุณาติดต่อ GA</p>'; caseHistorySignature = 'unavailable'; return; }
             const cases = summary?.cases || [];
+            state.limits = { opd: summary.opd, ipd: summary.ipd, other: summary.other };
+            fillSettleLimits();
             const signature = JSON.stringify(cases);
             if (silent && signature === caseHistorySignature) return;
             const opened = new Set([...box.querySelectorAll('details[open]')].map(el => el.dataset.insuranceCase));
@@ -404,17 +420,23 @@
                 const form = state.config.forms.find(f => f.key === r.type);
                 const fileFields = (form?.fields || []).filter(f => f.type === 'files');
                 // GA ขอเอกสารเพิ่ม → แนบไฟล์เพิ่มในรายการเดิม แล้วส่งกลับให้ตรวจ
-                const more = r.status === 'rejected' && fileFields.length ? `<div class="gd-more" data-more="${r.id}">
+                const askedFields = new Set([...(r.requested_docs || []).map(d => d.field).filter(Boolean), ...fileFields.filter(f => (r.missing_docs || []).includes(f.label)).map(f => f.name)]);
+                const orderedFields = [...fileFields.filter(f => askedFields.has(f.name)), ...fileFields.filter(f => !askedFields.has(f.name))];
+                const needItems = [...new Set([...(r.requested_docs || []).map(d => d.label), ...(r.missing_docs || [])])];
+                const needBanner = ['rejected', 'partial'].includes(r.status) ? `<div class="gd-need-docs">⚠️ <b>${r.status === 'partial' ? 'ยังส่งเอกสารไม่ครบ — ต้องส่งเพิ่ม' : 'GA ขอเอกสารเพิ่ม — ต้องส่งเพิ่ม'}</b>${needItems.length ? `<ul>${needItems.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : (r.admin_note ? `<p>${esc(r.admin_note)}</p>` : '')}<small>เลือกหัวข้อเอกสารด้านล่าง แนบไฟล์ แล้วกด "${r.status === 'partial' ? 'ส่งเอกสารครบแล้ว — ให้ GA ตรวจ' : 'ส่งกลับให้ GA ตรวจ'}" (ใช้เคสเดิม ไม่ต้องเริ่มใหม่)</small></div>` : '';
+                const settle = r.type === 'medical' && r.settlement ? `<div class="gd-settle"><b>📊 สรุปยอดเบิก</b> ขอเบิก <b>${money(r.settlement.requested)}</b> บาท · อนุมัติจริง <b>${money(r.settlement.approved)}</b> บาท${r.settlement.approved < r.settlement.requested ? ` · ส่วนต่าง <b class="gd-settle-diff">${money(r.settlement.requested - r.settlement.approved)}</b> บาท${r.settlement.reason ? ` (${esc(r.settlement.reason)})` : ''}` : ''} · วงเงิน${/^IPD/.test(String(r.fields?.treat_type || '')) ? ' IPD' : ' OPD'}คงเหลือ <b data-settle-limit="${/^IPD/.test(String(r.fields?.treat_type || '')) ? 'ipd' : 'opd'}">กำลังโหลด…</b></div>` : '';
+                const more = ['rejected', 'partial'].includes(r.status) && fileFields.length ? `<div class="gd-more" data-more="${r.id}">
                     <b>＋ ส่งเอกสารเพิ่ม</b>
-                    <select data-more-field>${fileFields.map(f => `<option value="${esc(f.name)}">${esc(f.label)}</option>`).join('')}</select>
+                    <select data-more-field>${orderedFields.map(f => `<option value="${esc(f.name)}">${esc(f.label)}${askedFields.has(f.name) ? ' (ต้องส่ง)' : ''}</option>`).join('')}</select>
                     <label class="gd-pick">＋ เลือกรูป / PDF<input type="file" accept="image/*,application/pdf" multiple data-more-files></label>
                     <small data-more-msg></small>
-                    <button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-resubmit="${r.id}">ส่งกลับให้ GA ตรวจ</button>
+                    <button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-resubmit="${r.id}">${r.status === 'partial' ? 'ส่งเอกสารครบแล้ว — ให้ GA ตรวจ' : 'ส่งกลับให้ GA ตรวจ'}</button>
                 </div>` : '';
-                return `<div class="gd-item">
+                return `<div class="gd-item" data-rec="${r.id}">
                     <span class="gd-item-icon">${esc(icon(r.type))}</span>
                     <div><b>${esc(r.type_title)}${r.case_label ? ` · เคส #${esc(r.case_label)}` : ''}</b><small>เลขที่ ${r.id} · ส่งเมื่อ ${esc(when(r.submitted_at))} · ไฟล์แนบ ${r.files.length - slips.length}</small>
-                        ${r.admin_note ? `<span class="gd-note">GA: ${esc(r.admin_note)}</span>` : ''}
+                        ${needBanner}${settle}
+                        ${r.admin_note && !needBanner ? `<span class="gd-note">GA: ${esc(r.admin_note)}</span>` : ''}
                         ${r.type === 'treatment' && !['billed', 'deleted', 'rejected', 'cancelled'].includes(r.status) ? (r.case_id ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm gd-bill" data-bill-from="${r.id}">📤 รักษาเสร็จ / ส่งบิล (เคส #${esc(r.case_label || r.case_id)})</button>` : '<span class="gd-pill is-pending">รอ GA เปิดเคสก่อน จึงบันทึกค่ารักษาได้</span>') : ''}
                         ${r.type === 'treatment' && ['pending', 'received', 'waiting'].includes(r.status) ? `<button type="button" class="gd-btn gd-btn-sm gd-btn-danger" data-cancel-case="${r.id}">🚫 ยกเลิกเคส</button>` : ''}
                         ${r.type === 'medical' && (r.follow_ups || []).length ? `<span class="gd-note">🔁 เคสต่อเนื่อง: ${r.follow_ups.map(f => `#${esc(f.label)} (${f.status === 'billed' ? 'ส่งบิลแล้ว' : f.status === 'cancelled' ? 'ยกเลิก' : 'รอส่งบิลรอบนี้'})`).join(' · ')} — เคสหลักยังไม่ปิดจนนัดครั้งสุดท้ายเสร็จ</span>` : ''}
@@ -426,9 +448,11 @@
             };
             const activeRecords = shownRecords.filter(r => !finished(r)), doneRecords = shownRecords.filter(finished);
             const wasOpen = box.querySelector('details.gd-finished')?.open;
+            const afterRender = () => fillSettleLimits();
             box.innerHTML = shownRecords.length ? (activeRecords.map(itemHtml).join('') || '<p class="gd-empty">ไม่มีรายการที่กำลังดำเนินการ ✓</p>')
                 + (doneRecords.length ? `<details class="gd-finished"${wasOpen ? ' open' : ''}><summary>✅ ประวัติที่เสร็จสิ้น / ยกเลิก (${doneRecords.length})</summary>${doneRecords.map(itemHtml).join('')}</details>` : '')
                 : '<p class="gd-empty">ยังไม่มีรายการที่ส่ง</p>';
+            afterRender();
         } catch (error) { box.innerHTML = `<p class="gd-empty">${esc(error.message)}</p>`; }
     }
 
@@ -514,6 +538,17 @@
             refreshVisibility();
             return;
         }
+        const walkInBtn = event.target.closest('[data-walk-in]');
+        if (walkInBtn) {
+            openForm('medical');
+            state.billFrom = null;
+            state.billInsurance = null;
+            state.walkIn = true;
+            $('gdInfo').insertAdjacentHTML('afterbegin', '<div class="gd-bill-case">🏥 <b>ส่งบิลย้อนหลัง (ไม่ได้แจ้งเปิดเคสไว้ก่อน)</b><small>กรอกข้อมูลการรักษาและแนบใบเสร็จ / ใบรับรองแพทย์ — GA จะเปิดเคสและปิดเคสให้ในขั้นตอนเดียว · ถ้ายังมีเอกสารไม่ครบกดปุ่ม "บันทึกเท่าที่มี" ได้</small></div>');
+            return;
+        }
+        const needJump = event.target.closest('[data-need-docs]');
+        if (needJump) { document.querySelector(`[data-rec="${CSS.escape(needJump.dataset.needDocs)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
         const cancelOpen = event.target.closest('[data-cancel-case]');
         if (cancelOpen) {
             const host = cancelOpen.closest('.gd-item');
@@ -590,6 +625,9 @@
                 <p class="gd-limit-foot">ทันตกรรม / ทำฟัน หักจากวงเงิน OPD เท่านั้น · ค่ารักษาไม่เกิน 3,000 บาท สำรองจ่ายเองแล้วเบิกคืน</p></section>
             ${casesHtml}
             <section class="gd-care-section"><h3>📋 ประวัติการรักษา (${summary.cases.length} ครั้ง)</h3>${history}</section>
+            <section class="gd-care-section gd-walkin"><h3>🏥 ไปรักษามาแล้วแต่ไม่ได้แจ้งเปิดเคสไว้ (ฉุกเฉิน / ลืมแจ้ง)</h3>
+                <p>ส่งบิลย้อนหลังได้เลย GA จะเปิดเคสและตรวจสอบให้ในขั้นตอนเดียว</p>
+                <button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-walk-in>📤 ส่งบิลย้อนหลัง</button></section>
             <h3 class="gd-care-open">＋ แจ้งเปิดเคสก่อนไปรักษา</h3>`;
     }
     async function openCareDoc(ref) {
@@ -616,6 +654,7 @@
     function openForm(key) {
         const form = menuItems().find(f => f.key === key);
         if (!form) return;
+        state.walkIn = false;
         if (key !== 'medical') { state.billFrom = null; state.billInsurance = null; }
         if (form.link) { location.href = form.link; return; }
         if (form.concept || form.box) return openBox(key);
@@ -643,6 +682,7 @@
         $('gdProgress').hidden = true;
         state.editing = null;
         document.querySelector('.gd-submit').textContent = 'ส่งข้อมูล';
+        { const showPartial = key === 'medical' && !mustAck; const pb = document.querySelector('.gd-submit-partial'); if (pb) pb.hidden = !showPartial; const ph = $('gdPartialHint'); if (ph) ph.hidden = !showPartial; }
         const own = form.single ? ownSingle(key) : null;
         if (own && !mustAck) enterEdit(form, own);
         show('gdForm');
@@ -858,16 +898,18 @@
         }
     });
 
-    async function submit(button) {
+    async function submit(button, partial = false) {
         if (state.editing) return submitEdit(button);
         const form = state.form;
         const v = values();
         // ตรวจเบื้องต้นที่หน้าเว็บ (หลังบ้านตรวจซ้ำอีกรอบ)
         for (const f of form.fields) {
             if (!f.required || !isVisible(f, v)) continue;
+            if (partial && f.type === 'files') continue;   // บันทึกเท่าที่มี: ไฟล์ยังไม่ครบได้ (ข้อมูลในฟอร์มยังต้องครบ)
             if (f.type === 'files' ? !state.files[f.name].length : !v[f.name]) return msg($('gdFormMsg'), `กรุณา${f.type === 'files' ? 'แนบ' : 'กรอก'} "${f.label}"`, 'bad');
         }
         const uploads = form.fields.filter(f => f.type === 'files' && isVisible(f, v)).flatMap(f => state.files[f.name].map(item => ({ field: f.name, file: item.file })));
+        if (partial && !uploads.length) return msg($('gdFormMsg'), 'กรุณาแนบไฟล์อย่างน้อย 1 ไฟล์ก่อนบันทึกเท่าที่มี', 'bad');
         if (form.atLeastOne && !uploads.length && !Object.values(v).some(Boolean)) return msg($('gdFormMsg'), 'กรุณากรอกข้อมูลอย่างน้อย 1 ช่อง', 'bad');
         button.disabled = true;
         const bar = $('gdProgress');
@@ -885,12 +927,16 @@
             }
             msg($('gdFormMsg'), 'กำลังยืนยันการส่ง…');
             step(95);
-            await call('/finalize', { id, from_case: fromCase || undefined, from_insurance_case: form.key === 'medical' && !fromCase ? state.billInsurance || undefined : undefined });
+            const walkIn = form.key === 'medical' && !fromCase && !state.billInsurance && state.walkIn;
+            await call('/finalize', { id, from_case: fromCase || undefined, from_insurance_case: form.key === 'medical' && !fromCase ? state.billInsurance || undefined : undefined, partial: partial || undefined, walk_in: walkIn || undefined });
             state.billFrom = null;
             state.billInsurance = null;
+            state.walkIn = false;
             loadCaseHistory(true);
             loadMine();
-            $('gdDoneText').textContent = `${form.title} · เลขที่ ${id} — GA จะตรวจสอบและอัปเดตสถานะในหน้า "รายการที่ฉันส่ง"`;
+            $('gdDoneText').textContent = partial
+                ? `${form.title} · เลขที่ ${id} — บันทึกเท่าที่มีแล้ว (สถานะ "ส่งเอกสารบางส่วน") กลับมาแนบเอกสารที่เหลือได้ที่ "รายการที่ฉันส่ง" แล้วกด "ส่งกลับให้ GA ตรวจ"`
+                : `${form.title} · เลขที่ ${id} — GA จะตรวจสอบและอัปเดตสถานะในหน้า "รายการที่ฉันส่ง"`;
             show('gdDone');
             window.scrollTo(0, 0);
         } catch (error) {
@@ -992,6 +1038,7 @@
         else if (action === 'reload-mine') { loadMine(); loadCaseHistory(); }
         else if (action === 'reload-cases') loadCaseHistory();
         else if (action === 'submit') submit(button);
+        else if (action === 'submit-partial') submit(button, true);
     });
 
     // เปิดหน้าใหม่: ใช้เซสชันเดิมถ้ายังอยู่ · แจ้งถ้าระบบปิดรับ — ระหว่างนี้แสดงหน้าจอโหลด (gd-booting) แล้วค่อยเปิดหน้าที่ถูกต้องหน้าเดียว

@@ -126,6 +126,8 @@
             <div id="gdInfo"></div>
             <form id="gdFields" novalidate></form>
             <button type="button" class="gd-btn gd-btn-primary gd-submit" data-action="submit">ส่งข้อมูล</button>
+            <button type="button" class="gd-btn gd-submit-partial" data-action="submit-partial" hidden>💾 บันทึกเท่าที่มี (ส่งบางส่วน)</button>
+            <p class="gd-partial-hint" id="gdPartialHint" hidden>มีใบเสร็จแล้วแต่ใบรับรองแพทย์ยังไม่ได้ — กดบันทึกเท่าที่มีก่อน แล้วกลับมาแนบเพิ่มได้ที่ "รายการที่ฉันส่ง" (GA จะเริ่มตรวจเมื่อคุณส่งครบ)</p>
             <div id="gdProgress" class="gd-progress" hidden><i></i></div>
             <p id="gdFormMsg" class="gd-msg" role="status"></p>
         </main>
