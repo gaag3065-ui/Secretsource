@@ -1,9 +1,10 @@
 /* ประวัติการรักษา — ตารางกระชับ (1 แถว = 1 เคส) + หน้าต่างสรุปเคส · ใช้คู่กับ assets/js/pages/history-compact.js */
 .history-table-shell.hc-legacy { display: none !important; }   /* ตารางเดิมยังทำงานเบื้องหลัง (แก้ไข/ลบ/อัปเดตผล) แต่ไม่แสดง */
 .hc-root { --hc-ink: #1f2937; --hc-muted: #6b7280; --hc-line: #e5e7eb; --hc-bg: #f8fafc; --hc-accent: #0d6efd; margin: 8px 0 18px; color: var(--hc-ink); font-size: 13px; }
-.hc-scroll { border: 1px solid var(--hc-line); border-radius: 12px; background: #fff; overflow: auto; max-height: min(72vh, 900px); }
+/* ไม่มี max-height / แถบเลื่อนแนวตั้งซ้อนในกรอบ — ตารางกางเต็มตามจำนวนแถวแล้วเลื่อนด้วยหน้าเว็บหลัก · เหลือแถบเลื่อนแนวนอนเฉพาะเมื่อกรอบแคบกว่าตาราง */
+.hc-scroll { border: 1px solid var(--hc-line); border-radius: 12px; background: #fff; overflow-x: auto; overflow-y: visible; }
 .hc-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: auto; }
-.hc-table thead th { position: sticky; top: 0; z-index: 2; background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 700; text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--hc-line); white-space: nowrap; }
+.hc-table thead th { position: static; background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 700; text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--hc-line); white-space: nowrap; }
 .hc-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; line-height: 1.35; }
 .hc-row { cursor: pointer; transition: background .12s; }
 .hc-row:hover, .hc-row:focus-visible { background: #f5f9ff; outline: none; }

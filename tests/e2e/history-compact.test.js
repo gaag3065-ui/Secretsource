@@ -147,3 +147,22 @@ test('โหมดกรอง: ป้ายสถานะของเคสต
         assert.deepEqual(s.problems, []);
     } finally { await s?.context.close(); s?.server.close(); await browser.close(); }
 });
+
+// ตารางต้องไม่มีแถบเลื่อนแนวตั้งซ้อนในกรอบ: กางเต็มตามจำนวนแถว แล้วเลื่อนด้วยหน้าเว็บหลัก
+test('ตารางประวัติกระชับไม่มีแถบเลื่อนแนวตั้งซ้อน (กางเต็มความสูง) ทั้งคอมพิวเตอร์และมือถือ', { skip }, async () => {
+    for (const size of [{ width: 1440, height: 700 }, { width: 390, height: 700, mobile: true }]) {
+        const browser = await chromium.launch({ executablePath: EDGE, headless: true });
+        let s;
+        try {
+            s = await open(browser, size);
+            const many = [];
+            for (let id = 4000; id > 3980; id--) many.push(ev(id, { symptoms: `อาการ ${id}` }));
+            await s.page.evaluate(h => { window.historyDisplayMode = 'individual'; window.renderHistoryTable(h); }, many);
+            await s.page.waitForFunction(() => document.querySelectorAll('#hcBody tr.hc-row').length === 20);
+            const m = await s.page.evaluate(() => { const box = document.querySelector('.hc-scroll'); const cs = getComputedStyle(box); return { maxHeight: cs.maxHeight, overflowY: cs.overflowY, scrollable: box.scrollHeight > box.clientHeight + 1, boxH: Math.round(box.getBoundingClientRect().height), viewH: innerHeight }; });
+            assert.equal(m.maxHeight, 'none', `ต้องไม่จำกัดความสูง (${JSON.stringify(m)})`);
+            assert.equal(m.scrollable, false, `กรอบต้องไม่มีแถบเลื่อนแนวตั้ง (${JSON.stringify(m)})`);
+            assert.ok(m.boxH > m.viewH, `20 แถวต้องสูงกว่าจอ (เลื่อนด้วยหน้าหลัก): ${JSON.stringify(m)}`);
+        } finally { await s?.context.close(); s?.server.close(); await browser.close(); }
+    }
+});
