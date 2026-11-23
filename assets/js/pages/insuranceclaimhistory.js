@@ -282,7 +282,7 @@ function renderHistoryTable(historyData) {
         const timelines = groupedCases[caseId];
         
         // แถวหน้าด่านยึดข้อมูลอัปเดตสถานะล่าสุด (ตัวสุดท้ายของอาร์เรย์) เสมอ
-        const latestEvent = timelines[timelines.length - 1]; 
+        const latestEvent = (typeof latestCaseEvent === 'function' ? latestCaseEvent(timelines) : null) || timelines[timelines.length - 1]; 
         
         // 🎯 ปรับปรุงใหม่: ล็อกความสามารถให้ทุกเคส ID สามารถคลิกเปลี่ยนสไลด์เปิด-ปิดได้เหมือนกันทั้งหมด 100%
         const hasMultipleEvents = timelines.length > 1;
@@ -2854,6 +2854,7 @@ async function loadFilteredAllHistory() {
             data.history || [];
         window.currentCaseDocuments = data.caseDocuments || {};
         window.currentCaseTreatmentEvents = data.caseTreatmentEvents || {};
+        window.currentCaseLatest = data.caseLatest || {};   // สถานะล่าสุดของเคส (ตัวเดียวกับที่ตัวกรอง "ผลการรักษา" ใช้)
 
         applyHistoryFilterOptions(data);
 
@@ -3411,7 +3412,7 @@ function createEvidenceDocumentsCell(
         if (!documentItem.url) {
             const empty = document.createElement('div');
             empty.className = 'history-evidence-empty';
-            empty.textContent = 'ไม่มีรูป';
+            empty.textContent = 'ไม่มีไฟล์';
             section.appendChild(empty);
         } else {
             const previewButton =
@@ -3781,6 +3782,9 @@ function renderFlatHistoryTable(history) {
             createCaseMoneyCell(events),
             parentRow.lastElementChild
         );
+        // ป้าย "ขั้นตอนการรักษา" ของการ์ด = สถานะล่าสุดของเคส (ไม่ใช่สถานะของแถวที่บังเอิญผ่านตัวกรอง) — ให้ตรงกับหัวรอบและตัวกรองเสมอ
+        const caseLatestInfo = window.currentCaseLatest?.[caseId];
+        if (caseLatestInfo?.statusText) { const statusCell = parentRow.querySelector('td[data-label="ขั้นตอนการรักษา"]'); if (statusCell) statusCell.textContent = caseLatestInfo.statusText; }
         highlightHistoryStep(parentRow);
 
         fragment.appendChild(parentRow);

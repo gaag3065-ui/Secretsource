@@ -50,7 +50,7 @@ function normalizeContinuityCases(history) {
     });
 
     return [...grouped.entries()].map(([caseId, events]) => {
-        const latest = events[events.length - 1] || {};
+        const latest = (typeof latestCaseEvent === 'function' ? latestCaseEvent(events) : null) || events[events.length - 1] || {};
         const statusText = latest.statusText || latest.Status || 'รอดำเนินการ';
         const category = continuityStatusCategory(statusText);
         return {

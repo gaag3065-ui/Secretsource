@@ -520,12 +520,18 @@
     // ป้ายบนการ์ดเคสในประวัติ: "🧾 พนักงานส่งบิลแล้ว" + เอกสาร + ปุ่มปิดเคสแล้ว
     function markCards() {
         document.querySelectorAll('.bill-flag').forEach(n => n.remove());
-        document.querySelectorAll('#tableBodyResult tr.has-bill').forEach(n => n.classList.remove('has-bill'));
+        document.querySelectorAll('#tableBodyResult tr.has-bill, #hcBody tr.has-bill').forEach(n => n.classList.remove('has-bill'));
+        document.querySelectorAll('#hcBody .hc-flags-row').forEach(n => { n.hidden = true; });
         const cells = [...document.querySelectorAll('#tableBodyResult .txt-case-id')];
+        const hcRows = [...document.querySelectorAll('#hcBody tr.hc-row')];
         lastBills.forEach(r => {
+            // มุมมองกระชับ (history-compact.js): ป้ายบิลอยู่ในแถวเสริมใต้แถวเคส · ไม่มี → ใช้ตารางเดิม
+            const hcRow = hcRows.find(row => row.dataset.case === String(r.case_id));
+            const hcHost = hcRow?.nextElementSibling?.classList.contains('hc-flags-row') ? hcRow.nextElementSibling : null;
             const cell = cells.find(c => c.textContent.trim() === String(r.case_id));
-            const host = cell?.closest('td');
+            const host = hcHost ? hcHost.firstElementChild : cell?.closest('td');
             if (!host) return;
+            if (hcHost) { hcHost.hidden = false; hcRow.classList.add('has-bill'); }
             const flag = document.createElement('div');
             flag.className = 'bill-flag';
             flag.innerHTML = `<span class="bill-flag-dot">1</span><b>🧾 พนักงานส่งบิลแล้ว</b> เลขที่ ${r.id} · ${esc(val(r, 'treat_type') || '-')} · ยอด ${esc(money(val(r, 'amount')))} ฿ · ${esc(val(r, 'pay') || '')}
@@ -543,7 +549,7 @@
                 if (event.target.closest('[data-bill-cancel]')) flag.querySelector('.bill-status-pop')?.remove();
             });
             host.append(flag);
-            host.closest('tr')?.classList.add('has-bill');
+            if (!hcHost) host.closest('tr')?.classList.add('has-bill');
         });
         hydratePreviews();
     }
@@ -617,6 +623,8 @@
         new MutationObserver(() => { if (!body.querySelector('.bill-flag') && lastBills.length) markCards(); }).observe(body, { childList: true });
         if (!document.getElementById('historyBoards')) { renderBillBoard(lastBills); renderAnnualBoard(annualItems); }
     })();
+    // มุมมองกระชับวาดแถวใหม่ → ติดป้ายบิลอีกครั้ง
+    document.addEventListener('hc:rendered', () => { if (lastBills.length) markCards(); });
 
     async function sendNotice(id, button) {
         const pick = box.querySelector(`[data-notice-pick="${id}"]`);

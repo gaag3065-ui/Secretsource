@@ -7,6 +7,18 @@ const treatmentAmountFields = [
     ['ExchangeRatesIns', 'เรทค่าเงินที่ประกันคิดให้ (THB/LKR)'], ['ExchangeRatesInt', 'เรทค่าเงินปัจจุบัน (THB/LKR)']
 ];
 
+// สถานะล่าสุดของเคส = แถวที่เลขแถวในชีตมากที่สุด (ไม่มีเลขแถวใช้แถวสุดท้ายของอาร์เรย์) — ทุกหน้าที่แสดง "สถานะล่าสุด" ต้องใช้ตัวนี้ ห้ามหยิบแถวเก่าตอนเปิดเคสมาแสดง
+function latestCaseEvent(events) {
+    const list = Array.isArray(events) ? events : [];
+    let best = null, bestRank = -Infinity;
+    list.forEach((event, index) => {
+        const n = Number(event?.targetRowNumber);
+        const rank = Number.isFinite(n) ? n : index;
+        if (event && rank >= bestRank) { best = event; bestRank = rank; }
+    });
+    return best;
+}
+
 function treatmentRoundDate(value) {
     const text = String(value || '').trim();
     const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(text);

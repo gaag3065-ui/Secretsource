@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="assets/css/style.css?v=20260831-insurance-25">
   <link rel="stylesheet" href="assets/css/responsive.css?v=20261106-intake-11">
   <link rel="stylesheet" href="assets/css/insurance-combined.css?v=20261104-1">
+  <link rel="stylesheet" href="assets/css/history-compact.css?v=20261123-1">
       <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -497,6 +498,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (canViewHistory) {
                 await loadScript('assets/js/pages/insuranceclaimhistory.js');
                 await loadScript('assets/js/pages/history-claim-report.js');
+                await loadScript('assets/js/pages/history-compact.js');
 
                 if (typeof initHistoryModalEvents === 'function') {
                     initHistoryModalEvents();
