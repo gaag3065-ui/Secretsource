@@ -152,7 +152,7 @@
     const seenKey = () => `gdSeenNotes:${state.session?.employee?.ID || ''}`;
     const seenNotes = () => { try { return new Set(JSON.parse(localStorage.getItem(seenKey()) || '[]')); } catch { return new Set(); } };
     const noteId = r => `${r.id}|${r.handled_at || ''}`;
-    const gaNotes = () => { const seen = seenNotes(); return (state.mine || []).filter(r => r.admin_note && r.handled_at && !seen.has(noteId(r))); };
+    const gaNotes = () => { const seen = seenNotes(); return (state.mine || []).filter(r => r.admin_note && r.handled_at && !(r.status === 'cancelled' && r.fields?.__cancelBy === 'employee') && !seen.has(noteId(r))); };
     function markNoteSeen(id) {
         const seen = seenNotes(); seen.add(id);
         try { localStorage.setItem(seenKey(), JSON.stringify([...seen].slice(-300))); } catch { /* ไม่เป็นไร */ }
@@ -395,7 +395,11 @@
             renderBadges();
             renderAlerts();
             const icon = key => state.config.forms.find(f => f.key === key)?.icon || '📄';
-            box.innerHTML = records.length ? records.map(r => {
+            // รายการแจ้งเข้ารักษาที่ส่งบิลแล้ว → ให้บิลเป็นตัวแสดงสถานะ (ไม่ให้สถานะซ้ำซ้อน/ขัดกัน)
+            const billedAway = r => r.type === 'treatment' && r.status === 'billed' && records.some(m => m.type === 'medical' && Number(m.fields?.__fromTreatment) === r.id);
+            const shownRecords = records.filter(r => !billedAway(r));
+            const finished = r => r.closed_at_stage || ['done', 'refunded', 'cancelled'].includes(r.status);
+            const itemHtml = r => {
                 const slips = r.files.filter(f => f.field === 'refund_slip');
                 const form = state.config.forms.find(f => f.key === r.type);
                 const fileFields = (form?.fields || []).filter(f => f.type === 'files');
@@ -409,15 +413,22 @@
                 </div>` : '';
                 return `<div class="gd-item">
                     <span class="gd-item-icon">${esc(icon(r.type))}</span>
-                    <div><b>${esc(r.type_title)}</b><small>เลขที่ ${r.id} · ส่งเมื่อ ${esc(when(r.submitted_at))} · ไฟล์แนบ ${r.files.length - slips.length}</small>
+                    <div><b>${esc(r.type_title)}${r.case_label ? ` · เคส #${esc(r.case_label)}` : ''}</b><small>เลขที่ ${r.id} · ส่งเมื่อ ${esc(when(r.submitted_at))} · ไฟล์แนบ ${r.files.length - slips.length}</small>
                         ${r.admin_note ? `<span class="gd-note">GA: ${esc(r.admin_note)}</span>` : ''}
-                        ${r.type === 'treatment' && !['billed', 'deleted', 'rejected', 'cancelled'].includes(r.status) ? (r.case_id ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm gd-bill" data-bill-from="${r.id}">📤 รักษาเสร็จ / ส่งบิล (เคส #${esc(r.case_id)})</button>` : '<span class="gd-pill is-pending">รอ GA เปิดเคสก่อน จึงบันทึกค่ารักษาได้</span>') : ''}
+                        ${r.type === 'treatment' && !['billed', 'deleted', 'rejected', 'cancelled'].includes(r.status) ? (r.case_id ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm gd-bill" data-bill-from="${r.id}">📤 รักษาเสร็จ / ส่งบิล (เคส #${esc(r.case_label || r.case_id)})</button>` : '<span class="gd-pill is-pending">รอ GA เปิดเคสก่อน จึงบันทึกค่ารักษาได้</span>') : ''}
+                        ${r.type === 'treatment' && ['pending', 'received', 'waiting'].includes(r.status) ? `<button type="button" class="gd-btn gd-btn-sm gd-btn-danger" data-cancel-case="${r.id}">🚫 ยกเลิกเคส</button>` : ''}
+                        ${r.type === 'medical' && (r.follow_ups || []).length ? `<span class="gd-note">🔁 เคสต่อเนื่อง: ${r.follow_ups.map(f => `#${esc(f.label)} (${f.status === 'billed' ? 'ส่งบิลแล้ว' : f.status === 'cancelled' ? 'ยกเลิก' : 'รอส่งบิลรอบนี้'})`).join(' · ')} — เคสหลักยังไม่ปิดจนนัดครั้งสุดท้ายเสร็จ</span>` : ''}
                         ${form?.single && canEditRec(r) ? `<button type="button" class="gd-btn gd-btn-sm" data-open-box="${esc(r.type)}">✏️ แก้ไข / เพิ่มรูป</button>` : ''}
                         ${slips.length ? `<span class="gd-slips">${slips.map(f => `<button type="button" class="gd-btn gd-btn-sm" data-own-file="${r.id}/${f.n}" data-mime="${esc(f.mime)}">🧾 ดูสลิปโอนเงินคืน${slips.length > 1 ? ` ${f.index}` : ''}</button>`).join('')}</span>` : ''}
                         ${more}</div>
-                    <span class="gd-pill is-${esc(r.status)}${gaStatus(r) ? ' is-ga' : ''}">${esc(gaStatus(r) || r.status_label)}</span>
+                    <span class="gd-pill is-${esc(r.status)}${gaStatus(r) ? ' is-ga' : ''}">${esc(gaStatus(r) || r.stage_label || r.status_label)}</span>
                 </div>`;
-            }).join('') : '<p class="gd-empty">ยังไม่มีรายการที่ส่ง</p>';
+            };
+            const activeRecords = shownRecords.filter(r => !finished(r)), doneRecords = shownRecords.filter(finished);
+            const wasOpen = box.querySelector('details.gd-finished')?.open;
+            box.innerHTML = shownRecords.length ? (activeRecords.map(itemHtml).join('') || '<p class="gd-empty">ไม่มีรายการที่กำลังดำเนินการ ✓</p>')
+                + (doneRecords.length ? `<details class="gd-finished"${wasOpen ? ' open' : ''}><summary>✅ ประวัติที่เสร็จสิ้น / ยกเลิก (${doneRecords.length})</summary>${doneRecords.map(itemHtml).join('')}</details>` : '')
+                : '<p class="gd-empty">ยังไม่มีรายการที่ส่ง</p>';
         } catch (error) { box.innerHTML = `<p class="gd-empty">${esc(error.message)}</p>`; }
     }
 
@@ -451,6 +462,7 @@
         finally { input.disabled = false; input.value = ''; }
     }
     document.addEventListener('change', event => { const input = event.target.closest('[data-more-files]'); if (input && input.files.length) uploadMore(input); });
+    document.addEventListener('change', event => { const pick = event.target.closest('[data-cancel-pick]'); if (pick && pick.value) pick.closest('.gd-cancel-box').querySelector('[data-cancel-text]').value = pick.value; });
     document.addEventListener('click', async event => {
         const own = event.target.closest('[data-own-file]');
         if (own) { own.disabled = true; try { await openOwnFile(own.dataset.ownFile, own.dataset.mime); } catch (error) { alert(error.message); } finally { own.disabled = false; } return; }
@@ -492,13 +504,41 @@
             set('case_ref', r.case_id ? `เคส #${r.case_id} (แจ้งเลขที่ ${r.id})` : `แจ้งเลขที่ ${r.id}`);
             // ข้อมูลจากตอนแจ้งเข้ารักษา: แสดงให้เห็นแต่แก้ไม่ได้
             // บอกให้ชัดว่ากำลังบันทึกค่ารักษาของเคสไหน
-            $('gdInfo').insertAdjacentHTML('afterbegin', `<div class="gd-bill-case">🩺 บันทึกค่ารักษาของ <b>เคส #${esc(r.case_id || '-')}</b> · ${esc(r.fields?.hospital || '-')} · ${esc(thDate(r.fields?.treat_date || ''))}<small>บิลนี้จะผูกกับเคสนี้เท่านั้น — ถ้ารักษาคนละครั้ง ให้กดบันทึกที่เคสของครั้งนั้น</small></div>`);
+            $('gdInfo').insertAdjacentHTML('afterbegin', `<div class="gd-bill-case">🩺 บันทึกค่ารักษาของ <b>เคส #${esc(r.case_label || r.case_id || '-')}</b>${Number(r.visit_no) > 1 ? ` (เคสต่อเนื่องครั้งที่ ${esc(r.visit_no)})` : ''} · ${esc(r.fields?.hospital || '-')} · ${esc(thDate(r.fields?.treat_date || ''))}<small>บิลนี้จะผูกกับเคสนี้เท่านั้น — ถ้ารักษาคนละครั้ง ให้กดบันทึกที่เคสของครั้งนั้น</small></div>`);
             ['treat_date', 'hospital', 'symptom'].forEach(k => {
                 set(k, r.fields?.[k]);
                 const input = $('gdFields').querySelector(`[name="${k}"]`);
+                if (k === 'treat_date' && Number(r.visit_no) > 1) return;   // เคสต่อเนื่อง: วันนัดอาจเลื่อน ให้แก้วันที่รักษาจริงได้
                 if (input && input.value) { input.readOnly = true; input.closest('.gd-field').classList.add('is-readonly'); }
             });
             refreshVisibility();
+            return;
+        }
+        const cancelOpen = event.target.closest('[data-cancel-case]');
+        if (cancelOpen) {
+            const host = cancelOpen.closest('.gd-item');
+            if (host.querySelector('.gd-cancel-box')) return host.querySelector('.gd-cancel-box').remove();
+            host.querySelector('div').insertAdjacentHTML('beforeend', `<div class="gd-cancel-box" data-cancel-box="${esc(cancelOpen.dataset.cancelCase)}">
+                <b>ยกเลิกเคสนี้?</b>
+                <select data-cancel-pick><option value="">— เลือกเหตุผล —</option><option>ไม่ได้ไปรักษาแล้ว</option><option>อาการดีขึ้น ไม่ต้องไปหาหมอ</option><option>แจ้งผิด / แจ้งซ้ำ</option><option>เปลี่ยนสถานพยาบาล (จะแจ้งใหม่)</option></select>
+                <input type="text" data-cancel-text maxlength="300" placeholder="หรือพิมพ์เหตุผลสั้นๆ">
+                <small>ยกเลิกเองได้เฉพาะก่อนส่งบิล — ยกเลิกแล้ว GA จะเห็นทันทีและปุ่มส่งบิลจะหายไป</small>
+                <button type="button" class="gd-btn gd-btn-sm gd-btn-danger" data-cancel-go>ยืนยันยกเลิก</button> <button type="button" class="gd-btn gd-btn-sm" data-cancel-close>ไม่ยกเลิก</button>
+                <small class="gd-cancel-msg" data-cancel-msg></small></div>`);
+            return;
+        }
+        const cancelPick = event.target.closest('[data-cancel-pick]');
+        if (cancelPick) return;
+        if (event.target.closest('[data-cancel-close]')) return event.target.closest('.gd-cancel-box').remove();
+        const cancelGo = event.target.closest('[data-cancel-go]');
+        if (cancelGo) {
+            const boxEl = cancelGo.closest('.gd-cancel-box');
+            const reason = (boxEl.querySelector('[data-cancel-text]').value || boxEl.querySelector('[data-cancel-pick]').value || '').trim();
+            const msgEl = boxEl.querySelector('[data-cancel-msg]');
+            if (reason.length < 3) { msgEl.textContent = 'กรุณาเลือกหรือพิมพ์เหตุผลที่ยกเลิก'; return; }
+            cancelGo.disabled = true;
+            try { await call('/cancel', { id: Number(boxEl.dataset.cancelBox), reason }); await loadMine(); if (typeof loadCaseHistory === 'function') loadCaseHistory(true); }
+            catch (error) { msgEl.textContent = error.message; cancelGo.disabled = false; }
             return;
         }
         const resubmit = event.target.closest('[data-resubmit]');
@@ -528,8 +568,8 @@
         const cases = openCareCases();
         const casesHtml = cases.length ? `<section class="gd-care-section"><h3>🩺 เคสที่แจ้งไว้ (${cases.length}) — รักษาเสร็จแล้วกดบันทึกค่ารักษา</h3>
             ${cases.map(r => `<div class="gd-care-case"><div><b>${esc(r.fields?.hospital || '-')}</b><small>${esc(thDate(r.fields?.treat_date || ''))} ${esc(r.fields?.treat_time || '')} · ${esc(r.fields?.symptom || '')}</small>
-                <small>เลขที่ ${r.id}${r.case_id ? ` · เคสประกัน #${esc(r.case_id)}` : ''} · <span class="gd-pill is-${r.case_id ? 'received' : 'pending'}">${r.case_id ? 'GA เปิดเคสแล้ว' : 'รอ GA เปิดเคส'}</span></small>${r.case_id && r.admin_note ? `<small class="gd-ga-status">📣 GA: ${esc(r.admin_note)}</small>` : ''}</div>
-                ${r.case_id ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-bill-from="${r.id}">📤 บันทึกค่ารักษา (เคส #${esc(r.case_id)})</button>` : '<button type="button" class="gd-btn gd-btn-sm" disabled title="รอ GA เปิดเคสกับประกันก่อน">รอ GA เปิดเคส</button>'}</div>`).join('')}</section>` : '';
+                <small>เลขที่ ${r.id}${r.case_id ? ` · เคสประกัน #${esc(r.case_label || r.case_id)}` : ''} · <span class="gd-pill is-${r.case_id ? 'received' : 'pending'}">${r.case_id ? 'GA เปิดเคสแล้ว' : 'รอ GA เปิดเคส'}</span></small>${r.case_id && r.admin_note ? `<small class="gd-ga-status">📣 GA: ${esc(r.admin_note)}</small>` : ''}</div>
+                ${r.case_id ? `<button type="button" class="gd-btn gd-btn-primary gd-btn-sm" data-bill-from="${r.id}">📤 บันทึกค่ารักษา (เคส #${esc(r.case_label || r.case_id)})</button>` : '<button type="button" class="gd-btn gd-btn-sm" disabled title="รอ GA เปิดเคสกับประกันก่อน">รอ GA เปิดเคส</button>'}</div>`).join('')}</section>` : '';
         let summary = null;
         try { summary = (await call('/care')).summary; } catch (error) { box.innerHTML = casesHtml + `<p class="gd-empty">${esc(error.message)}</p>`; return; }
         if (!summary) { box.innerHTML = casesHtml + '<p class="gd-empty">ยังไม่พบข้อมูลวงเงินประกันของคุณ — กรุณาติดต่อ GA</p>'; return; }
@@ -753,7 +793,7 @@
         state.editing = rec.id;
         state.editRec = rec;
         const editable = canEditRec(rec);
-        $('gdInfo').insertAdjacentHTML('afterbegin', `<div class="gd-bill-case gd-edit-banner"><b>✏️ คุณส่งรายการนี้แล้ว (เลขที่ ${esc(rec.id)})</b> — ${editable ? 'แก้ไขข้อมูล หรือเพิ่ม/ลบรูปได้ที่นี่ ระบบจะไม่สร้างรายการใหม่' : 'ส่งต่อให้ประกัน/เสร็จสิ้นแล้ว แก้ไขไม่ได้ — ติดต่อ GA หากต้องการเปลี่ยนแปลง'}<small>สถานะตอนนี้: ${esc(gaStatus(rec) || rec.status_label)}${rec.status !== 'pending' && editable ? ' · เมื่อแก้ไขแล้ว GA จะตรวจอีกครั้ง' : ''}</small></div>`);
+        $('gdInfo').insertAdjacentHTML('afterbegin', `<div class="gd-bill-case gd-edit-banner"><b>✏️ คุณส่งรายการนี้แล้ว (เลขที่ ${esc(rec.id)})</b> — ${editable ? 'แก้ไขข้อมูล หรือเพิ่ม/ลบรูปได้ที่นี่ ระบบจะไม่สร้างรายการใหม่' : 'ส่งต่อให้ประกัน/เสร็จสิ้นแล้ว แก้ไขไม่ได้ — ติดต่อ GA หากต้องการเปลี่ยนแปลง'}<small>สถานะตอนนี้: ${esc(gaStatus(rec) || rec.stage_label || rec.status_label)}${rec.status !== 'pending' && editable ? ' · เมื่อแก้ไขแล้ว GA จะตรวจอีกครั้ง' : ''}</small></div>`);
         Object.entries(rec.fields || {}).forEach(([name, value]) => {
             if (name.startsWith('__') || value === '' || value == null) return;
             const radio = $('gdFields').querySelector(`input[type=radio][name="${name}"][value="${CSS.escape(String(value))}"]`);

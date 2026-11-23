@@ -10,7 +10,29 @@
     window.__treatmentIntake = null;   // รายการที่กำลังเปิดเคส (recordtreatment.js ใช้ตอนบันทึก)
     let closeContext = null;
     const filePreviews = new Map();
-    function billReadiness(r) {
+    // เคสต่อเนื่อง (แพทย์นัดตรวจซ้ำ): พนักงานติ๊กตอนส่งบิลแล้วระบบสร้างเคสย่อย #เลขเคส-2 ให้เอง · GA กดเพิ่มให้ได้ถ้าพนักงานลืมติ๊ก
+    function followUpControl(r) {
+        if (r.type !== 'medical') return '';
+        const list = r.follow_ups || [];
+        if (list.length) return `<div class="intake-close-readiness">🔁 เคสต่อเนื่อง ${list.map(x => `#${esc(x.label)} (${x.status === 'billed' ? 'ส่งบิลแล้ว' : x.status === 'cancelled' ? 'ยกเลิก' : 'รอส่งบิลรอบนี้'})`).join(' · ')}</div>`;
+        return ['pending', 'rejected', 'approved'].includes(r.status) ? `<div class="intake-close-readiness"><button type="button" class="intake-end" data-bill-followup="${r.id}" title="แพทย์นัดตรวจต่อเนื่อง — สร้างเคสย่อยให้พนักงานส่งบิลรอบถัดไป เคสหลักยังไม่ปิด">🔁 แพทย์นัดตรวจต่อเนื่อง</button></div>` : '';
+    }
+    async function addFollowUp(button) {
+        const input = prompt('วันที่แพทย์นัดครั้งถัดไป (รูปแบบ ปีค.ศ.-เดือน-วัน เช่น 2026-12-05)'+String.fromCharCode(10)+'เว้นว่างได้ถ้ายังไม่ทราบ', '');
+        if (input === null) return;
+        const next = input.trim();
+        if (next && !/^\d{4}-\d{2}-\d{2}$/.test(next)) { alert('รูปแบบวันที่ไม่ถูกต้อง (ตัวอย่าง 2026-12-05)'); return; }
+        button.disabled = true;
+        try {
+            const res = await window.authFetch(`${API()}/records/${button.dataset.billFollowup}/follow-up`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ next_visit: next }) });
+            const d = await res.json().catch(() => ({}));
+            if (!res.ok || d.success === false) throw new Error(d.message || 'สร้างเคสต่อเนื่องไม่สำเร็จ');
+            window.showInsuranceToast?.(`สร้างเคสต่อเนื่อง #${d.follow_up?.case_label || ''} แล้ว — พนักงานส่งบิลรอบถัดไปได้ · เคสหลักยังไม่ปิด`, 'success', 6000);
+            await load();
+        } catch (error) { alert(error.message); button.disabled = false; }
+    }
+    function billReadiness(r) { return billReadinessBase(r) + followUpControl(r); }
+    function billReadinessBase(r) {
         const info = r.close_readiness;
         if (info?.closed) return '<div class="intake-close-readiness">บันทึกปิดเคสแล้ว</div>';
         const missing = [...(info?.missing || ['กำลังตรวจเงื่อนไขจากกล่องงาน'])];
@@ -50,6 +72,8 @@
         panel.innerHTML = `<b>ตรวจเอกสารและข้อมูลจากระบบจัดการองค์กร · ${esc(r.fullname)}</b>${missing.length ? `<p>ยังขาด: ${missing.map(esc).join(' · ')}</p>` : `<p>เอกสารและข้อมูลครบ · เคส #${esc(closeContext.caseId)}</p><label>เลือกสถานะ <select data-intake-final-status>${choices.map(value => `<option value="${value}"${value === selected ? ' selected' : ''}>${value}</option>`).join('')}</select></label><button type="button" class="intake-take" data-intake-close-ready>บันทึกสถานะ</button>`}`;
     }
     document.addEventListener('click', async event => {
+        const followUp = event.target.closest('[data-bill-followup]');
+        if (followUp) { event.stopPropagation(); return addFollowUp(followUp); }
         const billClose = event.target.closest('[data-bill-close]');
         if (billClose) return closeBillFromButton(billClose);
         const button = event.target.closest('[data-intake-close-ready]');
@@ -207,7 +231,7 @@
                     <span class="bill-item-badge">${list.length}</span>
                     <b>${esc(list[0].fullname)}</b>
                     <small>${esc(list[0].company || '')} · ${esc(list[0].insurance_code || list[0].employee_id || '')}</small>
-                    <span class="bill-item-cases">${list.map(r => `เคส #${esc(r.case_id)} · ${esc(String(val(r, 'treat_type') || '').split(' ')[0] || '-')} · ${esc(money(val(r, 'amount')))} ฿`).join('<br>')}</span>
+                    <span class="bill-item-cases">${list.map(r => `เคส #${esc(r.case_label || r.case_id)} · ${esc(String(val(r, 'treat_type') || '').split(' ')[0] || '-')} · ${esc(money(val(r, 'amount')))} ฿`).join('<br>')}</span>
                 </button><div class="bill-item-actions">${list.map(r => `<div>${billReadiness(r)}<button type="button" class="bill-status-cancel" data-cancel-open="${r.id}">ยกเลิกบิลเคส #${esc(r.case_id)}</button></div>`).join('')}</div></div>`).join('')}</div>`;
         markCards();
     }
@@ -571,7 +595,7 @@
             ${recent.map(r => `<tr>
                 <td><span class="intake-tag${isAnnual(r) ? ' is-annual' : ''}">${isAnnual(r) ? 'ตรวจสุขภาพ' : 'เข้ารักษา'}</span></td>
                 <td><b>${esc(r.fullname)}</b><small>${esc(r.company || '')} · ${esc(r.insurance_code || r.employee_id || '')}</small></td>
-                <td class="nowrap">#${esc(r.case_id)} <button type="button" class="intake-fixcase" data-fix-case="${r.id}" title="แก้เลขเคสที่ผูกกับเรื่องนี้">✏️</button></td>
+                <td class="nowrap">#${esc(r.case_label || r.case_id)} <button type="button" class="intake-fixcase" data-fix-case="${r.id}" title="แก้เลขเคสที่ผูกกับเรื่องนี้">✏️</button></td>
                 <td class="clip" title="${esc(r.admin_note || '')}">${esc(r.admin_note || '-')}</td>
                 <td class="nowrap"><select data-notice-pick="${r.id}">${NOTICES(r).map(n => `<option>${esc(n)}</option>`).join('')}<option value="__custom">✏️ พิมพ์เอง…</option></select>
                     <input type="text" class="intake-notice-text" data-notice-text="${r.id}" maxlength="300" placeholder="พิมพ์ข้อความที่จะแจ้งพนักงาน" hidden>

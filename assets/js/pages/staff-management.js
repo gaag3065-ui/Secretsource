@@ -271,7 +271,7 @@
             if (claim === 'yes' && !claimedOf(e)) return false;
             if (claim === 'no' && claimedOf(e)) return false;
             if (q && ![e.fullname, e.nickname, e.employeeId, e.centralId, e.insuranceCode, e.company, e.building, e.room, ...tasks.map(t => t.title),
-                ...recs.flatMap(r => [r.type_title, r.status_label])]
+                ...recs.flatMap(r => [r.type_title, r.stage_label || r.status_label])]
                 .some(v => String(v || '').toLowerCase().includes(q))) return false;
             return true;
         });
@@ -1445,7 +1445,7 @@
             <div class="fa-detail-body">
                 <table class="sm-group-table"><thead><tr><th>เลขที่</th><th>พนักงาน</th><th>ส่งเมื่อ</th><th>สถานะ</th><th></th></tr></thead><tbody>
                 ${recs.map(r => `<tr><td>#${r.id}</td><td><b>${esc(r.fullname)}</b><small>${esc([r.employee_id, r.insurance_code, r.company].filter(Boolean).join(' · '))}</small></td>
-                    <td>${esc(when(r.submitted_at))}</td><td><span class="fa-badge ${REVIEW.has(r.status) ? 'warn' : 'ok'}">${esc(r.status_label)}</span></td>
+                    <td>${esc(when(r.submitted_at))}</td><td><span class="fa-badge ${REVIEW.has(r.status) ? 'warn' : 'ok'}">${esc(r.stage_label || r.status_label)}</span></td>
                     <td><button type="button" class="fa-btn fa-btn-primary" data-record="${r.id}">ตรวจ</button></td></tr>`).join('') || '<tr><td colspan="5" class="fa-empty">ยังไม่มีรายการ</td></tr>'}
                 </tbody></table>
             </div>`;
@@ -1496,7 +1496,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
             <div class="sm-pick-list">
                 ${recs.map(r => `<button type="button" class="sm-pick-item${REVIEW.has(r.status) ? ' is-wait' : ''}" data-record="${r.id}">
                     <span class="sm-pick-icon">${esc(boxOf(r.type)?.icon || '📥')}</span>
-                    <span><b>${esc(r.type_title)}</b><small>#${r.id} · ${esc(r.status_label || r.status)}${r.report_confirmed_at ? ' · ✓ ยืนยันลงรายงานแล้ว' + (batchName(r.type, r.report_batch) ? ' (' + esc(batchName(r.type, r.report_batch)) + ')' : '') : ''}${HEALTH_BOXES.has(r.type) && recs.filter(x => x.type === r.type).length > 1 ? ' · ⚠️ ซ้ำ — กล่องนี้ควรมีรายการเดียว (เปิดดูแล้วลบอันที่ไม่ใช้ได้)' : ''}</small></span></button>`).join('')}
+                    <span><b>${esc(r.type_title)}</b><small>#${r.id} · ${esc(r.stage_label || r.status_label || r.status)}${r.report_confirmed_at ? ' · ✓ ยืนยันลงรายงานแล้ว' + (batchName(r.type, r.report_batch) ? ' (' + esc(batchName(r.type, r.report_batch)) + ')' : '') : ''}${HEALTH_BOXES.has(r.type) && recs.filter(x => x.type === r.type).length > 1 ? ' · ⚠️ ซ้ำ — กล่องนี้ควรมีรายการเดียว (เปิดดูแล้วลบอันที่ไม่ใช้ได้)' : ''}</small></span></button>`).join('')}
                 ${hasTask ? `<button type="button" class="sm-pick-item" data-check="${esc(key)}"><span class="sm-pick-icon">📝</span><span><b>ข้อมูลที่ส่งในงานที่มอบหมาย</b><small>${list.length} งาน</small></span></button>` : ''}
             </div>`;
         if (!$('smDialog').open) $('smDialog').showModal();
