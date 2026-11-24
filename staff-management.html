@@ -6,6 +6,7 @@
     <title>จัดการพนักงาน | GA Operations</title>
     <link rel="stylesheet" href="assets/css/fitness-admin.css?v=20261102-2">
     <link rel="stylesheet" href="assets/css/staff-management.css?v=20261109-claim-2">
+    <link rel="stylesheet" href="assets/css/staff-allocation.css?v=20261124-1">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 </head>
 <body>
@@ -29,6 +30,8 @@
 
         <!-- กล่องงานทั้งหมด (เหมือนหน้า ระบบจัดการองค์กร) มุมขวาบน = จำนวนคนที่ได้รับมอบหมาย — กดเพื่อกรองตาราง -->
         <section class="sm-boxes" id="smBoxes" aria-label="กล่องงานทั้งหมด"></section>
+        <!-- เงื่อนไขของกล่องงานที่เลือก (เทมเพลต + ตั้งให้คนที่แสดงอยู่ + จัดสรรสิ่งของ) — staff-conditions.js -->
+        <section class="sa-bar" id="smCondBar" aria-label="เงื่อนไขของกล่องงาน" hidden></section>
 
         <section class="fa-toolbar sm-toolbar">
             <!-- ตัวกรองสร้างจาก staff-management.js (FILTERS) — ช่องเสริมแสดงในตารางเมื่อเลือกตัวกรองนั้น -->
@@ -50,6 +53,7 @@
                 <option value="reported">⑤ ยืนยันลงรายงานแล้ว</option>
                 <option value="closed">⑥ เสร็จสิ้น (ปิดกล่องแล้ว)</option>
             </select>
+            <select id="smCond" title="กรองตามเงื่อนไขของกล่องงานที่เลือก" hidden></select>
             <select id="smClaim" title="กรองตามการส่งเบิก (ตามรายชื่อที่นำเข้า)">
                 <option value="">การเบิก : ทั้งหมด</option>
                 <option value="yes">💸 ส่งเบิกแล้ว</option>
@@ -78,6 +82,8 @@
     <script src="assets/js/core/line-avatar.js?v=1"></script><script src="assets/js/core/api-url.js"></script><script src="assets/js/core/config.js"></script>
     <script src="assets/js/core/ui-helper.js?v=20261122-sw"></script>
     <script src="assets/js/core/api-cache.js?v=20261122-sw"></script>
-    <script src="assets/js/pages/staff-management.js?v=20261122-sw"></script>
+    <script src="assets/js/pages/staff-conditions.js?v=20261124-1"></script>
+    <script src="assets/js/pages/staff-allocation-grid.js?v=20261124-1"></script>
+    <script src="assets/js/pages/staff-management.js?v=20261124-1"></script>
 </body>
 </html>

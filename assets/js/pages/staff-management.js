@@ -270,6 +270,7 @@
             const claim = $('smClaim')?.value || '';
             if (claim === 'yes' && !claimedOf(e)) return false;
             if (claim === 'no' && claimedOf(e)) return false;
+            if (window.StaffAlloc && !window.StaffAlloc.matches(e.key)) return false;   // ตัวกรองเงื่อนไขของกล่องงาน (staff-conditions.js)
             if (q && ![e.fullname, e.nickname, e.employeeId, e.centralId, e.insuranceCode, e.company, e.building, e.room, ...tasks.map(t => t.title),
                 ...recs.flatMap(r => [r.type_title, r.stage_label || r.status_label])]
                 .some(v => String(v || '').toLowerCase().includes(q))) return false;
@@ -319,6 +320,7 @@
             + stat(all.filter(e => e.contracts > 0).length, 'เคยเซ็นสัญญาเช่าบ้าน SL')
             + stat((state.records || []).filter(r => REVIEW.has(r.status)).length, 'เอกสารส่งมา รอตรวจ', true);
         renderBoxes();
+        window.StaffAlloc?.sync();   // แถบเงื่อนไข + ตัวกรองเงื่อนไขของกล่องงานที่เลือก
         document.querySelectorAll('.sm-toolbar select').forEach(s => s.classList.toggle('is-set', Boolean(s.value)));
         $('smCount').textContent = `แสดง ${rows.length.toLocaleString('th-TH')} จาก ${all.length.toLocaleString('th-TH')} คน`;
         // คอลัมน์: บริษัท · สถานะ · ชื่อเล่น · ชื่อจริง · [ช่องที่เลือกตัวกรอง] · งานที่มอบหมาย · ปุ่ม
@@ -348,7 +350,7 @@
                 <td>${esc(e.company || '-')}</td>
                 <td><span class="fa-badge ${isOnWork(e) ? 'ok' : 'dim'}">${esc(e.status || '-')}</span></td>
                 <td class="sm-nick">${esc(e.nickname || '-')}</td>
-                <td><b>${esc(e.fullname)}</b><small>${esc([e.employeeId || e.centralId, e.insuranceCode].filter(Boolean).join(' · '))}</small></td>
+                <td><b>${esc(e.fullname)}</b><small>${esc([e.employeeId || e.centralId, e.insuranceCode].filter(Boolean).join(' · '))}</small>${window.StaffAlloc?.cell(e.key) || ''}</td>
                 ${extra.map(f => `<td>${cell(e, f.key)}</td>`).join('')}
                 <td class="sm-tasks-cell"><div class="sm-tasks">${pills || '<span class="fa-badge dim">ยังไม่มีงาน</span>'}</div></td>
                 <td class="sm-actions">${(() => {
@@ -1645,6 +1647,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
                 <button type="button" class="fa-close" data-close aria-label="ปิด">×</button>
             </header>
             <div class="fa-detail-body">
+                <div data-sa-slot></div>
                 ${list.length ? list.map(t => {
                     const c = check(t);
                     return `<article class="sm-check-task ${c.complete ? 'is-ok' : 'is-wait'}" data-task="${t.id}">
@@ -1672,6 +1675,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
             </div>`;
         const dialog = $('smDialog');
         if (!dialog.open) dialog.showModal();
+        window.StaffAlloc?.fillModal(key);   // ช่องเลือกเงื่อนไขของพนักงานคนนี้ (ทุกกล่องงานที่มีเงื่อนไข)
         // โหลดภาพย่อจากหลังบ้าน (ต้องแนบสิทธิ์ล็อกอิน — ใช้ลิงก์ Drive ตรงไม่ได้)
         $('smDetail').querySelectorAll('img[data-src]').forEach(async img => {
             try { img.src = await fileUrl(img.dataset.src); } catch { img.alt = 'เปิดรูปไม่ได้'; }
@@ -1944,7 +1948,7 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
             return;
         }
         const boxTile = event.target.closest('[data-box]');
-        if (boxTile) { state.box = state.box === boxTile.dataset.box ? '' : boxTile.dataset.box; return render(); }
+        if (boxTile) { state.box = state.box === boxTile.dataset.box ? '' : boxTile.dataset.box; if ($('smCond')) $('smCond').value = ''; return render(); }
         if (action === 'import-claimed') { $('smClaimFile').click(); return; }
         if (action === 'clear-filters') {
             state.box = '';
@@ -1954,5 +1958,6 @@ InsuranceId : ${r.insurance_code || e.insuranceCode || '-'}
         }
     });
 
+    window.StaffAlloc?.init({ state, request, toast, rerender: render, visible: () => filtered().map(e => e.key) });
     load();
 })();

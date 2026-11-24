@@ -1,0 +1,66 @@
+/* จัดการพนักงาน: เงื่อนไขประจำกล่องงาน + ตารางจัดสรรสิ่งของ (staff-conditions.js / staff-allocation-grid.js)
+   Layout: Flex/Grid เท่านั้น · z-index: sticky = 20 · ตารางกว้างอยู่ใน .sa-scroll (overflow auto) ตรึงคอลัมน์ชื่อด้านซ้าย */
+.sa-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 12px; padding: 10px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; }
+.sa-bar[hidden], .sa-bar select[hidden] { display: none; }
+.sa-bar > b { white-space: nowrap; }
+.sa-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 200px; min-width: 0; }
+.sa-chip { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--c, #2563eb); color: var(--c, #2563eb); background: #fff; font: inherit; font-size: 13px; cursor: pointer; }
+.sa-chip i { font-style: normal; background: var(--c, #2563eb); color: #fff; border-radius: 999px; padding: 0 7px; font-size: 12px; }
+.sa-chip.is-on { background: var(--c, #2563eb); color: #fff; }
+.sa-chip.is-on i { background: #fff; color: var(--c, #2563eb); }
+.sa-note { color: #64748b; font-size: 13px; overflow-wrap: anywhere; }
+.sa-note.is-bad, .sa-msg.is-bad { color: #dc2626; font-weight: 600; }
+.sa-badge { display: inline-block; white-space: nowrap; font-style: normal; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; color: #fff; background: var(--c, #2563eb); }
+.sa-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
+.sa-pick { max-width: 100%; font-size: 12px; padding: 3px 6px; }
+.sa-modal { display: flex; flex-direction: column; gap: 8px; margin: 0 0 14px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; }
+.sa-modal-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sa-modal-row > span { flex: 1 1 160px; overflow-wrap: anywhere; }
+
+/* หน้าต่างจัดการเงื่อนไข / ตารางจัดสรร */
+.sa-dialog { width: min(720px, calc(100vw - 24px)); max-width: none; padding: 0; border: 0; border-radius: 16px; max-height: calc(100vh - 24px); }
+.sa-dialog:has(.sa-wide) { width: min(1280px, calc(100vw - 24px)); }
+.sa-box { display: flex; flex-direction: column; gap: 12px; padding: 16px; max-height: calc(100vh - 24px); overflow: auto; }
+.sa-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.sa-head h2 { margin: 0 0 4px; font-size: 18px; overflow-wrap: anywhere; }
+.sa-head p { margin: 0; color: #64748b; font-size: 13px; }
+.sa-x { flex: none; border: 0; background: #f1f5f9; border-radius: 10px; width: 36px; height: 36px; font-size: 22px; cursor: pointer; }
+.sa-list, .sa-stock { display: flex; flex-direction: column; gap: 8px; }
+.sa-stock h3 { margin: 0; font-size: 14px; }
+.sa-row, .sa-add, .sa-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sa-row input:not([type=number]), .sa-add input:not([type=number]) { flex: 1 1 180px; min-width: 0; }
+.sa-row input[type=number], .sa-add input[type=number] { width: 96px; }
+.sa-row label { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.sa-dot { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--c, #2563eb); }
+.sa-row small { color: #64748b; white-space: nowrap; }
+.sa-tools { padding: 8px 0; border-top: 1px solid #e2e8f0; }
+.sa-grow { flex: 1 1 0; }
+.sa-dirty { color: #d97706; font-weight: 600; white-space: nowrap; }
+.sa-msg { margin: 0; min-height: 1.2em; font-size: 13px; color: #0f766e; overflow-wrap: anywhere; }
+.sa-printframe { width: 0; height: 0; border: 0; }
+
+.sa-scroll { overflow: auto; max-height: 58vh; border: 1px solid #e2e8f0; border-radius: 12px; }
+.sa-table { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; font-size: 13px; }
+.sa-table th, .sa-table td { padding: 6px 8px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #eef2f7; background: #fff; vertical-align: middle; }
+.sa-table thead th { position: sticky; top: 0; z-index: 20; background: #f1f5f9; text-align: center; }
+.sa-table tfoot th, .sa-table tfoot td { position: sticky; bottom: 0; z-index: 20; background: #f1f5f9; font-weight: 700; }
+.sa-who { position: sticky; left: 0; z-index: 1; width: 230px; min-width: 230px; max-width: 230px; text-align: left; display: table-cell; overflow-wrap: anywhere; box-shadow: 1px 0 0 #cbd5e1; }
+.sa-table thead .sa-who, .sa-table tfoot .sa-who { z-index: 20; }
+.sa-who b, .sa-who small { display: block; }
+.sa-who small { color: #64748b; font-weight: 400; }
+.sa-resp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sa-item { min-width: 150px; }
+.sa-item b { display: block; overflow-wrap: anywhere; }
+.sa-item small { display: block; margin-top: 2px; font-weight: 500; color: #475569; white-space: nowrap; }
+.sa-item small.is-over { color: #dc2626; font-weight: 700; }
+.sa-item small.is-zero { color: #d97706; }
+.sa-qty { text-align: center; white-space: nowrap; }
+.sa-qty input { width: 64px; text-align: center; padding: 4px; }
+.sa-qty.is-dirty { background: #fffbeb; }
+.sa-tick { margin-left: 4px; white-space: nowrap; border: 1px solid #cbd5e1; background: #fff; color: #94a3b8; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; }
+.sa-tick.is-on { background: #0d9488; border-color: #0d9488; color: #fff; }
+.sa-total { text-align: center; white-space: nowrap; min-width: 64px; font-weight: 600; }
+@media (max-width: 640px) {
+    .sa-who { width: 150px; min-width: 150px; max-width: 150px; }
+    .sa-box { padding: 12px; }
+}
