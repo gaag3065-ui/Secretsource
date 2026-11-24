@@ -1,1 +1,1 @@
-window.GA_API_URL = 'https://published-contain-mice-beach.trycloudflare.com';
+window.GA_API_URL = 'https://championship-hit-surgical-nominations.trycloudflare.com';
