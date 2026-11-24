@@ -1,0 +1,129 @@
+/* ติดตามขั้นตอนการดำเนินงานที่พักใหม่ (accommodation-flow.js)
+   Layout: Flexbox / Grid แนวตั้ง (Vertical Stepper) — ไม่ใช้ position:absolute และไม่ใช้ margin ติดลบ
+   ซ้าย = สถานะ/วันที่/รายละเอียด/หมายเหตุ · ขวา = ปุ่มแนบหลักฐาน / จำนวนวัน
+   ลำดับชั้น z-index ของหน้านี้: Base 0 · Sticky 20 · Dropdown 30 · Modal 50 (dialog อยู่ top-layer ของเบราว์เซอร์อยู่แล้ว) */
+.fl { padding: 4px 0 18px; color: #1c2433; min-width: 0; overflow-wrap: anywhere; }
+.fl button, .fl .fl-status, .fl .fl-gap, .fl .fl-clip, .fl .fl-wait { white-space: nowrap; }
+.fl-empty { color: #6c7280; padding: 18px 4px; }
+
+/* ---- หัวเรื่อง + KPI + ตัวกรอง ---- */
+.fl-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px; margin-bottom: 12px; }
+.fl-top > div { min-width: 0; }
+.fl-top h2 { margin: 0 0 4px; font-size: 22px; }
+.fl-top p { margin: 0; color: #6c7280; font-size: 13px; max-width: 640px; }
+.fl-kpis { display: flex; gap: 10px; flex-wrap: wrap; }
+.fl-kpis span { background: #fff; border: 1px solid #e3e0d6; border-radius: 12px; padding: 8px 14px; display: grid; min-width: 120px; }
+.fl-kpis small { font-size: 11px; color: #6c7280; }
+.fl-kpis b { font-size: 22px; }
+.fl-kpis em { font-size: 11px; font-style: normal; color: #6c7280; }
+.fl-kpis .is-hot b { color: #d9361f; }
+.fl-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; align-items: center; }
+.fl-filters button { border: 1px solid #d9d5ca; background: #fff; border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.fl-filters button.is-on { background: #1c2433; color: #fff; border-color: #1c2433; }
+.fl-filters input { flex: 1 1 200px; max-width: 320px; margin-left: auto; padding: 6px 12px; border: 1px solid #d9d5ca; border-radius: 999px; font: inherit; font-size: 13px; }
+.fl-warn { background: #fef3c7; color: #92400e; border-radius: 8px; padding: 6px 12px; font-size: 13px; }
+
+/* ---- การ์ดของแต่ละยูนิต ---- */
+.fl-card { background: #fff; border: 1px solid #e3e0d6; border-radius: 14px; padding: 16px; margin-bottom: 16px; overflow: hidden; min-width: 0; }
+.fl-card.is-hot { border-color: #f0b4a9; border-left: 4px solid #e8452c; }
+.fl-card header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; align-items: baseline; }
+.fl-card header > div { min-width: 0; }
+.fl-card h3 { margin: 0 10px 0 0; font-size: 17px; display: inline; }
+.fl-card h3 small { font-size: 13px; color: #6c7280; font-weight: 500; }
+.fl-status { display: inline-block; background: #fef3c7; color: #92400e; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
+.fl-meta { font-size: 12px; color: #6c7280; }
+.fl-summary { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 14px; font-size: 13px; color: #4b5263; }
+.fl-summary b { color: #1c2433; }
+.fl-summary .is-hot, .fl-summary .is-hot b { color: #d9361f; }
+
+/* ---- Vertical Stepper ---- */
+.fl-chart { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.fl-start, .fl-end { align-self: flex-start; background: #1c2433; color: #fff; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; }
+.fl-end { background: #0e7c86; }
+.fl-steps, .fl-sub { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fl-step-item { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding-left: 14px; border-left: 3px solid #d9d5ca; }
+.fl-step-item:has(> .fl-row.is-done) { border-left-color: #0e7c86; }
+
+/* แถวขั้นตอน: จุด | ซ้าย (รายละเอียด) | ขวา (ปุ่ม/จำนวนวัน) */
+.fl-row { display: grid; grid-template-columns: 32px minmax(0, 1fr) minmax(150px, auto); gap: 12px; align-items: start; background: #faf9f6; border: 1px dashed #d9d5ca; border-radius: 10px; padding: 10px 12px; min-width: 0; }
+.fl-row.is-done { background: #f1fafb; border: 1px solid #0e7c86; }
+.fl-row.is-rework { background: #fff6ee; border: 1px solid #d46a1f; }
+.fl-row.is-cancel { background: #fef3f2; border: 1px solid #b42318; }
+.fl-dot { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: #e8e5db; color: #6c7280; }
+.fl-row.is-done .fl-dot { background: #0e7c86; color: #fff; }
+.fl-row.is-rework .fl-dot { background: #d46a1f; color: #fff; }
+.fl-row.is-cancel .fl-dot { background: #b42318; color: #fff; }
+.fl-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; text-align: left; background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+div.fl-main { cursor: default; }
+.fl-main:hover .fl-label { text-decoration: underline; }
+.fl-label { font-size: 13.5px; line-height: 1.35; overflow-wrap: anywhere; }
+.fl-date { font-size: 16px; font-weight: 800; color: #0e7c86; }
+.fl-row.is-rework .fl-date { color: #d46a1f; }
+.fl-row.is-cancel .fl-date, .fl-row.is-cancel .fl-date.is-empty { color: #b42318; }
+.fl-date.is-empty { font-size: 12px; font-weight: 500; color: #a0a4ae; }
+.fl-main small { font-size: 11px; color: #8a8f9c; overflow-wrap: anywhere; }
+.fl-main .fl-note { color: #5b6170; font-size: 12px; }
+.fl-act { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 0; }
+.fl-ev { border: 1px solid #0369a1; background: #fff; color: #0369a1; border-radius: 8px; padding: 5px 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.fl-ev.is-none { border-style: dashed; border-color: #9aa0ad; color: #6c7280; font-weight: 500; }
+.fl-ev:hover { border-color: #0e7c86; color: #0e7c86; }
+.fl-gap, .fl-wait { border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 700; background: #e0f2fe; color: #0369a1; }
+.fl-gap.is-slow { background: #fef3c7; color: #92400e; }
+.fl-gap.is-bad { background: #fee2e2; color: #b91c1c; }
+.fl-wait { background: #fee2e2; color: #b91c1c; }
+
+.fl-addrow { display: flex; padding-left: 44px; }
+.fl-plus { border: 1px dashed #9aa0ad; background: #fff; color: #6c7280; border-radius: 999px; padding: 3px 12px; font: inherit; font-size: 12px; cursor: pointer; }
+.fl-plus:hover { border-color: #0e7c86; color: #0e7c86; }
+
+/* ข้อ "สัญญาต้องแก้ไข?" */
+.fl-decision { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-left: 44px; padding: 8px 12px; background: #fff3e6; border: 1px solid #d46a1f; border-radius: 10px; }
+.fl-decision.has-rework { background: #ffe0cc; }
+.fl-decide { border: 1px solid #d46a1f; background: #fff; color: #9a4a0f; border-radius: 8px; padding: 6px 12px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.fl-decide:hover { background: #fff6ee; }
+.fl-decide-info { font-size: 12px; color: #6c7280; min-width: 0; overflow-wrap: anywhere; }
+
+/* กลุ่มขั้นตอนย่อย: ทำไปพร้อมกัน / วนแก้สัญญา (ย่อหน้าเข้าด้วย padding ไม่ใช้ margin ติดลบ) */
+.fl-group { display: flex; flex-direction: column; gap: 8px; margin-left: 44px; padding: 8px 0 8px 12px; border-left: 2px dashed #d46a1f; min-width: 0; }
+.fl-group-tag { font-size: 11px; font-weight: 700; color: #d46a1f; overflow-wrap: anywhere; }
+.fl-sub > li { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fl-loopback { font-size: 11px; color: #d46a1f; font-weight: 700; padding-left: 44px; overflow-wrap: anywhere; }
+
+@media (max-width: 720px) {
+    .fl-row { grid-template-columns: 32px minmax(0, 1fr); }
+    .fl-act { grid-column: 2; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; }
+    .fl-addrow, .fl-decision, .fl-group { margin-left: 0; padding-left: 12px; }
+    .fl-addrow { padding-left: 0; }
+    .fl-loopback { padding-left: 12px; }
+}
+
+/* ---- หน้าต่างกำหนดขั้นตอน / แนบหลักฐาน ---- */
+.fl-dialog { border: 0; border-radius: 16px; padding: 0; width: min(520px, 94vw); max-height: 92vh; box-shadow: 0 20px 60px rgba(0, 0, 0, .3); overflow: auto; }
+.fl-dialog::backdrop { background: rgba(20, 24, 36, .45); }
+.fl-form { padding: 18px 20px 16px; display: grid; gap: 12px; font-size: 14px; }
+.fl-form header { display: flex; justify-content: space-between; gap: 10px; }
+.fl-form h3 { margin: 0; font-size: 18px; overflow-wrap: anywhere; }
+.fl-form header p { margin: 2px 0 0; color: #6c7280; font-size: 12px; overflow-wrap: anywhere; }
+.fl-form label { display: grid; gap: 4px; font-weight: 600; font-size: 13px; }
+.fl-form label small { font-weight: 400; color: #8a8f9c; }
+.fl-form input[type=text], .fl-form input:not([type]), .fl-form input[type=date], .fl-form textarea, .fl-form select { border: 1px solid #d9d5ca; border-radius: 8px; padding: 7px 10px; font: inherit; min-width: 0; }
+.fl-lane { border: 1px solid #e3e0d6; border-radius: 10px; padding: 8px 12px; display: grid; gap: 6px; }
+.fl-lane legend { font-size: 12px; font-weight: 700; color: #6c7280; padding: 0 6px; }
+.fl-form label.fl-inline { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+.fl-evidence h4 { margin: 0 0 8px; font-size: 14px; }
+.fl-files { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.fl-file { display: flex; align-items: flex-start; gap: 4px; }
+.fl-thumb { width: 84px; height: 84px; border: 1px solid #d9d5ca; border-radius: 8px; overflow: hidden; background: #f4f2ec; cursor: pointer; padding: 0; display: grid; place-items: center; }
+.fl-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.fl-pdf { font-size: 12px; font-weight: 700; color: #b91c1c; }
+.fl-rm { width: 22px; height: 22px; border-radius: 50%; border: 0; background: #b91c1c; color: #fff; font-size: 11px; cursor: pointer; padding: 0; flex: none; }
+.fl-upload { display: inline-block; border: 1px dashed #0e7c86; color: #0e7c86; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 700; width: fit-content; }
+.fl-none, .fl-hint { color: #8a8f9c; font-size: 12px; }
+.fl-error { color: #b91c1c; background: #fee2e2; border-radius: 8px; padding: 6px 10px; margin: 0; font-size: 13px; }
+.fl-form footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.fl-form footer button { border: 1px solid #d9d5ca; background: #fff; border-radius: 8px; padding: 7px 14px; font: inherit; cursor: pointer; margin-left: 6px; }
+.fl-form footer .fl-primary { background: #0e7c86; color: #fff; border-color: #0e7c86; font-weight: 700; }
+.fl-form footer .fl-danger { color: #b91c1c; border-color: #f0b4a9; margin-left: 0; }
+.fl-x { border: 0; background: none; font-size: 24px; cursor: pointer; color: #6c7280; line-height: 1; }
+.fl-danger { border: 1px solid #b42318; background: #fff; color: #b42318; border-radius: 8px; padding: 8px 12px; font: inherit; font-weight: 700; cursor: pointer; }
+.fl-danger:hover { background: #fef3f2; }

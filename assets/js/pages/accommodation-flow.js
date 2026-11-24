@@ -53,7 +53,6 @@
         const t = document.createElement('div'); t.innerHTML = card(build(room)); old.replaceWith(t.firstElementChild);
         const kpi = host.querySelector('.fl-kpis');   // ตัวเลข KPI ด้านบนคำนวณใหม่จากข้อมูลล่าสุดทันที
         if (kpi) { const open = (state.data.rooms || []).filter(r => r.status !== DONE); kpi.innerHTML = kpiHtml(open, open.map(build)); }
-        alignRework();
     }
     async function loadFlow() { try { setFlow((await call('/flow')).steps); state.error = ''; } catch (error) { state.error = error.message; } render(); }
     const rec = (no, id) => state.flow.get(`${no}|${id}`) || null;
@@ -100,33 +99,35 @@
     }
 
     // ---------------------------------------------------------------- แสดงผล
-    function node(s, room, extra = '') {
+    function node(s, room, dot = '', wait = null) {
         const cls = s.date ? 'is-done' : 'is-todo';
         const gap = s.date && s.gap != null ? `<span class="fl-gap${s.gap < 0 ? ' is-bad' : s.gap >= 14 ? ' is-slow' : ''}" title="จาก “${esc(s.from)}”">⏱ +${s.gap < 0 ? '?' : s.gap} วัน</span>` : '';
-        const tag = s.virtual ? 'div' : 'button', attrs = s.virtual ? '' : ` type="button" data-step="${esc(s.id)}" data-no="${room.no}" title="กดเพื่อกำหนดวันที่ / แนบหลักฐาน"`;
-        return `<${tag}${attrs} class="fl-box ${cls}${s.kind === 'rework' ? ' is-rework' : ''}${s.kind === 'cancel' ? ' is-cancel' : ''}${extra}">
-            <b class="fl-label">${s.kind === 'rework' ? '↩ ' : s.kind === 'cancel' ? '✖ ' : ''}${esc(s.label)}</b>
+        const waiting = wait != null && wait > 0 ? `<span class="fl-wait" title="ค้างอยู่ที่ขั้นนี้ถึงวันนี้">ค้าง ${wait} วัน</span>` : '';
+        const attrs = ` type="button" data-step="${esc(s.id)}" data-no="${room.no}"`;
+        const body = `<b class="fl-label">${s.kind === 'rework' ? '↩ ' : s.kind === 'cancel' ? '✖ ' : ''}${esc(s.label)}</b>
             ${s.date ? `<span class="fl-date">${esc(thDate(s.date))}</span><small>${esc(s.text)}</small>` : '<span class="fl-date is-empty">ยังไม่มีวันที่</span>'}
-            ${s.note ? `<small class="fl-note">📝 ${esc(s.note)}</small>` : ''}
-            ${s.virtual ? '' : s.files.length ? `<span class="fl-clip">📎 ${s.files.length} หลักฐาน</span>` : '<span class="fl-clip is-none">＋ แนบหลักฐาน</span>'}
-            ${gap}</${tag}>`;
+            ${s.note ? `<small class="fl-note">📝 ${esc(s.note)}</small>` : ''}`;
+        const main = s.virtual ? `<div class="fl-main">${body}</div>` : `<button${attrs} class="fl-main" title="กดเพื่อกำหนดวันที่ / แนบหลักฐาน">${body}</button>`;
+        const evidence = s.virtual ? '' : `<button${attrs} class="fl-ev${s.files.length ? '' : ' is-none'}" title="กดเพื่อกำหนดวันที่ / แนบหลักฐาน">${s.files.length ? `📎 ${s.files.length} หลักฐาน` : '＋ แนบหลักฐาน'}</button>`;
+        return `<div class="fl-row ${cls}${s.kind === 'rework' ? ' is-rework' : ''}${s.kind === 'cancel' ? ' is-cancel' : ''}"><span class="fl-dot">${esc(dot)}</span>${main}<div class="fl-act">${evidence}${gap}${waiting}</div></div>`;
     }
-    const plus = (room, after, lane = 'main') => `<button type="button" class="fl-plus" data-add="${esc(after)}" data-lane="${lane}" data-no="${room.no}" title="เพิ่มขั้นตอนเสริมตรงนี้">＋</button>`;
+    const plus = (room, after, lane = 'main') => `<button type="button" class="fl-plus" data-add="${esc(after)}" data-lane="${lane}" data-no="${room.no}" title="เพิ่มขั้นตอนเสริมตรงนี้">＋ เพิ่มขั้นตอนต่อจากข้อนี้</button>`;
 
+    // ผังเป็นแนวตั้ง (Vertical Stepper): ทุกขั้นเป็นแถว Grid [จุด | รายละเอียด | ปุ่มแนบหลักฐาน/จำนวนวัน] — ไม่ใช้ตำแหน่งแบบ absolute และไม่มีการวัด/ขยับตำแหน่งด้วย JS
     function flowOf(b) {
         const { room, side } = b;
         const main = b.cancelled ? b.main.slice(0, Math.max(0, b.main.findIndex(m => m.id === 'dL')) + 1) : b.main;
-        const cols = main.map((m, i) => {
-            const sides = side.get(m.id) || [];
-            const decision = m.id === 'dL' ? `<span class="fl-arrow">→</span>${diamond(b)}` : '';
-            return `<div class="fl-col"><div class="fl-row">${i ? `<span class="fl-arrow">→</span>` : `<span class="fl-start" title="เริ่ม">เริ่ม</span><span class="fl-arrow">→</span>`}${node(m, room)}${decision}${b.cancelled && m.id === 'dL' ? '' : plus(room, m.id)}</div>
-                <div class="fl-sides">${[['⇉ ทำไปพร้อมกัน', sides.filter(s => s.kind !== 'rework' && s.kind !== 'cancel')], ['↩ วนแก้สัญญา (ส่งกลับเจ้าของบ้าน → ส่งส่วนกลางอีกครั้ง)', sides.filter(s => s.kind === 'rework' || s.kind === 'cancel')]].filter(g => g[1].length).map(([tag, list]) => `<div class="fl-side${list[0].kind === 'rework' || list[0].kind === 'cancel' ? ' is-rw' : ''}"><span class="fl-side-tag">${tag}</span>${list.map(s => `<div class="fl-side-item">${node(s, room)}${s.kind === 'rework' && /ส่งสัญญาให้ส่วนกลางอีกครั้ง/.test(s.label) ? '<span class="fl-loopback">↺ วนกลับไปตรวจสัญญาที่ส่วนกลาง</span>' : ''}</div>`).join('')}</div>`).join('')}</div></div>`;
-        }).join('');
-        return `<div class="fl-chart">${cols}${b.cancelled ? '' : '<span class="fl-end">เซ็นสัญญา ✔</span>'}</div>`;
+        const groupsOf = sides => [['⇉ ทำไปพร้อมกัน', sides.filter(x => x.kind !== 'rework' && x.kind !== 'cancel')], ['↩ วนแก้สัญญา (ส่งกลับเจ้าของบ้าน → ส่งส่วนกลางอีกครั้ง)', sides.filter(x => x.kind === 'rework' || x.kind === 'cancel')]]
+            .filter(g => g[1].length)
+            .map(([tag, list]) => `<div class="fl-group${list[0].kind === 'rework' || list[0].kind === 'cancel' ? ' is-rw' : ''}"><span class="fl-group-tag">${tag}</span><ol class="fl-sub">${list.map(x => `<li>${node(x, room, x.kind === 'rework' || x.kind === 'cancel' ? '↩' : '⇉')}${x.kind === 'rework' && /ส่งสัญญาให้ส่วนกลางอีกครั้ง/.test(x.label) ? '<span class="fl-loopback">↺ วนกลับไปตรวจสัญญาที่ส่วนกลาง</span>' : ''}</li>`).join('')}</ol></div>`).join('');
+        const items = main.map((m, i) => `<li class="fl-step-item">${node(m, room, String(i + 1), m === b.last ? b.waiting : null)}
+            ${b.cancelled && m.id === 'dL' ? '' : `<div class="fl-addrow">${plus(room, m.id)}</div>`}
+            ${m.id === 'dL' ? diamond(b) : ''}${groupsOf(side.get(m.id) || [])}</li>`).join('');
+        return `<div class="fl-chart"><span class="fl-start">เริ่ม</span><ol class="fl-steps">${items}</ol>${b.cancelled ? '' : '<span class="fl-end">เซ็นสัญญา ✔</span>'}</div>`;
     }
     function diamond(b) {
-        const rounds = b.rework.filter(s => /ส่งกลับให้เจ้าของบ้าน/.test(s.label)).length;
-        return `<button type="button" class="fl-diamond${rounds ? ' has-rework' : ''}" data-decision="${b.room.no}" title="กดเพื่อเพิ่มรอบแก้สัญญา"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon points="50,2 98,50 50,98 2,50"/></svg><span>สัญญา<br>ต้องแก้ไข?</span><i class="fl-yes">ใช่ ↓ ${rounds ? rounds + ' รอบ' : ''}</i>${b.cancelled ? '' : '<i class="fl-no">ไม่ →</i>'}</button>`;
+        const rounds = b.rework.filter(x => /ส่งกลับให้เจ้าของบ้าน/.test(x.label)).length;
+        return `<div class="fl-decision${rounds ? ' has-rework' : ''}"><button type="button" class="fl-decide" data-decision="${b.room.no}" title="กดเพื่อเพิ่มรอบแก้สัญญา">❓ สัญญาต้องแก้ไข?</button><span class="fl-decide-info">${rounds ? `แก้ไปแล้ว ${rounds} รอบ` : 'ยังไม่มีรอบแก้'}${b.cancelled ? ' · ยกเลิกสัญญาแล้ว — ผังจบที่ข้อนี้' : ' · ไม่ต้องแก้ → ไปขั้นตอนถัดไป'}</span></div>`;
     }
 
     function card(b) {
@@ -165,24 +166,7 @@
         <div class="fl-filters">${chip('all', 'ทั้งหมด', openRooms.length)}${statuses.map(s => chip(s, s, openRooms.filter(r => r.status === s).length)).join('')}<input type="search" data-fl-q placeholder="ค้นหาที่พัก / ยูนิต…" value="${esc(state.query)}"></div>
         ${shown.length ? shown.map(card).join('') : '<p class="fl-empty">ไม่พบยูนิตที่ตรงเงื่อนไข</p>'}`;
         if (typing) { const input = host.querySelector('[data-fl-q]'); input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
-        alignRework();
     }
-    // กลุ่ม "วนแก้สัญญา" อยู่ใต้ข้อสี่เหลี่ยม "สัญญาต้องแก้ไข? ใช่ ↓" ให้ตรงกึ่งกลางกับข้อสี่เหลี่ยมด้านบน (วัดตำแหน่งจริงหลังวาดเสร็จ จึงตรงทุกหน้าจอ)
-    function alignRework() {
-        host.querySelectorAll('.fl-col').forEach(col => {
-            const side = col.querySelector('.fl-side.is-rw'), diamond = col.querySelector('.fl-diamond');
-            if (!side || !diamond) return;
-            side.style.marginLeft = '0px';
-            const first = side.querySelector('.fl-box') || side;   // จัดกึ่งกลาง "คอลัมน์กล่อง" (ไม่นับป้าย ↺ วนกลับที่ยื่นไปทางขวา) ให้ตรงข้อสี่เหลี่ยม
-            const dBox = diamond.getBoundingClientRect(), fBox = first.getBoundingClientRect();
-            const left = dBox.left + dBox.width / 2 - fBox.width / 2 - fBox.left;   // ระยะที่ต้องขยับจากตำแหน่งปัจจุบัน (ถัดจากกลุ่มทำไปพร้อมกัน)
-            side.style.marginLeft = Math.max(-10, Math.round(left)) + 'px';   // ยอมซ้อนช่องว่างขอบของกลุ่มซ้ายได้ไม่เกิน 10px เพื่อให้กึ่งกลางตรงจริง
-        });
-    }
-    window.addEventListener('resize', () => alignRework());
-    // แท็บนี้อาจถูกซ่อนตอนวาดผัง (วัดได้ 0) → จัดตำแหน่งใหม่เมื่อพื้นที่แสดงเปลี่ยน/แท็บถูกเปิด
-    if (typeof ResizeObserver === 'function') new ResizeObserver(() => alignRework()).observe(host);
-
     // ---------------------------------------------------------------- หน้าต่างกำหนดขั้นตอน / แนบหลักฐาน
     const dialog = Object.assign(document.createElement('dialog'), { className: 'fl-dialog' });
     document.body.append(dialog);

@@ -1,4 +1,8 @@
 /* หน้าสรุปภาพรวมห้องพัก + แท็บรายละเอียด (accommodation-dashboard.js) */
+/* โครงหน้า: เดิมเป็น grid 2 แถวสูงตายตัว (auto + 1fr, height:100%) แต่สคริปต์เพิ่มส่วนสรุป/แท็บ/สรุปรายตึกเข้ามาอีก → แถวถูกบีบจนเนื้อหาแท็บทะลุไปซ้อนส่วนอื่น
+   เปลี่ยนเป็นคอลัมน์แนวตั้ง (Flexbox) ความสูงตามเนื้อหา ทุกส่วนเรียงต่อกัน ไม่ซ้อนทับ */
+.accommodation-layout { display: flex; flex-direction: column; height: auto; min-height: 0; gap: 14px; }
+.accommodation-layout > * { min-width: 0; flex: none; }
 .as-head.dx-slim { padding-bottom: 12px; margin-bottom: 10px; }
 .as-head.dx-slim .as-header { margin-bottom: 0; }
 .dx { display: grid; gap: 10px; margin-bottom: 12px; color: var(--as-ink, #18212f); font: 14px/1.5 "Noto Sans Thai", "Segoe UI", sans-serif; }
