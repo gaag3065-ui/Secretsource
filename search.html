@@ -496,8 +496,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         // 6. โหลด Script ฝั่งล่าง
         // =====================================================
             if (canViewHistory) {
-                await loadScript('assets/js/pages/insuranceclaimhistory.js');
-                await loadScript('assets/js/pages/history-claim-report.js');
+                await loadScript('assets/js/pages/insuranceclaimhistory.js?v=20261124-report-status');
+                await loadScript('assets/js/pages/history-claim-report.js?v=20261124-status');
                 await loadScript('assets/js/pages/history-compact.js');
 
                 if (typeof initHistoryModalEvents === 'function') {

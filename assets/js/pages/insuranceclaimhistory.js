@@ -4018,7 +4018,7 @@ function initHistoryReportEvent() {
         'click',
         () => window.openClaimReportDialog
             ? window.openClaimReportDialog()
-            : downloadFilteredHistoryReport()
+            : alert('ระบบรายงานยังโหลดไม่พร้อม กรุณารีเฟรชหน้าเว็บแล้วกรองประวัติใหม่')
     );
 }
 //#endregion

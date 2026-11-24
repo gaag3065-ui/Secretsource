@@ -5,6 +5,7 @@
     const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
     const clean = v => String(v ?? '').trim().replace(/^-$/, '');
     let dialog;
+    let busy = false;
 
     const style = document.createElement('style');
     style.textContent = `
@@ -41,7 +42,17 @@
 @media (max-width: 560px) { .hcr-grid, .hcr-sign { grid-template-columns: 1fr; } }`;
     document.head.appendChild(style);
 
-    const history = () => window.currentFilteredHistory || [];
+    const pending = value => /^ผู้ป่วยสำรองจ่าย(?:\s|$)/u.test(clean(value));
+    const history = () => {
+        const items = window.currentFilteredHistory || [];
+        const latest = new Map();
+        for (const item of items) {
+            const key = clean(item.CaseIdNew) || `row-${item.targetRowNumber}`;
+            if (!latest.has(key) || Number(item.targetRowNumber) >= Number(latest.get(key).targetRowNumber)) latest.set(key, item);
+        }
+        return items.filter(item => pending(item.statusText) && pending(
+            window.currentCaseLatest?.[clean(item.CaseIdNew)]?.statusText || latest.get(clean(item.CaseIdNew) || `row-${item.targetRowNumber}`)?.statusText));
+    };
     const options = key => [...new Set(history().map(item => clean(item[key])).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th'));
     const today = () => new Date().toISOString().slice(0, 10);
     // 2026-10-05 → 5/10/69 (แบบในใบสรุปเดิม)
@@ -90,7 +101,9 @@
             clear.addEventListener('click', () => { delete dialog.signatures[who]; show(''); });
         });
         dialog.addEventListener('change', event => { if (event.target.matches('select')) updateCount(); });
+        dialog.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
         dialog.addEventListener('click', event => {
+            if (busy) return;
             const button = event.target.closest('.hcr-actions button');
             if (event.target === dialog || button?.value === 'cancel') return dialog.close();
             if (button) download(button);
@@ -153,7 +166,8 @@
     }
 
     function open() {
-        if (!history().length) { alert('ยังไม่มีข้อมูลสำหรับสร้างรายงาน — กดกรองประวัติก่อน'); return; }
+        if (busy) return;
+        if (!history().length) { alert('ไม่พบเคสผู้ป่วยสำรองจ่ายตามตัวกรอง กรุณากรองประวัติก่อนทำรายงาน'); return; }
         if (!dialog) build();
         const area = dialog.querySelector('[name=area]'), company = dialog.querySelector('[name=company]');
         // ตั้งต้นตามตัวกรองด้านนอกที่เลือกไว้
@@ -173,6 +187,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 rowNumbers: items.map(item => Number(item.targetRowNumber)),
+                selectedRows: items.map(item => ({ rowNumber: Number(item.targetRowNumber), caseId: clean(item.CaseIdNew), insuranceId: clean(item.insuranceId) })),
                 area: get('area'), company, type: get('type'), format,
                 withEvidence: dialog.querySelector('[name=withEvidence]').checked,
                 preparer: { signature: dialog.signatures.preparer || '', date: thaiShort(get('preparerDate')) },
@@ -186,32 +201,42 @@
             throw error;
         }
         const blob = await response.blob();
+        const count = response.headers.get('X-Claim-Updated-Count');
+        if (count === null || !/^\d+$/.test(count)) throw new Error('หลังบ้านยังไม่รองรับการอัปเดตสถานะรายงาน กรุณาอัปเดตระบบก่อนทำรายงาน');
         const link = document.createElement('a');
         const name = ['ใบสรุปการเบิกค่ารักษาพยาบาล', get('area'), company, today()].filter(Boolean).join('_');
         link.href = URL.createObjectURL(blob);
         link.download = `${name}.${format}`;
         document.body.appendChild(link); link.click(); link.remove();
         setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+        return Number(count);
     }
 
     // รวมไฟล์เดียว หรือแยกไฟล์ละ 1 บริษัท (ดาวน์โหลดทีละไฟล์ — บริษัทที่ไม่มียอดเบิกข้ามไป)
     async function download(button) {
+        if (busy) return;
         const format = button.value;
         const items = selected();
         if (!items.length) { alert('ไม่พบประวัติตามพื้นที่/บริษัทที่เลือก'); return; }
         const company = dialog.querySelector('[name=company]').value;
         const each = !company && dialog.querySelector('[name=split]:checked')?.value === 'each';
         const companies = each ? [...new Set(items.map(item => clean(item.company)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th')) : [company];
-        const buttons = dialog.querySelectorAll('.hcr-actions button');
         const label = button.querySelector('b').textContent;
-        buttons.forEach(b => { b.disabled = true; });
+        busy = true;
+        const mainButton = document.getElementById('createHistoryReportButton');
+        const mainLabel = mainButton?.textContent;
+        const controls = [...dialog.querySelectorAll('button, input, select'), mainButton].filter(Boolean);
+        const disabled = controls.map(control => control.disabled);
+        controls.forEach(control => { control.disabled = true; });
+        if (mainButton) { mainButton.textContent = 'กำลังสร้างรายงานและอัปเดตสถานะ…'; mainButton.setAttribute('aria-busy', 'true'); }
+        let updated = 0, failure = '';
         const done = [], skipped = [];
         try {
             for (const [index, name] of companies.entries()) {
                 button.querySelector('b').textContent = each ? `กำลังสร้างไฟล์ ${index + 1}/${companies.length} (${name})…` : 'กำลังสร้างไฟล์…';
                 const rows = each ? items.filter(item => clean(item.company) === name) : items;
                 try {
-                    await requestFile(format, rows, name);
+                    updated += await requestFile(format, rows, name);
                     done.push(name || 'ทุกบริษัท');
                 } catch (error) {
                     if (!each || !error.noAmount) throw error;
@@ -219,13 +244,21 @@
                 }
                 if (each) await new Promise(resolve => setTimeout(resolve, 400));
             }
-            if (each) alert(`ดาวน์โหลดแล้ว ${done.length} ไฟล์: ${done.join(', ') || '-'}${skipped.length ? `
-ไม่มียอดเบิก (ไม่สร้างไฟล์): ${skipped.join(', ')}` : ''}`);
         } catch (error) {
-            alert(error.message);
+            failure = error.message;
         } finally {
-            buttons.forEach(b => { b.disabled = false; });
+            button.querySelector('b').textContent = 'กำลังรีเฟรชประวัติ…';
+            // Refresh even after a failed/partial batch: the server may already have committed a successful file.
+            try {
+                if (typeof loadFilteredAllHistory === 'function') await loadFilteredAllHistory();
+            } catch { failure = [failure, 'รีเฟรชประวัติไม่สำเร็จ กรุณากดกรองประวัติอีกครั้ง'].filter(Boolean).join('\n'); }
+            controls.forEach((control, index) => { control.disabled = disabled[index]; });
+            if (mainButton) { mainButton.textContent = mainLabel; mainButton.removeAttribute('aria-busy'); }
             button.querySelector('b').textContent = label;
+            busy = false;
+            updateCount();
+            const message = updated ? `สร้างรายงานและอัปเดตสถานะ 'ส่งเอกสารเคลมแล้ว รอรับเงินคืน' สำเร็จจำนวน ${updated} เคส` : '';
+            alert([message, each && done.length ? `ดาวน์โหลด ${done.length} ไฟล์` : '', skipped.length ? `ข้ามบริษัทที่ไม่มียอดเบิก: ${skipped.join(', ')}` : '', failure].filter(Boolean).join('\n') || 'ไม่พบเคสที่มียอดเบิกสำหรับทำรายงาน');
         }
     }
 

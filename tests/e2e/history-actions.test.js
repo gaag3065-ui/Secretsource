@@ -183,7 +183,7 @@ test('ค้นหาเคส / กรองประวัติ / สร้�
         // 2) กรองประวัติ → โหมดกรอง แสดงเคสจากหลังบ้าน + ปุ่ม/ป้ายกำลังโหลดกลับสภาพ
         filterHistory.length = 0;
         row = 9000;
-        for (let id = 8003; id >= 8001; id--) filterHistory.push(ev(id, { statusText: CLOSE, PPUsageOPD: '300' }));
+        for (let id = 8003; id >= 8001; id--) filterHistory.push(ev(id, { statusText: id === 8003 ? WAIT : CLOSE, PPUsageOPD: '300' }));
         s.requests.length = 0;
         await page.click('#advancedHistoryFilterButton');
         await page.waitForSelector('#hcBody tr.hc-row[data-case="8003"]', { timeout: 10000 });
