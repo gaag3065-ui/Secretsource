@@ -13,7 +13,7 @@
     const FALLBACK = ['วันตรวจสอบ', 'วันที่ตั้งเบิกค่ามัดจำ', 'วันที่จ่ายค่ามัดจำ', 'วันที่ได้รับสัญญา', 'วันที่ส่งสัญญาไปตรวจสอบ', 'วันที่ตรวจสอบเสร็จ', 'วันที่ตั้งเบิกค่าเช่าล่วงหน้า', 'วันที่ได้รับเงินตั้งเบิก', 'วันที่ตรวจสอบก่อนเซ็นสัญญา', 'วันที่เซ็นสัญญา'];
     const DEFAULT_SIDE = { dP: 'dL' };   // ตรวจบ้านก่อนเซ็นสัญญา ทำไปพร้อมกับส่งสัญญาให้ส่วนกลางตรวจ (ปรับได้ในหน้าต่างขั้นตอน)
     const DONE = 'ทำสัญญาแล้ว', DAY = 86400000;
-    const state = { data: null, flow: new Map(), filter: 'all', query: '', error: '' };
+    const state = { data: null, flow: new Map(), filter: 'all', query: '', error: '', view: 'chart' };
 
     const parseDmy = text => { const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(text || '').trim()); if (!m) return null; const y = +m[3] > 2400 ? +m[3] - 543 : +m[3]; return new Date(Date.UTC(y, +m[2] - 1, +m[1])); };
     const todayUtc = () => { const n = new Date(); return new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())); };
@@ -139,7 +139,7 @@
         return `<article class="fl-card${hot ? ' is-hot' : ''}" data-card="${room.no}">
             <header><div><h3>${esc(room.project)} <small>${esc(room.unit)}</small></h3><span class="fl-status">${esc(room.status)}</span></div><div class="fl-meta">${room.rent ? `ค่าเช่า ${num(room.rent)}/เดือน` : ''}${room.type ? ` · ${esc(room.type)}` : ''}</div></header>
             <div class="fl-summary">${summary}</div>
-            ${flowOf(b)}
+            ${state.view === 'list' || !window.AccFlowChart ? flowOf(b) : window.AccFlowChart.html(b, { esc, thDate })}
         </article>`;
     }
 
@@ -163,7 +163,7 @@
             <div class="fl-kpis">${kpiHtml(openRooms, builds)}</div>
         </div>
         ${state.error ? `<p class="fl-warn">⚠️ โหลดหลักฐาน/ขั้นตอนเสริมไม่ได้: ${esc(state.error)} (ยังดูผังตามทะเบียนได้)</p>` : ''}
-        <div class="fl-filters">${chip('all', 'ทั้งหมด', openRooms.length)}${statuses.map(s => chip(s, s, openRooms.filter(r => r.status === s).length)).join('')}<input type="search" data-fl-q placeholder="ค้นหาที่พัก / ยูนิต…" value="${esc(state.query)}"></div>
+        <div class="fl-filters"><span class="fl-view" role="group" aria-label="มุมมอง"><button type="button" data-fl-view="chart" class="${state.view === 'chart' ? 'is-on' : ''}">🔀 ผัง Flow chart</button><button type="button" data-fl-view="list" class="${state.view === 'list' ? 'is-on' : ''}">☰ รายการแนวตั้ง</button></span>${chip('all', 'ทั้งหมด', openRooms.length)}${statuses.map(s => chip(s, s, openRooms.filter(r => r.status === s).length)).join('')}<input type="search" data-fl-q placeholder="ค้นหาที่พัก / ยูนิต…" value="${esc(state.query)}"></div>
         ${shown.length ? shown.map(card).join('') : '<p class="fl-empty">ไม่พบยูนิตที่ตรงเงื่อนไข</p>'}`;
         if (typing) { const input = host.querySelector('[data-fl-q]'); input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
     }
@@ -332,6 +332,7 @@
     });
 
     host.addEventListener('click', e => {
+        const v = e.target.closest('[data-fl-view]'); if (v) { state.view = v.dataset.flView; render(); return; }
         const f = e.target.closest('[data-fl-filter]'); if (f) { state.filter = f.dataset.flFilter; render(); return; }
         const step = e.target.closest('[data-step]'); if (step) return openStep(step.dataset.no, step.dataset.step);
         const add = e.target.closest('[data-add]'); if (add) return openAdd(add.dataset.no, add.dataset.add, add.dataset.lane);

@@ -25,7 +25,7 @@ const STEPS = [
     step(4, 'c9', { custom: true, label: 'ยกเลิกสัญญา', date: '5/10/2569', lane: 'side', anchor: 'dL', kind: 'cancel', note: NOTE })
 ];
 
-async function open(browser, size) {
+async function open(browser, size, view = 'list') {
     const { server, origin } = await startStaticServer();
     const session = await newSession(browser, size);
     const cors = { 'access-control-allow-origin': origin, 'access-control-allow-credentials': 'true', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS' };
@@ -44,6 +44,7 @@ async function open(browser, size) {
     await session.page.evaluate(rooms => window.dispatchEvent(new CustomEvent('ro-data', { detail: { rooms, counts: {} } })), ROOMS);
     await session.page.locator('.dx-tab').nth(3).click();
     await session.page.waitForSelector('#accommodationFlow .fl-card', { timeout: 10000 });
+    if (view === 'list') await session.page.locator('[data-fl-view="list"]').click();
     await session.page.waitForTimeout(800);
     return { ...session, server, calls };
 }
@@ -133,3 +134,55 @@ test('ผังติดตามขั้นตอน: ปุ่มกล่อ
         assert.deepEqual(problems, [], 'Console error: ' + problems.join(' | '));
     } finally { await ctx?.context.close(); await browser.close(); ctx?.server.close(); }
 });
+
+// ผัง Flow chart (มุมมองเริ่มต้น): กล่อง + ลูกศร + ข้อสี่เหลี่ยมข้าวหลามตัด · ไม่มี absolute/margin ติดลบ · กล่องไม่ซ้อนกัน · คลิกแล้วเปิดหน้าต่างถูก
+for (const [name, size] of [['จอคอม 1440', { width: 1440, height: 900 }], ['มือถือ 390', { width: 390, height: 844, mobile: true }]]) {
+    test(`ผัง Flow chart (${name}): เป็นมุมมองเริ่มต้น · กล่องไม่ซ้อนกัน · ไม่ล้น · คลิกเปิดหน้าต่าง`, { skip }, async () => {
+        const browser = await chromium.launch({ executablePath: EDGE, headless: true });
+        let ctx;
+        try {
+            ctx = await open(browser, size, 'chart');
+            const { page, problems } = ctx;
+            assert.equal(await page.locator('.fl-card').count(), 5);
+            assert.ok(await page.locator('.fl-card .fc-chart .fc-box').count() > 10, 'ต้องมีกล่องขั้นตอนในผัง');
+            assert.equal(await page.locator('.fl-card .fc-diamond').count() >= 1, true, 'ต้องมีข้อสี่เหลี่ยมข้าวหลามตัด "สัญญาต้องแก้ไข?"');
+            assert.equal(await page.locator('.fl-card .fl-steps').count(), 0, 'มุมมองผังต้องไม่ใช้รายการแนวตั้ง');
+            const bad = await page.evaluate(() => {
+                const out = [];
+                for (const card of document.querySelectorAll('#accommodationFlow .fl-card')) {
+                    const c = card.getBoundingClientRect();
+                    for (const el of card.querySelectorAll('.fc-chart *')) {
+                        const cs = getComputedStyle(el);
+                        if (cs.position === 'absolute' || cs.position === 'fixed') out.push(`position:${cs.position} ที่ .${el.className}`);
+                        if ([cs.marginLeft, cs.marginRight, cs.marginTop, cs.marginBottom].some(v => parseFloat(v) < 0)) out.push(`margin ติดลบที่ .${el.className}`);
+                    }
+                    for (const el of card.querySelectorAll('.fc-box, .fc-diamond, .fc-start, .fc-end')) {
+                        const r = el.getBoundingClientRect();
+                        if (r.width && (r.right > c.right + 1 || r.left < c.left - 1)) out.push(`ทะลุกรอบการ์ด .${el.className}`);
+                    }
+                    const boxes = [...card.querySelectorAll('.fc-box, .fc-diamond')].map(e => e.getBoundingClientRect());
+                    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+                        const a = boxes[i], b = boxes[j];
+                        if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 2 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 2) out.push('กล่องในผังซ้อนกัน');
+                    }
+                }
+                if (document.documentElement.scrollWidth > window.innerWidth + 2) out.push('หน้าล้นแนวนอน');
+                return [...new Set(out)];
+            });
+            assert.deepEqual(bad, [], 'พบปัญหาเลย์เอาต์ในผัง Flow chart');
+            assert.deepEqual(await layoutProblems(page, { overflow: true }), []);
+            if (process.env.FLOW_SHOT && name.startsWith('จอคอม')) await page.locator('.fl-card').first().screenshot({ path: process.env.FLOW_SHOT });
+            // คลิกกล่อง / ＋ / ข้อสี่เหลี่ยม เปิดหน้าต่าง
+            const dlg = () => page.evaluate(() => document.querySelector('.fl-dialog[open] h3')?.textContent.trim() || '');
+            const closeDlg = async () => { await page.keyboard.press('Escape'); await page.waitForFunction(() => !document.querySelector('.fl-dialog[open]')); };
+            const first = page.locator('.fl-card').first();
+            await first.locator('button.fc-box[data-step="dH"]').click(); assert.ok(await dlg(), 'คลิกกล่องต้องเปิดหน้าต่าง'); await closeDlg();
+            await first.locator('.fc-plus').first().click(); assert.ok(await dlg()); await closeDlg();
+            await first.locator('.fc-diamond').click(); assert.equal(await page.locator('.fl-dialog[open] [data-rework]').count(), 1); await closeDlg();
+            // สลับมุมมองไปมาได้
+            await page.locator('[data-fl-view="list"]').click(); assert.ok(await page.locator('.fl-steps').count() > 0);
+            await page.locator('[data-fl-view="chart"]').click(); assert.ok(await page.locator('.fc-chart').count() > 0);
+            assert.deepEqual(problems, [], 'Console error: ' + problems.join(' | '));
+        } finally { await ctx?.context.close(); await browser.close(); ctx?.server.close(); }
+    });
+}
