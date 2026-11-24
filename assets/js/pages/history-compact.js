@@ -8,6 +8,7 @@
     const num = value => Number(String(value ?? '').replace(/[,\s฿บาท]/g, '')) || 0;
     const money = value => value.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const blank = value => { const text = String(value ?? '').trim(); return !text || text === '-' ? '' : text; };
+    const dateOf = value => { const text = blank(value); return text ? (window.HistoryDateText?.text(text) || text) : ''; };   // เลขวันที่ Excel → DD/MM/YYYY
     const can = key => { try { return window.hasPermission?.(key) === true; } catch { return false; } };
 
     // หมวดยอดเงิน: แสดงเฉพาะที่ > 0 (ซ่อน 0 / - อัตโนมัติ)
@@ -72,7 +73,7 @@
     }
     function rowHtml(c) {
         const e = c.latest;
-        const date = blank(e.treatmentDateTime);
+        const date = dateOf(e.treatmentDateTime);
         const company = blank(e.company);
         const note = blank(e.notes);
         return `<tr class="hc-row" data-case="${esc(c.id)}" tabindex="0">
@@ -174,10 +175,10 @@
             <div class="hc-body">
                 <section class="hc-zone"><h4>ข้อมูลการรักษา</h4><dl class="hc-grid2">
                     ${kv('ชื่อพนักงาน', e.employeeName)}${kv('รหัสประกัน', e.insuranceId)}
-                    ${kv('บริษัท / พื้นที่', [blank(e.company), areaOf(e) !== '-' ? areaOf(e) : ''].filter(Boolean).join(' · '))}${kv('วันที่เข้ารักษา', e.treatmentDateTime)}
+                    ${kv('บริษัท / พื้นที่', [blank(e.company), areaOf(e) !== '-' ? areaOf(e) : ''].filter(Boolean).join(' · '))}${kv('วันที่เข้ารักษา', dateOf(e.treatmentDateTime))}
                     ${kv('โรงพยาบาล / สถานพยาบาล', e.hospital)}${kv('ผลการรักษา', e.ClinicianReportedOutcomes)}
                     ${kv('อาการป่วย', e.symptoms, true)}${kv('หมายเหตุ', e.notes, true)}
-                    ${kv('บันทึกล่าสุด', [blank(e.autoDateTime), blank(e.adminName)].filter(Boolean).join(' · '))}${kv('สถานะล่าสุด', c.status)}
+                    ${kv('บันทึกล่าสุด', [dateOf(e.autoDateTime), blank(e.adminName)].filter(Boolean).join(' · '))}${kv('สถานะล่าสุด', c.status)}
                 </dl></section>
                 <section class="hc-zone"><h4>สรุปยอดเงิน <small>(เฉพาะหมวดที่มีการเบิกจ่าย)</small></h4>${amounts.length ? `<table class="hc-money"><tbody>
                     ${amounts.map(a => `<tr class="${a.cls}"><th>${esc(a.label)}</th><td>${money(a.value)} ${esc(a.unit)}</td></tr>`).join('')}
@@ -231,7 +232,7 @@
             const ev = item.event;
             const amounts = amountsOf(ev);
             const used = spanText(stampMs(ev.autoDateTime) - stampMs(items[i + 1]?.event?.autoDateTime));   // items เรียงใหม่สุดก่อน → ขั้นก่อนหน้าคือ i+1
-            return `<li data-i="${i}"><div class="hc-tl-top"><time>${esc(blank(ev.autoDateTime) || blank(ev.treatmentDateTime) || '-')}</time>${pill(ev.statusText)}<span class="hc-tl-by">${esc(blank(ev.adminName))}</span>${used ? `<span class="hc-tl-dur" title="ระยะเวลาจากขั้นก่อนหน้า">⏱ ใช้เวลา ${esc(used)}</span>` : ''}</div>
+            return `<li data-i="${i}"><div class="hc-tl-top"><time>${esc(dateOf(ev.autoDateTime) || dateOf(ev.treatmentDateTime) || '-')}</time>${pill(ev.statusText)}<span class="hc-tl-by">${esc(blank(ev.adminName))}</span>${used ? `<span class="hc-tl-dur" title="ระยะเวลาจากขั้นก่อนหน้า">⏱ ใช้เวลา ${esc(used)}</span>` : ''}</div>
                 <div class="hc-tl-body">${blank(ev.hospital) ? `<span>${esc(ev.hospital)}</span>` : ''}${blank(ev.symptoms) ? `<span>${esc(ev.symptoms)}</span>` : ''}${blank(ev.notes) ? `<em>${esc(ev.notes)}</em>` : ''}</div>
                 ${amounts.length ? `<div class="hc-tl-amt">${amounts.map(a => `<span class="hc-chip ${a.cls}">${esc(a.label)}: <b>${money(a.value)}</b> ${esc(a.unit)}</span>`).join('')}</div>` : ''}
                 ${(item.edit || item.full || item.del) ? `<div class="hc-tl-act">${item.edit ? '<button type="button" class="hc-btn is-edit" data-act="edit">✏️ แก้ไข</button>' : ''}${item.full ? '<button type="button" class="hc-btn" data-act="full">📝 แก้ไขทุกรายละเอียด</button>' : ''}${item.del ? '<button type="button" class="hc-btn is-del" data-act="del">🗑️ ลบ</button>' : ''}</div>` : ''}</li>`;

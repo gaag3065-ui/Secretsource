@@ -169,6 +169,38 @@ for (const [name, size] of [['คอมพิวเตอร์', { width: 1440,
             assert.deepEqual(overlaps, [], 'ตารางจัดสรรซ้อนทับ/ล้นจอ');
 
             // 7) บันทึกทั้งหมด (ยืนยันกรณีเกินสต็อกอัตโนมัติ) → ไม่เหลือสถานะค้าง
+            // สรุปสต็อกด้านบน (pill): แดง = หมด/เกิน · ส้ม = เหลือ < 20% · ปกติ = เขียว
+            const pill = n => page.locator('.sa-pills .sa-pill', { hasText: n });
+            assert.match(await pill('ซิมการ์ด SL').innerText(), /เหลือ 0 \/ 3/);
+            assert.match(await pill('ซิมการ์ด SL').getAttribute('class'), /is-out/);
+            assert.match(await pill('เสื้อยูนิฟอร์ม').innerText(), /เหลือ 2 \/ 5/);
+            assert.match(await pill('เสื้อยูนิฟอร์ม').getAttribute('class'), /is-ok/);
+            await page.fill('.sa-side [data-item="2"] [data-istock]', '6'); await page.press('.sa-side [data-item="2"] [data-istock]', 'Tab');
+            await page.waitForFunction(() => /เหลือ 3 \/ 6/.test(document.querySelector('.sa-pills')?.textContent || ''));
+            await page.fill('input[data-q="E2"][data-i="2"]', '2');   // แจกรวม 5 จาก 6 → เหลือ 1 (< 20%)
+            assert.match(await pill('เสื้อยูนิฟอร์ม').innerText(), /เหลือ 1 \/ 6/);
+            assert.match(await pill('เสื้อยูนิฟอร์ม').getAttribute('class'), /is-low/);
+            // ป้ายของที่แต่ละคนได้ใต้ชื่อ (สด) + ปุ่ม − ＋ + ไฮไลต์ช่องที่มีของ
+            const got = k => page.locator(`tr[data-emp="${k}"] [data-got]`).innerText();
+            assert.match(await got('E1'), /ซิมการ์ด SL ×2/); assert.match(await got('E1'), /เสื้อยูนิฟอร์ม ×2/);
+            assert.match(await got('E2'), /ซิมการ์ด SL ×1/);
+            assert.equal(await page.locator('tr[data-emp="E3"] [data-got] .sa-gotnone').count(), 0, 'E3 ได้เสื้อ 1 ชิ้นแล้ว');
+            await page.click('button[data-step="-1"][data-q="E2"][data-i="1"]');
+            assert.equal(await page.inputValue('input[data-q="E2"][data-i="1"]'), '');
+            await page.fill('input[data-q="E2"][data-i="2"]', '0');
+            assert.match(await got('E2'), /ยังไม่ได้จัดสรร/);
+            await page.click('button[data-step="1"][data-q="E2"][data-i="1"]');
+            await page.click('button[data-step="1"][data-q="E2"][data-i="1"]');
+            assert.equal(await page.inputValue('input[data-q="E2"][data-i="1"]'), '2');
+            await page.click('button[data-step="-1"][data-q="E2"][data-i="1"]');
+            assert.match(await got('E2'), /ซิมการ์ด SL ×1/);
+            assert.equal(await page.locator('tr[data-emp="E1"] td.sa-qty.has-qty').count(), 2, 'ไฮไลต์เฉพาะช่องที่แจกของ');
+            assert.equal(await page.locator('tr[data-emp="E1"] td.sa-qty:not(.has-qty)').count(), 0);
+            // แผงขวากะทัดรัด: การ์ดรายการไม่สูงเกินจริง · ช่องชื่อสูงมาตรฐาน
+            const card = await page.evaluate(() => { const r = document.querySelector('.sa-side [data-item="1"]'); return { h: r.getBoundingClientRect().height, name: r.querySelector('[data-iname]').getBoundingClientRect().height, tag: r.querySelector('[data-iname]').tagName, side: document.querySelector('.sa-side').getBoundingClientRect().width }; });
+            assert.ok(card.h <= 110 && card.name <= 40 && card.tag === 'INPUT', `การ์ดรายการสูง ${card.h}, ช่องชื่อ ${card.name}`);
+            if (!size.mobile && size.width >= 1000) assert.ok(Math.abs(card.side - 320) <= 2, `แผงขวากว้าง 320px (${card.side})`);
+
             // ข้อมูลที่พนักงานกรอก: คอลัมน์ไดนามิก + สถานะการกรอก ในแถวเดียวกับช่องจัดสรร
             const e1 = page.locator('tr[data-emp="E1"]'), e3 = page.locator('tr[data-emp="E3"]');
             assert.equal(await page.locator('.sa-table thead th.sa-info:text("ไซส์เสื้อ")').count(), 1);
@@ -181,7 +213,7 @@ for (const [name, size] of [['คอมพิวเตอร์', { width: 1440,
                 const r = s => document.querySelector(s).getBoundingClientRect(), main = r('.sa-main'), side = r('.sa-side'), dlg = r('.sa-dialog:has(.sa-wide)'), save = r('[data-ag-save]'), prn = r('[data-ag-print]');
                 return { mainW: main.width, sideW: side.width, sideRight: side.left >= main.right - 1, dlgW: dlg.width / innerWidth, dlgH: dlg.height / innerHeight, saveVisible: save.bottom <= innerHeight && prn.bottom <= innerHeight && save.right <= innerWidth };
             });
-            if (!size.mobile) { assert.ok(geo.saveVisible, 'ปุ่มบันทึก/พิมพ์ต้องอยู่ในจอ');assert.ok(geo.sideRight && geo.mainW > geo.sideW * 2, `ตารางซ้ายต้องกว้างกว่าแผงขวา (${geo.mainW}/${geo.sideW})`); assert.ok(geo.dlgW > 0.9 && geo.dlgW < 0.94 && geo.dlgH < 0.9, `ขนาดหน้าต่าง ${geo.dlgW}/${geo.dlgH}`); }
+            if (!size.mobile) { assert.ok(geo.saveVisible, 'ปุ่มบันทึก/พิมพ์ต้องอยู่ในจอ');assert.ok(geo.sideRight && geo.mainW > geo.sideW * 1.5, `ตารางซ้ายต้องกว้างกว่าแผงขวา (${geo.mainW}/${geo.sideW})`); assert.ok(geo.dlgW > 0.9 && geo.dlgW < 0.94 && geo.dlgH < 0.9, `ขนาดหน้าต่าง ${geo.dlgW}/${geo.dlgH}`); }
 
             await page.click('[data-ag-save]');
             await page.waitForFunction(() => /บันทึกการจัดสรรแล้ว/.test(document.querySelector('.sa-dialog [data-ag-msg]')?.textContent || ''));

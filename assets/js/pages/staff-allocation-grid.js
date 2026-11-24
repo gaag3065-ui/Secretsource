@@ -53,20 +53,20 @@
         const body = list.map(e => {
             const c = A().condOf(G.box, e.key), ok = sentOf(e.key);
             const infoCells = `<td class="sa-info"><span class="fa-badge ${ok ? 'ok' : 'dim'}">${ok ? 'ส่งข้อมูลแล้ว' : 'ยังไม่ส่งข้อมูล'}</span></td>${cols.map(l => `<td class="sa-info${longCol(l) ? ' is-long' : ''}">${esc(answer(e.key, l)) || '<span class="sa-note">–</span>'}</td>`).join('')}`;
-            return `<tr data-emp="${esc(e.key)}"><th class="sa-who" scope="row"><b>${esc(e.fullname)}${e.nickname ? ` (${esc(e.nickname)})` : ''}</b><small>${esc([e.employeeId || e.centralId, e.insuranceCode].filter(Boolean).join(' · '))}</small>${c ? A().badge(c) : ''}</th>
+            return `<tr data-emp="${esc(e.key)}"><th class="sa-who" scope="row"><b>${esc(e.fullname)}${e.nickname ? ` (${esc(e.nickname)})` : ''}</b><small>${esc([e.employeeId || e.centralId, e.insuranceCode].filter(Boolean).join(' · '))}</small>${c ? A().badge(c) : ''}<span class="sa-got" data-got="${esc(e.key)}"></span></th>
                 ${infoCells}
-                ${d.items.map(i => { const q = qtyOf(d, e.key, i.id); return `<td class="sa-qty${G.drafts.has(k(e.key, i.id)) ? ' is-dirty' : ''}"><input type="number" min="0" max="100000" step="1" inputmode="numeric" placeholder="–" value="${q || ''}" data-q="${esc(e.key)}" data-i="${esc(i.id)}" aria-label="${esc(e.fullname)} · ${esc(i.name)}"><button type="button" class="sa-tick${q ? ' is-on' : ''}" data-tick data-q="${esc(e.key)}" data-i="${esc(i.id)}" aria-label="ให้ 1 ชิ้น / ล้าง" title="ให้ 1 ชิ้น (กดซ้ำ = ล้าง)">✓</button></td>`; }).join('')}
+                ${d.items.map(i => { const q = qtyOf(d, e.key, i.id), at = `data-q="${esc(e.key)}" data-i="${esc(i.id)}"`; return `<td class="sa-qty${G.drafts.has(k(e.key, i.id)) ? ' is-dirty' : ''}${q ? ' has-qty' : ''}"><div class="sa-ctl"><button type="button" class="sa-step" data-step="-1" ${at} aria-label="ลด 1">−</button><input type="number" min="0" max="100000" step="1" inputmode="numeric" placeholder="–" value="${q || ''}" ${at} aria-label="${esc(e.fullname)} · ${esc(i.name)}"><button type="button" class="sa-step" data-step="1" ${at} aria-label="เพิ่ม 1">＋</button><button type="button" class="sa-tick${q ? ' is-on' : ''}" data-tick ${at} aria-label="ให้ 1 ชิ้น / ล้าง" title="ให้ 1 ชิ้น (กดซ้ำ = ล้าง)">✓</button></div></td>`; }).join('')}
                 <td class="sa-total" data-kinds="${esc(e.key)}"></td><td class="sa-total" data-pieces="${esc(e.key)}"></td></tr>`;
         }).join('');
         const span = cols.length + 1;
         G.dialog.innerHTML = `<div class="sa-box sa-wide"><header class="sa-head"><div><h2>📦 จัดสรรสิ่งของ · ${esc(A().boxTitle(G.box))}</h2><p>กรอกจำนวนชิ้นที่แจกให้แต่ละคน (หรือกด ✓ = 1 ชิ้น) · ดูข้อมูลที่พนักงานกรอกประกอบได้ในแถวเดียวกัน · สต็อกจัดการที่แผงด้านขวา</p></div><button type="button" class="sa-x" data-ag-close aria-label="ปิด">×</button></header>
             <div class="sa-split"><section class="sa-main">
-                <div class="sa-tools"><label>กรองตามเงื่อนไข <select data-ag-cond><option value="">ทั้งหมด</option><option value="_none">ยังไม่กำหนด</option>${d.conds.map(c => `<option value="${esc(c.id)}"${G.cond === c.id ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label><span class="sa-note" data-ag-count></span></div>
+                <div class="sa-tools"><label>กรองตามเงื่อนไข <select data-ag-cond><option value="">ทั้งหมด</option><option value="_none">ยังไม่กำหนด</option>${d.conds.map(c => `<option value="${esc(c.id)}"${G.cond === c.id ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label><span class="sa-note" data-ag-count></span><div class="sa-pills" data-pills aria-label="สรุปสต็อกคงเหลือ"></div></div>
                 ${d.items.length ? `<div class="sa-scroll"><table class="sa-table"><thead><tr><th class="sa-who" scope="col">พนักงาน (${list.length} คน)</th>${infoHead}${head}<th class="sa-total" scope="col">รายการ</th><th class="sa-total" scope="col">รวมชิ้น</th></tr></thead><tbody>${body || `<tr><td colspan="${d.items.length + span + 3}" class="sa-note">ไม่มีพนักงานตามเงื่อนไขนี้</td></tr>`}</tbody>
                     <tfoot><tr><th class="sa-who" scope="row">รวมที่แสดง</th><td class="sa-info" colspan="${span}"></td>${d.items.map(i => `<td class="sa-total" data-col="${esc(i.id)}"></td>`).join('')}<td class="sa-total" data-all-kinds></td><td class="sa-total" data-all-pieces></td></tr></tfoot></table></div>` : '<p class="sa-note">เพิ่มรายการสิ่งของที่แผงด้านขวาก่อน แล้วตารางจัดสรรจะแสดงที่นี่</p>'}
             </section>
             <aside class="sa-side"><section class="sa-stock"><h3>รายการสิ่งของและสต็อกตั้งต้น</h3>
-                ${d.items.map(i => `<div class="sa-row" data-item="${esc(i.id)}"><input data-iname value="${esc(i.name)}" maxlength="80" aria-label="ชื่อรายการ"><label>สต็อก <input data-istock type="number" min="0" step="1" value="${i.stock}"></label><button type="button" class="fa-btn fa-btn-ghost" data-idel>ลบรายการ</button></div>`).join('') || '<p class="sa-note">ยังไม่มีรายการสิ่งของ — เพิ่มด้านล่าง</p>'}
+                ${d.items.map(i => `<div class="sa-row" data-item="${esc(i.id)}"><div class="sa-row-top"><input type="text" data-iname value="${esc(i.name)}" maxlength="80" aria-label="ชื่อรายการ"><button type="button" class="sa-trash" data-idel aria-label="ลบรายการ ${esc(i.name)}" title="ลบรายการ">🗑</button></div><div class="sa-row-bot"><label>สต็อกตั้งต้น: <input data-istock type="number" min="0" step="1" value="${i.stock}"></label><span class="sa-left" data-side="${esc(i.id)}"></span></div></div>`).join('') || '<p class="sa-note">ยังไม่มีรายการสิ่งของ — เพิ่มด้านล่าง</p>'}
                 <form class="sa-add" data-ag-add><input name="name" maxlength="80" placeholder="ชื่อรายการ เช่น เสื้อยูนิฟอร์ม" required><input name="stock" type="number" min="0" step="1" value="0" aria-label="สต็อกตั้งต้น"><button class="fa-btn fa-btn-primary">＋ เพิ่มรายการ</button></form></section>
                 <div class="sa-actions"><span class="sa-dirty" data-ag-dirty></span><p class="sa-msg" data-ag-msg role="status"></p>
                     <button type="button" class="fa-btn" data-ag-print>🖨 พิมพ์ใบสรุปการแจกของ</button><button type="button" class="fa-btn fa-btn-primary" data-ag-save>💾 บันทึกการจัดสรรทั้งหมด</button></div></aside></div></div>`;
@@ -75,15 +75,23 @@
     // อัปเดตตัวเลขสรุปทั้งหมดโดยไม่วาดตารางใหม่ (ไม่ให้ช่องที่กำลังพิมพ์เสียโฟกัส)
     function totals() {
         const d = data(), q = s => G.dialog.querySelector(s), list = rows(d);
+        const pills = [];
         for (const i of d.items) {
             const used = usedOf(d, i.id), left = i.stock - used, n = q(`[data-sum="${CSS.escape(i.id)}"]`);
+            const level = left <= 0 ? 'is-out' : left < i.stock * 0.2 ? 'is-low' : 'is-ok';   // หมด/เกิน = แดง · เหลือ < 20% = ส้ม
+            pills.push(`<span class="sa-pill ${level}" title="สต็อกตั้งต้น ${i.stock} · แจก ${used}">${esc(i.name)}: ${left < 0 ? `เกิน ${-left}` : `เหลือ ${left}`} / ${i.stock}</span>`);
+            const side = q(`[data-side="${CSS.escape(i.id)}"]`);
+            if (side) { side.textContent = `แจกแล้ว ${used} • ${left < 0 ? `เกิน ${-left}` : `เหลือ ${left}`}`; side.className = `sa-left ${level}`; }
             if (n) { n.textContent = left < 0 ? `สต็อก ${i.stock} · แจก ${used} · เกิน ${-left}` : `สต็อก ${i.stock} · แจก ${used} · เหลือ ${left}`; n.className = left < 0 ? 'is-over' : left === 0 ? 'is-zero' : ''; }
             const col = q(`[data-col="${CSS.escape(i.id)}"]`);
             if (col) col.textContent = list.reduce((s, e) => s + qtyOf(d, e.key, i.id), 0);
         }
+        const pillBox = q('[data-pills]'); if (pillBox) pillBox.innerHTML = pills.join('');
         let kinds = 0, pieces = 0;
         for (const e of list) {
             const mine = d.items.map(i => qtyOf(d, e.key, i.id));
+            const got = q(`[data-got="${CSS.escape(e.key)}"]`);   // ป้ายของที่คนนี้ได้ (สดทุกครั้งที่กรอก)
+            if (got) got.innerHTML = d.items.filter((i, n) => mine[n]).map(i => `<em class="sa-gotpill">${esc(i.name)} ×${mine[d.items.indexOf(i)]}</em>`).join('') || '<em class="sa-gotnone">ยังไม่ได้จัดสรร</em>';
             const a = mine.filter(Boolean).length, b = mine.reduce((s, x) => s + x, 0);
             kinds += a; pieces += b;
             const ka = q(`[data-kinds="${CSS.escape(e.key)}"]`), kb = q(`[data-pieces="${CSS.escape(e.key)}"]`);
@@ -102,7 +110,7 @@
         const d = data(), q = num(value), key = k(emp, item);
         if (q === savedQty(d, emp, item)) G.drafts.delete(key); else G.drafts.set(key, q);
         const input = G.dialog.querySelector(`input[data-q="${CSS.escape(emp)}"][data-i="${CSS.escape(item)}"]`);
-        if (input) { input.closest('td').classList.toggle('is-dirty', G.drafts.has(key)); input.nextElementSibling.classList.toggle('is-on', q > 0); }
+        if (input) { const td = input.closest('td'); td.classList.toggle('is-dirty', G.drafts.has(key)); td.classList.toggle('has-qty', q > 0); td.querySelector('[data-tick]').classList.toggle('is-on', q > 0); }
         totals();
     }
     const flash = (text, bad) => { const n = G.dialog.querySelector('[data-ag-msg]'); if (n) { n.textContent = text; n.className = `sa-msg${bad ? ' is-bad' : ''}`; } };
@@ -150,7 +158,10 @@
         const t = e.target, row = t.closest('[data-item]');
         if (t === G.dialog || t.closest('[data-ag-close]')) return close();
         const tick = t.closest('[data-tick]');
-        if (tick) { const input = tick.previousElementSibling; input.value = num(input.value) ? '' : 1; return setQty(tick.dataset.q, tick.dataset.i, input.value); }
+        const cellInput = b => b.closest('td').querySelector('input[data-q]');
+        if (tick) { const input = cellInput(tick); input.value = num(input.value) ? '' : 1; return setQty(tick.dataset.q, tick.dataset.i, input.value); }
+        const step = t.closest('[data-step]');
+        if (step) { const input = cellInput(step), n = Math.min(100000, Math.max(0, num(input.value) + Number(step.dataset.step))); input.value = n || ''; return setQty(step.dataset.q, step.dataset.i, input.value); }
         if (t.closest('[data-ag-save]')) return save();
         if (t.closest('[data-ag-print]')) return print();
         if (t.closest('[data-idel]') && confirm('ลบรายการสิ่งของนี้? (ข้อมูลในชีตยังอยู่ แต่จะไม่แสดงในตาราง)')) api(`/items/${encodeURIComponent(row.dataset.item)}/delete`, 'POST', {}, 'ลบรายการแล้ว');
