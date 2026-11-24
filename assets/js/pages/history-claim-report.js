@@ -180,20 +180,31 @@
         dialog.showModal();
     }
 
-    async function requestFile(format, items, company) {
-        const get = name => dialog.querySelector(`[name=${name}]`).value;
-        const response = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/history/claim-summary`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+    const get = name => dialog.querySelector(`[name=${name}]`).value;
+    const payload = (format, items, company) => ({
                 rowNumbers: items.map(item => Number(item.targetRowNumber)),
                 selectedRows: items.map(item => ({ rowNumber: Number(item.targetRowNumber), caseId: clean(item.CaseIdNew), insuranceId: clean(item.insuranceId) })),
                 area: get('area'), company, type: get('type'), format,
                 withEvidence: dialog.querySelector('[name=withEvidence]').checked,
                 preparer: { signature: dialog.signatures.preparer || '', date: thaiShort(get('preparerDate')) },
                 approver: { signature: dialog.signatures.approver || '', date: thaiShort(get('approverDate')) }
-            })
-        });
+    });
+    const post = (body) => window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/history/claim-summary`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+    // ขอข้อมูลตัวอย่างรายงาน (ไม่เขียนชีต ไม่เปลี่ยนสถานะ)
+    async function requestPreview(format, items, company) {
+        // หลังบ้านรุ่นเก่าไม่รู้จัก mode:'preview' และจะสร้างรายงานจริง+เปลี่ยนสถานะทันที → ตรวจก่อนว่าหลังบ้านรองรับระบบฉบับรายงาน (เส้นทางใหม่) ถ้าไม่ได้ให้หยุดก่อนส่งอะไรทั้งสิ้น
+        const probe = await window.authFetch(`${window.APP_CONFIG.API_BASE_URL}/api/history/claim-reports`).catch(() => null);
+        if (!probe || !probe.ok) throw new Error(probe && probe.status === 404 ? 'เครื่องหลังบ้านยังไม่ได้อัปเดตระบบฉบับรายงาน (git pull แล้วรีสตาร์ท) ยังไม่ได้ทำรายการใดๆ' : 'ตรวจสถานะระบบฉบับรายงานไม่สำเร็จ กรุณาลองใหม่ ยังไม่ได้ทำรายการใดๆ');
+        const response = await post({ ...payload(format, items, company), mode: 'preview', withEvidence: false });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(response.status === 404 && !data.message ? 'เครื่องหลังบ้านยังไม่ได้อัปเดต (git pull แล้วรีสตาร์ท)' : data.message || 'เตรียมตัวอย่างรายงานไม่สำเร็จ');
+        if (!data.nextReportNo) throw new Error('หลังบ้านยังไม่รองรับระบบฉบับรายงาน กรุณาอัปเดตระบบก่อนทำรายงาน');
+        return data;
+    }
+
+    async function requestFile(format, items, company, mode, creator) {
+        const response = await post({ ...payload(format, items, company), mode, creator });
         if (!response.ok) {
             const data = await response.json().catch(() => ({}));
             const error = new Error(response.status === 404 && !data.message ? 'เครื่องหลังบ้านยังไม่ได้อัปเดต (git pull แล้วรีสตาร์ท)' : data.message || 'สร้างรายงานไม่สำเร็จ');
@@ -202,22 +213,38 @@
         }
         const blob = await response.blob();
         const count = response.headers.get('X-Claim-Updated-Count');
+        const reportNo = response.headers.get('X-Claim-Report-No') || '';
         if (count === null || !/^\d+$/.test(count)) throw new Error('หลังบ้านยังไม่รองรับการอัปเดตสถานะรายงาน กรุณาอัปเดตระบบก่อนทำรายงาน');
         const link = document.createElement('a');
-        const name = ['ใบสรุปการเบิกค่ารักษาพยาบาล', get('area'), company, today()].filter(Boolean).join('_');
+        const name = [mode === 'draft' ? 'ฉบับร่าง' : reportNo, 'ใบสรุปการเบิกค่ารักษาพยาบาล', get('area'), company, today()].filter(Boolean).join('_');
         link.href = URL.createObjectURL(blob);
         link.download = `${name}.${format}`;
         document.body.appendChild(link); link.click(); link.remove();
         setTimeout(() => URL.revokeObjectURL(link.href), 5000);
-        return Number(count);
+        return { count: Number(count), reportNo };
     }
 
     // รวมไฟล์เดียว หรือแยกไฟล์ละ 1 บริษัท (ดาวน์โหลดทีละไฟล์ — บริษัทที่ไม่มียอดเบิกข้ามไป)
     async function download(button) {
         if (busy) return;
-        const format = button.value;
         const items = selected();
         if (!items.length) { alert('ไม่พบประวัติตามพื้นที่/บริษัทที่เลือก'); return; }
+        const company = dialog.querySelector('[name=company]').value;
+        const each = !company && dialog.querySelector('[name=split]:checked')?.value === 'each';
+        const label = button.querySelector('b').textContent;
+        busy = true; button.querySelector('b').textContent = 'กำลังเตรียมตัวอย่างรายงาน…';
+        let data;
+        try { data = await requestPreview(button.value, items, each ? '' : company); }
+        catch (error) { alert(error.message); return; }
+        finally { busy = false; button.querySelector('b').textContent = label; }
+        if (!window.ClaimReportPreview) return run(button, 'legacy', '');
+        window.ClaimReportPreview.show({ data, format: button.value, each, onRun: (mode, creator) => run(button, mode, creator) });
+    }
+
+    async function run(button, mode, creator) {
+        if (busy) return;
+        const format = button.value;
+        const items = selected();
         const company = dialog.querySelector('[name=company]').value;
         const each = !company && dialog.querySelector('[name=split]:checked')?.value === 'each';
         const companies = each ? [...new Set(items.map(item => clean(item.company)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'th')) : [company];
@@ -230,13 +257,14 @@
         controls.forEach(control => { control.disabled = true; });
         if (mainButton) { mainButton.textContent = 'กำลังสร้างรายงานและอัปเดตสถานะ…'; mainButton.setAttribute('aria-busy', 'true'); }
         let updated = 0, failure = '';
-        const done = [], skipped = [];
+        const done = [], skipped = [], reportNos = [];
         try {
             for (const [index, name] of companies.entries()) {
                 button.querySelector('b').textContent = each ? `กำลังสร้างไฟล์ ${index + 1}/${companies.length} (${name})…` : 'กำลังสร้างไฟล์…';
                 const rows = each ? items.filter(item => clean(item.company) === name) : items;
                 try {
-                    updated += await requestFile(format, rows, name);
+                    const result = await requestFile(format, rows, name, mode, creator);
+                    updated += result.count; if (result.reportNo) reportNos.push(result.reportNo);
                     done.push(name || 'ทุกบริษัท');
                 } catch (error) {
                     if (!each || !error.noAmount) throw error;
@@ -257,7 +285,8 @@
             button.querySelector('b').textContent = label;
             busy = false;
             updateCount();
-            const message = updated ? `สร้างรายงานและอัปเดตสถานะ 'ส่งเอกสารเคลมแล้ว รอรับเงินคืน' สำเร็จจำนวน ${updated} เคส` : '';
+            window.refreshClaimReports?.();
+            const message = mode === 'draft' ? 'ดาวน์โหลดฉบับร่างแล้ว (ไม่เปลี่ยนสถานะเคส ไม่บันทึกฉบับ)' : updated ? `สร้างรายงาน ${reportNos.join(', ')} และอัปเดตสถานะ 'ส่งเอกสารเคลมแล้ว รอรับเงินคืน' สำเร็จจำนวน ${updated} เคส` : '';
             alert([message, each && done.length ? `ดาวน์โหลด ${done.length} ไฟล์` : '', skipped.length ? `ข้ามบริษัทที่ไม่มียอดเบิก: ${skipped.join(', ')}` : '', failure].filter(Boolean).join('\n') || 'ไม่พบเคสที่มียอดเบิกสำหรับทำรายงาน');
         }
     }

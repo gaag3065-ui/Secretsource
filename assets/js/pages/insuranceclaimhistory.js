@@ -2855,6 +2855,7 @@ async function loadFilteredAllHistory() {
             data.history || [];
         window.currentCaseDocuments = data.caseDocuments || {};
         window.currentCaseTreatmentEvents = data.caseTreatmentEvents || {};
+        window.currentCaseReports = data.caseReports || {};   // เลขที่ฉบับรายงานเคลมของเคส (ป้าย 'ฉบับ: REP-…' ในตาราง)
         window.currentCaseLatest = data.caseLatest || {};   // สถานะล่าสุดของเคส (ตัวเดียวกับที่ตัวกรอง "ผลการรักษา" ใช้)
 
         applyHistoryFilterOptions(data);

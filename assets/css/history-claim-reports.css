@@ -1,0 +1,51 @@
+/* ตัวอย่างรายงาน (.hcp) · คลังประวัติรายงาน (.hcl) · ป้ายฉบับในตาราง (.hc-rep) — Flex/Grid ล้วน ไม่ใช้ absolute / margin ติดลบ · Modal z-index 50 เลื่อนในตัวเองได้ */
+.hcp, .hcl { z-index: 50; border: 0; border-radius: 16px; padding: 0; width: min(1000px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow-y: auto; box-shadow: 0 24px 60px rgba(15, 23, 42, .28); font: inherit; color: #1d2939; overflow-wrap: anywhere; }
+.hcp::backdrop, .hcl::backdrop { background: rgba(15, 23, 42, .45); }
+.hcp-form, .hcl-shell { display: grid; gap: 12px; padding: 18px 20px; min-width: 0; }
+.hcp-head, .hcl-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.hcp-head h3, .hcl-head h3 { margin: 0; font-size: 18px; }
+.hcp-head p, .hcl-head p { margin: 2px 0 0; font-size: 12.5px; color: #667085; }
+.hcp-x, .hcl-x { flex: none; border: 0; background: none; font-size: 26px; line-height: 1; cursor: pointer; color: #667085; }
+.hcp-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 10px 12px; background: #f2f4f7; border-radius: 10px; font-size: 13px; }
+.hcp-meta small { color: #667085; }
+.hcp-no, .hcl-no { font-variant-numeric: tabular-nums; color: #1d4ed8; }
+.hcp-teams { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: #475467; }
+.hcp-table, .hcl-table { overflow: auto; max-height: 44vh; border: 1px solid #e4e7ec; border-radius: 10px; }
+.hcp-table table, .hcl-table table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.hcp-table th, .hcl-table th { position: sticky; top: 0; z-index: 1; background: #f9fafb; text-align: left; padding: 7px 10px; white-space: nowrap; border-bottom: 1px solid #e4e7ec; }
+.hcp-table td, .hcl-table td { padding: 6px 10px; border-bottom: 1px solid #f2f4f7; vertical-align: top; }
+.hcp-table td small, .hcl-table td small { display: block; color: #667085; }
+.hcp .n, .hcl .n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.hcp-creator { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+.hcp-creator small { font-weight: 400; color: #667085; }
+.hcp-creator input { border: 1px solid #d0d5dd; border-radius: 10px; padding: 8px 10px; font: inherit; }
+.hcp-error { margin: 0; padding: 6px 10px; border-radius: 8px; background: #fee4e2; color: #b42318; font-size: 13px; }
+.hcp-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.hcp-actions button { flex: 1 1 220px; border: 1px solid #e4e7ec; border-radius: 12px; padding: 10px 14px; background: #fff; font: inherit; text-align: left; cursor: pointer; }
+.hcp-actions button b { display: block; font-size: 14px; }
+.hcp-actions button small { color: #667085; font-size: 12px; }
+.hcp-actions button.is-main { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+.hcp-actions button.is-main small { color: #dbeafe; }
+.hcl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.hcl-list > li { border: 1px solid #e4e7ec; border-radius: 12px; padding: 0 0 0; min-width: 0; }
+.hcl-list > li.is-open { border-color: #84adff; }
+.hcl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; width: 100%; border: 0; background: none; padding: 10px 14px; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.hcl-row .n { margin-left: auto; }
+.hcl-pill { border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 700; white-space: nowrap; background: #fef0c7; color: #93370d; }
+.hcl-pill.is-sent { background: #d1e9ff; color: #175cd3; }
+.hcl-pill.is-done { background: #d1fadf; color: #067647; }
+.hcl-pill.is-cancel { background: #f2f4f7; color: #667085; text-decoration: line-through; }
+.hcl-detail { display: grid; gap: 10px; padding: 4px 14px 14px; }
+.hcl-detail-top { display: grid; gap: 6px; }
+.hcl-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
+.hcl-controls label { display: grid; gap: 3px; font-size: 12.5px; font-weight: 600; }
+.hcl-controls select { border: 1px solid #d0d5dd; border-radius: 8px; padding: 6px 10px; font: inherit; }
+.hcl-rollback, .hcl-warn button { border: 1px solid #f04438; background: #fff; color: #b42318; border-radius: 8px; padding: 7px 12px; font: inherit; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.hcl-rollback:disabled { opacity: .45; cursor: not-allowed; }
+.hcl-warn { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: #fffaeb; color: #93370d; font-size: 12.5px; }
+.hcl-msg { margin: 0; padding: 8px 12px; border-radius: 8px; background: #eff8ff; color: #175cd3; font-size: 13px; }
+.hcl-empty { color: #667085; padding: 18px 4px; }
+.hcl-log pre { margin: 6px 0 0; white-space: pre-wrap; font: inherit; font-size: 12px; color: #475467; }
+.hcl-detail-top small { color: #667085; }
+.hc-rep { display: inline-flex; margin-top: 3px; padding: 1px 8px; border-radius: 6px; background: #eef4ff; color: #3538cd; font-size: 11px; font-weight: 700; white-space: nowrap; }
+@media (max-width: 720px) { .hcp-form, .hcl-shell { padding: 14px; } .hcp-actions button { flex-basis: 100%; } }

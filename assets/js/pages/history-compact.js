@@ -27,6 +27,9 @@
         return 'pending';
     };
     const pill = text => `<span class="hc-pill is-${stageOf(text)}">${esc(blank(text) || 'รอดำเนินการ')}</span>`;
+    // ป้ายเลขที่ฉบับรายงานเคลมของเคส (โหมดกรอง: จากหลังบ้าน caseReports · โหมดรายบุคคล: จากแถวของเคสเอง)
+    const reportOf = (c, mode) => (mode === 'filtered' ? window.currentCaseReports?.[c.id]?.reportId : '') || [...c.events].reverse().find(e => e.reportId)?.reportId || '';
+    const repBadge = (c, mode) => { const no = reportOf(c, mode); return no ? `<small class="hc-rep" title="อยู่ในรายงานเคลมฉบับนี้">ฉบับ: ${esc(no)}</small>` : ''; };
 
     const state = { cases: [], shown: PAGE, sig: '', mode: 'individual', root: null, timer: 0 };
 
@@ -78,7 +81,7 @@
             <td class="hc-col-emp"><b>${esc(blank(e.employeeName) || '-')}</b><small>${esc([areaOf(e) !== '-' ? areaOf(e) : '', company].filter(Boolean).join(' · ') || '-')}</small></td>
             <td class="hc-col-sym"><span class="hc-sym">${esc(blank(e.symptoms) || '-')}</span><small>${esc(blank(e.hospital) || '-')}</small></td>
             <td class="hc-col-amt">${c.amounts.length ? c.amounts.map(a => `<span class="hc-chip ${a.cls}">${esc(a.label)}: <b>${money(a.value)}</b> ${esc(a.unit)}</span>`).join('') : '<span class="hc-none">—</span>'}</td>
-            <td class="hc-col-status">${pill(c.status)}${note ? `<small title="${esc(note)}">📝 ${esc(note.length > 40 ? note.slice(0, 40) + '…' : note)}</small>` : ''}</td>
+            <td class="hc-col-status">${pill(c.status)}${repBadge(c, state.mode)}${note ? `<small title="${esc(note)}">📝 ${esc(note.length > 40 ? note.slice(0, 40) + '…' : note)}</small>` : ''}</td>
             <td class="hc-col-act"><button type="button" class="hc-btn" data-hc-view>ดูรายละเอียด</button>${can('EditTreatment') ? '<button type="button" class="hc-btn is-update" data-hc-update>อัปเดตเคส</button><button type="button" class="hc-btn is-edit" data-hc-edit>แก้ไข</button>' : ''}</td>
         </tr><tr class="hc-flags-row" hidden><td colspan="7"></td></tr>`;
     }
@@ -87,7 +90,7 @@
         if (!root) return;
         const mode = window.historyDisplayMode === 'filtered' ? 'filtered' : 'individual';
         const history = mode === 'filtered' ? window.currentFilteredHistory : window.currentIndividualHistory;
-        const sig = mode + '|' + JSON.stringify(history || []);
+        const sig = mode + '|' + JSON.stringify(history || []) + '|' + JSON.stringify(window.currentCaseReports || {});   // ป้ายฉบับรายงานเปลี่ยน (ออกรายงาน/ย้อนกลับ) ต้องวาดใหม่ด้วย
         if (sig === state.sig && root.childElementCount) return;
         if (mode !== state.mode) state.shown = PAGE;
         state.sig = sig; state.mode = mode;

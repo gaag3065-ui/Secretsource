@@ -167,3 +167,25 @@ test('ตารางประวัติกระชับไม่มีแ�
         } finally { await s?.context.close(); s?.server.close(); await browser.close(); }
     }
 });
+
+// ป้ายเลขที่ฉบับรายงานเคลมใต้สถานะ: เฉพาะเคสที่อยู่ในฉบับ · ย้อนกลับ (ล้างเลขฉบับ) แล้วป้ายหายทันที
+test('ตารางกระชับ: แสดงป้าย "ฉบับ: REP-…" ใต้สถานะของเคสที่อยู่ในรายงาน และหายเมื่อย้อนกลับ', { skip }, async () => {
+    const browser = await chromium.launch({ executablePath: EDGE, headless: true });
+    let s;
+    try {
+        s = await open(browser, { width: 1440, height: 900 });
+        const { page } = s;
+        const SENT = 'ส่งเอกสารเคลมแล้ว รอรับเงินคืน';
+        const rows = [ev(4001, { statusText: SENT }), ev(4002, { statusText: SENT })];
+        const show = reports => page.evaluate(({ rows, reports }) => { window.currentFilteredHistory = rows; window.currentCaseDocuments = {}; window.currentCaseTreatmentEvents = {}; window.currentCaseLatest = {}; window.currentCaseReports = reports; window.renderFlatHistoryTable(rows); }, { rows, reports });
+        await show({ 4001: { reportId: 'REP-202611-001', reportBy: 'สมชาย' } });
+        await page.waitForSelector('#hcBody tr.hc-row');
+        await page.waitForTimeout(300);
+        const badges = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll('#hcBody tr.hc-row')].map(r => [r.dataset.case, r.querySelector('.hc-rep')?.textContent.trim() || ''])));
+        assert.deepEqual(await badges(), { 4001: 'ฉบับ: REP-202611-001', 4002: '' });
+        await show({});   // ย้อนกลับแล้ว: ไม่มีเลขฉบับ
+        await page.waitForTimeout(300);
+        assert.deepEqual(await badges(), { 4001: '', 4002: '' });
+        assert.deepEqual(s.problems, []);
+    } finally { await s?.context.close(); s?.server.close(); await browser.close(); }
+});
