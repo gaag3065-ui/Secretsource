@@ -67,7 +67,7 @@
     function badge(key, n) { const el = tabBar.querySelector(`[data-tab="${key}"] .dx-badge`); if (!el) return; el.hidden = !n; el.textContent = n || ''; }
     function render() {
         const d = state.ro;
-        if (!d) { dash.innerHTML = '<p class="dx-empty">กำลังโหลดภาพรวม…</p>'; return; }
+        if (!d) { dash.innerHTML = window.AccSkeleton ? window.AccSkeleton.html(3, 'กำลังโหลดภาพรวม') : '<p class="dx-empty">กำลังโหลดภาพรวม…</p>'; return; }
         const rooms = d.rooms || [];
         const contracted = rooms.filter(r => r.status === STATUS_LIST[0]);
         const beds = rooms.reduce((n, r) => n + bedsOf(r), 0), baths = rooms.reduce((n, r) => n + bathsOf(r), 0);

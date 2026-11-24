@@ -11,6 +11,11 @@
     --danger: #b84343;
     --shadow: 0 10px 28px rgba(22, 56, 74, 0.09);
     --top-dock-height: 188px;
+    /* ลำดับชั้น z-index ของหน้านี้ (ใช้ชุดนี้เท่านั้น): Base 0 · Sticky header 20 · Dropdown 30 · Modal/Popup 50 */
+    --z-base: 0;
+    --z-sticky: 20;
+    --z-dropdown: 30;
+    --z-modal: 50;
 }
 
 * {
@@ -389,7 +394,7 @@ button {
 .modal-overlay {
     position: fixed;
     inset: 0;
-    z-index: 9999;
+    z-index: var(--z-modal);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -509,7 +514,7 @@ button {
 /* #endregion */
 
 /* #region accommodation workspace */
-.top-dock { position:fixed; inset:0 0 auto; z-index:100; height:var(--top-dock-height); background:var(--background); box-shadow:0 5px 18px rgba(22,56,74,.12); }
+.top-dock { position:fixed; inset:0 0 auto; z-index:var(--z-sticky); height:var(--top-dock-height); background:var(--background); box-shadow:0 5px 18px rgba(22,56,74,.12); }
 .top-controls { height:116px; padding:8px 12px 10px 304px; }
 .dashboard-summary-section { display:flex; align-items:center; justify-content:space-between; gap:16px; min-width:0; margin:0; padding:10px 14px; border:1px solid var(--border); border-radius:10px; background:#fff; box-shadow:var(--shadow); }
 .dashboard-summary-section h2,.room-search-section h2 { margin:0; font-size:17px; }
@@ -696,7 +701,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .detail-empty span { display:grid; width:60px; height:60px; margin:0 auto 14px; place-items:center; border-radius:18px; background:var(--teal-light); color:var(--teal); font-size:27px; }
 .detail-empty h2 { margin:0; color:var(--navy); font-size:18px; }
 .detail-empty p { max-width:280px; margin:8px auto 0; font-size:12px; line-height:1.65; }
-.detail-header { position:sticky; top:-18px; z-index:4; margin:-18px -18px 0; padding:18px; background:rgba(255,255,255,.96); backdrop-filter:blur(8px); }
+.detail-header { position:sticky; top:-18px; z-index:var(--z-sticky); margin:-18px -18px 0; padding:18px; background:rgba(255,255,255,.96); backdrop-filter:blur(8px); }
 .detail-header h2 { font-size:22px; }
 .detail-header p { font-size:11px; line-height:1.5; }
 .button-close-panel { border-color:var(--border); color:var(--muted); }
@@ -820,7 +825,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 .dashboard-summary-top .room-search-results {
     position:absolute;
-    z-index:10;
+    z-index:var(--z-dropdown);
     top:calc(100% + 8px);
     right:0;
     left:0;

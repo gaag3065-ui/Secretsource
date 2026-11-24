@@ -18,7 +18,7 @@
     const DATE_KEYS = ['dH', 'dI', 'dJ', 'dK', 'dL', 'dM', 'dN', 'dO', 'dP', 'dQ'];
 
     async function load(refresh = false, silent = false) {
-        if (!silent) root.querySelector('.ro-body').innerHTML = '<p class="ro-empty">กำลังโหลดทะเบียนห้องพัก…</p>';
+        if (!silent) root.querySelector('.ro-body').innerHTML = window.AccSkeleton ? window.AccSkeleton.html(6, 'กำลังโหลดทะเบียนห้องพัก') : '<p class="ro-empty">กำลังโหลดทะเบียนห้องพัก…</p>';
         try {
             const response = await window.authFetch(`${API}/overview${refresh ? '?refresh=1' : ''}`, { cache: 'no-store' });
             const data = await response.json().catch(() => ({}));

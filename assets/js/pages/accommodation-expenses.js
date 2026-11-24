@@ -46,7 +46,7 @@
     async function load() {
         if (state.loading) return;
         state.loading = true;
-        if (!state.data) root.innerHTML = '<div class="rx-head"><h2>ค่าใช้จ่ายและรอบกำหนด</h2></div><p class="rx-empty">กำลังโหลด…</p>';
+        if (!state.data) root.innerHTML = '<div class="rx-head"><h2>ค่าใช้จ่ายและรอบกำหนด</h2></div>' + (window.AccSkeleton ? window.AccSkeleton.html(5, 'กำลังโหลดค่าใช้จ่าย') : '<p class="rx-empty">กำลังโหลด…</p>');
         // โหลดเดือนอื่น (มีข้อมูลเดิมอยู่): ครอบหน้าด้วยข้อความ "กำลังโหลด" + หมุน ให้รู้ว่าระบบกำลังทำงาน
         let overlay = null;
         if (state.data) {

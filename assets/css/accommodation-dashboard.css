@@ -48,7 +48,7 @@
 .dx-mini .is-bad { background: #fee4e2; color: #b42318; }
 .dx-empty { margin: 0; padding: 10px; color: var(--as-muted, #6b7785); text-align: center; font-size: 12.5px; }
 .dx-tabs-wrap { margin-bottom: 14px; }
-.dx-tabs { display: flex; flex-wrap: wrap; gap: 6px; position: sticky; top: 0; z-index: 5; padding: 8px 0; background: var(--page-bg, #f4f7f8); }
+.dx-tabs { display: flex; flex-wrap: wrap; gap: 6px; position: sticky; top: 0; z-index: var(--z-sticky, 20); padding: 8px 0; background: var(--page-bg, #f4f7f8); }
 .dx-tab { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--as-line, #e1e7ea); border-radius: 10px; padding: 8px 14px; background: #fff; font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; }
 .dx-tab:hover { border-color: var(--as-brand, #087f74); }
 .dx-tab.is-on { background: var(--as-brand, #087f74); border-color: var(--as-brand, #087f74); color: #fff; }
@@ -66,3 +66,12 @@
 .dx-fold > summary b { font-size: 16px; }
 .dx-fold > summary span { font-size: 12px; color: #6c7280; }
 .dx-fold > .accommodation-shell { padding: 0 12px 12px; }
+
+/* ---- Skeleton (สถานะกำลังโหลด) ใช้ร่วมกันทุกแท็บ — ขนาดคงที่ ไม่ทำให้หน้ากระโดด ---- */
+.sk { display: flex; flex-direction: column; gap: 10px; padding: 14px; background: #fff; border: 1px solid #e3e0d6; border-radius: 12px; min-width: 0; overflow: hidden; }
+.sk-head, .sk-line { display: block; height: 14px; border-radius: 6px; background: linear-gradient(90deg, #eef1f3 25%, #f8f9fa 50%, #eef1f3 75%); background-size: 200% 100%; animation: sk-shimmer 1.4s linear infinite; }
+.sk-head { width: 35%; height: 20px; }
+.sk-line.w45 { width: 45%; } .sk-line.w60 { width: 60%; } .sk-line.w75 { width: 75%; } .sk-line.w90 { width: 90%; }
+.sk-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+@keyframes sk-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .sk-head, .sk-line { animation: none; } }

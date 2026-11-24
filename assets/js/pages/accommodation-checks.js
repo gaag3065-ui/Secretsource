@@ -31,7 +31,7 @@
     }
     function render() {
         const d = state.data;
-        if (!d || !d.checks) { root.innerHTML = '<p class="ck-empty">กำลังโหลดผลตรวจ…</p>'; return; }
+        if (!d || !d.checks) { root.innerHTML = window.AccSkeleton ? window.AccSkeleton.html(4, 'กำลังโหลดผลตรวจ') : '<p class="ck-empty">กำลังโหลดผลตรวจ…</p>'; return; }
         root.innerHTML = `<div class="ck-intro"><h2>ตรวจสอบกับส่วนกลาง</h2><p>เทียบรายชื่อบ้านและยูนิตในทะเบียนห้องพักกับไฟล์ที่ใช้ประสานงานกับส่วนกลาง ตรงก็แจ้งว่าตรง ไม่ตรงก็บอกว่าไม่ตรงอย่างไร — แก้ที่ไฟล์ต้นทางหรือทะเบียนให้ตรงกัน แล้วกดรีเฟรช</p></div>
             <div class="ck-grid">${card('center', d.checks.center)}${card('internet', d.checks.internet)}</div>`;
     }

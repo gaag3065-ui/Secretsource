@@ -150,7 +150,7 @@
         return `<span><small>ยูนิตที่กำลังดำเนินการ</small><b>${num(openRooms.length)}</b></span><span><small>ค้างขั้นล่าสุดเฉลี่ย</small><b>${num(avgWait)} วัน</b></span>${longest ? `<span class="is-hot"><small>ค้างนานสุด</small><b>${num(longest.waiting)} วัน</b><em>${esc(longest.room.project)} ${esc(longest.room.unit)}</em></span>` : ''}`;
     }
     function render() {
-        if (!state.data) { host.innerHTML = '<p class="fl-empty">กำลังโหลดข้อมูลทะเบียนห้องพัก…</p>'; return; }
+        if (!state.data) { host.innerHTML = window.AccSkeleton ? window.AccSkeleton.html(6, 'กำลังโหลดข้อมูลทะเบียนห้องพัก') : '<p class="fl-empty">กำลังโหลดข้อมูลทะเบียนห้องพัก…</p>'; return; }
         const openRooms = (state.data.rooms || []).filter(r => r.status !== DONE);
         const builds = openRooms.map(build);
         const statuses = [...new Set(openRooms.map(r => r.status))];
