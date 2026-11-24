@@ -51,6 +51,26 @@ test('จัดการห้องพักพนักงาน: ไม่ม
         }
         await page.locator('details.dx-fold > summary').click();
         assert.equal(await page.evaluate(() => document.querySelector('details.dx-fold').open), true);
+        // เลื่อนหน้าจอได้จริง (ทุกแท็บ): ตัวเลื่อนคือ .page-main (fixed) หรือ window ก็ได้ ขอแค่ scroll แล้วตำแหน่งขยับ
+        for (let i = 0; i < 4; i++) {
+            await page.locator('.dx-tab').nth(i).click();
+            // เลื่อนด้วยล้อเมาส์จริง (ไม่ใช่ scrollTo ที่ทะลุ overflow:hidden ได้) แล้ววัดว่าหน้าขยับ
+            const sel = () => page.evaluate(() => { const els = [document.scrollingElement, document.querySelector('.page-main')]; return els.map(e => (e ? e.scrollTop : 0)).concat(window.scrollY); });
+            await page.evaluate(() => { [document.scrollingElement, document.querySelector('.page-main')].forEach(e => e && e.scrollTo(0, 0)); });
+            const before = await sel();
+            await page.mouse.move(700, 500);
+            await page.mouse.wheel(0, 500);
+            await page.waitForTimeout(250);
+            const after = await sel();
+            const r = await page.evaluate(() => ({
+                scrollable: [document.scrollingElement, document.querySelector('.page-main')].some(el => el && el.scrollHeight > el.clientHeight + 5),
+                overlays: [...document.querySelectorAll('.sk, .rx-loading')].filter(e => e.offsetParent !== null && getComputedStyle(e).position === 'fixed').length
+            }));
+            r.moved = after.some((v, k) => v > before[k]);
+            assert.ok(r.scrollable, `แท็บที่ ${i + 1}: เนื้อหายาวกว่าจอ ต้องเลื่อนได้`);
+            assert.ok(r.moved, `แท็บที่ ${i + 1}: เลื่อนแล้วตำแหน่งต้องขยับ`);
+            assert.equal(r.overlays, 0, `แท็บที่ ${i + 1}: ต้องไม่มี overlay โหลดค้างบังหน้า`);
+        }
         await page.screenshot({ path: process.env.ACC_SHOT || undefined, fullPage: true }).catch(() => {});
         assert.deepEqual(problems, [], 'ต้องไม่มี error ใน Console: ' + problems.join(' | '));
         await context.close();
