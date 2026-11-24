@@ -37,7 +37,7 @@
         { key: 'units', label: '🏠 ยูนิตและสถานะ', nodes: () => [$('roomOverview')] },
         { key: 'exp', label: '💳 ค่าใช้จ่ายและรอบกำหนด', nodes: () => [$('roomExpenses')] },
         { key: 'people', label: '👥 พนักงานและที่พัก', nodes: () => [$('asStats'), head.querySelector('.as-filters'), head.querySelector('.as-toolbar'), $('asResults'), $('roomChecks')] },
-        { key: 'ledger', label: '🧭 ติดตามขั้นตอนการดำเนินงานที่พักใหม่', nodes: () => [$('accommodationFlow'), $('accommodationLedger')] }
+        { key: 'ledger', label: '🧭 ติดตามขั้นตอนการดำเนินงานที่พักใหม่', nodes: () => [$('accommodationFlow')] }
     ];
     const tabBar = wrap.querySelector('.dx-tabs'), panes = wrap.querySelector('.dx-panes');
     for (const t of TABS) {
@@ -108,7 +108,7 @@
         const p4 = `<h3>ค่าใช้จ่ายเดือนนี้ <small>${s ? esc(s.monthLabel) : ''}</small></h3>${s ? `<div class="dx-meter"><i style="--w:${paidPct}%"></i></div><p class="dx-meter-t"><b>${num(s.paid)}</b> / ${num(s.total)} รายการ จ่ายแล้ว (${paidPct}%)</p>
             <div class="dx-mini">${s.cats.map(([label, paid, total]) => `<span class="${paid === total ? 'is-ok' : 'is-bad'}">${esc(label)} <b>${paid}/${total}</b></span>`).join('')}</div>` : '<p class="dx-empty">กำลังโหลด…</p>'}`;
         dash.innerHTML = `<div class="dx-kpis">${kpis}</div>
-            <div class="dx-panels"><article class="dx-panel">${p1}</article><article class="dx-panel" data-go="ledger" title="ดูตารางสัญญาทั้งหมด">${p3}</article><article class="dx-panel" data-go="exp" title="ดูรายละเอียดค่าใช้จ่าย">${p4}</article></div>`;
+            <div class="dx-panels"><article class="dx-panel">${p1}</article><article class="dx-panel">${p3}</article><article class="dx-panel" data-go="exp" title="ดูรายละเอียดค่าใช้จ่าย">${p4}</article></div>`;
     }
     dash.addEventListener('click', e => {
         const st = e.target.closest('[data-status]');
