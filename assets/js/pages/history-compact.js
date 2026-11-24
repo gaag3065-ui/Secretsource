@@ -213,13 +213,25 @@
             cell._normalizeCaseEvidence?.();
         } catch (error) { console.warn('hc evidence', error); host.innerHTML = '<td class="hc-none">โหลดเอกสารไม่สำเร็จ</td>'; }
     }
+    // ระยะเวลาที่ใช้ของขั้น = เวลาทำรายการ (autoDateTime เช่น '24 พ.ย. 2569 10:00 น.') ลบเวลาของขั้นก่อนหน้าในเคสเดียวกัน
+    const TH_MONTH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const stampMs = text => {
+        const m = /(\d{1,2})\s+(\S+?)\s+(\d{4})\s+(\d{1,2}):(\d{2})/.exec(String(text || '')), mon = m ? TH_MONTH.indexOf(m[2]) : -1;
+        return m && mon >= 0 ? Date.UTC(Number(m[3]) - 543, mon, Number(m[1]), Number(m[4]), Number(m[5])) : NaN;
+    };
+    const spanText = ms => {
+        if (!(ms >= 0)) return '';
+        const min = Math.round(ms / 60000), d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60), m = min % 60;
+        return d ? `${d} วัน${h ? ` ${h} ชม.` : ''}` : h ? `${h} ชม.${m ? ` ${m} นาที` : ''}` : `${m} นาที`;
+    };
     function fillTimeline(host, c) {
         const actions = legacyActions(c);
         const items = [...actions.events].reverse();   // ใหม่สุดอยู่บน
         host.innerHTML = `<ol class="hc-tl">${items.map((item, i) => {
             const ev = item.event;
             const amounts = amountsOf(ev);
-            return `<li data-i="${i}"><div class="hc-tl-top"><time>${esc(blank(ev.autoDateTime) || blank(ev.treatmentDateTime) || '-')}</time>${pill(ev.statusText)}<span class="hc-tl-by">${esc(blank(ev.adminName))}</span></div>
+            const used = spanText(stampMs(ev.autoDateTime) - stampMs(items[i + 1]?.event?.autoDateTime));   // items เรียงใหม่สุดก่อน → ขั้นก่อนหน้าคือ i+1
+            return `<li data-i="${i}"><div class="hc-tl-top"><time>${esc(blank(ev.autoDateTime) || blank(ev.treatmentDateTime) || '-')}</time>${pill(ev.statusText)}<span class="hc-tl-by">${esc(blank(ev.adminName))}</span>${used ? `<span class="hc-tl-dur" title="ระยะเวลาจากขั้นก่อนหน้า">⏱ ใช้เวลา ${esc(used)}</span>` : ''}</div>
                 <div class="hc-tl-body">${blank(ev.hospital) ? `<span>${esc(ev.hospital)}</span>` : ''}${blank(ev.symptoms) ? `<span>${esc(ev.symptoms)}</span>` : ''}${blank(ev.notes) ? `<em>${esc(ev.notes)}</em>` : ''}</div>
                 ${amounts.length ? `<div class="hc-tl-amt">${amounts.map(a => `<span class="hc-chip ${a.cls}">${esc(a.label)}: <b>${money(a.value)}</b> ${esc(a.unit)}</span>`).join('')}</div>` : ''}
                 ${(item.edit || item.full || item.del) ? `<div class="hc-tl-act">${item.edit ? '<button type="button" class="hc-btn is-edit" data-act="edit">✏️ แก้ไข</button>' : ''}${item.full ? '<button type="button" class="hc-btn" data-act="full">📝 แก้ไขทุกรายละเอียด</button>' : ''}${item.del ? '<button type="button" class="hc-btn is-del" data-act="del">🗑️ ลบ</button>' : ''}</div>` : ''}</li>`;

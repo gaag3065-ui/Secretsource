@@ -8,9 +8,22 @@
             input.setCustomValidity(''); input.removeAttribute('aria-invalid'); input.removeAttribute('data-insurance-budget-invalid');
         }
     };
+    // หน้าประวัติการรักษา: แก้ 'สถานะ' ของแถวล่าสุด = หลังบ้านเพิ่มแถวขั้นตอนใหม่ (ไม่แก้ทับแถวเดิม) — บอกหลังบ้านว่าหน้านี้รองรับ แล้วโหลดตาราง/ไทม์ไลน์ใหม่เมื่อมีแถวใหม่
+    const refreshAfterAppend = () => setTimeout(async () => {
+        try {
+            if (window.historyDisplayMode === 'filtered' && typeof window.loadFilteredAllHistory === 'function') await window.loadFilteredAllHistory();
+            else if (typeof window.performSearch === 'function') await window.performSearch();
+        } catch { /* ตารางจะอัปเดตเมื่อกรอง/ค้นหาใหม่ */ }
+    }, 700);
     const wrapped = async function (url, options) {
-        const response = await original.call(this, url, options);
         const path = new URL(String(url), location.href).pathname;
+        if (path === '/api/update-treatment' && typeof options?.body === 'string') {
+            try { options = { ...options, body: JSON.stringify({ ...JSON.parse(options.body), allowAppend: true }) }; } catch { /* ส่งตามเดิม */ }
+        }
+        const response = await original.call(this, url, options);
+        if (path === '/api/update-treatment' && response.ok) {
+            response.clone().json().then(result => { if (result?.appended) refreshAfterAppend(); }).catch(() => {});
+        }
         if (response.status === 422 && ['/api/save-treatment', '/api/update-treatment'].includes(path)) {
             const result = await response.clone().json().catch(() => ({}));
             if (result.code === 'INSURANCE_LIMIT_EXCEEDED') {

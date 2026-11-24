@@ -49,3 +49,4 @@
 .hcl-detail-top small { color: #667085; }
 .hc-rep { display: inline-flex; margin-top: 3px; padding: 1px 8px; border-radius: 6px; background: #eef4ff; color: #3538cd; font-size: 11px; font-weight: 700; white-space: nowrap; }
 @media (max-width: 720px) { .hcp-form, .hcl-shell { padding: 14px; } .hcp-actions button { flex-basis: 100%; } }
+.hc-tl-dur { display: inline-flex; padding: 1px 8px; border-radius: 999px; background: #f2f4f7; color: #475467; font-size: 11px; font-weight: 600; white-space: nowrap; }

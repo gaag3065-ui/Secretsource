@@ -189,3 +189,27 @@ test('ตารางกระชับ: แสดงป้าย "ฉบับ:
         assert.deepEqual(s.problems, []);
     } finally { await s?.context.close(); s?.server.close(); await browser.close(); }
 });
+
+// Timeline: แถวขั้นตอนใหม่ (เพิ่มแถวแทนแก้ทับ) เรียงตามเวลาจริง แสดงผู้ทำรายการ + ระยะเวลาที่ใช้เทียบขั้นก่อนหน้า
+test('หน้าต่างรายละเอียดเคส: Timeline แสดงผู้ทำรายการ และ "ใช้เวลา" เทียบขั้นก่อนหน้า (ไล่จากเวลาทำรายการ)', { skip }, async () => {
+    const browser = await chromium.launch({ executablePath: EDGE, headless: true });
+    let s;
+    try {
+        s = await open(browser, { width: 1440, height: 900 });
+        const { page } = s;
+        const rows = [
+            ev(5001, { autoDateTime: '20 พ.ย. 2569 09:00 น.', adminName: 'สมชาย' }),
+            ev(5001, { autoDateTime: '22 พ.ย. 2569 12:30 น.', adminName: 'สมหญิง', statusText: 'ผู้ป่วยสำรองจ่าย รอนำส่งเอกสารเคลม' }),
+            ev(5001, { autoDateTime: '22 พ.ย. 2569 14:45 น.', adminName: 'ผู้จัดทำรายงาน', statusText: 'ส่งเอกสารเคลมแล้ว รอรับเงินคืน' })
+        ];
+        await page.evaluate(rows => { window.currentFilteredHistory = rows; window.currentCaseDocuments = {}; window.currentCaseTreatmentEvents = {}; window.currentCaseLatest = {}; window.currentCaseReports = {}; window.renderFlatHistoryTable(rows); }, rows);
+        await page.waitForSelector('#hcBody tr.hc-row');
+        await page.locator('#hcBody tr.hc-row').first().click();
+        await page.waitForSelector('#hcModal .hc-tl li');
+        const items = await page.evaluate(() => [...document.querySelectorAll('#hcModal .hc-tl li')].map(li => ({ by: li.querySelector('.hc-tl-by')?.textContent.trim(), dur: li.querySelector('.hc-tl-dur')?.textContent.trim() || '' })));
+        // ใหม่สุดอยู่บน: 14:45 (ต่างจาก 12:30 = 2 ชม. 15 นาที) · 12:30 (ต่างจาก 20 พ.ย. 09:00 = 2 วัน 3 ชม.) · ขั้นแรกไม่มีระยะเวลา
+        assert.deepEqual(items.map(i => i.by), ['ผู้จัดทำรายงาน', 'สมหญิง', 'สมชาย']);
+        assert.match(items[0].dur, /2 ชม\. 15 นาที/); assert.match(items[1].dur, /2 วัน 3 ชม\./); assert.equal(items[2].dur, '');
+        assert.deepEqual(s.problems, []);
+    } finally { await s?.context.close(); s?.server.close(); await browser.close(); }
+});
