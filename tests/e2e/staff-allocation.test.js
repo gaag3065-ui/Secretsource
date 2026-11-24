@@ -8,7 +8,7 @@ const skip = EDGE ? false : 'ไม่พบ Microsoft Edge (ตั้ง EDGE_P
 const PEOPLE = [['E1', 'สมชาย ใจดี', 'ชาย'], ['E2', 'สมหญิง รักงาน', 'หญิง'], ['E3', 'วิชัย มั่นคง', 'วิ'], ['E4', 'ไม่มีงาน คนนี้', 'ไม่มี']];
 const employees = PEOPLE.map(([key, fullname, nickname], i) => ({ key, row: i + 5, fullname, nickname, employeeId: key, centralId: key, insuranceCode: `IC${i}`, company: 'GA East', status: 'on work', area: 'PP', building: 'A', floor: '1', room: String(100 + i), size: 'L', contracts: 0, contractText: '-' }));
 const tasks = ['E1', 'E2', 'E3'].map((key, i) => ({ id: i + 1, employee_key: key, fullname: employees[i].fullname, company: 'GA East', title: 'ฝากของ GE', detail: '', category: 'งานทั่วไป', priority: 'ปกติ', status: 'assigned', status_label: 'มอบหมายแล้ว', note: '',
-    acknowledged_at: '', created_by: 'admin', created_at: '2026-11-20T00:00:00Z', box: 'c1', box_title: 'ฝากของ GE', kind: 'info', kind_label: 'งานเก็บข้อมูล', fields: [{ id: 'f1', label: 'ไซส์เสื้อ' }], uploads: [], response: { f1: 'L' }, files: [], submitted_at: '2026-11-21T00:00:00Z', dest: null }));
+    acknowledged_at: '', created_by: 'admin', created_at: '2026-11-20T00:00:00Z', box: 'c1', box_title: 'ฝากของ GE', kind: 'info', kind_label: 'งานเก็บข้อมูล', fields: [{ id: 'f1', label: 'ไซส์เสื้อ' }, { id: 'f2', label: 'ที่อยู่จัดส่ง' }], uploads: [], response: { f1: 'L', f2: i === 0 ? '123/4 ถนนสุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพฯ 10110' : '' }, files: [], submitted_at: i === 2 ? '' : '2026-11-21T00:00:00Z', dest: null }));
 
 // หลังบ้านจำลอง: ทำตามกติกาเดียวกับ modules/staff/allocation.routes.js (สมาชิกกล่อง = คนที่มีงานในกล่อง)
 function createBackend() {
@@ -61,7 +61,7 @@ async function open(browser, size, backend, existing) {
     return { ...session, server, origin };
 }
 
-for (const [name, size] of [['คอมพิวเตอร์', { width: 1440, height: 900 }], ['มือถือ', { width: 390, height: 844, mobile: true }]]) {
+for (const [name, size] of [['คอมพิวเตอร์', { width: 1440, height: 900 }], ['จอขนาดกลาง', { width: 1024, height: 768 }],['มือถือ', { width: 390, height: 844, mobile: true }]]) {
     test(`เงื่อนไข + จัดสรรสิ่งของบน${name}: สร้าง → กำหนด → กรอง → จัดสรร → คงเหลือ → บันทึก → โหลดใหม่ข้อมูลอยู่`, { skip }, async () => {
         const browser = await chromium.launch({ executablePath: EDGE, headless: true });
         const backend = createBackend();
@@ -169,9 +169,30 @@ for (const [name, size] of [['คอมพิวเตอร์', { width: 1440,
             assert.deepEqual(overlaps, [], 'ตารางจัดสรรซ้อนทับ/ล้นจอ');
 
             // 7) บันทึกทั้งหมด (ยืนยันกรณีเกินสต็อกอัตโนมัติ) → ไม่เหลือสถานะค้าง
+            // ข้อมูลที่พนักงานกรอก: คอลัมน์ไดนามิก + สถานะการกรอก ในแถวเดียวกับช่องจัดสรร
+            const e1 = page.locator('tr[data-emp="E1"]'), e3 = page.locator('tr[data-emp="E3"]');
+            assert.equal(await page.locator('.sa-table thead th.sa-info:text("ไซส์เสื้อ")').count(), 1);
+            assert.equal(await page.locator('.sa-table thead th.sa-info:text("ที่อยู่จัดส่ง")').count(), 1);
+            assert.match(await e1.innerText(), /123\/4 ถนนสุขุมวิท/);
+            assert.match(await e1.innerText(), /ส่งข้อมูลแล้ว/);
+            assert.match(await e3.innerText(), /ยังไม่ส่งข้อมูล/);
+            // เลย์เอาต์ 2 ฝั่ง: ตารางซ้ายกว้างกว่าแผงสต็อกขวา (จอกว้าง) · ปุ่มบันทึก/พิมพ์เห็นตลอดในแผงขวา
+            const geo = await page.evaluate(() => {
+                const r = s => document.querySelector(s).getBoundingClientRect(), main = r('.sa-main'), side = r('.sa-side'), dlg = r('.sa-dialog:has(.sa-wide)'), save = r('[data-ag-save]'), prn = r('[data-ag-print]');
+                return { mainW: main.width, sideW: side.width, sideRight: side.left >= main.right - 1, dlgW: dlg.width / innerWidth, dlgH: dlg.height / innerHeight, saveVisible: save.bottom <= innerHeight && prn.bottom <= innerHeight && save.right <= innerWidth };
+            });
+            if (!size.mobile) { assert.ok(geo.saveVisible, 'ปุ่มบันทึก/พิมพ์ต้องอยู่ในจอ');assert.ok(geo.sideRight && geo.mainW > geo.sideW * 2, `ตารางซ้ายต้องกว้างกว่าแผงขวา (${geo.mainW}/${geo.sideW})`); assert.ok(geo.dlgW > 0.9 && geo.dlgW < 0.94 && geo.dlgH < 0.9, `ขนาดหน้าต่าง ${geo.dlgW}/${geo.dlgH}`); }
+
             await page.click('[data-ag-save]');
             await page.waitForFunction(() => /บันทึกการจัดสรรแล้ว/.test(document.querySelector('.sa-dialog [data-ag-msg]')?.textContent || ''));
             assert.equal((await page.locator('.sa-dialog [data-ag-dirty]').innerText()).trim(), '');
+            // แก้สต็อกที่แผงขวา → หัวคอลัมน์ฝั่งซ้ายอัปเดตทันที
+            await page.fill('.sa-side [data-item="1"] [data-istock]', '6');
+            await page.press('.sa-side [data-item="1"] [data-istock]', 'Tab');
+            await page.waitForFunction(() => /สต็อก 6 · แจก 3 · เหลือ 3/.test(document.querySelector('.sa-dialog [data-sum="1"]')?.textContent || ''));
+            await page.fill('.sa-side [data-item="1"] [data-istock]', '3');
+            await page.press('.sa-side [data-item="1"] [data-istock]', 'Tab');
+            await page.waitForFunction(() => /สต็อก 3 · แจก 3 · เหลือ 0/.test(document.querySelector('.sa-dialog [data-sum="1"]')?.textContent || ''));
             await page.click('.sa-dialog [data-ag-close]');
             await page.close();
 

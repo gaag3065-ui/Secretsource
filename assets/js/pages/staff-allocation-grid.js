@@ -23,11 +23,19 @@
             return !G.cond || (G.cond === '_none' ? !c : c === G.cond);
         });
     };
-    const sent = (e) => {   // ข้อมูลที่พนักงานกรอกจากลิงก์ (ช่วยตัดสินใจตอนจัดสรร)
-        const { state } = A().ctx();
-        return (state.data.tasks || []).filter(t => t.box === G.box && t.employee_key === e.key && t.status !== 'cancelled')
-            .flatMap(t => (t.fields || []).map(f => t.response?.[f.id] ? `${f.label}: ${t.response[f.id]}` : '').filter(Boolean)).join(' · ');
+    // ข้อมูลที่พนักงานกรอกจากลิงก์ของงานในกล่องนี้ (ตรงกับปุ่ม "งานที่มอบหมาย"/ชีตส่งของ)
+    const tasksOf = key => (A().ctx().state.data.tasks || []).filter(t => t.box === G.box && t.employee_key === key && !['cancelled', 'deleted'].includes(t.status));
+    const infoCols = () => {   // คอลัมน์ไดนามิก = ชื่อช่องกรอกทั้งหมดของงานในกล่อง (ไม่ซ้ำ เรียงตามที่พบ)
+        const seen = new Set();
+        for (const t of (A().ctx().state.data.tasks || [])) if (t.box === G.box && !['cancelled', 'deleted'].includes(t.status)) for (const f of (t.fields || [])) if (f.label) seen.add(f.label);
+        return [...seen];
     };
+    const answer = (key, label) => {
+        for (const t of tasksOf(key)) for (const f of (t.fields || [])) if (f.label === label && t.response?.[f.id]) return String(t.response[f.id]);
+        return '';
+    };
+    const sentOf = key => tasksOf(key).some(t => t.submitted_at || t.status === 'done' || t.status === 'submitted');
+    const longCol = label => /ที่อยู่|หมายเหตุ|เวลา|ข้อมูล/.test(label);
     const dirtyCount = () => G.drafts.size;
 
     // ตัดช่องที่ยังไม่บันทึกของรายการที่ถูกลบ/พนักงานที่ออกจากกล่องแล้ว (ไม่งั้นหลังบ้านปฏิเสธทั้งชุดและบันทึกไม่ได้)
@@ -39,23 +47,29 @@
         const d = data();
         pruneDrafts(d);
         const list = rows(d);
+        const cols = infoCols();
         const head = d.items.map(i => `<th class="sa-item" scope="col"><b>${esc(i.name)}</b><small data-sum="${esc(i.id)}"></small></th>`).join('');
+        const infoHead = `<th class="sa-info" scope="col">สถานะการกรอก</th>${cols.map(c => `<th class="sa-info${longCol(c) ? ' is-long' : ''}" scope="col">${esc(c)}</th>`).join('')}`;
         const body = list.map(e => {
-            const c = A().condOf(G.box, e.key), info = sent(e);
-            return `<tr data-emp="${esc(e.key)}"><th class="sa-who" scope="row"><b>${esc(e.fullname)}${e.nickname ? ` (${esc(e.nickname)})` : ''}</b><small>${esc([e.employeeId || e.centralId, e.insuranceCode].filter(Boolean).join(' · '))}</small>${c ? A().badge(c) : ''}${info ? `<small class="sa-resp" title="${esc(info)}">${esc(info)}</small>` : ''}</th>
+            const c = A().condOf(G.box, e.key), ok = sentOf(e.key);
+            const infoCells = `<td class="sa-info"><span class="fa-badge ${ok ? 'ok' : 'dim'}">${ok ? 'ส่งข้อมูลแล้ว' : 'ยังไม่ส่งข้อมูล'}</span></td>${cols.map(l => `<td class="sa-info${longCol(l) ? ' is-long' : ''}">${esc(answer(e.key, l)) || '<span class="sa-note">–</span>'}</td>`).join('')}`;
+            return `<tr data-emp="${esc(e.key)}"><th class="sa-who" scope="row"><b>${esc(e.fullname)}${e.nickname ? ` (${esc(e.nickname)})` : ''}</b><small>${esc([e.employeeId || e.centralId, e.insuranceCode].filter(Boolean).join(' · '))}</small>${c ? A().badge(c) : ''}</th>
+                ${infoCells}
                 ${d.items.map(i => { const q = qtyOf(d, e.key, i.id); return `<td class="sa-qty${G.drafts.has(k(e.key, i.id)) ? ' is-dirty' : ''}"><input type="number" min="0" max="100000" step="1" inputmode="numeric" placeholder="–" value="${q || ''}" data-q="${esc(e.key)}" data-i="${esc(i.id)}" aria-label="${esc(e.fullname)} · ${esc(i.name)}"><button type="button" class="sa-tick${q ? ' is-on' : ''}" data-tick data-q="${esc(e.key)}" data-i="${esc(i.id)}" aria-label="ให้ 1 ชิ้น / ล้าง" title="ให้ 1 ชิ้น (กดซ้ำ = ล้าง)">✓</button></td>`; }).join('')}
                 <td class="sa-total" data-kinds="${esc(e.key)}"></td><td class="sa-total" data-pieces="${esc(e.key)}"></td></tr>`;
         }).join('');
-        G.dialog.innerHTML = `<div class="sa-box sa-wide"><header class="sa-head"><div><h2>📦 จัดสรรสิ่งของ · ${esc(A().boxTitle(G.box))}</h2><p>เพิ่มรายการและสต็อกตั้งต้น แล้วกรอกจำนวนชิ้นที่แจกให้แต่ละคน (หรือกด ✓ = 1 ชิ้น) · สรุปคงเหลือคำนวณสด</p></div><button type="button" class="sa-x" data-ag-close aria-label="ปิด">×</button></header>
-            <section class="sa-stock"><h3>รายการสิ่งของและสต็อกตั้งต้น</h3>
+        const span = cols.length + 1;
+        G.dialog.innerHTML = `<div class="sa-box sa-wide"><header class="sa-head"><div><h2>📦 จัดสรรสิ่งของ · ${esc(A().boxTitle(G.box))}</h2><p>กรอกจำนวนชิ้นที่แจกให้แต่ละคน (หรือกด ✓ = 1 ชิ้น) · ดูข้อมูลที่พนักงานกรอกประกอบได้ในแถวเดียวกัน · สต็อกจัดการที่แผงด้านขวา</p></div><button type="button" class="sa-x" data-ag-close aria-label="ปิด">×</button></header>
+            <div class="sa-split"><section class="sa-main">
+                <div class="sa-tools"><label>กรองตามเงื่อนไข <select data-ag-cond><option value="">ทั้งหมด</option><option value="_none">ยังไม่กำหนด</option>${d.conds.map(c => `<option value="${esc(c.id)}"${G.cond === c.id ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label><span class="sa-note" data-ag-count></span></div>
+                ${d.items.length ? `<div class="sa-scroll"><table class="sa-table"><thead><tr><th class="sa-who" scope="col">พนักงาน (${list.length} คน)</th>${infoHead}${head}<th class="sa-total" scope="col">รายการ</th><th class="sa-total" scope="col">รวมชิ้น</th></tr></thead><tbody>${body || `<tr><td colspan="${d.items.length + span + 3}" class="sa-note">ไม่มีพนักงานตามเงื่อนไขนี้</td></tr>`}</tbody>
+                    <tfoot><tr><th class="sa-who" scope="row">รวมที่แสดง</th><td class="sa-info" colspan="${span}"></td>${d.items.map(i => `<td class="sa-total" data-col="${esc(i.id)}"></td>`).join('')}<td class="sa-total" data-all-kinds></td><td class="sa-total" data-all-pieces></td></tr></tfoot></table></div>` : '<p class="sa-note">เพิ่มรายการสิ่งของที่แผงด้านขวาก่อน แล้วตารางจัดสรรจะแสดงที่นี่</p>'}
+            </section>
+            <aside class="sa-side"><section class="sa-stock"><h3>รายการสิ่งของและสต็อกตั้งต้น</h3>
                 ${d.items.map(i => `<div class="sa-row" data-item="${esc(i.id)}"><input data-iname value="${esc(i.name)}" maxlength="80" aria-label="ชื่อรายการ"><label>สต็อก <input data-istock type="number" min="0" step="1" value="${i.stock}"></label><button type="button" class="fa-btn fa-btn-ghost" data-idel>ลบรายการ</button></div>`).join('') || '<p class="sa-note">ยังไม่มีรายการสิ่งของ — เพิ่มด้านล่าง</p>'}
                 <form class="sa-add" data-ag-add><input name="name" maxlength="80" placeholder="ชื่อรายการ เช่น เสื้อยูนิฟอร์ม" required><input name="stock" type="number" min="0" step="1" value="0" aria-label="สต็อกตั้งต้น"><button class="fa-btn fa-btn-primary">＋ เพิ่มรายการ</button></form></section>
-            <div class="sa-tools"><label>กรองตามเงื่อนไข <select data-ag-cond><option value="">ทั้งหมด</option><option value="_none">ยังไม่กำหนด</option>${d.conds.map(c => `<option value="${esc(c.id)}"${G.cond === c.id ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>
-                <span class="sa-note" data-ag-count></span><span class="sa-grow"></span><span class="sa-dirty" data-ag-dirty></span>
-                <button type="button" class="fa-btn" data-ag-print>🖨 พิมพ์ใบสรุปการแจกของ</button><button type="button" class="fa-btn fa-btn-primary" data-ag-save>💾 บันทึกการจัดสรรทั้งหมด</button></div>
-            ${d.items.length ? `<div class="sa-scroll"><table class="sa-table"><thead><tr><th class="sa-who" scope="col">พนักงาน (${list.length} คน)</th>${head}<th class="sa-total" scope="col">รายการ</th><th class="sa-total" scope="col">ชิ้น</th></tr></thead><tbody>${body || `<tr><td colspan="${d.items.length + 3}" class="sa-note">ไม่มีพนักงานตามเงื่อนไขนี้</td></tr>`}</tbody>
-                <tfoot><tr><th class="sa-who" scope="row">รวมที่แสดง</th>${d.items.map(i => `<td class="sa-total" data-col="${esc(i.id)}"></td>`).join('')}<td class="sa-total" data-all-kinds></td><td class="sa-total" data-all-pieces></td></tr></tfoot></table></div>` : '<p class="sa-note">เพิ่มรายการสิ่งของก่อน แล้วตารางจัดสรรจะแสดงที่นี่</p>'}
-            <p class="sa-msg" data-ag-msg role="status"></p></div>`;
+                <div class="sa-actions"><span class="sa-dirty" data-ag-dirty></span><p class="sa-msg" data-ag-msg role="status"></p>
+                    <button type="button" class="fa-btn" data-ag-print>🖨 พิมพ์ใบสรุปการแจกของ</button><button type="button" class="fa-btn fa-btn-primary" data-ag-save>💾 บันทึกการจัดสรรทั้งหมด</button></div></aside></div></div>`;
         totals();
     }
     // อัปเดตตัวเลขสรุปทั้งหมดโดยไม่วาดตารางใหม่ (ไม่ให้ช่องที่กำลังพิมพ์เสียโฟกัส)

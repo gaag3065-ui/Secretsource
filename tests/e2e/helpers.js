@@ -71,14 +71,17 @@ async function layoutProblems(page, { overflow = true } = {}) {
     return page.evaluate(({ overflow }) => {
         const out = [];
         if (overflow) { const sw = document.documentElement.scrollWidth, iw = window.innerWidth; if (sw > iw + 2) out.push(`หน้าล้นแนวนอน: scrollWidth ${sw} > ${iw}`); }
-        const vis = el => { const r = el.getBoundingClientRect(), cs = getComputedStyle(el); return r.width > 6 && r.height > 6 && cs.visibility !== 'hidden' && cs.display !== 'none' && cs.opacity !== '0' && !el.closest('[hidden],dialog:not([open])') && r.bottom > 0 && r.right > 0 && r.top < window.innerHeight * 3; };
+        // ส่วนที่ถูกตัดซ่อนอยู่ในกล่องเลื่อน (overflow auto/scroll/hidden) ผู้ใช้มองไม่เห็น → ไม่นับว่าซ้อนทับ
+        const shown = el => { let { left, right, top, bottom } = el.getBoundingClientRect(); for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) { const o = getComputedStyle(p); if (/(auto|scroll|hidden)/.test(o.overflowX + o.overflowY)) { const c = p.getBoundingClientRect(); left = Math.max(left, c.left); right = Math.min(right, c.right); top = Math.max(top, c.top); bottom = Math.min(bottom, c.bottom); } } return { left, right, top, bottom }; };
+        const clipped = el => { const s = shown(el); return s.right - s.left <= 1 || s.bottom - s.top <= 1; };
+        const vis = el => { const r = el.getBoundingClientRect(), cs = getComputedStyle(el); return !clipped(el) && r.width > 6 && r.height > 6 && cs.visibility !== 'hidden' && cs.display !== 'none' && cs.opacity !== '0' && !el.closest('[hidden],dialog:not([open])') && r.bottom > 0 && r.right > 0 && r.top < window.innerHeight * 3; };
         const els = [...document.querySelectorAll('button, a[href], select, input:not([type=hidden]), [role=button]')].filter(vis);
         const label = el => (el.id ? '#' + el.id : '') + ' ' + (el.textContent || el.getAttribute('aria-label') || el.placeholder || el.tagName).trim().replace(/\s+/g, ' ').slice(0, 24);
         const seen = new Set();
         for (let i = 0; i < els.length && out.length < 8; i++) for (let j = i + 1; j < els.length && out.length < 8; j++) {
             const a = els[i], b = els[j];
             if (a.contains(b) || b.contains(a)) continue;
-            const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+            const ra = shown(a), rb = shown(b);
             const ox = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left), oy = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
             if (ox > 6 && oy > 6) { const key = label(a) + '|' + label(b); if (!seen.has(key)) { seen.add(key); out.push(`ซ้อนทับกัน: [${label(a)}] กับ [${label(b)}] (${Math.round(ox)}×${Math.round(oy)}px)`); } }
         }

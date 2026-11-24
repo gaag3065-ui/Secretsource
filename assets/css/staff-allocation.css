@@ -19,7 +19,26 @@
 
 /* หน้าต่างจัดการเงื่อนไข / ตารางจัดสรร */
 .sa-dialog { width: min(720px, calc(100vw - 24px)); max-width: none; padding: 0; border: 0; border-radius: 16px; max-height: calc(100vh - 24px); }
-.sa-dialog:has(.sa-wide) { width: min(1280px, calc(100vw - 24px)); }
+.sa-dialog:has(.sa-wide) { width: 92vw; height: 88vh; max-height: 88vh; }
+.sa-box.sa-wide { height: 100%; max-height: none; overflow: hidden; }
+.sa-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 28%); gap: 12px; flex: 1 1 auto; min-height: 0; }
+.sa-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; }
+.sa-main .sa-scroll { flex: 1 1 auto; max-height: none; min-height: 0; }
+.sa-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; }
+.sa-side .sa-stock { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.sa-side .sa-row { flex-direction: column; align-items: stretch; padding: 8px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; }
+.sa-side .sa-row input[type=number], .sa-side .sa-add input[type=number] { width: 100%; }
+.sa-side .sa-add { flex-direction: column; align-items: stretch; }
+.sa-actions { display: flex; flex-direction: column; gap: 6px; flex: none; padding-top: 8px; border-top: 1px solid #e2e8f0; }
+.sa-actions .fa-btn { white-space: nowrap; justify-content: center; }
+.sa-info { min-width: 130px; max-width: 220px; text-align: left; overflow-wrap: anywhere; white-space: normal; }
+.sa-info.is-long { min-width: 220px; }
+@media (max-width: 900px) {
+    .sa-box.sa-wide { overflow: auto; }
+    .sa-split { display: flex; flex-direction: column; flex: none; }
+    .sa-main .sa-scroll { flex: none; max-height: 55vh; }
+    .sa-side .sa-stock { overflow: visible; }
+}
 .sa-box { display: flex; flex-direction: column; gap: 12px; padding: 16px; max-height: calc(100vh - 24px); overflow: auto; }
 .sa-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .sa-head h2 { margin: 0 0 4px; font-size: 18px; overflow-wrap: anywhere; }
@@ -45,7 +64,7 @@
 .sa-table thead th { position: sticky; top: 0; z-index: 20; background: #f1f5f9; text-align: center; }
 .sa-table tfoot th, .sa-table tfoot td { position: sticky; bottom: 0; z-index: 20; background: #f1f5f9; font-weight: 700; }
 .sa-who { position: sticky; left: 0; z-index: 1; width: 230px; min-width: 230px; max-width: 230px; text-align: left; display: table-cell; overflow-wrap: anywhere; box-shadow: 1px 0 0 #cbd5e1; }
-.sa-table thead .sa-who, .sa-table tfoot .sa-who { z-index: 20; }
+.sa-table thead .sa-who, .sa-table tfoot .sa-who { z-index: 30; }
 .sa-who b, .sa-who small { display: block; }
 .sa-who small { color: #64748b; font-weight: 400; }
 .sa-resp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
