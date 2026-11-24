@@ -258,6 +258,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // =====================================================
         await loadScript('assets/js/core/api-url.js');
         await loadScript('assets/js/core/config.js');
+        await loadScript('assets/js/pages/insurance-budget-guard.js?v=20261124-1');
 
         if (!window.APP_CONFIG) {
             throw new Error('ไม่พบ APP_CONFIG หลังโหลด config.js');
