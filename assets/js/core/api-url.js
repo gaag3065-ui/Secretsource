@@ -1,1 +1,1 @@
-window.GA_API_URL = 'https://championship-hit-surgical-nominations.trycloudflare.com';
+window.GA_API_URL = 'https://removing-gale-buys-dramatic.trycloudflare.com';
